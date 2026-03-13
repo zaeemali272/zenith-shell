@@ -7,7 +7,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 
-MouseArea {
+Item {
     id: root
 
     property var menuRef
@@ -57,6 +57,15 @@ MouseArea {
     // TRIGGER: Runs every time your laptop battery level changes.
     // This replaces the timer with a zero-load event listener.
     onBatPercentChanged: btExec.running = true
+    
+    Timer {
+        id: btTimer
+        interval: 15000 // Refresh every 15 seconds
+        running: true
+        repeat: true
+        onTriggered: btExec.running = true
+    }
+
     // --- HITBOX FIX ---
     // We base the size on the inner layout to ensure it's not 0px wide.
     implicitHeight: Theme.pillHeight
@@ -75,6 +84,20 @@ MouseArea {
         id: pill
 
         anchors.fill: parent
+        onClicked: {
+            console.log("Battery clicked! menuRef exists:", !!menuRef);
+            if (menuRef) {
+                // For Loaders, we toggle 'active'
+                if (menuRef.active !== undefined) {
+                    menuRef.active = !menuRef.active;
+                } else {
+                    // For direct instances, toggle 'visible'
+                    menuRef.visible = !menuRef.visible;
+                }
+                // Refresh on manual click
+                btExec.running = true;
+            }
+        }
 
         RowLayout {
             id: content
@@ -85,11 +108,11 @@ MouseArea {
             // Bluetooth Logic
             RowLayout {
                 // Modified visibility to ensure it only shows when data is valid
-                visible: btPresent && btPercent > 0
+                visible: btPresent
                 spacing: 4
 
                 Text {
-                    text: Theme.iconMid // Bluetooth device battery icon
+                    text: Theme.btIcon || "󰂯"
                     font.family: Theme.iconFont
                     color: Theme.bluetoothColor
                 }
