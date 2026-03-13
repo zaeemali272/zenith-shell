@@ -10,6 +10,7 @@ import Quickshell.Io
 MouseArea {
     id: root
 
+    property var menuRef
     // Bindings to the Service
     readonly property int batPercent: BatteryService.percentage
     readonly property string batState: BatteryService.status
@@ -53,15 +54,27 @@ MouseArea {
         return Theme.criticalColor;
     }
 
+    // TRIGGER: Runs every time your laptop battery level changes.
+    // This replaces the timer with a zero-load event listener.
+    onBatPercentChanged: btExec.running = true
+    // --- HITBOX FIX ---
+    // We base the size on the inner layout to ensure it's not 0px wide.
     implicitHeight: Theme.pillHeight
-    implicitWidth: pill.implicitWidth
+    implicitWidth: content.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
     Component.onCompleted: btExec.running = true
+    onClicked: {
+        console.log("Battery clicked! menuRef exists:", !!menuRef);
+        if (menuRef) {
+            menuRef.active = !menuRef.active;
+            // Also refresh on manual click
+            btExec.running = true;
+        }
+    }
 
     Pill {
         id: pill
 
         anchors.fill: parent
-        implicitWidth: content.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
 
         RowLayout {
             id: content
@@ -71,11 +84,12 @@ MouseArea {
 
             // Bluetooth Logic
             RowLayout {
-                visible: btPresent
+                // Modified visibility to ensure it only shows when data is valid
+                visible: btPresent && btPercent > 0
                 spacing: 4
 
                 Text {
-                    text: Theme.iconMid
+                    text: Theme.iconMid // Bluetooth device battery icon
                     font.family: Theme.iconFont
                     color: Theme.bluetoothColor
                 }
@@ -89,7 +103,7 @@ MouseArea {
             }
 
             Text {
-                visible: btPresent && batPercent >= 0
+                visible: (btPresent && btPercent > 0) && batPercent >= 0
                 text: "|"
                 color: Theme.inactiveTextColor
             }
@@ -117,11 +131,11 @@ MouseArea {
 
     }
 
-    // Keep your Bluetooth process here as it was
     Process {
         id: btExec
 
-        command: ["sh", "-c", "MAC=$(bluetoothctl devices Connected | awk '{print $2}' | head -n1); [ -n \"$MAC\" ] || exit 0; RAW=$(bluetoothctl info \"$MAC\" | grep 'Battery Percentage' | awk -F '[()]' '{print $2}' | tr -d '[:space:]%'); [ -z \"$RAW\" ] && RAW=$(bluetoothctl info \"$MAC\" | grep 'Battery Percentage' | awk '{print $3}' | tr -d '[:space:]%'); echo \"BT=$RAW\""]
+        // Refined shell command for better parsing
+        command: ["sh", "-c", "MAC=$(bluetoothctl devices Connected | awk '{print $2}' | head -n1); [ -n \"$MAC\" ] || { echo 'BT=0'; exit 0; }; RAW=$(bluetoothctl info \"$MAC\" | grep 'Battery Percentage' | awk -F '[()]' '{print $2}' | tr -d '[:space:]%'); [ -z \"$RAW\" ] && RAW=$(bluetoothctl info \"$MAC\" | grep 'Battery Percentage' | awk '{print $3}' | tr -d '[:space:]%'); echo \"BT=${RAW:-0}\""]
 
         stdout: StdioCollector {
             onStreamFinished: {
@@ -129,9 +143,11 @@ MouseArea {
                     btPresent = false;
                     return ;
                 }
-                let rawVal = text.split("BT=")[1].trim();
-                let val = rawVal.startsWith("0x") ? parseInt(rawVal, 16) : parseInt(rawVal, 10);
-                if (!isNaN(val) && val >= 0) {
+                // Handle multi-line output if bluetoothctl is verbose
+                let cleanText = text.trim().split('\n').pop();
+                let rawVal = cleanText.split("BT=")[1];
+                let val = parseInt(rawVal, 10);
+                if (!isNaN(val) && val > 0) {
                     btPercent = val;
                     btPresent = true;
                 } else {
