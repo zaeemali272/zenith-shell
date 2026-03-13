@@ -126,7 +126,7 @@ Item {
     Timer {
         id: refreshTimer
 
-        interval: 3000
+        interval: 1000
         onTriggered: netExec.running = true
     }
 

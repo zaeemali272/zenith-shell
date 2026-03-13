@@ -11,6 +11,8 @@ import Quickshell.Wayland
 PanelWindow {
     id: bar
 
+    property var controlCenterMenuRef: null
+
     WlrLayershell.keyboardFocus: WlrLayershell.None
     implicitHeight: Theme.barHeight
     color: "transparent"
@@ -71,6 +73,7 @@ PanelWindow {
         // --- PERFECT CENTER ---
         Center {
             anchors.centerIn: parent
+            controlCenterMenuRef: bar.controlCenterMenuRef
         }
 
         // --- RIGHT SIDE ---
@@ -104,6 +107,8 @@ PanelWindow {
             }
 
             Battery {
+                id: batteryWidget
+                menuRef: bluetoothLoader // Pass the loader reference
             }
 
             Power {
@@ -113,11 +118,15 @@ PanelWindow {
 
     }
 
+    // Update your FocusGrab to include the Bluetooth menu
     HyprlandFocusGrab {
-        active: wifiLoader.active
-        // Including 'bar.QsWindow.window' is what prevents the 'cleared' error
-        // when clicking the icon that triggers the menu.
-        windows: wifiLoader.item ? [wifiLoader.item.QsWindow.window, bar.QsWindow.window] : [bar.QsWindow.window]
+        active: wifiLoader.active || bluetoothLoader.active
+        windows: {
+            let winList = [bar.QsWindow.window];
+            if (wifiLoader.item) winList.push(wifiLoader.item.QsWindow.window);
+            if (bluetoothLoader.item) winList.push(bluetoothLoader.item.QsWindow.window);
+            return winList;
+        }
     }
 
     Loader {
@@ -127,6 +136,16 @@ PanelWindow {
         source: "Menu/WifiMenu.qml"
         onLoaded: {
             item.anchorItem = wifiWidget;
+        }
+    }
+
+    Loader {
+        id: bluetoothLoader
+        active: false
+        source: "Menu/BluetoothMenu.qml"
+        onLoaded: {
+            // Position it relative to the battery widget
+            item.anchorItem = batteryWidget; 
         }
     }
 
