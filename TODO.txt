@@ -2,9 +2,7 @@ fix the fast intervals add rules instead
 fix netspeed widget
 add power/battery widget
 add power profiles
-add bluetooth widget
 make App + Search + Workspace menu like gnome
-remake wallpaper selector (swww/mpv or alternative that can do both)
 change/redesign tray menu
 setup matugen to get color scheme/pallete
 add a login prompt on boot (optional)
