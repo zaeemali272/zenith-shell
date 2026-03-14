@@ -18,7 +18,7 @@ FloatingWindow {
         anchors.fill: parent
         color: "#11111b"; radius: 12; border.color: "#313244"; border.width: 1
         focus: true
-        Keys.onPressed: (event) => { if (event.key === Qt.Key_Escape) Qt.quit(); }
+        Keys.onPressed: (event) => { if (event.key === Qt.Key_Escape) safeQuit(); }
 
         ColumnLayout {
             anchors.fill: parent; anchors.margins: 25; spacing: 20
@@ -110,18 +110,36 @@ FloatingWindow {
                 }
             }
 
-            // Slideshow Button
-            Rectangle {
-                Layout.alignment: Qt.AlignHCenter; Layout.preferredWidth: 200; Layout.preferredHeight: 50
-                Layout.bottomMargin: 10; radius: 10; color: "#a6e3a1"
-                visible: tabRow.activeIndex === 1 && win.selectedWalls.length > 0
-                Text { anchors.centerIn: parent; text: "Start Slideshow"; color: "#11111b"; font.bold: true }
-                MouseArea { anchors.fill: parent; onClicked: startSlideshow() }
+            // Slideshow Controls
+            Row {
+                Layout.alignment: Qt.AlignHCenter
+                spacing: 20
+                visible: tabRow.activeIndex === 1
+
+                // Start Button
+                Rectangle {
+                    width: 180; height: 50; radius: 10; color: "#a6e3a1"
+                    visible: win.selectedWalls.length > 0
+                    Text { anchors.centerIn: parent; text: "Start Slideshow"; color: "#11111b"; font.bold: true }
+                    MouseArea { anchors.fill: parent; onClicked: startSlideshow() }
+                }
+
+                // Stop Button
+                Rectangle {
+                    width: 180; height: 50; radius: 10; color: "#f38ba8"
+                    Text { anchors.centerIn: parent; text: "Stop Slideshow"; color: "#11111b"; font.bold: true }
+                    MouseArea { anchors.fill: parent; onClicked: stopSlideshow() }
+                }
             }
         }
     }
 
     // --- Logic Functions ---
+
+    function safeQuit() {
+        win.visible = false; // Hide immediately to prevent white flash
+        quitTimer.start();
+    }
 
     function toggleSelection(path) {
         let arr = [...win.selectedWalls];
@@ -134,7 +152,7 @@ FloatingWindow {
     function applyWallpaper(path) {
         log("Applying wallpaper: " + path);
         killMpv.running = true;
-        // Run swww-daemon in a shell to ensure it logs
+        stopSlideshow(); // Stop any active slideshow loops
         swwwDaemon.running = true; 
         
         wallDelay.wallPath = path.replace("file://", "");
@@ -145,22 +163,64 @@ FloatingWindow {
         log("Applying video: " + path);
         killSwww.running = true;
         killMpv.running = true;
+        stopSlideshow();
         videoDelay.videoPath = path.replace("file://", "");
         videoDelay.start();
     }
 
     function startSlideshow() {
-        log("Starting Slideshow with " + win.selectedWalls.length + " files");
-        swwwDaemon.running = true;
-        let cleanPaths = win.selectedWalls.map(p => p.replace("file://", ""));
-        
-        // We'll call swww img on the first one, then you can use a cron or loop script later
-        setWall.command = ["sh", "-c", "swww img '" + cleanPaths[0] + "' --transition-type grow >> " + win.logPath + " 2>&1"];
-        setWall.running = true;
+        if (win.selectedWalls.length === 0) return;
+
+        let home = Quickshell.env("HOME");
+        // Using your linked path:
+        let scriptPath = home + "/.config/quickshell/scripts/slideshow.sh";
+        let servicePath = home + "/.config/systemd/user/zenith-slideshow.service";
+        let listPath = home + "/.cache/zenith_wallpaper_list";
+
+        // 1. Save images
+        let paths = win.selectedWalls.map(p => p.replace("file://", "")).join("\n");
+        saveList.command = ["sh", "-c", "echo '" + paths + "' > " + listPath];
+        saveList.running = true;
+
+        // 2. Build Service - Explicitly call bash on the scriptPath
+        let serviceContent = "[Unit]\nDescription=Zenith Slideshow\n\n[Service]\n" +
+                     "ExecStart=/bin/bash " + scriptPath + "\n" +
+                     "Restart=always\n" +
+                     "RestartSec=5\n" +
+                     "Environment=PATH=/usr/bin:/bin:/usr/local/bin\n" +
+                     "Environment=XDG_RUNTIME_DIR=/run/user/1000\n" +
+                     "Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus\n\n" + 
+                     "[Install]\nWantedBy=default.target";
+
+        // 3. Automated Setup
+        installService.command = ["sh", "-c", 
+            "echo -e '" + serviceContent + "' > " + servicePath + " && " +
+            "chmod +x " + scriptPath + " && " + 
+            "systemctl --user daemon-reload"
+        ];
+        installService.running = true;
+
+        startTimer.start();
+    }
+
+    Timer {
+        id: startTimer
+        interval: 500
+        onTriggered: {
+            serviceCmd.command = ["systemctl", "--user", "enable", "--now", "zenith-slideshow.service"];
+            serviceCmd.running = true;
+            log("Slideshow service enabled and started.");
+            safeQuit();
+        }
+    }
+
+    function stopSlideshow() {
+        log("Stopping and disabling slideshow service.");
+        serviceCmd.command = ["systemctl", "--user", "disable", "--now", "zenith-slideshow.service"];
+        serviceCmd.running = true;
     }
 
     function log(msg) {
-        // Simple helper to write to terminal and the log file via a Process
         console.log("[Zenith]: " + msg);
         logger.command = ["sh", "-c", "echo '[$(date +%T)] " + msg + "' >> " + logPath];
         logger.running = true;
@@ -171,9 +231,8 @@ FloatingWindow {
     Timer { 
         id: wallDelay
         property string wallPath: ""
-        interval: 600 // Increased further for your Intel CPU to settle
+        interval: 600 
         onTriggered: {
-            log("Executing swww img for " + wallPath);
             setWall.command = ["sh", "-c", "swww img '" + wallPath + "' --transition-type fade >> " + win.logPath + " 2>&1"];
             setWall.running = true;
         }
@@ -184,21 +243,29 @@ FloatingWindow {
         property string videoPath: ""
         interval: 400 
         onTriggered: { 
-            log("Executing mpvpaper for " + videoPath);
             mpvProcess.command = ["sh", "-c", "mpvpaper -vsf -o 'no-audio loop' eDP-1 '" + videoPath + "' >> " + win.logPath + " 2>&1"];
             mpvProcess.running = true; 
-            quitTimer.start(); 
+            safeQuit(); 
         } 
     }
 
-    Timer { id: quitTimer; interval: 500; onTriggered: Qt.quit() }
+    Timer { id: quitTimer; interval: 600; onTriggered: Qt.quit() }
 
     Process { id: logger }
     Process { id: swwwDaemon; command: ["sh", "-c", "swww-daemon >> " + logPath + " 2>&1"] }
-    Process { id: setWall; onExited: { log("swww img finished"); Qt.quit(); } }
-    Process { id: killSwww; command: ["pkill", "swww-daemon"] }
-    Process { id: killMpv; command: ["pkill", "mpvpaper"] }
+    Process { id: setWall; onExited: { log("swww img finished"); safeQuit(); } }
+    
+    // Improved kill commands
+    Process { id: killSwww; command: ["killall", "swww-daemon"] }
+    Process { id: killMpv; command: ["killall", "mpvpaper"] }
+    Process { id: killLoop; command: ["sh", "-c", "pkill -f 'swww img'"] } // Target the slideshow loop
+
+    Process { id: installService }
+    Process { id: saveList }
+    Process { id: serviceCmd }
+
     Process { id: mpvProcess }
+    Process { id: slideshowProc }
     Process { id: thumbGen; command: ["python3", Quickshell.env("HOME") + "/Documents/Linux/Dots/zenith-shell/services/generate_thumbnails.py"] }
 
     Component.onCompleted: {
