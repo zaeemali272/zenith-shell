@@ -1,4 +1,3 @@
-fix the fast intervals add rules instead
 fix netspeed widget
 add power/battery widget
 add power profiles

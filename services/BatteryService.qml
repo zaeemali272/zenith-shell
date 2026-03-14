@@ -10,23 +10,14 @@ Item {
     property int percentage: -1
     property string status: "unknown"
     property bool acOnline: false
-    property string model: "System Battery"
-    property string timeToEmpty: "Calculating..."
-    // Cache the paths once on startup so we don't 'ls' every time
     property string batPath: ""
     property string acPath: ""
 
     function update() {
-        if (batPath === "")
-            return ;
-
         updateExec.running = true;
     }
 
-    Component.onCompleted: {
-        // Find paths once
-        findPaths.running = true;
-    }
+    Component.onCompleted: findPaths.running = true
 
     Process {
         id: findPaths
@@ -44,55 +35,54 @@ Item {
                         service.acPath = l.slice(3);
 
                 });
-                service.update();
-                batListener.running = true;
+                if (service.batPath && service.acPath) {
+                    service.update(); // Initial fetch
+                    batWatcher.running = true;
+                }
             }
         }
 
     }
 
-    // SPEED FIX: Watch both status and capacity for instant reaction
-    Process {
-        id: batListener
-
-        // We watch for 'attrib' changes (status) and 'modify' (capacity)
-        command: ["sh", "-c", `inotifywait -e modify,attrib ${service.batPath}/status ${service.batPath}/capacity ${service.acPath}/online 2>/dev/null || sleep 2`]
-        running: false
-        onExited: {
-            service.update();
-            restartTimer.start();
-        }
-    }
-
-    Timer {
-        id: restartTimer
-
-        interval: 300 // Dropped from 1000 to 100 for "instant" feel
-        onTriggered: batListener.running = true
-    }
-
+    // This fetches the actual data
     Process {
         id: updateExec
 
-        command: ["sh", "-c", `echo PERCENT=$(cat ${service.batPath}/capacity); echo STATE=$(cat ${service.batPath}/status); echo AC=$(cat ${service.acPath}/online)`]
+        command: ["sh", "-c", `cat ${service.batPath}/capacity ${service.batPath}/status ${service.acPath}/online`]
 
         stdout: StdioCollector {
             onStreamFinished: {
                 if (!text)
                     return ;
 
-                const lines = text.trim().split("\n");
-                lines.forEach((l) => {
-                    if (l.startsWith("PERCENT="))
-                        service.percentage = parseInt(l.slice(8));
-                    else if (l.startsWith("STATE="))
-                        service.status = l.slice(6).toLowerCase().trim();
-                    else if (l.startsWith("AC="))
-                        service.acOnline = l.slice(3) === "1";
-                });
+                const parts = text.trim().split("\n");
+                if (parts.length >= 3) {
+                    service.percentage = parseInt(parts[0]);
+                    service.status = parts[1].toLowerCase().trim();
+                    service.acOnline = parts[2] === "1";
+                }
             }
         }
 
+    }
+
+    // THE RULE: Waits for one event, exits, updates, then restarts via a small timer
+    Process {
+        id: batWatcher
+
+        command: ["sh", "-c", `inotifywait -q -e modify,attrib ${service.batPath}/status ${service.batPath}/capacity ${service.acPath}/online`]
+        running: false
+        onExited: {
+            service.update();
+            safetyTimer.start(); // Don't restart instantly to prevent CPU spikes
+        }
+    }
+
+    Timer {
+        id: safetyTimer
+
+        interval: 100 // 100ms is imperceptible but prevents a 0ms busy loop
+        onTriggered: batWatcher.running = true
     }
 
 }

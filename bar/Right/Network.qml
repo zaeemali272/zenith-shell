@@ -29,7 +29,29 @@ Item {
 
     implicitHeight: Theme.pillHeight
     implicitWidth: pill.implicitWidth
-    Component.onCompleted: netExec.running = true
+    Component.onCompleted: {
+        netExec.running = true;
+        netWatcher.running = true;
+    }
+
+    // THE RULE: Watch for network or airplane mode changes
+    Process {
+        id: netWatcher
+
+        command: ["sh", "-c", "inotifywait -q -e modify /sys/class/net/*/operstate /dev/rfkill"]
+        running: false
+        onExited: {
+            netExec.running = true;
+            safetyTimer.start();
+        }
+    }
+
+    Timer {
+        id: safetyTimer
+
+        interval: 500
+        onTriggered: netWatcher.running = true
+    }
 
     Pill {
         id: pill
@@ -80,11 +102,6 @@ Item {
         id: netExec
 
         command: ["sh", "-c", "IFACE=$(ip route | awk '/default/ {print $5; exit}'); " + "awk -v iface=\"$IFACE\" '$1 ~ iface\":\" {print \"SPEED\", $2, $10}' /proc/net/dev; " + "iwctl station wlan0 show | grep 'Connected network' | awk '{$1=$2=\"\"; print \"SSID\", $0}'; " + "rfkill list wifi | grep -q 'Soft blocked: yes' && echo 'AIRPLANE ON' || echo 'AIRPLANE OFF'"]
-        onExited: {
-            if (!refreshTimer.running)
-                refreshTimer.start();
-
-        }
 
         stdout: StdioCollector {
             onStreamFinished: {
@@ -100,6 +117,7 @@ Item {
                         const rx = parseFloat(parts[1]);
                         const tx = parseFloat(parts[2]);
                         if (rxPrev > 0) {
+                            // Note: Speed is now calculated over the 3s interval
                             downSpeed = Math.max(0, Math.floor((rx - rxPrev) / 1024));
                             upSpeed = Math.max(0, Math.floor((tx - txPrev) / 1024));
                         }
@@ -126,7 +144,7 @@ Item {
     Timer {
         id: refreshTimer
 
-        interval: 1000
+        interval: 3000 // Set to 3 seconds as requested
         onTriggered: netExec.running = true
     }
 

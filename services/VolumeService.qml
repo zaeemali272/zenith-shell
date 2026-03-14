@@ -1,3 +1,4 @@
+// services/AudioService.qml
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -9,7 +10,8 @@ Item {
     property int outputVolume: 0
     property int micVolume: 0
     property bool muted: false
-    property bool btActive: false
+    // FIXED: Link this to your Bluetooth singleton
+    readonly property bool btActive: BluetoothService.connected
     property bool micActive: false
 
     function update() {
@@ -18,6 +20,7 @@ Item {
 
     Component.onCompleted: update()
 
+    // Back to your original listener logic
     Process {
         id: volListener
 
@@ -39,8 +42,8 @@ Item {
     Process {
         id: volExec
 
-        // We merged everything into one command string
-        command: ["sh", "-c", "echo \"SINK=$(wpctl get-volume @DEFAULT_AUDIO_SINK@)\"; echo \"SRC=$(wpctl get-volume @DEFAULT_AUDIO_SOURCE@)\"; wpctl inspect @DEFAULT_AUDIO_SINK@ | grep 'node.name'; pw-link -i | grep -q ':input_' && echo 'MIC_ACTIVE=1' || echo 'MIC_ACTIVE=0'"]
+        // Kept your original command logic
+        command: ["sh", "-c", "echo \"SINK=$(wpctl get-volume @DEFAULT_AUDIO_SINK@)\"; echo \"SRC=$(wpctl get-volume @DEFAULT_AUDIO_SOURCE@)\"; pw-link -i | grep -q ':input_' && echo 'MIC_ACTIVE=1' || echo 'MIC_ACTIVE=0'"]
 
         stdout: StdioCollector {
             onStreamFinished: {
@@ -48,9 +51,7 @@ Item {
                     return ;
 
                 const lines = text.trim().split("\n");
-                // Bluetooth check
-                service.btActive = text.toLowerCase().includes("bluez") || text.toLowerCase().includes("bluetooth");
-                // Mic Active check (looking for our echo)
+                // Mic Active check
                 service.micActive = text.includes("MIC_ACTIVE=1");
                 // Volume and Mute parsing
                 for (let l of lines) {
