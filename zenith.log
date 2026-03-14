@@ -1,0 +1,102 @@
+[$(date +%T)] Zenith Shell Started
+[$(date +%T)] Applying wallpaper: /home/zaeem/Pictures/Wallpapers/ubuntu.webp
+       501ms [WARN]  socket file /run/user/1000/wayland-1-swww-daemon..sock was not deleted when the previous daemon exited
+       532ms [INFO]  BumpPool with: 1 buffers. Size: 8100Kb
+       570ms [WARN]  We failed to find wayland buffer with id: 16. This should be impossible.
+[$(date +%T)] Executing swww img for /home/zaeem/Pictures/Wallpapers/ubuntu.webp
+       750ms [INFO]  BumpPool with: 1 buffers. Size: 8100Kb
+[$(date +%T)] swww img finished
+       783ms [INFO]  BumpPool with: 2 buffers. Size: 16200Kb
+      3787ms [WARN]  We failed to find wayland buffer with id: 10. This should be impossible.
+      3787ms [WARN]  We failed to find wayland buffer with id: 16. This should be impossible.
+[$(date +%T)] Zenith Shell Started
+[$(date +%T)] Starting Slideshow with 5 files
+Error: "There is an swww-daemon instance already running on this socket!"
+     22267ms [INFO]  BumpPool with: 1 buffers. Size: 16200Kb
+[$(date +%T)] swww img finished
+     22300ms [INFO]  BumpPool with: 2 buffers. Size: 16200Kb
+     25406ms [WARN]  We failed to find wayland buffer with id: 10. This should be impossible.
+     25406ms [WARN]  We failed to find wayland buffer with id: 16. This should be impossible.
+[$(date +%T)] Zenith Shell Started
+[$(date +%T)] Applying video: /home/zaeem/Videos/Animations/samurai.webm
+     34140ms [INFO]  Removed socket at "/run/user/1000/wayland-1-swww-daemon..sock"
+     34140ms [INFO]  Goodbye!
+[$(date +%T)] Executing mpvpaper for /home/zaeem/Videos/Animations/samurai.webm
+[$(date +%T)] Zenith Shell Started
+[$(date +%T)] Applying video: /home/zaeem/Videos/Animations/storm.webm
+[$(date +%T)] Executing mpvpaper for /home/zaeem/Videos/Animations/storm.webm
+[$(date +%T)] Zenith Shell Started
+[$(date +%T)] Starting Slideshow with 4 files
+862304
+        10ms [WARN]  failed to load cache: there is already another swww process running
+        30ms [INFO]  BumpPool with: 1 buffers. Size: 8100Kb
+[$(date +%T)] swww img finished
+        63ms [INFO]  BumpPool with: 2 buffers. Size: 16200Kb
+      3372ms [WARN]  We failed to find wayland buffer with id: 16. This should be impossible.
+      3372ms [WARN]  We failed to find wayland buffer with id: 18. This should be impossible.
+[$(date +%T)] Zenith Shell Started
+[$(date +%T)] Applying wallpaper: /home/zaeem/Pictures/Wallpapers/wallhaven-42pq7m.jpg
+Error: "There is an swww-daemon instance already running on this socket!"
+[$(date +%T)] Executing swww img for /home/zaeem/Pictures/Wallpapers/wallhaven-42pq7m.jpg
+     83247ms [INFO]  BumpPool with: 1 buffers. Size: 16200Kb
+[$(date +%T)] swww img finished
+     83280ms [INFO]  BumpPool with: 2 buffers. Size: 16200Kb
+     86285ms [WARN]  We failed to find wayland buffer with id: 10. This should be impossible.
+     86285ms [WARN]  We failed to find wayland buffer with id: 16. This should be impossible.
+[$(date +%T)] Zenith Shell Started
+[$(date +%T)] Applying wallpaper: /home/zaeem/Pictures/Wallpapers/wallhaven-5yypm9.jpg
+Error: "There is an swww-daemon instance already running on this socket!"
+[$(date +%T)] Executing swww img for /home/zaeem/Pictures/Wallpapers/wallhaven-5yypm9.jpg
+     90856ms [INFO]  BumpPool with: 1 buffers. Size: 16200Kb
+     90890ms [INFO]  BumpPool with: 2 buffers. Size: 16200Kb
+     93896ms [WARN]  We failed to find wayland buffer with id: 10. This should be impossible.
+     93896ms [WARN]  We failed to find wayland buffer with id: 16. This should be impossible.
+[$(date +%T)] Zenith Shell Started
+[$(date +%T)] Starting Slideshow with 3 files
+Error: "There is an swww-daemon instance already running on this socket!"
+    104620ms [INFO]  BumpPool with: 1 buffers. Size: 16200Kb
+[$(date +%T)] swww img finished
+    104653ms [INFO]  BumpPool with: 2 buffers. Size: 16200Kb
+    107657ms [WARN]  We failed to find wayland buffer with id: 10. This should be impossible.
+    107657ms [WARN]  We failed to find wayland buffer with id: 16. This should be impossible.
+    386909ms [INFO]  BumpPool with: 1 buffers. Size: 16200Kb
+    386942ms [INFO]  BumpPool with: 2 buffers. Size: 16200Kb
+    389947ms [WARN]  We failed to find wayland buffer with id: 10. This should be impossible.
+    389947ms [WARN]  We failed to find wayland buffer with id: 16. This should be impossible.
+    399380ms [INFO]  Removed socket at "/run/user/1000/wayland-1-swww-daemon..sock"
+    399380ms [INFO]  Goodbye!
+[$(date +%T)] Zenith Shell Started
+[$(date +%T)] Applying wallpaper: /home/zaeem/Pictures/Wallpapers/wallhaven-42pq7m.jpg
+       501ms [WARN]  socket file /run/user/1000/wayland-1-swww-daemon..sock was not deleted when the previous daemon exited
+       549ms [INFO]  BumpPool with: 1 buffers. Size: 8100Kb
+       587ms [WARN]  We failed to find wayland buffer with id: 16. This should be impossible.
+[$(date +%T)] Executing swww img for /home/zaeem/Pictures/Wallpapers/wallhaven-42pq7m.jpg
+       629ms [INFO]  BumpPool with: 1 buffers. Size: 8100Kb
+[$(date +%T)] swww img finished
+       662ms [INFO]  BumpPool with: 2 buffers. Size: 16200Kb
+      3668ms [WARN]  We failed to find wayland buffer with id: 10. This should be impossible.
+      3668ms [WARN]  We failed to find wayland buffer with id: 16. This should be impossible.
+[$(date +%T)] Zenith Shell Started
+[$(date +%T)] Applying video: /home/zaeem/Videos/Animations/storm.webm
+      7750ms [INFO]  Removed socket at "/run/user/1000/wayland-1-swww-daemon..sock"
+      7750ms [INFO]  Goodbye!
+[$(date +%T)] Executing mpvpaper for /home/zaeem/Videos/Animations/storm.webm
+[$(date +%T)] Zenith Shell Started
+[$(date +%T)] Applying wallpaper: /home/zaeem/Pictures/Wallpapers/wallhaven-42pq7m.jpg
+        32ms [INFO]  BumpPool with: 1 buffers. Size: 8100Kb
+        72ms [WARN]  We failed to find wayland buffer with id: 16. This should be impossible.
+[$(date +%T)] Executing swww img for /home/zaeem/Pictures/Wallpapers/wallhaven-42pq7m.jpg
+       618ms [INFO]  BumpPool with: 1 buffers. Size: 8100Kb
+[$(date +%T)] swww img finished
+       652ms [INFO]  BumpPool with: 2 buffers. Size: 16200Kb
+      3656ms [WARN]  We failed to find wayland buffer with id: 10. This should be impossible.
+      3656ms [WARN]  We failed to find wayland buffer with id: 16. This should be impossible.
+[$(date +%T)] Zenith Shell Started
+[$(date +%T)] Starting Slideshow with 2 files
+Error: "There is an swww-daemon instance already running on this socket!"
+    112771ms [INFO]  BumpPool with: 1 buffers. Size: 16200Kb
+[$(date +%T)] swww img finished
+    112805ms [INFO]  BumpPool with: 2 buffers. Size: 16200Kb
+    115877ms [WARN]  We failed to find wayland buffer with id: 10. This should be impossible.
+    115877ms [WARN]  We failed to find wayland buffer with id: 16. This should be impossible.
+[$(date +%T)] Zenith Shell Started
