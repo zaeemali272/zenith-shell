@@ -8,92 +8,73 @@ Item {
 
     property alias devices: deviceModel
     property bool powered: false
+    property bool connected: false
+    property int percentage: 0 // <--- Battery.qml reads this
     property bool scanning: false
     property bool busy: actionExec.running || btCheck.running
 
+    // ... (Keep togglePower, toggleScan, and action functions as they are) ...
     function togglePower() {
         let cmd = powered ? "block" : "unblock";
-        console.log("BT_DEBUG: Toggling power with rfkill:", cmd);
         actionExec.command = ["rfkill", cmd, "bluetooth"];
         actionExec.running = true;
     }
 
     function toggleScan() {
         let cmd = scanning ? "scan off" : "scan on";
-        console.log("BT_DEBUG: Toggling scan:", cmd);
-        actionExec.command = ["sh", "-c", `echo -e "${cmd}\\nquit" | bluetoothctl` ];
+        actionExec.command = ["sh", "-c", `echo -e "${cmd}\\nquit" | bluetoothctl`];
         actionExec.running = true;
         scanning = !scanning;
     }
 
     function action(mode, addr) {
-        console.log("BT_DEBUG: Executing action:", mode, "for", addr);
-        if (mode === "pair") {
-            // For pairing, we want to pair, trust AND connect for a reliable experience
-            actionExec.command = ["sh", "-c", `echo -e "agent on\\ndefault-agent\\npair ${addr}\\ntrust ${addr}\\nconnect ${addr}\\nquit" | bluetoothctl` ];
-        } else {
-            actionExec.command = ["sh", "-c", `echo -e "agent on\\ndefault-agent\\n${mode} ${addr}\\nquit" | bluetoothctl` ];
-        }
+        if (mode === "pair")
+            actionExec.command = ["sh", "-c", `echo -e "agent on\\ndefault-agent\\npair ${addr}\\ntrust ${addr}\\nconnect ${addr}\\nquit" | bluetoothctl`];
+        else
+            actionExec.command = ["sh", "-c", `echo -e "agent on\\ndefault-agent\\n${mode} ${addr}\\nquit" | bluetoothctl`];
         actionExec.running = true;
     }
 
     function refresh() {
-        if (!btCheck.running) {
-            btCheck.running = true;
-        }
+        if (!btCheck.running) btCheck.running = true;
     }
 
-    Timer {
-        id: refreshTimer
-        interval: 1000
-        onTriggered: refresh()
-    }
+    Component.onCompleted: refresh()
 
     Process {
         id: actionExec
         onExited: refreshTimer.start()
     }
 
-    ListModel {
-        id: deviceModel
-    }
+    Timer { id: refreshTimer; interval: 1000; onTriggered: refresh() }
+    ListModel { id: deviceModel }
 
     Process {
         id: btCheck
-
-        // We use the piping method to force bluetoothctl to initialize and report data
         command: ["sh", "-c", `
+            SCRIPT_PATH="/home/zaeem/Documents/Linux/Dots/zenith-shell/services/bt_battery.py"
             data=$(echo -e "show\\ndevices\\nquit" | bluetoothctl)
-            
-            # 1. Check Power
+
             echo "$data" | grep -q "Powered: yes" && echo "Powered: yes" || echo "Powered: no"
-            
-            # 2. Process Devices
+
             echo "$data" | grep "^Device " | while read -r _ addr name; do
                 devInfo=$(echo -e "info $addr\\nquit" | bluetoothctl)
                 
-                # Check Paired status (be very specific with grep)
-                echo "$devInfo" | grep -q "^[[:space:]]*Paired: yes" && paired="YES" || paired="NO"
-                
-                # Always get icon if available
-                icon=$(echo "$devInfo" | grep "Icon:" | awk '{print \$2}')
-                [ -z "$icon" ] && icon="bluetooth"
-
-                # Check Connected status (be very specific with grep)
                 if echo "$devInfo" | grep -q "^[[:space:]]*Connected: yes"; then
                     connected="YES"
-                    battery=$(echo "$devInfo" | grep "Battery Percentage" | awk -F '[()]' '{print $2}' | tr -d '[:space:]%' || echo "")
-                    [ -z "$battery" ] && battery=$(echo "$devInfo" | grep "Battery Percentage" | awk '{print \$3}' | tr -d '[:space:]%')
+                    # Run script and get the number
+                    battery=$(python3 "$SCRIPT_PATH" "$addr" 2>/dev/null | grep -o '[0-9]\\+%' | tr -d '%' | head -n 1)
                 else
                     connected="NO"
                     battery="0"
                 fi
-                echo "DEV|\$addr|\$connected|\$paired|\${battery:-0}|\$icon|\$name"
+                
+                paired="NO"
+                echo "$devInfo" | grep -q "^[[:space:]]*Paired: yes" && paired="YES"
+
+                echo "DEV|\$addr|\$connected|\$paired|\${battery:-0}|bluetooth|\$name"
             done
         `]
-        running: false
-        onExited: {
-        }
 
         stdout: StdioCollector {
             onStreamFinished: {
@@ -102,47 +83,47 @@ Item {
                 const lines = text.trim().split("\n");
                 let newDevices = [];
                 let isPowered = false;
-                
-                lines.forEach((line) => {
+                let anyConnected = false;
+                let maxBattery = 0;
+
+                for (let line of lines) {
                     if (line.toLowerCase().includes("powered: yes")) {
                         isPowered = true;
                     } else if (line.startsWith("DEV|")) {
                         let parts = line.split("|");
                         if (parts.length >= 7) {
+                            let isDevConnected = (parts[2] === "YES");
+                            let batVal = parseInt(parts[4]) || 0;
+
+                            if (isDevConnected) {
+                                anyConnected = true;
+                                // Crucial: Update maxBattery for the bar to see
+                                if (batVal > 0) maxBattery = batVal;
+                            }
+
                             newDevices.push({
                                 "address": parts[1],
-                                "connected": parts[2] === "YES",
+                                "connected": isDevConnected,
                                 "paired": parts[3] === "YES",
-                                "battery": parseInt(parts[4]) || 0,
-                                "icon": parts[5] || "bluetooth",
+                                "battery": batVal,
+                                "icon": parts[5],
                                 "name": parts[6]
                             });
                         }
                     }
-                });
+                }
 
-                powered = isPowered;
-                
-                newDevices.sort((a, b) => {
-                    if (a.connected !== b.connected) return b.connected - a.connected;
-                    return a.name.localeCompare(b.name);
-                });
+                // Apply values to the Singleton root
+                root.powered = isPowered;
+                root.connected = anyConnected;
+                root.percentage = maxBattery; // This updates Battery.qml
 
                 deviceModel.clear();
-                newDevices.forEach(d => deviceModel.append(d));
+                newDevices.sort((a, b) => b.connected - a.connected);
+                for (let d of newDevices) deviceModel.append(d);
             }
         }
     }
 
-    Component.onCompleted: {
-        refresh();
-    }
-
-    // Auto refresh every 10 seconds
-    Timer {
-        interval: 10000
-        running: true
-        repeat: true
-        onTriggered: refresh()
-    }
+    Timer { interval: 10000; running: true; repeat: true; onTriggered: refresh() }
 }
