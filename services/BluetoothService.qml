@@ -1,3 +1,4 @@
+// services/BluetoothService.qml
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -9,14 +10,20 @@ Item {
     property alias devices: deviceModel
     property bool powered: false
     property bool connected: false
-    property int percentage: 0 // <--- Battery.qml reads this
+    property int percentage: 0
     property bool scanning: false
     property bool busy: actionExec.running || btCheck.running
 
-    // ... (Keep togglePower, toggleScan, and action functions as they are) ...
+    function refresh() {
+        if (!btCheck.running)
+            btCheck.running = true;
+
+    }
+
+    // --- Actions ---
     function togglePower() {
-        let cmd = powered ? "block" : "unblock";
-        actionExec.command = ["rfkill", cmd, "bluetooth"];
+        // rfkill is faster than bluetoothctl for power toggling
+        actionExec.command = ["rfkill", powered ? "block" : "unblock", "bluetooth"];
         actionExec.running = true;
     }
 
@@ -28,79 +35,101 @@ Item {
     }
 
     function action(mode, addr) {
-        if (mode === "pair")
-            actionExec.command = ["sh", "-c", `echo -e "agent on\\ndefault-agent\\npair ${addr}\\ntrust ${addr}\\nconnect ${addr}\\nquit" | bluetoothctl`];
-        else
-            actionExec.command = ["sh", "-c", `echo -e "agent on\\ndefault-agent\\n${mode} ${addr}\\nquit" | bluetoothctl`];
+        actionExec.command = ["sh", "-c", `echo -e "agent on\\ndefault-agent\\n${mode} ${addr}\\nquit" | bluetoothctl`];
         actionExec.running = true;
     }
 
-    function refresh() {
-        if (!btCheck.running) btCheck.running = true;
+    Component.onCompleted: {
+        refresh();
+        btWatcher.running = true;
     }
 
-    Component.onCompleted: refresh()
+    ListModel {
+        id: deviceModel
+    }
 
     Process {
         id: actionExec
-        onExited: refreshTimer.start()
+
+        onExited: refresh()
     }
 
-    Timer { id: refreshTimer; interval: 1000; onTriggered: refresh() }
-    ListModel { id: deviceModel }
+    // --- Rule-Based Watcher ---
+    // Instead of polling, we wait for DBus signals from bluez.
+    // 'line' is a standard utility that blocks until a full line is received.
+    Process {
+        id: btWatcher
 
+        command: ["sh", "-c", "dbus-monitor --system \"type='signal',sender='org.bluez'\" | line"]
+        running: false
+        onExited: {
+            refresh();
+            safetyTimer.start();
+        }
+    }
+
+    Timer {
+        id: safetyTimer
+
+        interval: 1000 // 1s cooldown gives the device time to update its battery level
+        onTriggered: btWatcher.running = true
+    }
+
+    // --- Data Collection ---
     Process {
         id: btCheck
+
         command: ["sh", "-c", `
             SCRIPT_PATH="/home/zaeem/Documents/Linux/Dots/zenith-shell/services/bt_battery.py"
+
+            # Fetch status and devices in one go to minimize bluetoothctl calls
             data=$(echo -e "show\\ndevices\\nquit" | bluetoothctl)
 
-            echo "$data" | grep -q "Powered: yes" && echo "Powered: yes" || echo "Powered: no"
+            echo "$data" | grep -q "Powered: yes" && echo "POWER|ON" || echo "POWER|OFF"
 
             echo "$data" | grep "^Device " | while read -r _ addr name; do
                 devInfo=$(echo -e "info $addr\\nquit" | bluetoothctl)
-                
-                if echo "$devInfo" | grep -q "^[[:space:]]*Connected: yes"; then
-                    connected="YES"
-                    # Run script and get the number
-                    battery=$(python3 "$SCRIPT_PATH" "$addr" 2>/dev/null | grep -o '[0-9]\\+%' | tr -d '%' | head -n 1)
-                else
-                    connected="NO"
-                    battery="0"
-                fi
-                
-                paired="NO"
-                echo "$devInfo" | grep -q "^[[:space:]]*Paired: yes" && paired="YES"
 
-                echo "DEV|\$addr|\$connected|\$paired|\${battery:-0}|bluetooth|\$name"
+                connected="NO"
+                paired="NO"
+                battery="0"
+
+                if echo "$devInfo" | grep -q "Connected: yes"; then
+                    connected="YES"
+                    # Only call python if connected. Use --compact for clean number.
+                    battery=$(python3 "$SCRIPT_PATH" "$addr" --compact 2>/dev/null || echo "0")
+                fi
+
+                echo "$devInfo" | grep -q "Paired: yes" && paired="YES"
+                echo "DEV|\$addr|\$connected|\$paired|\$battery|bluetooth|\$name"
             done
         `]
 
         stdout: StdioCollector {
             onStreamFinished: {
-                if (!text) return;
+                if (!text)
+                    return ;
 
                 const lines = text.trim().split("\n");
                 let newDevices = [];
                 let isPowered = false;
                 let anyConnected = false;
                 let maxBattery = 0;
-
                 for (let line of lines) {
-                    if (line.toLowerCase().includes("powered: yes")) {
+                    if (line === "POWER|ON") {
                         isPowered = true;
                     } else if (line.startsWith("DEV|")) {
                         let parts = line.split("|");
                         if (parts.length >= 7) {
                             let isDevConnected = (parts[2] === "YES");
                             let batVal = parseInt(parts[4]) || 0;
-
                             if (isDevConnected) {
                                 anyConnected = true;
-                                // Crucial: Update maxBattery for the bar to see
-                                if (batVal > 0) maxBattery = batVal;
-                            }
+                                // If multiple devices are connected, show the highest battery
+                                if (batVal > maxBattery)
+                                    maxBattery = batVal;
 
+                            }
                             newDevices.push({
                                 "address": parts[1],
                                 "connected": isDevConnected,
@@ -112,18 +141,18 @@ Item {
                         }
                     }
                 }
-
-                // Apply values to the Singleton root
                 root.powered = isPowered;
                 root.connected = anyConnected;
-                root.percentage = maxBattery; // This updates Battery.qml
-
+                root.percentage = maxBattery;
                 deviceModel.clear();
-                newDevices.sort((a, b) => b.connected - a.connected);
-                for (let d of newDevices) deviceModel.append(d);
+                // Sort connected devices to the top
+                newDevices.sort((a, b) => {
+                    return b.connected - a.connected;
+                });
+                for (let d of newDevices) deviceModel.append(d)
             }
         }
+
     }
 
-    Timer { interval: 10000; running: true; repeat: true; onTriggered: refresh() }
 }

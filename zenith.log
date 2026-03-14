@@ -563,3 +563,31 @@ Error: "There is an swww-daemon instance already running on this socket!"
    2601647ms [INFO]  BumpPool with: 2 buffers. Size: 16200Kb
    2604653ms [WARN]  We failed to find wayland buffer with id: 10. This should be impossible.
    2604653ms [WARN]  We failed to find wayland buffer with id: 16. This should be impossible.
+   6201657ms [INFO]  BumpPool with: 1 buffers. Size: 16200Kb
+   6201691ms [INFO]  BumpPool with: 2 buffers. Size: 16200Kb
+   6204696ms [WARN]  We failed to find wayland buffer with id: 10. This should be impossible.
+   6204696ms [WARN]  We failed to find wayland buffer with id: 16. This should be impossible.
+   9801919ms [INFO]  BumpPool with: 1 buffers. Size: 16200Kb
+   9801953ms [INFO]  BumpPool with: 2 buffers. Size: 16200Kb
+   9804958ms [WARN]  We failed to find wayland buffer with id: 10. This should be impossible.
+   9804958ms [WARN]  We failed to find wayland buffer with id: 16. This should be impossible.
+[18:47:25] Launching Wallpaper Selector...
+[32m  INFO[0m: Launching config: "/home/zaeem/Documents/Linux/Dots/zenith-shell/windows/WallpaperWindow.qml"
+[32m  INFO[0m: Shell ID: "215cfe36454a336b414c12001666146f" Path ID "215cfe36454a336b414c12001666146f"
+[32m  INFO[0m: Saving logs to "/run/user/1000/quickshell/by-id/juel11b6wbt/log.qslog"
+[34m DEBUG[97m qml[0m: [Zenith]: Zenith Shell Started
+[32m  INFO[0m: Configuration Loaded
+[$(date +%T)] Zenith Shell Started
+[34m DEBUG[97m qml[0m: [Zenith]: Applying wallpaper: /home/zaeem/Pictures/Wallpapers/wallhaven-5yypm9.jpg
+[34m DEBUG[97m qml[0m: [Zenith]: Stopping and disabling slideshow service.
+[$(date +%T)] Applying wallpaper: /home/zaeem/Pictures/Wallpapers/wallhaven-5yypm9.jpg
+[$(date +%T)] Stopping and disabling slideshow service.
+Error: "There is an swww-daemon instance already running on this socket!"
+  11874554ms [INFO]  BumpPool with: 1 buffers. Size: 16200Kb
+[34m DEBUG[97m qml[0m: [Zenith]: swww img finished
+[$(date +%T)] swww img finished
+  11874588ms [INFO]  BumpPool with: 2 buffers. Size: 16200Kb
+  11877593ms [WARN]  We failed to find wayland buffer with id: 10. This should be impossible.
+  11877593ms [WARN]  We failed to find wayland buffer with id: 16. This should be impossible.
+  22239221ms [INFO]  Removed socket at "/run/user/1000/wayland-1-swww-daemon..sock"
+Error: RustixIoErrno(Os { code: 32, kind: BrokenPipe, message: "Broken pipe" })

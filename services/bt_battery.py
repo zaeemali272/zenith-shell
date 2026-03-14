@@ -268,12 +268,22 @@ def main():
     parser.add_argument("devices", metavar="DEVICE_MAC[.PORT]", type=str, nargs="+",
                         help="(MAC address of target)[.SPP Port]")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logs")
+    parser.add_argument("-c", "--compact", action="store_true", help="Print only the battery percentage")
     args = parser.parse_args()
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
     for device in args.devices:
         query = BatteryStateQuerier(*device.split("."))
         result = query.query()
+
+        if args.compact:
+            if "overall" in result:
+                print(int(result["overall"]))
+            elif len(result) > 0:
+                # If no overall, print the first value found
+                print(int(next(iter(result.values()))))
+            continue
+
         print("Battery level for {}:".format(device), end="")
         if "overall" in result:
             print(" {:.0%}.".format(result["overall"]/100), end="")
