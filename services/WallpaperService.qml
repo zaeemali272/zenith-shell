@@ -10,7 +10,7 @@ Item {
     readonly property string home: Quickshell.env("HOME")
     readonly property string wallpaperDir: "file://" + home + "/Pictures/Wallpapers"
     readonly property string thumbDir: "file://" + home + "/.cache/wallpaper_thumbs"
-    readonly property string scriptPath: home + "/Documents/Linux/Dots/zenith-shell/services/generate_thumbnails.py"
+    readonly property string scriptPath: home + "/.config/quickshell/services/generate_thumbnails.py"
 
     function applyWallpaper(path) {
         let cleanPath = path.replace("file://", "");

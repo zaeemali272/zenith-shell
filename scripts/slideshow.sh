@@ -1,5 +1,5 @@
 #!/bin/bash
-# Path: /home/zaeem/.config/quickshell/scripts/slideshow.sh
+# Path: $HOME/.config/quickshell/scripts/slideshow.sh
 
 LIST="$HOME/.cache/zenith_wallpaper_list"
 SWWW="/usr/bin/swww"

@@ -11,7 +11,7 @@ FloatingWindow {
     implicitHeight: 750
 
     property var selectedWalls: []
-    readonly property string logPath: Quickshell.env("HOME") + "/Documents/Linux/Dots/zenith-shell/zenith.log"
+    readonly property string logPath: Quickshell.env("HOME") + "/.config/quickshell/zenith.log"
 
     Rectangle {
         id: root
@@ -266,7 +266,7 @@ FloatingWindow {
 
     Process { id: mpvProcess }
     Process { id: slideshowProc }
-    Process { id: thumbGen; command: ["python3", Quickshell.env("HOME") + "/Documents/Linux/Dots/zenith-shell/services/generate_thumbnails.py"] }
+    Process { id: thumbGen; command: ["python3", Quickshell.env("HOME") + "/.config/quickshell/services/generate_thumbnails.py"] }
 
     Component.onCompleted: {
         log("Zenith Shell Started");
