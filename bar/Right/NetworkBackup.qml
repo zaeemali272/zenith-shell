@@ -94,7 +94,7 @@ Item {
         // 2. Print RX/TX.
         // 3. Print SSID with a prefix for easy parsing.
         // 4. Print Airplane status with a prefix.
-        command: ["sh", "-c", "IFACE=$(ip route | awk '/default/ {print $5; exit}'); " + "awk -v iface=\"$IFACE\" '$1 ~ iface\":\" {print \"SPEED\", $2, $10}' /proc/net/dev; " + "iwctl station wlan0 show | grep 'Connected network' | awk '{$1=$2=\"\"; print \"SSID\", $0}'; " + "rfkill list wifi | grep -q 'Soft blocked: yes' && echo 'AIRPLANE ON' || echo 'AIRPLANE OFF'"]
+        command: ["sh", "-c", "IFACE=$(ip route | awk '/default/ {print $5; exit}'); " + "awk -v iface=\"$IFACE\" '$1 ~ iface\":\" {print \"SPEED\", $2, $10}' /proc/net/dev; " + "iwctl station $(ls /sys/class/net | grep ^wl | head -n1) show | grep 'Connected network' | awk '{$1=$2=\"\"; print \"SSID\", $0}'; " + "rfkill list wifi | grep -q 'Soft blocked: yes' && echo 'AIRPLANE ON' || echo 'AIRPLANE OFF'"]
         // Safety: ensure timer restarts even if the command crashes
         onExited: {
             if (!refreshTimer.running)

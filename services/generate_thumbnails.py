@@ -4,9 +4,18 @@ import subprocess
 from pathlib import Path
 from PIL import Image
 
+def get_xdg_dir(type_name, default_path):
+    try:
+        path = subprocess.check_output(["xdg-user-dir", type_name]).decode("utf-8").strip()
+        if path:
+            return path
+    except:
+        pass
+    return os.path.expanduser(default_path)
+
 # Directories
-WALLPAPER_DIR = os.path.expanduser("~/Pictures/Wallpapers")
-ANIMATION_DIR = os.path.expanduser("~/Videos/Animations")
+WALLPAPER_DIR = os.path.join(get_xdg_dir("PICTURES", "~/Pictures"), "Wallpapers")
+ANIMATION_DIR = os.path.join(get_xdg_dir("VIDEOS", "~/Videos"), "Animations")
 
 WALL_THUMB_DIR = os.path.expanduser("~/.cache/wallpaper_thumbs")
 ANIM_THUMB_DIR = os.path.expanduser("~/.cache/animation_thumbs")
