@@ -80,7 +80,7 @@ Item {
         id: btCheck
 
         command: ["sh", "-c", `
-            SCRIPT_PATH="/home/zaeem/Documents/Linux/Dots/zenith-shell/services/bt_battery.py"
+            SCRIPT_PATH="$HOME/.config/quickshell/services/bt_battery.py"
 
             # Fetch status and devices in one go to minimize bluetoothctl calls
             data=$(echo -e "show\\ndevices\\nquit" | bluetoothctl)

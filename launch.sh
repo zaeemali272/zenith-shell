@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define paths
-SHELL_DIR="$HOME/Documents/Linux/Dots/zenith-shell"
+SHELL_DIR="$HOME/.config/quickshell"
 LOG_FILE="$SHELL_DIR/zenith.log"
 
 case "$1" in

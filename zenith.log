@@ -591,3 +591,165 @@ Error: "There is an swww-daemon instance already running on this socket!"
   11877593ms [WARN]  We failed to find wayland buffer with id: 16. This should be impossible.
   22239221ms [INFO]  Removed socket at "/run/user/1000/wayland-1-swww-daemon..sock"
 Error: RustixIoErrno(Os { code: 32, kind: BrokenPipe, message: "Broken pipe" })
+[03:50:25] Launching Wallpaper Selector...
+[32m  INFO[0m: Launching config: "/home/zaeem/.config/quickshell/windows/WallpaperWindow.qml"
+[32m  INFO[0m: Shell ID: "0484bb7be47da51435105cef42c4abd1" Path ID "0484bb7be47da51435105cef42c4abd1"
+[32m  INFO[0m: Saving logs to "/run/user/1000/quickshell/by-id/mf91gvwbt/log.qslog"
+[34m DEBUG[97m qml[0m: [Zenith]: Zenith Shell Started
+[32m  INFO[0m: Configuration Loaded
+[$(date +%T)] Zenith Shell Started
+[34m DEBUG[97m qml[0m: [Zenith]: Applying wallpaper: /home/zaeem/Pictures/Wallpapers/wallhaven-6dx3mw.jpg
+[34m DEBUG[97m qml[0m: [Zenith]: Stopping and disabling slideshow service.
+[$(date +%T)] Applying wallpaper: /home/zaeem/Pictures/Wallpapers/wallhaven-6dx3mw.jpg
+[$(date +%T)] Stopping and disabling slideshow service.
+Error: "There is an swww-daemon instance already running on this socket!"
+[34m DEBUG[97m qml[0m: [Zenith]: swww img finished
+[$(date +%T)] swww img finished
+[03:50:42] Launching Wallpaper Selector...
+[32m  INFO[0m: Launching config: "/home/zaeem/.config/quickshell/windows/WallpaperWindow.qml"
+[32m  INFO[0m: Shell ID: "0484bb7be47da51435105cef42c4abd1" Path ID "0484bb7be47da51435105cef42c4abd1"
+[32m  INFO[0m: Saving logs to "/run/user/1000/quickshell/by-id/4taigvwbt/log.qslog"
+[34m DEBUG[97m qml[0m: [Zenith]: Zenith Shell Started
+[32m  INFO[0m: Configuration Loaded
+[$(date +%T)] Zenith Shell Started
+[08:06:45] Launching Wallpaper Selector...
+[32m  INFO[0m: Launching config: "/home/zaeem/.config/quickshell/windows/WallpaperWindow.qml"
+[32m  INFO[0m: Shell ID: "0484bb7be47da51435105cef42c4abd1" Path ID "0484bb7be47da51435105cef42c4abd1"
+[32m  INFO[0m: Saving logs to "/run/user/1000/quickshell/by-id/oxdz9b7xbt/log.qslog"
+[34m DEBUG[97m qml[0m: [Zenith]: Zenith Shell Started
+[32m  INFO[0m: Configuration Loaded
+[$(date +%T)] Zenith Shell Started
+[34m DEBUG[97m qml[0m: [Zenith]: Applying wallpaper: /home/zaeem/Pictures/Wallpapers/wallhaven-42pq7m.jpg
+[$(date +%T)] Applying wallpaper: /home/zaeem/Pictures/Wallpapers/wallhaven-42pq7m.jpg
+[34m DEBUG[97m qml[0m: [Zenith]: Stopping and disabling slideshow service.
+[$(date +%T)] Stopping and disabling slideshow service.
+Error: "There is an swww-daemon instance already running on this socket!"
+[34m DEBUG[97m qml[0m: [Zenith]: swww img finished
+[$(date +%T)] swww img finished
+[08:06:59] Launching Wallpaper Selector...
+[32m  INFO[0m: Launching config: "/home/zaeem/.config/quickshell/windows/WallpaperWindow.qml"
+[32m  INFO[0m: Shell ID: "0484bb7be47da51435105cef42c4abd1" Path ID "0484bb7be47da51435105cef42c4abd1"
+[32m  INFO[0m: Saving logs to "/run/user/1000/quickshell/by-id/m9gznb7xbt/log.qslog"
+[34m DEBUG[97m qml[0m: [Zenith]: Zenith Shell Started
+[32m  INFO[0m: Configuration Loaded
+[$(date +%T)] Zenith Shell Started
+[34m DEBUG[97m qml[0m: [Zenith]: Applying wallpaper: /home/zaeem/Pictures/Wallpapers/rolls-royce-spectre-3840x2160-22749.jpg
+[34m DEBUG[97m qml[0m: [Zenith]: Stopping and disabling slideshow service.
+[$(date +%T)] Applying wallpaper: /home/zaeem/Pictures/Wallpapers/rolls-royce-spectre-3840x2160-22749.jpg
+[$(date +%T)] Stopping and disabling slideshow service.
+Error: "There is an swww-daemon instance already running on this socket!"
+[34m DEBUG[97m qml[0m: [Zenith]: swww img finished
+[$(date +%T)] swww img finished
+[08:07:10] Launching Wallpaper Selector...
+[32m  INFO[0m: Launching config: "/home/zaeem/.config/quickshell/windows/WallpaperWindow.qml"
+[32m  INFO[0m: Shell ID: "0484bb7be47da51435105cef42c4abd1" Path ID "0484bb7be47da51435105cef42c4abd1"
+[32m  INFO[0m: Saving logs to "/run/user/1000/quickshell/by-id/96izyb7xbt/log.qslog"
+[34m DEBUG[97m qml[0m: [Zenith]: Zenith Shell Started
+[32m  INFO[0m: Configuration Loaded
+[$(date +%T)] Zenith Shell Started
+[34m DEBUG[97m qml[0m: [Zenith]: Slideshow service enabled and started.
+[$(date +%T)] Slideshow service enabled and started.
+[08:07:36] Launching Wallpaper Selector...
+[32m  INFO[0m: Launching config: "/home/zaeem/.config/quickshell/windows/WallpaperWindow.qml"
+[32m  INFO[0m: Shell ID: "0484bb7be47da51435105cef42c4abd1" Path ID "0484bb7be47da51435105cef42c4abd1"
+[32m  INFO[0m: Saving logs to "/run/user/1000/quickshell/by-id/hjmzoc7xbt/log.qslog"
+[34m DEBUG[97m qml[0m: [Zenith]: Zenith Shell Started
+[32m  INFO[0m: Configuration Loaded
+[$(date +%T)] Zenith Shell Started
+[34m DEBUG[97m qml[0m: [Zenith]: Applying video: /home/zaeem/Videos/Animations/bg2.mkv
+[34m DEBUG[97m qml[0m: [Zenith]: Stopping and disabling slideshow service.
+[$(date +%T)] Applying video: /home/zaeem/Videos/Animations/bg2.mkv
+[$(date +%T)] Stopping and disabling slideshow service.
+[08:07:44] Launching Wallpaper Selector...
+[32m  INFO[0m: Launching config: "/home/zaeem/.config/quickshell/windows/WallpaperWindow.qml"
+[32m  INFO[0m: Shell ID: "0484bb7be47da51435105cef42c4abd1" Path ID "0484bb7be47da51435105cef42c4abd1"
+[32m  INFO[0m: Saving logs to "/run/user/1000/quickshell/by-id/grnzwc7xbt/log.qslog"
+[34m DEBUG[97m qml[0m: [Zenith]: Zenith Shell Started
+[32m  INFO[0m: Configuration Loaded
+[$(date +%T)] Zenith Shell Started
+[34m DEBUG[97m qml[0m: [Zenith]: Applying video: /home/zaeem/Videos/Animations/storm.webm
+[34m DEBUG[97m qml[0m: [Zenith]: Stopping and disabling slideshow service.
+[$(date +%T)] Applying video: /home/zaeem/Videos/Animations/storm.webm
+[$(date +%T)] Stopping and disabling slideshow service.
+[08:09:40] Launching Wallpaper Selector...
+[32m  INFO[0m: Launching config: "/home/zaeem/.config/quickshell/windows/WallpaperWindow.qml"
+[32m  INFO[0m: Shell ID: "0484bb7be47da51435105cef42c4abd1" Path ID "0484bb7be47da51435105cef42c4abd1"
+[32m  INFO[0m: Saving logs to "/run/user/1000/quickshell/by-id/d77014g7xbt/log.qslog"
+[34m DEBUG[97m qml[0m: [Zenith]: Zenith Shell Started
+[32m  INFO[0m: Configuration Loaded
+[$(date +%T)] Zenith Shell Started
+[34m DEBUG[97m qml[0m: [Zenith]: Applying wallpaper: /home/zaeem/Pictures/Wallpapers/wallhaven-4dp2g4.jpg
+[34m DEBUG[97m qml[0m: [Zenith]: Stopping and disabling slideshow service.
+[$(date +%T)] Applying wallpaper: /home/zaeem/Pictures/Wallpapers/wallhaven-4dp2g4.jpg
+[$(date +%T)] Stopping and disabling slideshow service.
+        86ms [INFO]  BumpPool with: 1 buffers. Size: 8100Kb
+       126ms [WARN]  We failed to find wayland buffer with id: 16. This should be impossible.
+       628ms [INFO]  BumpPool with: 1 buffers. Size: 8100Kb
+[34m DEBUG[97m qml[0m: [Zenith]: swww img finished
+[$(date +%T)] swww img finished
+       661ms [INFO]  BumpPool with: 2 buffers. Size: 16200Kb
+      3669ms [WARN]  We failed to find wayland buffer with id: 10. This should be impossible.
+      3669ms [WARN]  We failed to find wayland buffer with id: 16. This should be impossible.
+[08:13:14] Launching Wallpaper Selector...
+[32m  INFO[0m: Launching config: "/home/zaeem/.config/quickshell/windows/WallpaperWindow.qml"
+[32m  INFO[0m: Shell ID: "0484bb7be47da51435105cef42c4abd1" Path ID "0484bb7be47da51435105cef42c4abd1"
+[32m  INFO[0m: Saving logs to "/run/user/1000/quickshell/by-id/jv7112m7xbt/log.qslog"
+[34m DEBUG[97m qml[0m: [Zenith]: Zenith Shell Started
+[32m  INFO[0m: Configuration Loaded
+[$(date +%T)] Zenith Shell Started
+[34m DEBUG[97m qml[0m: [Zenith]: Applying wallpaper: /home/zaeem/Pictures/Wallpapers/wallhaven-5yypm9.jpg
+[34m DEBUG[97m qml[0m: [Zenith]: Stopping and disabling slideshow service.
+[$(date +%T)] Applying wallpaper: /home/zaeem/Pictures/Wallpapers/wallhaven-5yypm9.jpg
+[$(date +%T)] Stopping and disabling slideshow service.
+Error: "There is an swww-daemon instance already running on this socket!"
+    213593ms [INFO]  BumpPool with: 1 buffers. Size: 16200Kb
+[34m DEBUG[97m qml[0m: [Zenith]: swww img finished
+[$(date +%T)] swww img finished
+    213626ms [INFO]  BumpPool with: 2 buffers. Size: 16200Kb
+    216638ms [WARN]  We failed to find wayland buffer with id: 10. This should be impossible.
+    216638ms [WARN]  We failed to find wayland buffer with id: 16. This should be impossible.
+[08:13:24] Launching Wallpaper Selector...
+[32m  INFO[0m: Launching config: "/home/zaeem/.config/quickshell/windows/WallpaperWindow.qml"
+[32m  INFO[0m: Shell ID: "0484bb7be47da51435105cef42c4abd1" Path ID "0484bb7be47da51435105cef42c4abd1"
+[32m  INFO[0m: Saving logs to "/run/user/1000/quickshell/by-id/25a11cm7xbt/log.qslog"
+[34m DEBUG[97m qml[0m: [Zenith]: Zenith Shell Started
+[32m  INFO[0m: Configuration Loaded
+[$(date +%T)] Zenith Shell Started
+[34m DEBUG[97m qml[0m: [Zenith]: Applying wallpaper: /home/zaeem/Pictures/Wallpapers/wallhaven-d86673.jpg
+[34m DEBUG[97m qml[0m: [Zenith]: Stopping and disabling slideshow service.
+[$(date +%T)] Applying wallpaper: /home/zaeem/Pictures/Wallpapers/wallhaven-d86673.jpg
+Error: "There is an swww-daemon instance already running on this socket!"
+[$(date +%T)] Stopping and disabling slideshow service.
+    228703ms [INFO]  BumpPool with: 1 buffers. Size: 16200Kb
+[34m DEBUG[97m qml[0m: [Zenith]: swww img finished
+[$(date +%T)] swww img finished
+    228737ms [INFO]  BumpPool with: 2 buffers. Size: 16200Kb
+[08:13:38] Launching Wallpaper Selector...
+[32m  INFO[0m: Launching config: "/home/zaeem/.config/quickshell/windows/WallpaperWindow.qml"
+[32m  INFO[0m: Shell ID: "0484bb7be47da51435105cef42c4abd1" Path ID "0484bb7be47da51435105cef42c4abd1"
+[32m  INFO[0m: Saving logs to "/run/user/1000/quickshell/by-id/ahc11qm7xbt/log.qslog"
+[34m DEBUG[97m qml[0m: [Zenith]: Zenith Shell Started
+[32m  INFO[0m: Configuration Loaded
+[$(date +%T)] Zenith Shell Started
+    231748ms [WARN]  We failed to find wayland buffer with id: 10. This should be impossible.
+    231748ms [WARN]  We failed to find wayland buffer with id: 16. This should be impossible.
+[34m DEBUG[97m qml[0m: [Zenith]: Applying wallpaper: /home/zaeem/Pictures/Wallpapers/wallhaven-6dx3mw.jpg
+[34m DEBUG[97m qml[0m: [Zenith]: Stopping and disabling slideshow service.
+[$(date +%T)] Applying wallpaper: /home/zaeem/Pictures/Wallpapers/wallhaven-6dx3mw.jpg
+[$(date +%T)] Stopping and disabling slideshow service.
+Error: "There is an swww-daemon instance already running on this socket!"
+    235335ms [INFO]  BumpPool with: 1 buffers. Size: 16200Kb
+[34m DEBUG[97m qml[0m: [Zenith]: swww img finished
+[$(date +%T)] swww img finished
+    235368ms [INFO]  BumpPool with: 2 buffers. Size: 16200Kb
+    238375ms [WARN]  We failed to find wayland buffer with id: 10. This should be impossible.
+    238375ms [WARN]  We failed to find wayland buffer with id: 16. This should be impossible.
+[08:15:40] Launching Wallpaper Selector...
+[32m  INFO[0m: Launching config: "/home/zaeem/.config/quickshell/windows/WallpaperWindow.qml"
+[32m  INFO[0m: Shell ID: "0484bb7be47da51435105cef42c4abd1" Path ID "0484bb7be47da51435105cef42c4abd1"
+[32m  INFO[0m: Saving logs to "/run/user/1000/quickshell/by-id/0mx114q7xbt/log.qslog"
+[34m DEBUG[97m qml[0m: [Zenith]: Zenith Shell Started
+[32m  INFO[0m: Configuration Loaded
+[$(date +%T)] Zenith Shell Started
+    489710ms [INFO]  Removed socket at "/run/user/1000/wayland-1-swww-daemon..sock"
+    489710ms [INFO]  Goodbye!

@@ -12,7 +12,7 @@ Item {
     property var networks: []
     property var knownNetworks: ({
     })
-    readonly property string secretsPath: "/home/zaeem/.config/quickshell/wifi_secrets.json"
+    readonly property string secretsPath: Quickshell.env("HOME") + "/.config/quickshell/wifi_secrets.json"
     property string _pendingForgetSsid: ""
     property string _pendingConnectSsid: ""
     property string _pendingPassword: ""

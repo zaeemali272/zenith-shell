@@ -56,7 +56,7 @@ MouseArea {
     Process {
         id: resourceExec
 
-        command: ["bash", "-c", "~/.config/quickshell/scripts/resources.sh"]
+        command: ["bash", "-c", "$HOME/.config/quickshell/scripts/resources.sh"]
 
         stdout: StdioCollector {
             onStreamFinished: {
