@@ -31,9 +31,9 @@ Item {
         executor.running = false;
         if (pass !== "")
             // Using positional arguments to handle '$' and spaces safely
-            executor.command = ["sh", "-c", 'iwctl station wlan0 connect "$1" --passphrase "$2"', "sh", ssid, pass];
+            executor.command = ["sh", "-c", 'iwctl station $(ls /sys/class/net | grep ^wl | head -n1) connect "$1" --passphrase "$2"', "sh", ssid, pass];
         else
-            executor.command = ["iwctl", "station", "wlan0", "connect", ssid];
+            executor.command = ["sh", "-c", 'iwctl station $(ls /sys/class/net | grep ^wl | head -n1) connect "$1"', "sh", ssid];
         executor.running = true;
     }
 
@@ -43,7 +43,7 @@ Item {
 
         _pendingForgetSsid = ssid;
         executor.running = false;
-        executor.command = ["sh", "-c", 'iwctl known-networks "$1" forget; iwctl station wlan0 disconnect', "sh", ssid];
+        executor.command = ["sh", "-c", 'iwctl known-networks "$1" forget; iwctl station $(ls /sys/class/net | grep ^wl | head -n1) disconnect', "sh", ssid];
         executor.running = true;
     }
 
@@ -125,7 +125,7 @@ Item {
     Process {
         id: listProcess
 
-        command: ["sh", "-c", "iwctl station wlan0 get-networks | sed 's/\\x1b\\[[0-9;]*m//g' | awk 'NR>4 {print $0}'"]
+        command: ["sh", "-c", "iwctl station $(ls /sys/class/net | grep ^wl | head -n1) get-networks | sed 's/\\x1b\\[[0-9;]*m//g' | awk 'NR>4 {print $0}'"]
 
         stdout: StdioCollector {
             onStreamFinished: {

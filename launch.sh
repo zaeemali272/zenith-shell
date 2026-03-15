@@ -1,7 +1,9 @@
 #!/bin/bash
 
 # Define paths
-SHELL_DIR="$HOME/.config/quickshell"
+# Get the directory where the script is stored
+SHELL_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+export ZENITH_ROOT="$SHELL_DIR"
 LOG_FILE="$SHELL_DIR/zenith.log"
 
 case "$1" in

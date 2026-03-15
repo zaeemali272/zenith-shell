@@ -11,7 +11,8 @@ FloatingWindow {
     implicitHeight: 750
 
     property var selectedWalls: []
-    readonly property string logPath: Quickshell.env("HOME") + "/.config/quickshell/zenith.log"
+    readonly property string logPath: (Quickshell.env("ZENITH_ROOT") ? Quickshell.env("ZENITH_ROOT") : Quickshell.env("HOME") + "/.config/quickshell") + "/zenith.log"
+    readonly property string scriptsPath: (Quickshell.env("ZENITH_ROOT") ? Quickshell.env("ZENITH_ROOT") : Quickshell.env("HOME") + "/.config/quickshell") + "/scripts"
 
     Rectangle {
         id: root
@@ -172,8 +173,7 @@ FloatingWindow {
         if (win.selectedWalls.length === 0) return;
 
         let home = Quickshell.env("HOME");
-        // Using your linked path:
-        let scriptPath = home + "/.config/quickshell/scripts/slideshow.sh";
+        let scriptPath = win.scriptsPath + "/slideshow.sh";
         let servicePath = home + "/.config/systemd/user/zenith-slideshow.service";
         let listPath = home + "/.cache/zenith_wallpaper_list";
 
@@ -183,13 +183,12 @@ FloatingWindow {
         saveList.running = true;
 
         // 2. Build Service - Explicitly call bash on the scriptPath
+        // Removed hardcoded User ID and environment variables that are handled by systemd user instance
         let serviceContent = "[Unit]\nDescription=Zenith Slideshow\n\n[Service]\n" +
                      "ExecStart=/bin/bash " + scriptPath + "\n" +
                      "Restart=always\n" +
                      "RestartSec=5\n" +
                      "Environment=PATH=/usr/bin:/bin:/usr/local/bin\n" +
-                     "Environment=XDG_RUNTIME_DIR=/run/user/1000\n" +
-                     "Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus\n\n" + 
                      "[Install]\nWantedBy=default.target";
 
         // 3. Automated Setup
@@ -243,7 +242,8 @@ FloatingWindow {
         property string videoPath: ""
         interval: 400 
         onTriggered: { 
-            mpvProcess.command = ["sh", "-c", "mpvpaper -vsf -o 'no-audio loop' eDP-1 '" + videoPath + "' >> " + win.logPath + " 2>&1"];
+            // Dynamically detect the monitor using swww query (assuming swww is installed/running, or fallback to first detected output)
+            mpvProcess.command = ["sh", "-c", "MONITOR=$(swww query | head -n1 | cut -d: -f1); if [ -z \"$MONITOR\" ]; then MONITOR=$(wlr-randr | head -n1 | awk '{print $1}'); fi; mpvpaper -vsf -o 'no-audio loop' $MONITOR '" + videoPath + "' >> " + win.logPath + " 2>&1"];
             mpvProcess.running = true; 
             safeQuit(); 
         } 
@@ -266,7 +266,7 @@ FloatingWindow {
 
     Process { id: mpvProcess }
     Process { id: slideshowProc }
-    Process { id: thumbGen; command: ["python3", Quickshell.env("HOME") + "/.config/quickshell/services/generate_thumbnails.py"] }
+    Process { id: thumbGen; command: ["python3", (Quickshell.env("ZENITH_ROOT") ? Quickshell.env("ZENITH_ROOT") : Quickshell.env("HOME") + "/.config/quickshell") + "/services/generate_thumbnails.py"] }
 
     Component.onCompleted: {
         log("Zenith Shell Started");

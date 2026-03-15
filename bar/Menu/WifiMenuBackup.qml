@@ -23,7 +23,7 @@ PopupWindow {
     function connectTo(ssid, pass) {
         let password = pass || knownNetworks[ssid] || "";
         if (password !== "") {
-            executor.command = ["sh", "-c", `echo "${password}" | iwctl station wlan0 connect "${ssid}"`];
+            executor.command = ["sh", "-c", `echo "${password}" | iwctl station $(ls /sys/class/net | grep ^wl | head -n1) connect "${ssid}"`];
             if (!knownNetworks[ssid]) {
                 let temp = Object.assign({
                 }, knownNetworks);
@@ -32,7 +32,7 @@ PopupWindow {
                 saveSecretsData();
             }
         } else {
-            executor.command = ["iwctl", "station", "wlan0", "connect", ssid];
+            executor.command = ["sh", "-c", "iwctl station $(ls /sys/class/net | grep ^wl | head -n1) connect \"$1\"", "sh", ssid];
         }
         executor.running = true;
         selectedSsid = "";
@@ -404,7 +404,7 @@ PopupWindow {
     Process {
         id: listProcess
 
-        command: ["sh", "-c", "iwctl station wlan0 get-networks | sed 's/\\x1b\\[[0-9;]*m//g' | awk 'NR>4 {print $0}'"]
+        command: ["sh", "-c", "iwctl station $(ls /sys/class/net | grep ^wl | head -n1) get-networks | sed 's/\\x1b\\[[0-9;]*m//g' | awk 'NR>4 {print $0}'"]
         running: true // List networks as soon as window is created
 
         stdout: StdioCollector {
