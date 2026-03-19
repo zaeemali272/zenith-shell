@@ -753,3 +753,43 @@ Error: "There is an swww-daemon instance already running on this socket!"
 [$(date +%T)] Zenith Shell Started
     489710ms [INFO]  Removed socket at "/run/user/1000/wayland-1-swww-daemon..sock"
     489710ms [INFO]  Goodbye!
+[17:52:00] Launching Wallpaper Selector...
+[32m  INFO[0m: Launching config: "/home/zaeem/.config/quickshell/windows/WallpaperWindow.qml"
+[32m  INFO[0m: Shell ID: "0484bb7be47da51435105cef42c4abd1" Path ID "0484bb7be47da51435105cef42c4abd1"
+[32m  INFO[0m: Saving logs to "/run/user/1000/quickshell/by-id/rtz21oqn1ct/log.qslog"
+[34m DEBUG[97m qml[0m: [Zenith]: Zenith Shell Started
+[32m  INFO[0m: Configuration Loaded
+[$(date +%T)] Zenith Shell Started
+[33m  WARN[97m scene[0m: QML Image at @WallpaperWindow.qml[70:33]: Cannot open: file:///home/zaeem/.cache/wallpaper_thumbs/2160.png.png
+[33m  WARN[97m scene[0m: QML Image at @WallpaperWindow.qml[70:33]: Cannot open: file:///home/zaeem/.cache/wallpaper_thumbs/f1.png.png
+[33m  WARN[97m scene[0m: QML Image at @WallpaperWindow.qml[70:33]: Cannot open: file:///home/zaeem/.cache/wallpaper_thumbs/ferrr.jpg.png
+[33m  WARN[97m scene[0m: QML Image at @WallpaperWindow.qml[70:33]: Cannot open: file:///home/zaeem/.cache/wallpaper_thumbs/loginScr.jpg.png
+[33m  WARN[97m scene[0m: QML Image at @WallpaperWindow.qml[70:33]: Cannot open: file:///home/zaeem/.cache/wallpaper_thumbs/meow.jpg.png
+[33m  WARN[97m scene[0m: QML Image at @WallpaperWindow.qml[70:33]: Cannot open: file:///home/zaeem/.cache/wallpaper_thumbs/rolls-royce-spectre-3840x2160-22749.jpg.png
+[33m  WARN[97m scene[0m: QML Image at @WallpaperWindow.qml[70:33]: Cannot open: file:///home/zaeem/.cache/wallpaper_thumbs/wallhaven-1qq7d9.png.png
+[33m  WARN[97m scene[0m: QML Image at @WallpaperWindow.qml[70:33]: Cannot open: file:///home/zaeem/.cache/wallpaper_thumbs/wallhaven-3koy5y.jpg.png
+[33m  WARN[97m scene[0m: QML Image at @WallpaperWindow.qml[70:33]: Cannot open: file:///home/zaeem/.cache/wallpaper_thumbs/wallhaven-42pq7m.jpg.png
+[33m  WARN[97m scene[0m: QML Image at @WallpaperWindow.qml[70:33]: Cannot open: file:///home/zaeem/.cache/wallpaper_thumbs/wallhaven-43lej9.png.png
+[33m  WARN[97m scene[0m: QML Image at @WallpaperWindow.qml[70:33]: Cannot open: file:///home/zaeem/.cache/wallpaper_thumbs/wallhaven-451mv7.jpg.png
+[33m  WARN[97m scene[0m: QML Image at @WallpaperWindow.qml[70:33]: Cannot open: file:///home/zaeem/.cache/wallpaper_thumbs/wallhaven-4dp2g4.jpg.png
+[33m  WARN[97m scene[0m: QML Image at @WallpaperWindow.qml[70:33]: Cannot open: file:///home/zaeem/.cache/wallpaper_thumbs/wallhaven-5yypm9.jpg.png
+[33m  WARN[97m scene[0m: QML Image at @WallpaperWindow.qml[70:33]: Cannot open: file:///home/zaeem/.cache/wallpaper_thumbs/wallhaven-6dx3mw.jpg.png
+[33m  WARN[97m scene[0m: QML Image at @WallpaperWindow.qml[70:33]: Cannot open: file:///home/zaeem/.cache/wallpaper_thumbs/wallhaven-6lqqvx.jpg.png
+[33m  WARN[97m scene[0m: QML Image at @WallpaperWindow.qml[70:33]: Cannot open: file:///home/zaeem/.cache/wallpaper_thumbs/wallhaven-6lqwyq.jpg.png
+[33m  WARN[97m scene[0m: QML Image at @WallpaperWindow.qml[70:33]: Cannot open: file:///home/zaeem/.cache/wallpaper_thumbs/wallhaven-7jggko.jpg.png
+[33m  WARN[97m scene[0m: QML Image at @WallpaperWindow.qml[70:33]: Cannot open: file:///home/zaeem/.cache/wallpaper_thumbs/wallhaven-d86673.jpg.png
+[33m  WARN[97m scene[0m: QML Image at @WallpaperWindow.qml[70:33]: Cannot open: file:///home/zaeem/.cache/wallpaper_thumbs/wallhaven-gw8663.jpg.png
+[33m  WARN[97m scene[0m: QML Image at @WallpaperWindow.qml[70:33]: Cannot open: file:///home/zaeem/.cache/wallpaper_thumbs/wallhaven-k8zx2q.jpg.png
+[33m  WARN[97m scene[0m: QML Image at @WallpaperWindow.qml[70:33]: Cannot open: file:///home/zaeem/.cache/wallpaper_thumbs/wallhaven-lym7pl.jpg.png
+[33m  WARN[97m scene[0m: QML Image at @WallpaperWindow.qml[70:33]: Cannot open: file:///home/zaeem/.cache/wallpaper_thumbs/wallhaven-lymrwr.jpg.png
+[33m  WARN[97m scene[0m: QML Image at @WallpaperWindow.qml[70:33]: Cannot open: file:///home/zaeem/.cache/wallpaper_thumbs/wallhaven-o5pp15.png.png
+[33m  WARN[97m scene[0m: QML Image at @WallpaperWindow.qml[70:33]: Cannot open: file:///home/zaeem/.cache/wallpaper_thumbs/wallhaven-po9dlp.jpg.png
+[33m  WARN[97m scene[0m: QML Image at @WallpaperWindow.qml[70:33]: Cannot open: file:///home/zaeem/.cache/wallpaper_thumbs/wallhaven-qrdmol.jpg.png
+[33m  WARN[97m scene[0m: QML Image at @WallpaperWindow.qml[70:33]: Cannot open: file:///home/zaeem/.cache/wallpaper_thumbs/wallhaven-rqr1xw.jpg.png
+[17:52:19] Launching Wallpaper Selector...
+[32m  INFO[0m: Launching config: "/home/zaeem/.config/quickshell/windows/WallpaperWindow.qml"
+[32m  INFO[0m: Shell ID: "0484bb7be47da51435105cef42c4abd1" Path ID "0484bb7be47da51435105cef42c4abd1"
+[32m  INFO[0m: Saving logs to "/run/user/1000/quickshell/by-id/yt1317rn1ct/log.qslog"
+[34m DEBUG[97m qml[0m: [Zenith]: Zenith Shell Started
+[32m  INFO[0m: Configuration Loaded
+[$(date +%T)] Zenith Shell Started

@@ -9,12 +9,11 @@ Rectangle {
 
     property var menuRef
 
-    implicitHeight: Theme.barHeight || 30
-    implicitWidth: trayRow.implicitWidth + 20
+    implicitHeight: Theme.pillHeight
+    implicitWidth: trayRow.implicitWidth + (Theme.pillPadding * 2)
     color: Theme.pillColor
     radius: Theme.pillRadius
-    Layout.fillHeight: true
-    Layout.preferredWidth: implicitWidth
+    Layout.alignment: Qt.AlignVCenter
 
     RowLayout {
         id: trayRow
@@ -25,20 +24,17 @@ Rectangle {
         Repeater {
             model: SystemTray.items
 
-            // Do NOT put any logic here. Just pass modelData to the property.
             delegate: TrayItem {
                 item: modelData
                 menuRef: trayContainer.menuRef
             }
-
         }
 
         Text {
             text: "!"
             visible: SystemTray.items.length === 0
             color: "white"
+            font.pixelSize: Theme.fontSize
         }
-
     }
-
 }

@@ -65,6 +65,8 @@ PanelWindow {
         // --- LEFT SIDE ---
         // Just anchor the module directly. No need for a container width loop.
         Left {
+            id: leftSide
+
             anchors.left: parent.left
             anchors.leftMargin: Theme.barMarginLeft
             anchors.verticalCenter: parent.verticalCenter
@@ -72,7 +74,26 @@ PanelWindow {
 
         // --- PERFECT CENTER ---
         Center {
-            anchors.centerIn: parent
+            id: centerSide
+
+            anchors.verticalCenter: parent.verticalCenter
+            // --- SAFE DYNAMIC WIDTH ---
+            // We add a Math.max(100, ...) so it never shrinks below 100px
+            width: {
+                let availableSpace = rightLayout.x - (leftSide.x + leftSide.width) - (Theme.pillGap * 2);
+                return Math.max(100, Math.min(implicitWidth, availableSpace));
+            }
+            clip: true // Keeps the text from bleeding into other icons if it's too long
+            x: {
+                let preferredX = (parent.width - width) / 2;
+                let leftBound = leftSide.x + leftSide.width + Theme.pillGap;
+                let rightBound = rightLayout.x - width - Theme.pillGap;
+                // If the bar is still loading (rightLayout.x is 0), just center it normally
+                if (rightLayout.x <= 0)
+                    return preferredX;
+
+                return Math.max(leftBound, Math.min(preferredX, rightBound));
+            }
             controlCenterMenuRef: bar.controlCenterMenuRef
         }
 
@@ -97,6 +118,12 @@ PanelWindow {
                 menuRef: wifiLoader
             }
 
+            PowerProfile {
+                id: powerProfileWidget
+
+                menuRef: powerProfilePopup
+            }
+
             Resources {
             }
 
@@ -108,6 +135,7 @@ PanelWindow {
 
             Battery {
                 id: batteryWidget
+
                 menuRef: bluetoothLoader // Pass the loader reference
             }
 
@@ -123,8 +151,12 @@ PanelWindow {
         active: wifiLoader.active || bluetoothLoader.active
         windows: {
             let winList = [bar.QsWindow.window];
-            if (wifiLoader.item) winList.push(wifiLoader.item.QsWindow.window);
-            if (bluetoothLoader.item) winList.push(bluetoothLoader.item.QsWindow.window);
+            if (wifiLoader.item)
+                winList.push(wifiLoader.item.QsWindow.window);
+
+            if (bluetoothLoader.item)
+                winList.push(bluetoothLoader.item.QsWindow.window);
+
             return winList;
         }
     }
@@ -141,16 +173,24 @@ PanelWindow {
 
     Loader {
         id: bluetoothLoader
+
         active: false
         source: "Menu/BluetoothMenu.qml"
         onLoaded: {
             // Position it relative to the battery widget
-            item.anchorItem = batteryWidget; 
+            item.anchorItem = batteryWidget;
         }
     }
 
     TrayMenu {
         id: trayPopup
+    }
+
+    PowerProfilePopup {
+        id: powerProfilePopup
+
+        visible: false
+        anchor.window: bar
     }
 
     VolumeMenu {
