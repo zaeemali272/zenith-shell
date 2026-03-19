@@ -7,12 +7,13 @@ import "bar/Menu/components"
 import "services/"
 
 Scope {
-    // This forces the notification service to initialize and start listening
-    readonly property var _auth: BatteryNotify
+    // We need to reference both the Battery and the Notification services
+    // to ensure they start listening for system events.
+    readonly property var _battery: BatteryNotify
+    readonly property var _notifications: NotificationService // Add this!
 
     Bar {
         id: bar
-
         controlCenterMenuRef: controlCenter
     }
 
@@ -27,5 +28,4 @@ Scope {
     OsdPopup {
         id: osdPopup
     }
-
 }

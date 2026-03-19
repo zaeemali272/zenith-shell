@@ -1,3 +1,4 @@
+import ".."
 import QtQuick
 import Quickshell.Io
 import Quickshell.Services.Notifications
@@ -58,13 +59,24 @@ Item {
     }
 
     NotificationServer {
+        // Using corrected icon path
+
         id: server
 
-        onNotification: (notif) => {
-            // Using corrected icon path
+        function getSafeHint(notif, key) {
+            let h = notif.hints[key];
+            if (!h)
+                return "";
 
-            let syncHint = getSafeHint("x-canonical-private-synchronous");
-            let category = getSafeHint("category") || notif.category || "";
+            if (typeof h === "object")
+                return h.string || (h.value !== undefined ? h.value.toString() : "");
+
+            return h.toString();
+        }
+
+        onNotification: (notif) => {
+            let syncHint = getSafeHint(notif, "x-canonical-private-synchronous");
+            let category = getSafeHint(notif, "category") || notif.category || "";
             // --- OSD DETECTION ---
             if (syncHint === "volume" || syncHint === "brightness" || category === "volume" || category === "brightness") {
                 let type = (syncHint === "volume" || category === "volume") ? "volume" : "brightness";
@@ -87,13 +99,14 @@ Item {
             root.lastNotifKey = currentKey;
             duplicateResetTimer.restart();
             // --- ICON PATH CORRECTION ---
-            let rawIcon = notif.appIcon || getSafeHint("image-path") || getSafeHint("image_path") || "";
+            let rawIcon = notif.appIcon || getSafeHint(notif, "image-path") || getSafeHint(notif, "image_path") || "";
             let finalIcon = "";
             if (rawIcon !== "") {
+                // This allows QML to find themed icons like "kdeconnect" or "firefox"
+
                 if (rawIcon.startsWith("/") || rawIcon.startsWith("file://"))
                     finalIcon = rawIcon.startsWith("file://") ? rawIcon : "file://" + rawIcon;
                 else
-                    // This allows QML to find themed icons like "kdeconnect" or "firefox"
                     finalIcon = "image://icon/" + rawIcon;
             }
             // --- STANDARD NOTIFICATIONS ---
@@ -108,18 +121,6 @@ Item {
             historyModel.insert(0, notifData);
             root.notificationReceived(notifData);
         }
-
-        function getSafeHint(key) {
-            let h = notif.hints[key];
-            if (!h)
-                return "";
-
-            if (typeof h === "object")
-                return h.string || (h.value !== undefined ? h.value.toString() : "");
-
-            return h.toString();
-        }
-
     }
 
 }

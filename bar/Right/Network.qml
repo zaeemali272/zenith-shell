@@ -75,6 +75,9 @@ Item {
 
             Text {
                 text: airplaneMode ? "Airplane Mode" : (mainMouse.containsMouse ? (wifiConnected ? wifiSSID : "Disconnected") : formatSpeed(showUpload ? upSpeed : downSpeed))
+                horizontalAlignment: Text.AlignHCenter
+                Layout.preferredWidth: mainMouse.containsMouse ? -1 : 55 // Fixed 80px for speed, auto for SSID
+                Layout.fillWidth: mainMouse.containsMouse // Let it grow only when showing SSID
                 font.pixelSize: Theme.fontSize
                 color: airplaneMode ? Theme.backgroundColor : Theme.activeTextColor
                 font.bold: airplaneMode
@@ -117,9 +120,9 @@ Item {
                         const rx = parseFloat(parts[1]);
                         const tx = parseFloat(parts[2]);
                         if (rxPrev > 0) {
-                            // Note: Speed is now calculated over the 3s interval
-                            downSpeed = Math.max(0, Math.floor((rx - rxPrev) / 1024));
-                            upSpeed = Math.max(0, Math.floor((tx - txPrev) / 1024));
+                            // FIXED CALCULATION: Divide by 3 to get average KB per second
+                            downSpeed = Math.max(0, Math.floor(((rx - rxPrev) / 1024) / 3));
+                            upSpeed = Math.max(0, Math.floor(((tx - txPrev) / 1024) / 3));
                         }
                         rxPrev = rx;
                         txPrev = tx;
