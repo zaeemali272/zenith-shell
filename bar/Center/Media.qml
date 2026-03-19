@@ -2,6 +2,7 @@ import ".."
 import "../.."
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
 import Quickshell
 import Quickshell.Services.Mpris
 
@@ -21,7 +22,7 @@ Rectangle {
     property MprisPlayer trackedPlayer: null
     property var activeTrack: { title: "Nothing playing"; artist: ""; artUrl: "" }
 
-    width: mediaText.implicitWidth + playPauseIcon.implicitWidth + 26
+    implicitWidth: contentLayout.implicitWidth + (Theme.pillPadding * 2)
 
     signal trackChanged()
 
@@ -36,9 +37,21 @@ Rectangle {
             }
         }
 
-        mediaText.text = activeTrack.artist && activeTrack.artist !== ""
+        let displayTrack = activeTrack.artist && activeTrack.artist !== ""
             ? activeTrack.title + " | " + activeTrack.artist
             : activeTrack.title
+
+        if (displayTrack.length > 85) {
+            let truncated = displayTrack.substring(0, 82);
+            let lastSpace = truncated.lastIndexOf(" ");
+            if (lastSpace > 50) { // Only truncate at word boundary if it's not too short
+                displayTrack = truncated.substring(0, lastSpace) + "...";
+            } else {
+                displayTrack = truncated + "...";
+            }
+        }
+
+        mediaText.text = displayTrack
 
         mediaText.color = trackedPlayer?.isPlaying ? "#fab387" : "#7c6f64"
         playPauseIcon.text = trackedPlayer?.isPlaying ? "" : ""
@@ -96,30 +109,28 @@ Rectangle {
         function onPlaybackStateChanged() { mediaWidget.updateTrack() }
     }
 
-    // --- Play/pause icon ---
-    Text {
-        id: playPauseIcon
-        anchors.verticalCenter: parent.verticalCenter
-        anchors.left: parent.left
-        anchors.leftMargin: 10
-        font.pixelSize: Theme.fontSize
-        text: ""
-        color: "#fab387"
-    }
+    RowLayout {
+        id: contentLayout
+        anchors.centerIn: parent
+        spacing: Theme.pillGap
 
-    // --- Track info text ---
-    Text {
-        id: mediaText
-        anchors.verticalCenter: parent.verticalCenter
-        anchors.left: playPauseIcon.right
-        anchors.leftMargin: 5
+        Text {
+            id: playPauseIcon
+            Layout.alignment: Qt.AlignVCenter
+            font.family: Theme.iconFont
+            font.pixelSize: Theme.iconSize
+            text: ""
+            color: "#fab387"
+        }
 
-        font.pixelSize: Theme.fontSize
-        elide: Text.ElideRight
-        horizontalAlignment: Text.AlignLeft
-        verticalAlignment: Text.AlignVCenter
-        text: "Nothing playing"
-        color: "#7c6f64"
+        Text {
+            id: mediaText
+            Layout.alignment: Qt.AlignVCenter
+            font.pixelSize: Theme.fontSize
+            elide: Text.ElideRight
+            text: "Nothing playing"
+            color: "#7c6f64"
+        }
     }
 
     // --- Hover & click to toggle play/pause ---
