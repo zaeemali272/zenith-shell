@@ -14,13 +14,17 @@ MouseArea {
 
     hoverEnabled: true
     implicitHeight: Theme.pillHeight
-    implicitWidth: pill.implicitWidth
+    // MouseArea width follows the animated pill width
+    implicitWidth: pill.width
 
     Pill {
         id: pill
 
         implicitHeight: Theme.pillHeight
-        implicitWidth: content.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
+        // Calculate the target width based on layout contents
+        width: content.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
+        // Essential to hide text while the pill is shrinking/expanding
+        clip: true
 
         RowLayout {
             id: content
@@ -37,7 +41,7 @@ MouseArea {
             ResourceItem {
                 icon: "|  "
                 value: root.mem
-                showAbove: 50
+                showAbove: 60
                 color: Theme.memColor
             }
 
@@ -45,8 +49,17 @@ MouseArea {
                 icon: "|  "
                 value: root.temp
                 suffix: "°C"
-                showAbove: 70
+                showAbove: 85
                 color: Theme.tempColor
+            }
+
+        }
+
+        // --- SMOOTH PILL EXPANSION ---
+        Behavior on width {
+            NumberAnimation {
+                duration: 400
+                easing.type: Easing.OutExpo
             }
 
         }
@@ -90,10 +103,14 @@ MouseArea {
         property string suffix: "%"
         property color color
         property int showAbove: -1
-        property bool active: showAbove < 0 || value > showAbove
+        // Logic check
+        readonly property bool active: showAbove < 0 || value > showAbove
 
         spacing: Theme.pillGap
-        visible: active // ← ACTUALLY remove from layout
+        // Handling layout exclusion and visibility
+        visible: active
+        Layout.preferredWidth: active ? -1 : 0
+        opacity: active ? 1 : 0
 
         Text {
             text: icon
@@ -104,10 +121,18 @@ MouseArea {
         }
 
         Text {
-            text: value + suffix
+            text: value.toString().padStart(2, '0') + suffix
             color: parent.color
             font.pixelSize: Theme.fontSize
             Layout.alignment: Qt.AlignVCenter
+        }
+
+        // Smoothly fade text in/out
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 300
+            }
+
         }
 
     }
