@@ -21,8 +21,8 @@ WALL_THUMB_DIR = os.path.expanduser("~/.cache/wallpaper_thumbs")
 ANIM_THUMB_DIR = os.path.expanduser("~/.cache/animation_thumbs")
 
 # Thumbnail target dimensions
-THUMB_WIDTH = 160
-THUMB_HEIGHT = 90
+THUMB_WIDTH = 320
+THUMB_HEIGHT = 180
 
 # Ensure cache dirs exist
 os.makedirs(WALL_THUMB_DIR, exist_ok=True)
