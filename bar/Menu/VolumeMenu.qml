@@ -130,11 +130,51 @@ PopupWindow {
                             muteProc.running = true;
                         }
                     }
+                }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                height: 1
+                color: "#333"
+                visible: VolumeService.appsModel.count > 0
+            }
+
+            Text {
+                visible: VolumeService.appsModel.count > 0
+                text: "Apps"
+                color: Theme.fontColor
+                font.bold: true
+                font.pixelSize: 14
+            }
+
+            Repeater {
+                model: VolumeService.appsModel
+
+                delegate: VolumeSlider {
+                    required property string name
+                    required property int volume
+                    required property int id
+                    required property string icon
+
+                    label: name
+                    // Map generic icon if needed, or use model's icon
+                    icon: icon
+                    value: volume
+                    color: Theme.fontColor
+                    Layout.fillWidth: true
+                    onChange: (v) => {
+                        setAppVol.command = ["pactl", "set-sink-input-volume", id, v + "%"];
+                        setAppVol.running = true;
+                    }
+
+                    Process {
+                        id: setAppVol
+                    }
 
                 }
 
             }
-
         }
 
     }

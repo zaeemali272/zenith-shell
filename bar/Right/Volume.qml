@@ -48,7 +48,7 @@ Item {
 
             Text {
                 visible: volumeRoot.micActive
-                text: "\uf130" // FontAwesome microphone icon or use Theme.micIcon
+                text: VolumeService.micMuted ? "\uf131" : "\uf130"
                 font.family: Theme.iconFont
                 font.pixelSize: Theme.iconSize
                 color: Theme.accentColor // Make it stand out (e.g., Red or Green)
