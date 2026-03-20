@@ -11,6 +11,7 @@ FloatingWindow {
     implicitHeight: 750
 
     property var selectedWalls: []
+    property int refreshTrigger: 0
     readonly property string logPath: (Quickshell.env("ZENITH_ROOT") ? Quickshell.env("ZENITH_ROOT") : Quickshell.env("HOME") + "/.config/quickshell") + "/zenith.log"
     readonly property string scriptsPath: (Quickshell.env("ZENITH_ROOT") ? Quickshell.env("ZENITH_ROOT") : Quickshell.env("HOME") + "/.config/quickshell") + "/scripts"
 
@@ -22,7 +23,9 @@ FloatingWindow {
         Keys.onPressed: (event) => { if (event.key === Qt.Key_Escape) safeQuit(); }
 
         ColumnLayout {
+            id: mainContent
             anchors.fill: parent; anchors.margins: 25; spacing: 20
+            visible: !thumbGen.running
 
             // --- Tabs ---
             Row {
@@ -71,6 +74,12 @@ FloatingWindow {
                                     anchors.fill: parent; anchors.margins: 4
                                     source: "file://" + Quickshell.env("HOME") + "/.cache/wallpaper_thumbs/" + fileName + ".png"
                                     fillMode: Image.PreserveAspectCrop; cache: false 
+                                    property int trigger: win.refreshTrigger
+                                    onTriggerChanged: {
+                                        let old = source;
+                                        source = "";
+                                        source = old;
+                                    }
                                 }
                                 MouseArea { 
                                     anchors.fill: parent
@@ -103,6 +112,12 @@ FloatingWindow {
                                     anchors.fill: parent; anchors.margins: 4
                                     source: "file://" + Quickshell.env("HOME") + "/.cache/animation_thumbs/" + fileName + ".png"
                                     fillMode: Image.PreserveAspectCrop
+                                    property int trigger: win.refreshTrigger
+                                    onTriggerChanged: {
+                                        let old = source;
+                                        source = "";
+                                        source = old;
+                                    }
                                 }
                                 MouseArea { anchors.fill: parent; onClicked: applyVideo(filePath) }
                             }
@@ -131,6 +146,37 @@ FloatingWindow {
                     Text { anchors.centerIn: parent; text: "Stop Slideshow"; color: "#11111b"; font.bold: true }
                     MouseArea { anchors.fill: parent; onClicked: stopSlideshow() }
                 }
+            }
+        }
+
+        // --- Loading Screen ---
+        ColumnLayout {
+            anchors.centerIn: parent
+            visible: thumbGen.running
+            spacing: 20
+
+            Text {
+                Layout.alignment: Qt.AlignHCenter
+                text: "\uf110"
+                font.family: "MesloLGS NF"
+                font.pixelSize: 48
+                color: "#89b4fa"
+
+                RotationAnimator on rotation {
+                    from: 0
+                    to: 360
+                    duration: 1000
+                    loops: Animation.Infinite
+                    running: thumbGen.running
+                }
+            }
+
+            Text {
+                Layout.alignment: Qt.AlignHCenter
+                text: "Generating Thumbnails..."
+                font.pixelSize: 20
+                font.bold: true
+                color: "#cdd6f4"
             }
         }
     }
@@ -266,7 +312,16 @@ FloatingWindow {
 
     Process { id: mpvProcess }
     Process { id: slideshowProc }
-    Process { id: thumbGen; command: ["python3", (Quickshell.env("ZENITH_ROOT") ? Quickshell.env("ZENITH_ROOT") : Quickshell.env("HOME") + "/.config/quickshell") + "/services/generate_thumbnails.py"] }
+    Process { 
+        id: thumbGen
+        command: ["python3", (Quickshell.env("ZENITH_ROOT") ? Quickshell.env("ZENITH_ROOT") : Quickshell.env("HOME") + "/.config/quickshell") + "/services/generate_thumbnails.py"]
+        onRunningChanged: {
+            if (!running) {
+                console.log("[WallpaperWindow]: Thumbnail generation finished.");
+                win.refreshTrigger++;
+            }
+        }
+    }
 
     Component.onCompleted: {
         log("Zenith Shell Started");
