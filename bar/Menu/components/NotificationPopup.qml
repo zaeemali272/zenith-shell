@@ -11,6 +11,7 @@ PopupWindow {
     anchor.edges: Edges.Top | Edges.Right
     anchor.rect.x: 4
     anchor.rect.y: bar.height + (osdPopup.visible ? 100 : 10)
+    // Width and height logic
     implicitWidth: 350
     implicitHeight: mainColumn.implicitHeight
     visible: activeNotifications.count > 0
@@ -25,19 +26,25 @@ PopupWindow {
 
         width: 350
         spacing: 10
+        // FIX: Ensure notifications are centered horizontally in the popup window
+        anchors.horizontalCenter: parent.horizontalCenter
 
         Repeater {
+            // --- FALLBACK LOGIC ---
+            // Inside your NotificationItem.qml, the Image component should have:
+            // onStatusChanged: { if (status === Image.Error) source = model.fallbackIcon }
+
             model: activeNotifications
 
             delegate: NotificationItem {
                 notification: model
                 Layout.fillWidth: true
                 Component.onCompleted: {
-                    let id = model.id;
+                    let currentId = model.id;
                     const t = Qt.createQmlObject("import QtQuick 2.15; Timer { interval: 5000; running: true }", this);
                     t.triggered.connect(() => {
                         for (let i = 0; i < activeNotifications.count; i++) {
-                            if (activeNotifications.get(i).id === id) {
+                            if (activeNotifications.get(i).id === currentId) {
                                 activeNotifications.remove(i);
                                 break;
                             }

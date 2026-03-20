@@ -8,11 +8,23 @@ Item {
     id: root
 
     property alias notifications: historyModel
-    // Added property to track the last notification content
     property string lastNotifKey: ""
 
     signal notificationReceived(var notifData)
     signal osdReceived(string type, real value)
+
+    // Helper to format icon names into various possible system paths
+    function getHardcodedPath(iconName) {
+        if (!iconName || iconName.startsWith("/") || iconName.startsWith("image://"))
+            return "";
+
+        // List of base paths to check if themed lookup fails
+        // We prioritize OneUI since you know they are there
+        const bases = ["/usr/share/icons/OneUI/24/actions/", "/usr/share/icons/OneUI/symbolic/actions/", "/usr/share/icons/Adwaita/symbolic/actions/"];
+        // This is a bit "hacky" but works when the theme index is broken
+        // Note: QML Image can take raw paths.
+        return iconName;
+    }
 
     function updateOSDValue(type, value) {
         let percent = Math.round(value * 100);
@@ -37,12 +49,11 @@ Item {
         for (let i = 0; i < historyModel.count; i++) {
             if (historyModel.get(i).id === notifId) {
                 historyModel.remove(i);
-                break; // Stop once we found and removed it
+                break;
             }
         }
     }
 
-    // Timer to reset the duplicate guard so you can receive the same notif later
     Timer {
         id: duplicateResetTimer
 
@@ -59,8 +70,6 @@ Item {
     }
 
     NotificationServer {
-        // Using corrected icon path
-
         id: server
 
         function getSafeHint(notif, key) {
@@ -75,9 +84,10 @@ Item {
         }
 
         onNotification: (notif) => {
+            // Secondary fallback if Priority 3/4 fails (Checkerboard prevention)
+
             let syncHint = getSafeHint(notif, "x-canonical-private-synchronous");
             let category = getSafeHint(notif, "category") || notif.category || "";
-            // --- OSD DETECTION ---
             if (syncHint === "volume" || syncHint === "brightness" || category === "volume" || category === "brightness") {
                 let type = (syncHint === "volume" || category === "volume") ? "volume" : "brightness";
                 let text = (notif.summary || "") + " " + (notif.body || "");
@@ -90,7 +100,6 @@ Item {
                     return ;
                 }
             }
-            // --- DUPLICATE PREVENTION ---
             let currentKey = notif.summary + "|" + notif.body + "|" + notif.appName;
             if (currentKey === root.lastNotifKey) {
                 notif.dismiss();
@@ -98,23 +107,31 @@ Item {
             }
             root.lastNotifKey = currentKey;
             duplicateResetTimer.restart();
-            // --- ICON PATH CORRECTION ---
-            let rawIcon = notif.appIcon || getSafeHint(notif, "image-path") || getSafeHint(notif, "image_path") || "";
+            // --- IMPROVED ICON LOGIC ---
             let finalIcon = "";
-            if (rawIcon !== "") {
-                // This allows QML to find themed icons like "kdeconnect" or "firefox"
-
+            let imageHint = notif.hints["image-data"] || notif.hints["image_data"] || notif.hints["icon_data"];
+            let rawIcon = notif.appIcon || getSafeHint(notif, "image-path") || getSafeHint(notif, "image_path") || "";
+            if (imageHint) {
+                // Priority 1: Raw Data (KDE Connect User Photos)
+                finalIcon = "image://notification/" + notif.id;
+            } else if (rawIcon !== "") {
                 if (rawIcon.startsWith("/") || rawIcon.startsWith("file://"))
+                    // Priority 2: Full Paths
                     finalIcon = rawIcon.startsWith("file://") ? rawIcon : "file://" + rawIcon;
                 else
+                    // Priority 3: Themed Icon
                     finalIcon = "image://icon/" + rawIcon;
+            } else {
+                // Priority 4: App Name Fallback
+                let fallback = (notif.appName || "dialog-information").toLowerCase().replace(/\s+/g, '-');
+                finalIcon = "image://icon/" + fallback;
             }
-            // --- STANDARD NOTIFICATIONS ---
             let notifData = {
                 "id": Date.now() + Math.random(),
                 "summary": notif.summary || "",
                 "body": notif.body || "",
                 "appIcon": finalIcon,
+                "secondaryIcon": "image://icon/dialog-information-symbolic",
                 "appName": notif.appName || "System",
                 "originalNotif": notif
             };
