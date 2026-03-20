@@ -66,7 +66,7 @@ FloatingWindow {
                                 nameFilters: ["*.jpg", "*.png", "*.jpeg", "*.webp"]
                             }
                             delegate: Rectangle {
-                                width: 245; height: 145; radius: 8; color: "#1e1e2e"
+                                width: 248; height: 152; radius: 8; color: "#1e1e2e"
                                 property bool isSelected: win.selectedWalls.indexOf(filePath) !== -1
                                 border.color: isSelected && tabRow.activeIndex === 1 ? "#a6e3a1" : "transparent"
                                 border.width: 3
@@ -107,7 +107,7 @@ FloatingWindow {
                                 nameFilters: ["*.mp4", "*.mkv", "*.webm"]
                             }
                             delegate: Rectangle {
-                                width: 245; height: 145; radius: 8; color: "#1e1e2e"
+                                width: 248; height: 152; radius: 8; color: "#1e1e2e"
                                 Image {
                                     anchors.fill: parent; anchors.margins: 4
                                     source: "file://" + Quickshell.env("HOME") + "/.cache/animation_thumbs/" + fileName + ".png"
@@ -202,7 +202,11 @@ FloatingWindow {
         stopSlideshow(); // Stop any active slideshow loops
         swwwDaemon.running = true; 
         
-        wallDelay.wallPath = path.replace("file://", "");
+        let cleanPath = path.replace("file://", "");
+        saveCurrentWall.path = cleanPath;
+        saveCurrentWall.running = true;
+
+        wallDelay.wallPath = cleanPath;
         wallDelay.start();
     }
 
@@ -312,6 +316,11 @@ FloatingWindow {
 
     Process { id: mpvProcess }
     Process { id: slideshowProc }
+    Process {
+        id: saveCurrentWall
+        property string path: ""
+        command: ["sh", "-c", "mkdir -p " + Quickshell.env("HOME") + "/.config && echo '" + path + "' > " + Quickshell.env("HOME") + "/.config/current_wallpaper.txt"]
+    }
     Process { 
         id: thumbGen
         command: ["python3", (Quickshell.env("ZENITH_ROOT") ? Quickshell.env("ZENITH_ROOT") : Quickshell.env("HOME") + "/.config/quickshell") + "/services/generate_thumbnails.py"]
