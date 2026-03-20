@@ -1,4 +1,3 @@
-// bar/Right/Battery.qml
 import ".."
 import "../.."
 import "../../services"
@@ -11,12 +10,10 @@ Item {
     id: root
 
     property var menuRef
-    // Service Bindings
     readonly property int batPercent: BatteryService.percentage
     readonly property string batState: BatteryService.status
     readonly property bool acOnline: BatteryService.acOnline
 
-    // Helper functions moved inside root
     function batteryIcon(p, state, ac) {
         const isNotCharging = state.includes("not charging") || state.includes("idle") || state.includes("unknown") || state.includes("pending");
         if (ac && isNotCharging)
@@ -47,26 +44,23 @@ Item {
         return Theme.criticalColor;
     }
 
-    // Width and Height logic to prevent zero-size hitbox
     implicitHeight: Theme.pillHeight
-    implicitWidth: content.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
+    // Track the animated width
+    implicitWidth: pill.width
 
     Pill {
         id: pill
 
-        anchors.fill: parent
+        implicitHeight: Theme.pillHeight
+        // Calculate target width dynamically
+        width: content.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
+        clip: true
         onClicked: {
-            console.log("Battery/BT Pill Clicked");
             if (menuRef) {
-                // Set the anchorItem to THIS widget so the popup knows where to appear
                 if (menuRef.anchorItem !== undefined)
                     menuRef.anchorItem = root;
 
-                // Toggle Logic
-                if (menuRef.active !== undefined)
-                    menuRef.active = !menuRef.active;
-                else
-                    menuRef.visible = !menuRef.visible;
+                menuRef.active = !menuRef.active;
             }
         }
 
@@ -78,7 +72,6 @@ Item {
 
             // Bluetooth Section
             RowLayout {
-                // Only show if the service says we are connected AND we have a valid percentage
                 visible: BluetoothService.connected && BluetoothService.percentage > 0
                 spacing: 4
 
@@ -86,23 +79,27 @@ Item {
                     text: "󰂯"
                     font.family: Theme.iconFont
                     color: Theme.bluetoothColor
+                    Layout.alignment: Qt.AlignVCenter
                 }
 
                 Text {
-                    // Explicitly bind to the singleton property
-                    text: BluetoothService.percentage + "%"
+                    text: BluetoothService.percentage.toString().padStart(2, '0') + "%"
                     color: Theme.bluetoothColor
                     font.pixelSize: Theme.fontSize
+                    // --- STABILITY FIX ---
+                    font.family: "JetBrains Mono"
+                    Layout.preferredWidth: 35
+                    horizontalAlignment: Text.AlignHCenter
                 }
 
             }
 
-            // Separator line
+            // Separator
             Text {
-                // Show separator only if BOTH bluetooth and laptop battery are active
                 visible: (BluetoothService.connected && BluetoothService.percentage > 0) && (batPercent >= 0)
                 text: "|"
                 color: Theme.inactiveTextColor
+                opacity: parent.visible ? 1 : 0
             }
 
             // Laptop Battery Section
@@ -114,14 +111,29 @@ Item {
                     text: root.batteryIcon(batPercent, batState, acOnline)
                     font.family: Theme.iconFont
                     color: root.batteryColor(batPercent, batState, acOnline)
+                    Layout.alignment: Qt.AlignVCenter
                 }
 
                 Text {
-                    text: batPercent + "%"
+                    // Padding to 2 digits (e.g., 05%)
+                    text: batPercent.toString().padStart(2, '0') + "%"
                     color: root.batteryColor(batPercent, batState, acOnline)
                     font.pixelSize: Theme.fontSize
+                    // --- STABILITY FIX ---
+                    font.family: "JetBrains Mono"
+                    Layout.preferredWidth: 35
+                    horizontalAlignment: Text.AlignHCenter
                 }
 
+            }
+
+        }
+
+        // --- SMOOTH EXPANSION ---
+        Behavior on width {
+            NumberAnimation {
+                duration: 400
+                easing.type: Easing.OutExpo
             }
 
         }
