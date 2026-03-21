@@ -7,7 +7,7 @@ Item {
     id: service
 
     readonly property string home: Quickshell.env("HOME")
-    readonly property string projectRoot: Quickshell.env("PWD") // Assuming PWD is the project root, or we can use relative path since it's a singleton in services/
+    readonly property string projectRoot: Qt.resolvedUrl("..").toString().replace("file://", "")
     readonly property string daemonPath: projectRoot + "/scripts/power-profile-daemon.sh"
     readonly property string stateFile: home + "/.cache/power-profile-state"
     
