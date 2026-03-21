@@ -11,7 +11,7 @@ Rectangle {
 
     visible: !!notification
     // Calculate height based on content
-    implicitHeight: layout.implicitHeight + 20
+    implicitHeight: layout.implicitHeight + 24 // Added small extra padding for expansion
     Layout.fillWidth: true
     color: "#121212"
     radius: 12
@@ -19,9 +19,21 @@ Rectangle {
     border.width: 1
     clip: true // Prevents children from leaking outside the rounded corners
 
+    // Add smooth animation for expansion
+    Behavior on implicitHeight {
+        NumberAnimation {
+            duration: 250
+            easing.type: Easing.OutCubic
+        }
+
+    }
+
     MouseArea {
+        id: mainMouseArea
+
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
+        hoverEnabled: true
         onClicked: {
             if (notification && notification.originalNotif) {
                 notification.originalNotif.invokeAction("default");
@@ -37,6 +49,7 @@ Rectangle {
         anchors.fill: parent
         anchors.margins: 12
         spacing: 12
+        Layout.alignment: Qt.AlignTop
 
         // --- APP ICON SECTION ---
         Item {
@@ -54,13 +67,34 @@ Rectangle {
                 asynchronous: true
                 onStatusChanged: {
                     if (status === Image.Error) {
-                        // Check if we already tried the fallback to avoid infinite loops
-                        let rawPath = notification.appIcon.replace("image://icon/", "");
-                        let adwaitaPath = "image://icon/adwaita/" + rawPath;
-                        if (source !== adwaitaPath)
-                            source = adwaitaPath;
-                        else
+                        let iconName = notification.rawIcon || "";
+                        if (iconName === "") {
+                            // If we don't have a raw name, just fallback to generic
                             source = "image://icon/dialog-information";
+                            return;
+                        }
+
+                        // Try OneUI Action path (as requested by user)
+                        let oneUIAction = "file:///usr/share/icons/OneUI/24/actions/" + iconName + ".svg";
+                        if (source.toString() !== oneUIAction) {
+                            source = oneUIAction;
+                            return;
+                        }
+
+                        // Try OneUI Apps path
+                        let oneUIApp = "file:///usr/share/icons/OneUI/24/apps/" + iconName + ".svg";
+                        if (source.toString() !== oneUIApp) {
+                            source = oneUIApp;
+                            return;
+                        }
+
+                        // Try Adwaita fallback
+                        let adwaitaPath = "image://icon/adwaita/" + iconName;
+                        if (source.toString() !== adwaitaPath) {
+                            source = adwaitaPath;
+                        } else {
+                            source = "image://icon/dialog-information";
+                        }
                     }
                 }
             }
@@ -87,7 +121,8 @@ Rectangle {
                 color: "white"
                 font.bold: true
                 font.pixelSize: 13
-                elide: Text.ElideRight
+                elide: mainMouseArea.containsMouse ? Text.ElideNone : Text.ElideRight
+                wrapMode: mainMouseArea.containsMouse ? Text.WordWrap : Text.NoWrap
                 Layout.fillWidth: true
             }
 
@@ -96,8 +131,9 @@ Rectangle {
                 color: "#cad3f5"
                 font.pixelSize: 11
                 wrapMode: Text.WordWrap
-                elide: Text.ElideRight
-                maximumLineCount: 2
+                // Expansion logic
+                elide: mainMouseArea.containsMouse ? Text.ElideNone : Text.ElideRight
+                maximumLineCount: mainMouseArea.containsMouse ? 50 : 2
                 Layout.fillWidth: true
             }
 

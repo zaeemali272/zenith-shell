@@ -38,18 +38,16 @@ Rectangle {
     signal trackChanged()
 
     function updateTrack() {
-        if (!trackedPlayer) {
+        if (!trackedPlayer || !trackedPlayer.isPlaying) {
             activeTrack = { "title": "Nothing playing", "artist": "", "artUrl": "" }
         } else {
-            // FIX: Force cast to String and use a concrete fallback to prevent "blank" states
             activeTrack = {
-                title: String(trackedPlayer.trackTitle || "VLC Media Player"),
+                title: String(trackedPlayer.trackTitle || trackedPlayer.identity || "Unknown Player"),
                 artist: String(trackedPlayer.trackArtist || ""),
                 artUrl: String(trackedPlayer.trackArtUrl || "")
             }
         }
 
-        // FIX: Ensure these are treated as strings to prevent the logic from breaking
         let titleStr = String(activeTrack.title);
         let artistStr = String(activeTrack.artist);
 
@@ -67,7 +65,6 @@ Rectangle {
             }
         }
 
-        // Only update if the text actually changed or needs to show "Nothing playing"
         mediaText.text = displayTrack || "Nothing playing"
         mediaText.color = trackedPlayer?.isPlaying ? "#fab387" : "#7c6f64"
         playPauseIcon.text = trackedPlayer?.isPlaying ? "" : ""
