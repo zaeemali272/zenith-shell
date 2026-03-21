@@ -25,7 +25,10 @@ Item {
         updateExec.running = true;
     }
 
-    Component.onCompleted: checkAvailability.running = true
+    Component.onCompleted: {
+        console.log("DEBUG: PowerProfileService daemonPath =", daemonPath);
+        checkAvailability.running = true;
+    }
 
     Process {
         id: checkAvailability
