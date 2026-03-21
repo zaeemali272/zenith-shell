@@ -51,8 +51,23 @@ MouseArea {
         }
         // If it still fails, show a placeholder instead of a checkerboard
         onStatusChanged: {
-            if (status === Image.Error)
+            if (status === Image.Error) {
+                let iconName = String(root.item ? root.item.icon : "");
+                if (iconName && !iconName.includes("://") && !iconName.startsWith("/")) {
+                    // Try OneUI paths before giving up
+                    let oneUIPath = "file:///usr/share/icons/OneUI/24/actions/" + iconName + ".svg";
+                    if (source.toString() !== oneUIPath) {
+                        source = oneUIPath;
+                        return;
+                    }
+                    let oneUIApp = "file:///usr/share/icons/OneUI/24/apps/" + iconName + ".svg";
+                    if (source.toString() !== oneUIApp) {
+                        source = oneUIApp;
+                        return;
+                    }
+                }
                 console.warn("Failed to load: " + source);
+            }
 
         }
     }

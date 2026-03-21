@@ -57,7 +57,7 @@ Item {
     Timer {
         id: duplicateResetTimer
 
-        interval: 5000
+        interval: 3000
         onTriggered: root.lastNotifKey = ""
     }
 
@@ -70,6 +70,8 @@ Item {
     }
 
     NotificationServer {
+        // Secondary fallback if Priority 3/4 fails (Checkerboard prevention)
+
         id: server
 
         function getSafeHint(notif, key) {
@@ -84,8 +86,6 @@ Item {
         }
 
         onNotification: (notif) => {
-            // Secondary fallback if Priority 3/4 fails (Checkerboard prevention)
-
             let syncHint = getSafeHint(notif, "x-canonical-private-synchronous");
             let category = getSafeHint(notif, "category") || notif.category || "";
             if (syncHint === "volume" || syncHint === "brightness" || category === "volume" || category === "brightness") {
@@ -101,9 +101,14 @@ Item {
                 }
             }
             let currentKey = notif.summary + "|" + notif.body + "|" + notif.appName;
-            if (currentKey === root.lastNotifKey) {
-                notif.dismiss();
-                return ;
+            // Check the entire history for duplicates
+            for (let i = 0; i < historyModel.count; i++) {
+                let item = historyModel.get(i);
+                if (item.summary === notif.summary && item.body === notif.body && item.appName === notif.appName) {
+                    // Duplicate found anywhere in history, discard the new one
+                    notif.dismiss();
+                    return ;
+                }
             }
             root.lastNotifKey = currentKey;
             duplicateResetTimer.restart();
@@ -112,17 +117,16 @@ Item {
             let imageHint = notif.hints["image-data"] || notif.hints["image_data"] || notif.hints["icon_data"];
             let rawIcon = notif.appIcon || getSafeHint(notif, "image-path") || getSafeHint(notif, "image_path") || "";
             if (imageHint) {
-                // Priority 1: Raw Data (KDE Connect User Photos)
                 finalIcon = "image://notification/" + notif.id;
             } else if (rawIcon !== "") {
                 if (rawIcon.startsWith("/") || rawIcon.startsWith("file://"))
-                    // Priority 2: Full Paths
                     finalIcon = rawIcon.startsWith("file://") ? rawIcon : "file://" + rawIcon;
                 else
-                    // Priority 3: Themed Icon
+                    // Try the themed icon first
                     finalIcon = "image://icon/" + rawIcon;
-            } else {
-                // Priority 4: App Name Fallback
+            }
+            // If finalIcon is still empty, or to ensure we have a "safe" string for the model:
+            if (finalIcon === "") {
                 let fallback = (notif.appName || "dialog-information").toLowerCase().replace(/\s+/g, '-');
                 finalIcon = "image://icon/" + fallback;
             }
@@ -131,7 +135,7 @@ Item {
                 "summary": notif.summary || "",
                 "body": notif.body || "",
                 "appIcon": finalIcon,
-                "secondaryIcon": "image://icon/dialog-information-symbolic",
+                "rawIcon": rawIcon,
                 "appName": notif.appName || "System",
                 "originalNotif": notif
             };
