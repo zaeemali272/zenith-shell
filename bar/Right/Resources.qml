@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
+import Quickshell.Wayland
 
 MouseArea {
     id: root
@@ -11,20 +12,36 @@ MouseArea {
     property int cpu: 0
     property int mem: 0
     property int temp: 0
+    property double load: 0.0
+    property int loadPerc: 0
+    property int fs: 0
+    property string cpuModel: ""
+    property string freq: ""
+    property string arch: ""
+    property string kernel: ""
+    property string ip: ""
+    property var coreUsages: []
+    property var coreTemps: []
+
+    Process {
+        id: glancesExec
+        command: ["kitty", "-e", "glances"]
+    }
 
     hoverEnabled: true
     implicitHeight: Theme.pillHeight
-    // MouseArea width follows the animated pill width
     implicitWidth: pill.width
 
     Pill {
         id: pill
 
         implicitHeight: Theme.pillHeight
-        // Calculate the target width based on layout contents
         width: content.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
-        // Essential to hide text while the pill is shrinking/expanding
         clip: true
+        onClicked: {
+            glancesExec.running = false;
+            glancesExec.running = true;
+        }
 
         RowLayout {
             id: content
@@ -55,22 +72,222 @@ MouseArea {
 
         }
 
-        // --- SMOOTH PILL EXPANSION ---
         Behavior on width {
             NumberAnimation {
                 duration: 400
                 easing.type: Easing.OutExpo
             }
+        }
+    }
 
+    // Tooltip Window
+    PopupWindow {
+        id: tooltip
+        visible: root.containsMouse
+
+        anchor.window: root.QsWindow ? root.QsWindow.window : null
+        anchor.rect: root.mapToItem(null, 0, 0, root.width, root.height)
+        // Position BELOW the bar
+        anchor.edges: Edges.Bottom
+        anchor.gravity: Edges.Bottom
+
+        implicitWidth: 450
+        implicitHeight: mainLayout.implicitHeight + 40
+        color: "transparent"
+
+        Rectangle {
+            anchors.fill: parent
+            anchors.topMargin: 5
+            color: "#181825"
+            border.color: "#313244"
+            border.width: 1
+            radius: 8
+
+            ColumnLayout {
+                id: mainLayout
+                anchors.top: parent.top
+                anchors.topMargin: 10
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.margins: 15
+                spacing: 12
+
+                // System Info Header
+                Text {
+                    text: `${root.arch} / Linux ${root.kernel} IP ${root.ip}`
+                    color: "#cdd6f4"
+                    font.family: "JetBrains Mono"
+                    font.pixelSize: 12
+                }
+
+                // CPU Model & Freq
+                RowLayout {
+                    Text {
+                        text: root.cpuModel
+                        color: "#cdd6f4"
+                        font.family: "JetBrains Mono"
+                        font.pixelSize: 12
+                        Layout.fillWidth: true
+                    }
+                    Text {
+                        text: root.freq
+                        color: "#cdd6f4"
+                        font.family: "JetBrains Mono"
+                        font.pixelSize: 12
+                    }
+                }
+
+                // Main Progress Bars
+                ColumnLayout {
+                    spacing: 4
+                    Layout.fillWidth: true
+
+                    TooltipBar {
+                        label: "CPU "
+                        value: root.cpu
+                        color: Theme.cpuColor
+                    }
+                    TooltipBar {
+                        label: "MEM "
+                        value: root.mem
+                        color: Theme.memColor
+                    }
+                    TooltipBar {
+                        label: "LOAD"
+                        value: root.loadPerc
+                        displayValue: root.load.toFixed(1) + "%"
+                        color: Theme.tempColor
+                    }
+                    TooltipBar {
+                        label: "FS  "
+                        value: root.fs
+                        color: "#fab387"
+                    }
+                }
+
+                // Per Core Section
+                ColumnLayout {
+                    spacing: 4
+                    Layout.fillWidth: true
+                    visible: root.coreUsages.length > 0
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        height: 1
+                        color: "#313244"
+                    }
+
+                    Text {
+                        text: "PER CORE USAGE"
+                        color: "#6e738d"
+                        font.family: "JetBrains Mono"
+                        font.pixelSize: 10
+                        font.bold: true
+                    }
+
+                    GridLayout {
+                        columns: 2
+                        columnSpacing: 20
+                        rowSpacing: 4
+                        Layout.fillWidth: true
+
+                        Repeater {
+                            model: root.coreUsages
+                            delegate: TooltipBar {
+                                Layout.fillWidth: true
+                                label: "C" + index.toString().padEnd(2, ' ')
+                                value: modelData
+                                color: value > 80 ? Theme.criticalColor : (value > 50 ? Theme.lowColor : Theme.cpuColor)
+                                barWidth: 10
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        height: 1
+                        color: "#313244"
+                        visible: root.coreTemps.length > 0
+                    }
+
+                    Text {
+                        text: "PER CORE TEMPS"
+                        color: "#6e738d"
+                        font.family: "JetBrains Mono"
+                        font.pixelSize: 10
+                        font.bold: true
+                        visible: root.coreTemps.length > 0
+                    }
+
+                    GridLayout {
+                        columns: 4
+                        columnSpacing: 10
+                        rowSpacing: 4
+                        Layout.fillWidth: true
+                        visible: root.coreTemps.length > 0
+
+                        Repeater {
+                            model: root.coreTemps
+                            delegate: Text {
+                                text: "Core " + index + ": " + modelData + "°C"
+                                color: modelData > 80 ? Theme.criticalColor : (modelData > 60 ? Theme.lowColor : Theme.tempColor)
+                                font.family: "JetBrains Mono"
+                                font.pixelSize: 11
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    component TooltipBar: RowLayout {
+        property string label
+        property int value
+        property string displayValue: value + "%"
+        property color color
+        property int barWidth: 20
+
+        function makeBar(v, width) {
+            let blocks = Math.round(Math.min(v, 100) / (100 / width));
+            let bar = "[";
+            for (let i = 0; i < width; i++) {
+                if (i < blocks) bar += "▪";
+                else bar += " ";
+            }
+            bar += "]";
+            return bar;
         }
 
+        Text {
+            text: label
+            color: "#cdd6f4"
+            font.family: "JetBrains Mono"
+            font.pixelSize: 12
+            Layout.preferredWidth: contentWidth
+        }
+
+        Text {
+            text: makeBar(value, barWidth)
+            color: parent.color
+            font.family: "JetBrains Mono"
+            font.pixelSize: 12
+            Layout.fillWidth: true
+        }
+
+        Text {
+            text: displayValue.padStart(6, ' ')
+            color: parent.color
+            font.family: "JetBrains Mono"
+            font.pixelSize: 12
+            Layout.preferredWidth: contentWidth
+            horizontalAlignment: Text.AlignRight
+        }
     }
 
     Process {
         id: resourceExec
-
         command: ["bash", "-c", "$HOME/.config/quickshell/scripts/resources.sh"]
-
         stdout: StdioCollector {
             onStreamFinished: {
                 try {
@@ -78,12 +295,21 @@ MouseArea {
                     root.cpu = data.cpu ?? 0;
                     root.mem = data.mem ?? 0;
                     root.temp = data.temp ?? 0;
+                    root.load = data.load ?? 0.0;
+                    root.loadPerc = data.load_perc ?? 0;
+                    root.fs = data.fs ?? 0;
+                    root.cpuModel = data.cpu_model ?? "";
+                    root.freq = data.freq ?? "";
+                    root.arch = data.arch ?? "";
+                    root.kernel = data.kernel ?? "";
+                    root.ip = data.ip ?? "";
+                    root.coreUsages = data.core_usages ?? [];
+                    root.coreTemps = data.core_temps ?? [];
                 } catch (e) {
-                    console.warn("Resource parse failed:", text);
+                    // console.warn("Resource parse failed:", text);
                 }
             }
         }
-
     }
 
     Timer {
@@ -103,11 +329,9 @@ MouseArea {
         property string suffix: "%"
         property color color
         property int showAbove: -1
-        // Logic check
         readonly property bool active: showAbove < 0 || value > showAbove
 
         spacing: Theme.pillGap
-        // Handling layout exclusion and visibility
         visible: active
         Layout.preferredWidth: active ? -1 : 0
         opacity: active ? 1 : 0
@@ -127,14 +351,8 @@ MouseArea {
             Layout.alignment: Qt.AlignVCenter
         }
 
-        // Smoothly fade text in/out
         Behavior on opacity {
-            NumberAnimation {
-                duration: 300
-            }
-
+            NumberAnimation { duration: 300 }
         }
-
     }
-
 }

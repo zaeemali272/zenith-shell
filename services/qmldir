@@ -1,7 +1,6 @@
 singleton NotificationService 1.0 NotificationService.qml
 singleton CenterState 1.0 CenterState.qml
 singleton BatteryService 1.0 BatteryService.qml
-singleton BatteryNotify 1.0 BatteryNotify.qml
 singleton VolumeService 1.0 VolumeService.qml
 singleton WifiService 1.0 WifiService.qml
 singleton BluetoothService 1.0 BluetoothService.qml

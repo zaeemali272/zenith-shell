@@ -33,8 +33,9 @@ PanelWindow {
     Rectangle {
         id: barVisual
 
-        width: parent.width
-        height: parent.height
+        width: bar.width
+        height: bar.height
+
         color: Theme.barColor
         radius: Theme.barRadius || 0
         clip: true
