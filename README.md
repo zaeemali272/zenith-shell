@@ -39,7 +39,7 @@ Ensure you have the following installed on your system:
 1. Clone the repository:
    ```bash
    git clone https://github.com/yourusername/zenith-shell.git
-   cd zenith-shell
+   mv zenith-shell $HOME/.config/.quickshell
    ```
 
 2. Install python dependencies:
