@@ -12,14 +12,14 @@ kernel=$(uname -r)
 ip=$(ip addr show | grep 'inet ' | grep -v '127.0.0.1' | head -n1 | awk '{print $2}')
 
 # Usage
-cpu=$(top -bn1 | grep "Cpu(s)" | awk '{print int($2 + $4)}')
+cpu=$(LC_ALL=C top -bn1 | grep "Cpu(s)" | sed 's/[:,]/ /g' | awk '{print int($2 + $4)}')
 mem=$(free | awk '/Mem:/ {printf "%d", $3/$2 * 100}')
 load=$(awk '{print $1}' /proc/loadavg)
 cores=$(nproc)
 load_perc=$(awk -v cores="$cores" '{printf "%d", ($1/cores)*100}' /proc/loadavg)
 
 # Per Core Usage (numeric)
-core_usages=$(top -bn1 -1 | grep "^%Cpu" | awk '{print int($2 + $4)}' | jq -s .)
+core_usages=$(LC_ALL=C top -bn1 -1 | grep "^%Cpu[0-9]" | sed 's/[:,]/ /g' | awk '{print int($2 + $4)}' | jq -s .)
 
 # Temperature
 temp=$(sensors | awk '/Package id 0:/ {print int($4)}' | head -n1 | tr -d '+°C')
