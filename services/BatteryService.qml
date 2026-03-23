@@ -160,7 +160,7 @@ Item {
 
     Timer {
         id: pollTimer
-        interval: 2000
+        interval: 100
         running: false
         repeat: true
         onTriggered: service.update()

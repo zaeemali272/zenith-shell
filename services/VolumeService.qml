@@ -103,7 +103,7 @@ Item {
     Timer {
         id: restartDelay
 
-        interval: 500
+        interval: 100
         onTriggered: {
             service.update();
             volListener.running = true;

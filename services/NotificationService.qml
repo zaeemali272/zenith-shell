@@ -57,7 +57,7 @@ Item {
     Timer {
         id: duplicateResetTimer
 
-        interval: 3000
+        interval: 5000
         onTriggered: root.lastNotifKey = ""
     }
 
@@ -119,10 +119,11 @@ Item {
             if (imageHint) {
                 finalIcon = "image://notification/" + notif.id;
             } else if (rawIcon !== "") {
+                // Try the themed icon first
+
                 if (rawIcon.startsWith("/") || rawIcon.startsWith("file://"))
                     finalIcon = rawIcon.startsWith("file://") ? rawIcon : "file://" + rawIcon;
                 else
-                    // Try the themed icon first
                     finalIcon = "image://icon/" + rawIcon;
             }
             // If finalIcon is still empty, or to ensure we have a "safe" string for the model:
