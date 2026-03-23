@@ -34,7 +34,6 @@ MouseArea {
 
     Pill {
         id: pill
-
         implicitHeight: Theme.pillHeight
         width: content.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
         clip: true
@@ -45,51 +44,40 @@ MouseArea {
 
         RowLayout {
             id: content
-
             anchors.centerIn: parent
             spacing: Theme.pillSpacing
 
-            ResourceItem {
-                icon: ""
-                value: root.cpu
-                color: Theme.cpuColor
-            }
-
-            ResourceItem {
-                icon: "|  "
-                value: root.mem
-                showAbove: 60
-                color: Theme.memColor
-            }
-
-            ResourceItem {
-                icon: "|  "
-                value: root.temp
-                suffix: "°C"
-                showAbove: 85
-                color: Theme.tempColor
-            }
-
+            ResourceItem { icon: ""; value: root.cpu; color: Theme.cpuColor }
+            ResourceItem { icon: "|  "; value: root.mem; showAbove: 60; color: Theme.memColor }
+            ResourceItem { icon: "|  "; value: root.temp; suffix: "°C"; showAbove: 85; color: Theme.tempColor }
         }
 
         Behavior on width {
-            NumberAnimation {
-                duration: 400
-                easing.type: Easing.OutExpo
-            }
+            NumberAnimation { duration: 400; easing.type: Easing.OutExpo }
         }
     }
 
-    // Tooltip Window
+    // Fixed Tooltip Logic
     PopupWindow {
         id: tooltip
         visible: root.containsMouse
-
+        
+        // Ensure it anchors to the bar window
         anchor.window: root.QsWindow ? root.QsWindow.window : null
-        anchor.rect: root.mapToItem(null, 0, 0, root.width, root.height)
-        // Position BELOW the bar
+        
+        // Calculate global rect every time the tooltip becomes visible
+        anchor.rect: {
+            if (!visible) return Qt.rect(0, 0, 0, 0);
+            var globalPos = root.mapToGlobal(0, 0);
+            return Qt.rect(globalPos.x, globalPos.y, root.width, root.height);
+        }
+
+        // Use Bottom edges to push it below the widget
         anchor.edges: Edges.Bottom
-        anchor.gravity: Edges.Bottom
+        
+        // This ensures the popup's top-left doesn't just snap to 0,0
+        // We set the gravity so the popup "hangs" from the bottom of the anchor rect
+        anchor.gravity: Edges.Bottom 
 
         implicitWidth: 450
         implicitHeight: mainLayout.implicitHeight + 40
@@ -97,7 +85,7 @@ MouseArea {
 
         Rectangle {
             anchors.fill: parent
-            anchors.topMargin: 5
+            anchors.topMargin: 4
             color: "#181825"
             border.color: "#313244"
             border.width: 1
@@ -105,14 +93,10 @@ MouseArea {
 
             ColumnLayout {
                 id: mainLayout
-                anchors.top: parent.top
-                anchors.topMargin: 10
-                anchors.left: parent.left
-                anchors.right: parent.right
+                anchors.fill: parent
                 anchors.margins: 15
                 spacing: 12
 
-                // System Info Header
                 Text {
                     text: `${root.arch} / Linux ${root.kernel} IP ${root.ip}`
                     color: "#cdd6f4"
@@ -120,77 +104,30 @@ MouseArea {
                     font.pixelSize: 12
                 }
 
-                // CPU Model & Freq
                 RowLayout {
-                    Text {
-                        text: root.cpuModel
-                        color: "#cdd6f4"
-                        font.family: "JetBrains Mono"
-                        font.pixelSize: 12
-                        Layout.fillWidth: true
-                    }
-                    Text {
-                        text: root.freq
-                        color: "#cdd6f4"
-                        font.family: "JetBrains Mono"
-                        font.pixelSize: 12
-                    }
+                    Text { text: root.cpuModel; color: "#cdd6f4"; font.family: "JetBrains Mono"; font.pixelSize: 12; Layout.fillWidth: true }
+                    Text { text: root.freq; color: "#cdd6f4"; font.family: "JetBrains Mono"; font.pixelSize: 12 }
                 }
 
-                // Main Progress Bars
                 ColumnLayout {
                     spacing: 4
                     Layout.fillWidth: true
-
-                    TooltipBar {
-                        label: "CPU "
-                        value: root.cpu
-                        color: Theme.cpuColor
-                    }
-                    TooltipBar {
-                        label: "MEM "
-                        value: root.mem
-                        color: Theme.memColor
-                    }
-                    TooltipBar {
-                        label: "LOAD"
-                        value: root.loadPerc
-                        displayValue: root.load.toFixed(1) + "%"
-                        color: Theme.tempColor
-                    }
-                    TooltipBar {
-                        label: "FS  "
-                        value: root.fs
-                        color: "#fab387"
-                    }
+                    TooltipBar { label: "CPU "; value: root.cpu; color: Theme.cpuColor }
+                    TooltipBar { label: "MEM "; value: root.mem; color: Theme.memColor }
+                    TooltipBar { label: "LOAD"; value: root.loadPerc; displayValue: root.load.toFixed(1) + "%"; color: Theme.tempColor }
+                    TooltipBar { label: "FS  "; value: root.fs; color: "#fab387" }
                 }
 
-                // Per Core Section
                 ColumnLayout {
                     spacing: 4
                     Layout.fillWidth: true
                     visible: root.coreUsages.length > 0
 
-                    Rectangle {
-                        Layout.fillWidth: true
-                        height: 1
-                        color: "#313244"
-                    }
-
-                    Text {
-                        text: "PER CORE USAGE"
-                        color: "#6e738d"
-                        font.family: "JetBrains Mono"
-                        font.pixelSize: 10
-                        font.bold: true
-                    }
+                    Rectangle { Layout.fillWidth: true; height: 1; color: "#313244" }
+                    Text { text: "PER CORE USAGE"; color: "#6e738d"; font.family: "JetBrains Mono"; font.pixelSize: 10; font.bold: true }
 
                     GridLayout {
-                        columns: 2
-                        columnSpacing: 20
-                        rowSpacing: 4
-                        Layout.fillWidth: true
-
+                        columns: 2; columnSpacing: 20; rowSpacing: 4; Layout.fillWidth: true
                         Repeater {
                             model: root.coreUsages
                             delegate: TooltipBar {
@@ -203,36 +140,17 @@ MouseArea {
                         }
                     }
 
-                    Rectangle {
-                        Layout.fillWidth: true
-                        height: 1
-                        color: "#313244"
-                        visible: root.coreTemps.length > 0
-                    }
-
-                    Text {
-                        text: "PER CORE TEMPS"
-                        color: "#6e738d"
-                        font.family: "JetBrains Mono"
-                        font.pixelSize: 10
-                        font.bold: true
-                        visible: root.coreTemps.length > 0
-                    }
+                    Rectangle { Layout.fillWidth: true; height: 1; color: "#313244"; visible: root.coreTemps.length > 0 }
+                    Text { text: "PER CORE TEMPS"; color: "#6e738d"; font.family: "JetBrains Mono"; font.pixelSize: 10; font.bold: true; visible: root.coreTemps.length > 0 }
 
                     GridLayout {
-                        columns: 4
-                        columnSpacing: 10
-                        rowSpacing: 4
-                        Layout.fillWidth: true
-                        visible: root.coreTemps.length > 0
-
+                        columns: 4; columnSpacing: 10; rowSpacing: 4; Layout.fillWidth: true; visible: root.coreTemps.length > 0
                         Repeater {
                             model: root.coreTemps
                             delegate: Text {
                                 text: "Core " + index + ": " + modelData + "°C"
                                 color: modelData > 80 ? Theme.criticalColor : (modelData > 60 ? Theme.lowColor : Theme.tempColor)
-                                font.family: "JetBrains Mono"
-                                font.pixelSize: 11
+                                font.family: "JetBrains Mono"; font.pixelSize: 11
                             }
                         }
                     }
@@ -252,37 +170,14 @@ MouseArea {
             let blocks = Math.round(Math.min(v, 100) / (100 / width));
             let bar = "[";
             for (let i = 0; i < width; i++) {
-                if (i < blocks) bar += "▪";
-                else bar += " ";
+                bar += (i < blocks) ? "▪" : " ";
             }
-            bar += "]";
-            return bar;
+            return bar + "]";
         }
 
-        Text {
-            text: label
-            color: "#cdd6f4"
-            font.family: "JetBrains Mono"
-            font.pixelSize: 12
-            Layout.preferredWidth: contentWidth
-        }
-
-        Text {
-            text: makeBar(value, barWidth)
-            color: parent.color
-            font.family: "JetBrains Mono"
-            font.pixelSize: 12
-            Layout.fillWidth: true
-        }
-
-        Text {
-            text: displayValue.padStart(6, ' ')
-            color: parent.color
-            font.family: "JetBrains Mono"
-            font.pixelSize: 12
-            Layout.preferredWidth: contentWidth
-            horizontalAlignment: Text.AlignRight
-        }
+        Text { text: label; color: "#cdd6f4"; font.family: "JetBrains Mono"; font.pixelSize: 12; Layout.preferredWidth: contentWidth }
+        Text { text: makeBar(value, barWidth); color: parent.color; font.family: "JetBrains Mono"; font.pixelSize: 12; Layout.fillWidth: true }
+        Text { text: displayValue.padStart(6, ' '); color: parent.color; font.family: "JetBrains Mono"; font.pixelSize: 12; Layout.preferredWidth: contentWidth; horizontalAlignment: Text.AlignRight }
     }
 
     Process {
@@ -305,22 +200,14 @@ MouseArea {
                     root.ip = data.ip ?? "";
                     root.coreUsages = data.core_usages ?? [];
                     root.coreTemps = data.core_temps ?? [];
-                } catch (e) {
-                    // console.warn("Resource parse failed:", text);
-                }
+                } catch (e) {}
             }
         }
     }
 
     Timer {
-        interval: 3000
-        repeat: true
-        running: true
-        triggeredOnStart: true
-        onTriggered: {
-            resourceExec.running = false;
-            resourceExec.running = true;
-        }
+        interval: 3000; repeat: true; running: true; triggeredOnStart: true
+        onTriggered: { resourceExec.running = false; resourceExec.running = true; }
     }
 
     component ResourceItem: RowLayout {
@@ -336,23 +223,9 @@ MouseArea {
         Layout.preferredWidth: active ? -1 : 0
         opacity: active ? 1 : 0
 
-        Text {
-            text: icon
-            color: parent.color
-            font.family: Theme.iconFont
-            font.pixelSize: Theme.iconSize
-            Layout.alignment: Qt.AlignVCenter
-        }
+        Text { text: icon; color: parent.color; font.family: Theme.iconFont; font.pixelSize: Theme.iconSize; Layout.alignment: Qt.AlignVCenter }
+        Text { text: value.toString().padStart(2, '0') + suffix; color: parent.color; font.pixelSize: Theme.fontSize; Layout.alignment: Qt.AlignVCenter }
 
-        Text {
-            text: value.toString().padStart(2, '0') + suffix
-            color: parent.color
-            font.pixelSize: Theme.fontSize
-            Layout.alignment: Qt.AlignVCenter
-        }
-
-        Behavior on opacity {
-            NumberAnimation { duration: 300 }
-        }
+        Behavior on opacity { NumberAnimation { duration: 300 } }
     }
 }
