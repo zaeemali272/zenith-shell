@@ -32,6 +32,11 @@ MouseArea {
     implicitHeight: Theme.pillHeight
     implicitWidth: pill.width
 
+    onContainsMouseChanged: {
+        if (!containsMouse && (!tooltipMouse || !tooltipMouse.containsMouse)) hideTimer.start();
+        else hideTimer.stop();
+    }
+
     Pill {
         id: pill
         implicitHeight: Theme.pillHeight
@@ -57,31 +62,41 @@ MouseArea {
         }
     }
 
-    // Fixed Tooltip Logic
+    // Tooltip Logic with Debounce to prevent flickering
+    Timer {
+        id: hideTimer
+        interval: 150
+        repeat: false
+    }
+
     PopupWindow {
         id: tooltip
-        visible: root.containsMouse
+        visible: root.containsMouse || (tooltipMouse && tooltipMouse.containsMouse) || hideTimer.running
         
         // Ensure it anchors to the bar window
         anchor.window: root.QsWindow ? root.QsWindow.window : null
         
-        // Calculate global rect every time the tooltip becomes visible
-        anchor.rect: {
-            if (!visible) return Qt.rect(0, 0, 0, 0);
-            var globalPos = root.mapToGlobal(0, 0);
-            return Qt.rect(globalPos.x, globalPos.y, root.width, root.height);
-        }
+        // Use a stable rect that doesn't jump to 0,0 when hidden
+        anchor.rect: root.mapToItem(null, 0, 0, root.width, root.height)
 
         // Use Bottom edges to push it below the widget
         anchor.edges: Edges.Bottom
-        
-        // This ensures the popup's top-left doesn't just snap to 0,0
-        // We set the gravity so the popup "hangs" from the bottom of the anchor rect
         anchor.gravity: Edges.Bottom 
-
+        
         implicitWidth: 450
         implicitHeight: mainLayout.implicitHeight + 40
         color: "transparent"
+
+        // Allow hovering into the tooltip
+        MouseArea {
+            id: tooltipMouse
+            anchors.fill: parent
+            hoverEnabled: true
+            onContainsMouseChanged: {
+                if (!containsMouse && !root.containsMouse) hideTimer.start();
+                else hideTimer.stop();
+            }
+        }
 
         Rectangle {
             anchors.fill: parent
@@ -90,6 +105,7 @@ MouseArea {
             border.color: "#313244"
             border.width: 1
             radius: 8
+            // ... (rest of the content)
 
             ColumnLayout {
                 id: mainLayout
