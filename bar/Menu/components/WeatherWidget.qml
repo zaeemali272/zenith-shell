@@ -102,7 +102,7 @@ Rectangle {
                         color: "#f9e2af"
                         font.pixelSize: 48
                         Layout.alignment: Qt.AlignHCenter
-                        font.family: Theme.iconFont // Hardcode a known NF for testing, or fallback to Theme.iconFont
+                        font.family: "Symbols Nerd Font" // Hardcode a known NF for testing, or fallback to Theme.iconFont
                     }
                     Text {
                         text: (root.weatherData?.current_condition?.[0]?.temp_C || "0") + "°C"
@@ -149,7 +149,7 @@ Rectangle {
                                 text: root.getIcon(modelData.hourly[4].weatherCode)
                                 color: "#f9e2af"
                                 font.pixelSize: 14
-                                font.family: Theme.iconFont
+                                font.family: "Symbols Nerd Font"
                             }
                             Text {
                                 text: modelData.maxtempC + "° / " + modelData.mintempC + "°"
