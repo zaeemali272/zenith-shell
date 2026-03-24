@@ -134,10 +134,14 @@ PanelWindow {
                 menuRef: volumePopup
             }
 
+            Bluetooth {
+                id: bluetoothWidget
+
+                menuRef: bluetoothLoader
+            }
+
             Battery {
                 id: batteryWidget
-
-                menuRef: bluetoothLoader // Pass the loader reference
             }
 
             Power {
@@ -178,8 +182,8 @@ PanelWindow {
         active: false
         source: "Menu/BluetoothMenu.qml"
         onLoaded: {
-            // Position it relative to the battery widget
-            item.anchorItem = batteryWidget;
+            // Position it relative to the bluetooth widget
+            item.anchorItem = bluetoothWidget;
         }
     }
 

@@ -206,7 +206,7 @@ MouseArea {
     }
 
     Timer {
-        interval: 3000; repeat: true; running: true; triggeredOnStart: true
+        interval: 4000; repeat: true; running: true; triggeredOnStart: true
         onTriggered: { resourceExec.running = false; resourceExec.running = true; }
     }
 
