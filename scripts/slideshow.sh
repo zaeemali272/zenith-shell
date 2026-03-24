@@ -16,10 +16,10 @@ while true; do
             if [[ -f "$img" ]]; then
                 # Get the filename for the notification
                 filename=$(basename "$img")
-                
+
                 # Send notification
                 notify-send -i "$img" "Zenith Shell" "Cycling to: $filename"
-                
+
                 # Apply wallpaper
                 $SWWW img "$img" --transition-type fade --transition-step 90
                 /usr/bin/sleep 3600

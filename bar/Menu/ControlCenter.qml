@@ -57,8 +57,8 @@ PopupWindow {
 
         RowLayout {
             anchors.fill: parent
-            anchors.margins: 20
-            spacing: 25
+            anchors.margins: 15
+            spacing: 15
 
             // --- Left Column: Notifications & Media ---
             ColumnLayout {
@@ -80,6 +80,12 @@ PopupWindow {
 
             // --- Right Column: Calendar & Todo ---
             ColumnLayout {
+                // Rectangle {
+                //     Layout.fillWidth: true
+                //     height: 1
+                //     color: "#111111"
+                // }
+
                 Layout.preferredWidth: 320
                 Layout.fillHeight: true
                 spacing: 15
@@ -88,13 +94,7 @@ PopupWindow {
                     Layout.fillWidth: true
                 }
 
-                Rectangle {
-                    Layout.fillWidth: true
-                    height: 1
-                    color: "#111111"
-                }
-
-                TodoList {
+                WeatherWidget {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                 }
@@ -105,8 +105,8 @@ PopupWindow {
 
         background: Rectangle {
             color: "#010101"
-            radius: 8
-            border.color: '#111111'
+            radius: 10
+            border.color: '#181825'
             border.width: 1
         }
 
