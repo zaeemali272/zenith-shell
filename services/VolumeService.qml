@@ -69,12 +69,12 @@ Item {
                         }
                         if (!found)
                             appModel.append({
-                                "id": id,
-                                "name": name,
-                                "volume": vol,
-                                "muted": app.mute,
-                                "icon": "\uf2d2"
-                            });
+                                    "id": id,
+                                    "name": name,
+                                    "volume": vol,
+                                    "muted": app.mute,
+                                    "icon": "\uf2d2"
+                                });
 
                     }
                     for (let j = appModel.count - 1; j >= 0; j--) {

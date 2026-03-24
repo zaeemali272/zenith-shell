@@ -40,16 +40,16 @@ Pane {
     Layout.fillWidth: true
     implicitHeight: 110
 
-    // This global listener handles the "Auto Switch" when a background player starts playing
+    // Update active player when the list of players changes
     Connections {
-        function onObjectAdded(index, newPlayer) {
-            // If we have no player, or the new one is already playing, switch to it
-            if (!mprisPlayer.player || newPlayer.playbackState === MprisPlaybackState.Playing)
-                mprisPlayer.player = newPlayer;
-
-        }
-
         target: Mpris.players
+        function onValuesChanged() {
+            // Re-evaluate the best player
+            let active = Mpris.players.values.find((p) => {
+                return p.playbackState === MprisPlaybackState.Playing;
+            });
+            mprisPlayer.player = active ? active : (Mpris.players.values.length > 0 ? Mpris.players.values[0] : null);
+        }
     }
 
     // Logic to switch focus if any existing player starts playing
