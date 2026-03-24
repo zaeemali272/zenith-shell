@@ -9,7 +9,6 @@ import Quickshell.Io
 Item {
     id: root
 
-    property var menuRef
     readonly property int batPercent: BatteryService.percentage
     readonly property string batState: BatteryService.status
     readonly property bool acOnline: BatteryService.acOnline
@@ -55,52 +54,12 @@ Item {
         // Calculate target width dynamically
         width: content.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
         clip: true
-        onClicked: {
-            if (menuRef) {
-                if (menuRef.anchorItem !== undefined)
-                    menuRef.anchorItem = root;
-
-                menuRef.active = !menuRef.active;
-            }
-        }
 
         RowLayout {
             id: content
 
             anchors.centerIn: parent
             spacing: Theme.pillGap
-
-            // Bluetooth Section
-            RowLayout {
-                visible: BluetoothService.connected && BluetoothService.percentage > 0
-                spacing: 4
-
-                Text {
-                    text: "󰂯"
-                    font.family: Theme.iconFont
-                    color: Theme.bluetoothColor
-                    Layout.alignment: Qt.AlignVCenter
-                }
-
-                Text {
-                    text: BluetoothService.percentage.toString().padStart(2, '0') + "%"
-                    color: Theme.bluetoothColor
-                    font.pixelSize: Theme.fontSize
-                    // --- STABILITY FIX ---
-                    font.family: "JetBrains Mono"
-                    Layout.preferredWidth: 35
-                    horizontalAlignment: Text.AlignHCenter
-                }
-
-            }
-
-            // Separator
-            Text {
-                visible: (BluetoothService.connected && BluetoothService.percentage > 0) && (batPercent >= 0)
-                text: "|"
-                color: Theme.inactiveTextColor
-                opacity: parent.visible ? 1 : 0
-            }
 
             // Laptop Battery Section
             RowLayout {

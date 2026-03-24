@@ -167,7 +167,7 @@ PopupWindow {
                             }
                             Text {
                                 text: {
-                                    if (connected) return (battery > 0 ? "Connected (" + battery + "%)" : "Connected");
+                                    if (connected) return "Connected";
                                     if (paired) return "Paired";
                                     return "Available (Not Paired)";
                                 }

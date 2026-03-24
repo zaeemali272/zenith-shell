@@ -102,12 +102,14 @@ Item {
             }
             let currentKey = notif.summary + "|" + notif.body + "|" + notif.appName;
             // Check the entire history for duplicates
-            for (let i = 0; i < historyModel.count; i++) {
-                let item = historyModel.get(i);
-                if (item.summary === notif.summary && item.body === notif.body && item.appName === notif.appName) {
-                    // Duplicate found anywhere in history, discard the new one
-                    notif.dismiss();
-                    return ;
+            if (notif.appName !== "Battery") {
+                for (let i = 0; i < historyModel.count; i++) {
+                    let item = historyModel.get(i);
+                    if (item.summary === notif.summary && item.body === notif.body && item.appName === notif.appName) {
+                        // Duplicate found anywhere in history, discard the new one
+                        notif.dismiss();
+                        return ;
+                    }
                 }
             }
             root.lastNotifKey = currentKey;

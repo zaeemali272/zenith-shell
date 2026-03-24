@@ -11,8 +11,8 @@ Item {
     property int micVolume: 0
     property bool muted: false
     property bool micMuted: false // <--- ADDED THIS
-    readonly property bool btActive: BluetoothService.connected
     property bool micActive: false
+    property alias appsModel: appModel
 
     function update() {
         volExec.running = true;
@@ -24,8 +24,6 @@ Item {
     ListModel {
         id: appModel
     }
-
-    property alias appsModel: appModel
 
     Process {
         id: appVolExec
@@ -69,20 +67,20 @@ Item {
                                 break;
                             }
                         }
-                        if (!found) {
+                        if (!found)
                             appModel.append({
-                                    "id": id,
-                                    "name": name,
-                                    "volume": vol,
-                                    "muted": app.mute,
-                                    "icon": "\uf2d2"
-                                });
-                        }
+                                "id": id,
+                                "name": name,
+                                "volume": vol,
+                                "muted": app.mute,
+                                "icon": "\uf2d2"
+                            });
+
                     }
                     for (let j = appModel.count - 1; j >= 0; j--) {
-                        if (!currentIds.has(appModel.get(j).id)) {
+                        if (!currentIds.has(appModel.get(j).id))
                             appModel.remove(j);
-                        }
+
                     }
                 } catch (e) {
                     console.error("JSON Parse error: " + e.message);
@@ -103,7 +101,7 @@ Item {
     Timer {
         id: restartDelay
 
-        interval: 100
+        interval: 700
         onTriggered: {
             service.update();
             volListener.running = true;
@@ -113,7 +111,7 @@ Item {
     Process {
         id: volExec
 
-        command: ["sh", "-c", "echo \"SINK=$(wpctl get-volume @DEFAULT_AUDIO_SINK@)\"; echo \"SRC=$(wpctl get-volume @DEFAULT_AUDIO_SOURCE@)\"; pw-link -i | grep -q ':input_' && echo 'MIC_ACTIVE=1' || echo 'MIC_ACTIVE=0'"]
+        command: ["sh", "-c", "echo \"SINK=$(wpctl get-volume @DEFAULT_AUDIO_SINK@)\"; echo \"SRC=$(wpctl get-volume @DEFAULT_AUDIO_SOURCE@)\"; pw-link -i | grep -q ':input_' && echo 'MIC_ACTIVE=1' || echo 'MIC_ACTIVE=0'; wpctl status | grep -A 5 \"Default Configured Devices:\" | grep -q \"bluez\" && echo \"BT_ACTIVE=1\" || echo \"BT_ACTIVE=0\""]
 
         stdout: StdioCollector {
             onStreamFinished: {
