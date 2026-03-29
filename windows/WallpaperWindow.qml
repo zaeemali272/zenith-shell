@@ -200,7 +200,7 @@ FloatingWindow {
         log("Applying wallpaper: " + path);
         killMpv.running = true;
         stopSlideshow(); // Stop any active slideshow loops
-        swwwDaemon.running = true; 
+        awwwDaemon.running = true; 
         
         let cleanPath = path.replace("file://", "");
         saveCurrentWall.path = cleanPath;
@@ -212,7 +212,7 @@ FloatingWindow {
 
     function applyVideo(path) {
         log("Applying video: " + path);
-        killSwww.running = true;
+        killawww.running = true;
         killMpv.running = true;
         stopSlideshow();
         videoDelay.videoPath = path.replace("file://", "");
@@ -282,7 +282,7 @@ FloatingWindow {
         property string wallPath: ""
         interval: 600 
         onTriggered: {
-            setWall.command = ["sh", "-c", "swww img '" + wallPath + "' --transition-type fade >> " + win.logPath + " 2>&1"];
+            setWall.command = ["sh", "-c", "awww img '" + wallPath + "' --transition-type fade >> " + win.logPath + " 2>&1"];
             setWall.running = true;
         }
     }
@@ -292,8 +292,8 @@ FloatingWindow {
         property string videoPath: ""
         interval: 400 
         onTriggered: { 
-            // Dynamically detect the monitor using swww query (assuming swww is installed/running, or fallback to first detected output)
-            mpvProcess.command = ["sh", "-c", "MONITOR=$(swww query | head -n1 | cut -d: -f1); if [ -z \"$MONITOR\" ]; then MONITOR=$(wlr-randr | head -n1 | awk '{print $1}'); fi; mpvpaper -vsf -o 'no-audio loop' $MONITOR '" + videoPath + "' >> " + win.logPath + " 2>&1"];
+            // Dynamically detect the monitor using awww query (assuming awww is installed/running, or fallback to first detected output)
+            mpvProcess.command = ["sh", "-c", "MONITOR=$(awww query | head -n1 | cut -d: -f1); if [ -z \"$MONITOR\" ]; then MONITOR=$(wlr-randr | head -n1 | awk '{print $1}'); fi; mpvpaper -vsf -o 'no-audio loop' $MONITOR '" + videoPath + "' >> " + win.logPath + " 2>&1"];
             mpvProcess.running = true; 
             safeQuit(); 
         } 
@@ -302,13 +302,13 @@ FloatingWindow {
     Timer { id: quitTimer; interval: 600; onTriggered: Qt.quit() }
 
     Process { id: logger }
-    Process { id: swwwDaemon; command: ["sh", "-c", "swww-daemon >> " + logPath + " 2>&1"] }
-    Process { id: setWall; onExited: { log("swww img finished"); safeQuit(); } }
+    Process { id: awwwDaemon; command: ["sh", "-c", "awww-daemon >> " + logPath + " 2>&1"] }
+    Process { id: setWall; onExited: { log("awww img finished"); safeQuit(); } }
     
     // Improved kill commands
-    Process { id: killSwww; command: ["killall", "swww-daemon"] }
+    Process { id: killawww; command: ["killall", "awww-daemon"] }
     Process { id: killMpv; command: ["killall", "mpvpaper"] }
-    Process { id: killLoop; command: ["sh", "-c", "pkill -f 'swww img'"] } // Target the slideshow loop
+    Process { id: killLoop; command: ["sh", "-c", "pkill -f 'awww img'"] } // Target the slideshow loop
 
     Process { id: installService }
     Process { id: saveList }
