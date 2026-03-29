@@ -15,7 +15,7 @@ Rectangle {
     clip: true
 
     // --- THE ANIMATION ---
-    width: contentLayout.implicitWidth + (Theme.pillPadding * 2)
+    width: contentLayout.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
     
     Behavior on width {
         NumberAnimation {
@@ -130,6 +130,8 @@ Rectangle {
         Text {
             id: playPauseIcon
             Layout.alignment: Qt.AlignVCenter
+            Layout.preferredHeight: Theme.iconSize
+            verticalAlignment: Text.AlignVCenter
             font.family: Theme.iconFont
             font.pixelSize: Theme.iconSize
             text: ""
@@ -139,6 +141,8 @@ Rectangle {
         Text {
             id: mediaText
             Layout.alignment: Qt.AlignVCenter
+            verticalAlignment: Text.AlignVCenter
+            horizontalAlignment: Text.AlignHCenter
             font.pixelSize: Theme.fontSize
             elide: Text.ElideRight
             text: "Nothing playing"
