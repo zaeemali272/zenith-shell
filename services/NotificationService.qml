@@ -11,6 +11,7 @@ Item {
     property string lastNotifKey: ""
 
     signal notificationReceived(var notifData)
+    signal notificationDismissed(real id)
     signal osdReceived(string type, real value)
 
     // Helper to format icon names into various possible system paths
@@ -52,6 +53,7 @@ Item {
                 break;
             }
         }
+        root.notificationDismissed(notifId);
     }
 
     Timer {
