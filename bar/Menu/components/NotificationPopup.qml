@@ -9,8 +9,9 @@ PopupWindow {
 
     anchor.window: bar
     anchor.edges: Edges.Top | Edges.Right
-    anchor.rect.x: 4
     anchor.rect.y: bar.height + (osdPopup.visible ? 100 : 10)
+    anchor.rect.x: bar.width - implicitWidth - 5
+
     // Width and height logic
     implicitWidth: 350
     implicitHeight: mainColumn.implicitHeight
@@ -37,19 +38,17 @@ PopupWindow {
             model: activeNotifications
 
             delegate: NotificationItem {
+                id: delegateRoot
                 notification: model
                 Layout.fillWidth: true
-                Component.onCompleted: {
-                    let currentId = model.id;
-                    const t = Qt.createQmlObject("import QtQuick 2.15; Timer { interval: 5000; running: true }", this);
-                    t.triggered.connect(() => {
-                        for (let i = 0; i < activeNotifications.count; i++) {
-                            if (activeNotifications.get(i).id === currentId) {
-                                activeNotifications.remove(i);
-                                break;
-                            }
+                
+                onAutoDismissed: (id) => {
+                    for (let i = 0; i < activeNotifications.count; i++) {
+                        if (activeNotifications.get(i).id === id) {
+                            activeNotifications.remove(i);
+                            break;
                         }
-                    });
+                    }
                 }
             }
 
@@ -60,6 +59,15 @@ PopupWindow {
     Connections {
         function onNotificationReceived(notifData) {
             activeNotifications.append(notifData);
+        }
+
+        function onNotificationDismissed(id) {
+            for (let i = 0; i < activeNotifications.count; i++) {
+                if (activeNotifications.get(i).id === id) {
+                    activeNotifications.remove(i);
+                    break;
+                }
+            }
         }
 
         target: NotificationService
