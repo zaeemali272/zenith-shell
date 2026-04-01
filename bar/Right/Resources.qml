@@ -31,6 +31,8 @@ MouseArea {
     hoverEnabled: true
     implicitHeight: Theme.pillHeight
     implicitWidth: pill.width
+    width: implicitWidth
+    height: implicitHeight
 
     onContainsMouseChanged: {
         if (!containsMouse && (!tooltipMouse || !tooltipMouse.containsMouse)) hideTimer.start();
@@ -71,13 +73,26 @@ MouseArea {
 
     PopupWindow {
         id: tooltip
-        visible: root.containsMouse || (tooltipMouse && tooltipMouse.containsMouse) || hideTimer.running
+        visible: root.QsWindow && root.QsWindow.window && (root.containsMouse || (tooltipMouse && tooltipMouse.containsMouse) || hideTimer.running)
         
         // Ensure it anchors to the bar window
         anchor.window: root.QsWindow ? root.QsWindow.window : null
         
         // Use a stable rect that doesn't jump to 0,0 when hidden
-        anchor.rect: root.mapToItem(null, 0, 0, root.width, root.height)
+        anchor.rect: {
+            if (!root.QsWindow || !root.QsWindow.window || root.width <= 0) return Qt.rect(0, 0, 0, 0);
+            
+            const p = root.mapToItem(null, 0, 0);
+            const centerX = p.x + (root.width / 2);
+            const targetX = centerX - (tooltip.implicitWidth / 2);
+            
+            const winWidth = root.QsWindow.window.width;
+            const winHeight = root.QsWindow.window.height;
+            const boundedX = Math.max(10, Math.min(winWidth - tooltip.implicitWidth - 10, targetX));
+            
+            // Anchor to the bottom edge of the bar window (y=winHeight)
+            return Qt.rect(Math.round(boundedX), winHeight, tooltip.implicitWidth, 0);
+        }
 
         // Use Bottom edges to push it below the widget
         anchor.edges: Edges.Bottom
