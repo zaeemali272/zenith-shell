@@ -56,11 +56,13 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.RightButton
-        onClicked: function(mouse) {
-            if (mouse.button === Qt.LeftButton && menuRef) {
-                menuRef.anchorItem = root;
-                menuRef.visible = !menuRef.visible;
-            }
+        onEntered: {
+            QuickSettingsService.open("powerprofile", root.mapToItem(null, 0, 0, root.width, root.height));
+        }
+        onExited: QuickSettingsService.startHideTimer();
+        onClicked: (mouse) => {
+            if (mouse.button === Qt.LeftButton)
+                QuickSettingsService.toggle("powerprofile", root.mapToItem(null, 0, 0, root.width, root.height));
         }
     }
 

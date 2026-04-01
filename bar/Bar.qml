@@ -115,14 +115,10 @@ PanelWindow {
 
             Network {
                 id: wifiWidget
-
-                menuRef: wifiLoader
             }
 
             PowerProfile {
                 id: powerProfileWidget
-
-                menuRef: powerProfilePopup
             }
 
             Resources {
@@ -130,14 +126,10 @@ PanelWindow {
 
             Volume {
                 id: volumeWidget
-
-                menuRef: volumePopup
             }
 
             Bluetooth {
                 id: bluetoothWidget
-
-                menuRef: bluetoothLoader
             }
 
             Battery {
@@ -151,58 +143,26 @@ PanelWindow {
 
     }
 
-    // Update your FocusGrab to include the Bluetooth menu
+    // Update FocusGrab to handle the new unified menu and tray
     HyprlandFocusGrab {
-        active: wifiLoader.active || bluetoothLoader.active
+        active: quickSettingsMenu.visible
         windows: {
             let winList = [bar.QsWindow.window];
-            if (wifiLoader.item)
-                winList.push(wifiLoader.item.QsWindow.window);
-
-            if (bluetoothLoader.item)
-                winList.push(bluetoothLoader.item.QsWindow.window);
+            if (quickSettingsMenu.QsWindow)
+                winList.push(quickSettingsMenu.QsWindow.window);
 
             return winList;
         }
     }
 
-    Loader {
-        id: wifiLoader
+    Component.onCompleted: console.log("Bar initialized. quickSettingsMenu.parentWindow:", quickSettingsMenu.parentWindow)
 
-        active: false
-        source: "Menu/WifiMenu.qml"
-        onLoaded: {
-            item.anchorItem = wifiWidget;
-        }
-    }
-
-    Loader {
-        id: bluetoothLoader
-
-        active: false
-        source: "Menu/BluetoothMenu.qml"
-        onLoaded: {
-            // Position it relative to the bluetooth widget
-            item.anchorItem = bluetoothWidget;
-        }
+    QuickSettingsMenu {
+        id: quickSettingsMenu
+        parentWindow: bar
     }
 
     TrayMenu {
         id: trayPopup
     }
-
-    PowerProfilePopup {
-        id: powerProfilePopup
-
-        visible: false
-        anchor.window: bar
-    }
-
-    VolumeMenu {
-        id: volumePopup
-
-        visible: false
-        anchor.window: bar
-    }
-
 }

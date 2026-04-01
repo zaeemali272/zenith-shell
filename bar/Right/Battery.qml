@@ -99,4 +99,17 @@ Item {
 
     }
 
+    MouseArea {
+        anchors.fill: parent
+        hoverEnabled: true
+        onEntered: {
+            QuickSettingsService.open("battery", root.mapToItem(null, 0, 0, root.width, root.height));
+        }
+        onExited: QuickSettingsService.startHideTimer();
+        onClicked: (mouse) => {
+            if (mouse.button === Qt.LeftButton)
+                QuickSettingsService.toggle("battery", root.mapToItem(null, 0, 0, root.width, root.height));
+        }
+    }
+
 }

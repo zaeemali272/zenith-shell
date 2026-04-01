@@ -5,3 +5,4 @@ singleton VolumeService 1.0 VolumeService.qml
 singleton WifiService 1.0 WifiService.qml
 singleton BluetoothService 1.0 BluetoothService.qml
 singleton PowerProfileService 1.0 PowerProfileService.qml
+singleton QuickSettingsService 1.0 QuickSettingsService.qml
