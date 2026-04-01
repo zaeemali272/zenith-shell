@@ -93,11 +93,15 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.RightButton
+        onEntered: {
+            QuickSettingsService.open("network", root.mapToItem(null, 0, 0, root.width, root.height));
+        }
+        onExited: QuickSettingsService.startHideTimer();
         onClicked: (mouse) => {
-            if (mouse.button === Qt.LeftButton)
-                menuRef.active = !menuRef.active;
-            else if (mouse.button === Qt.RightButton)
+            if (mouse.button === Qt.RightButton)
                 showUpload = !showUpload;
+            else if (mouse.button === Qt.LeftButton)
+                QuickSettingsService.toggle("network", root.mapToItem(null, 0, 0, root.width, root.height));
         }
     }
 

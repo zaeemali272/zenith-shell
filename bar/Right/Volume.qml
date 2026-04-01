@@ -8,7 +8,7 @@ import Quickshell
 import Quickshell.Io
 
 Item {
-    id: volumeRoot
+    id: root
 
     property var menuRef: null
     // Binding directly to the Singleton Service
@@ -47,7 +47,7 @@ Item {
             spacing: Theme.pillGap
 
             Text {
-                visible: volumeRoot.micActive
+                visible: root.micActive
                 text: VolumeService.micMuted ? "\uf131" : "\uf130"
                 font.family: Theme.iconFont
                 font.pixelSize: Theme.iconSize
@@ -55,24 +55,24 @@ Item {
             }
 
             Text {
-                visible: volumeRoot.btActive
+                visible: root.btActive
                 text: Theme.btIcon
                 font.family: Theme.iconFont
                 font.pixelSize: Theme.iconSize
-                color: volumeRoot.activeColor
+                color: root.activeColor
             }
 
             Text {
-                text: volumeIcon(volumeRoot.volume, volumeRoot.muted)
+                text: volumeIcon(root.volume, root.muted)
                 font.family: Theme.iconFont
                 font.pixelSize: Theme.iconSize
-                color: volumeRoot.activeColor
+                color: root.activeColor
             }
 
             Text {
-                text: volumeRoot.muted ? "Muted" : volumeRoot.volume + "%"
+                text: root.muted ? "Muted" : root.volume + "%"
                 font.pixelSize: Theme.fontSize
-                color: volumeRoot.activeColor
+                color: root.activeColor
             }
 
         }
@@ -83,12 +83,15 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.RightButton
+        onEntered: {
+            QuickSettingsService.open("volume", root.mapToItem(null, 0, 0, root.width, root.height));
+        }
+        onExited: QuickSettingsService.startHideTimer();
         onClicked: function(mouse) {
             if (mouse.button === Qt.RightButton) {
                 muteExec.running = true;
-            } else if (mouse.button === Qt.LeftButton && volumeRoot.menuRef) {
-                volumeRoot.menuRef.anchorItem = volumeRoot;
-                volumeRoot.menuRef.visible = !volumeRoot.menuRef.visible;
+            } else if (mouse.button === Qt.LeftButton) {
+                QuickSettingsService.toggle("volume", root.mapToItem(null, 0, 0, root.width, root.height));
             }
         }
         onWheel: function(wheel) {
