@@ -10,7 +10,11 @@ PopupWindow {
 
     property var parentWindow: null
 
-    onVisibleChanged: console.log("QuickSettingsMenu visible:", visible, "parentWindow:", parentWindow)
+    onVisibleChanged: {
+        if (visible) {
+            console.log("QuickSettingsMenu visible:", visible, "parentWindow:", parentWindow)
+        }
+    }
 
     visible: QuickSettingsService.qsVisible
     color: "transparent"
@@ -21,51 +25,45 @@ PopupWindow {
     anchor.gravity: Edges.Bottom
     
     anchor.rect: {
-        // Rely on QuickSettingsService.anchorRect being set correctly by the trigger
-        // The trigger uses mapToItem(null, ...), which in Quickshell maps to the window root.
         const buttonRect = QuickSettingsService.anchorRect;
-        
-        if (visible) {
-            console.log("QuickSettingsMenu anchor.rect calculating:", JSON.stringify(buttonRect));
-        }
-
-        // Fallback dimensions if bar is not ready
         const barHeight = (parentWindow && parentWindow.height > 0) ? parentWindow.height : 45;
         const barWidth = (parentWindow && parentWindow.width > 0) ? parentWindow.width : 1920;
 
-        // If buttonRect is invalid, return a default position
         if (!buttonRect || buttonRect.width <= 0) {
-            return Qt.rect(10, barHeight, 0, 0); 
+            return Qt.rect(barWidth - implicitWidth - 10, barHeight, 0, 0); 
         }
 
-        // Calculate popup's left edge to center it relative to the button's center
         const buttonCenterX = buttonRect.x + buttonRect.width / 2;
         const popupHalfWidth = implicitWidth / 2;
-        const desiredPopupLeftX = buttonCenterX - popupHalfWidth;
+        
+        // Offset to the right: instead of pure centering, we favor the right side
+        // while still trying to stay near the button if possible.
+        // To "attach to the right side", we can shift the desired center.
+        const desiredPopupLeftX = buttonCenterX - (popupHalfWidth * 0.5); 
 
-        // Clamp desiredX to stay within window bounds (10px margin from left/right)
+        // Clamp to screen bounds with 10px margin
         const boundedX = Math.max(10, Math.min(barWidth - implicitWidth - 10, desiredPopupLeftX));
 
-        // Y position: Place it at the bottom of the bar
         return Qt.rect(Math.round(boundedX), barHeight, 0, 0);
     }
 
-    implicitWidth: 400
-    implicitHeight: 550
+    // Dynamic width based on the wide tabs layout
+    implicitWidth: 650 
+    implicitHeight: 600
 
     Rectangle {
         id: mainContent
         anchors.fill: parent
-        // Visual gap between bar and menu
         anchors.topMargin: 8
-        color: "#111111"
-        radius: 16
-        border.color: "#313244"
+        color: "#0f0f14"
+        radius: 28
+        border.color: "#2a2a32"
         border.width: 1
 
+        layer.enabled: true
+        
         MouseArea {
             id: menuMouse
-            // Cover the gap area by anchoring to parent window's top
             anchors.top: parent.top
             anchors.topMargin: -8 
             anchors.left: parent.left
@@ -80,49 +78,76 @@ PopupWindow {
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 20
-            spacing: 15
+            anchors.margins: 24
+            spacing: 20
 
-            // Tab Buttons (Android-like)
+            // Modern Tab Buttons (Android-like Pill buttons)
             RowLayout {
+                id: tabRow
                 Layout.fillWidth: true
-                spacing: 10
+                spacing: 12 // Increased spacing between tabs
                 
                 Repeater {
                     model: [
-                        { id: "network", icon: "󰤨" },
-                        { id: "bluetooth", icon: "󰂯" },
-                        { id: "volume", icon: "󰕾" },
-                        { id: "powerprofile", icon: "󰍛" },
-                        { id: "battery", icon: "󰁹" },
-                        { id: "power", icon: "󰐥" }
+                        { id: "network", icon: "󰤨", title: "Wi-Fi" },
+                        { id: "bluetooth", icon: "󰂯", title: "BT" },
+                        { id: "volume", icon: "󰕾", title: "Audio" },
+                        { id: "powerprofile", icon: "󰍛", title: "Mode" },
+                        { id: "resources", icon: "󰘚", title: "System" },
+                        { id: "battery", icon: "󰁹", title: "Power" },
+                        { id: "power", icon: "󰐥", title: "Exit" }
                     ]
 
                     delegate: Rectangle {
-                        width: 50; height: 50
-                        radius: 25
+                        id: tabButton
+                        Layout.fillWidth: true
+                        height: 48
+                        radius: 24
                         color: QuickSettingsService.activeTab === modelData.id ? Theme.accentColor : "#1e1e2e"
                         
-                        Text {
+                        Behavior on color { ColorAnimation { duration: 200 } }
+
+                        RowLayout {
                             anchors.centerIn: parent
-                            text: modelData.icon
-                            font.family: Theme.iconFont
-                            font.pixelSize: 20
-                            color: QuickSettingsService.activeTab === modelData.id ? "black" : "white"
+                            spacing: 10 // Increased spacing between icon and text
+                            
+                            Text {
+                                text: modelData.icon
+                                font.family: Theme.iconFont
+                                font.pixelSize: 18
+                                color: QuickSettingsService.activeTab === modelData.id ? "#000000" : "white"
+                            }
+                            
+                            Text {
+                                text: modelData.title
+                                font.pixelSize: 13
+                                font.bold: true
+                                color: QuickSettingsService.activeTab === modelData.id ? "#000000" : "white"
+                                visible: root.implicitWidth > 550
+                            }
                         }
 
                         MouseArea {
                             anchors.fill: parent
+                            hoverEnabled: true
                             onClicked: QuickSettingsService.activeTab = modelData.id
                         }
                     }
                 }
             }
 
-            Rectangle { Layout.fillWidth: true; height: 1; color: "#313244" }
+            // Divider
+            Rectangle { 
+                Layout.fillWidth: true; 
+                height: 1; 
+                color: "#2a2a32" 
+                Layout.topMargin: 5
+                Layout.bottomMargin: 5
+            }
 
             // Content Area
             StackLayout {
+                id: contentStack
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 currentIndex: {
@@ -131,18 +156,20 @@ PopupWindow {
                         case "bluetooth": return 1;
                         case "volume": return 2;
                         case "powerprofile": return 3;
-                        case "battery": return 4;
-                        case "power": return 5;
+                        case "resources": return 4;
+                        case "battery": return 5;
+                        case "power": return 6;
                         default: return 0;
                     }
                 }
 
-                WifiContent { }
-                BluetoothContent { }
-                VolumeContent { }
-                PowerProfileContent { }
-                BatteryContent { }
-                PowerContent { }
+                WifiContent { Layout.fillWidth: true; Layout.fillHeight: true }
+                BluetoothContent { Layout.fillWidth: true; Layout.fillHeight: true }
+                VolumeContent { Layout.fillWidth: true; Layout.fillHeight: true }
+                PowerProfileContent { Layout.fillWidth: true; Layout.fillHeight: true }
+                ResourcesContent { Layout.fillWidth: true; Layout.fillHeight: true }
+                BatteryContent { Layout.fillWidth: true; Layout.fillHeight: true }
+                PowerContent { Layout.fillWidth: true; Layout.fillHeight: true }
             }
         }
     }

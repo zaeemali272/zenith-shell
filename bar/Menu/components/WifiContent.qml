@@ -27,112 +27,238 @@ ColumnLayout {
         if (selectedSsid === ssid) selectedSsid = "";
     }
 
-    spacing: 12
+    spacing: 20
 
+    // Header with Airplane Mode and Scanning status
     RowLayout {
         Layout.fillWidth: true
-        Text {
-            text: "Wi-Fi Settings"
-            color: Theme.fontColor
-            font.bold: true
-            font.pixelSize: 18
+        spacing: 15
+        
+        ColumnLayout {
+            spacing: 2
             Layout.fillWidth: true
-        }
-        MouseArea {
-            width: 30; height: 30
-            onClicked: {
-                root.isAirplane = !root.isAirplane;
-                rfkillProc.command = ["rfkill", root.isAirplane ? "block" : "unblock", "wifi"];
-                rfkillProc.running = true;
+            Text {
+                text: "Wi-Fi"
+                color: "white"
+                font.bold: true
+                font.pixelSize: 22
             }
             Text {
+                text: root.isAirplane ? "Airplane mode is on" : (networks.length + " networks found")
+                color: "#a6adc8"
+                font.pixelSize: 12
+            }
+        }
+
+        // Airplane Mode Toggle
+        Rectangle {
+            width: 44; height: 44
+            radius: 22
+            color: root.isAirplane ? Theme.accentColor : "#1e1e2e"
+            border.color: "#313244"
+            
+            Text {
                 anchors.centerIn: parent
-                text: root.isAirplane ? "󰀝" : "󰤨"
+                text: "󰀝"
                 font.family: Theme.iconFont
-                color: root.isAirplane ? "red" : Theme.accentColor
-                font.pixelSize: 18
+                font.pixelSize: 20
+                color: root.isAirplane ? "black" : "white"
+            }
+            
+            MouseArea {
+                anchors.fill: parent
+                onClicked: {
+                    root.isAirplane = !root.isAirplane;
+                    rfkillProc.command = ["rfkill", root.isAirplane ? "block" : "unblock", "wifi"];
+                    rfkillProc.running = true;
+                }
             }
         }
     }
 
+    // Network List
     ListView {
         id: list
         Layout.fillWidth: true
         Layout.fillHeight: true
         model: root.networks
-        spacing: 4
+        spacing: 10
         clip: true
-        delegate: Item {
+        
+        // Use a ScrollView-like behavior if possible, or just standard list
+        delegate: Rectangle {
             width: list.width
-            height: (selectedSsid === modelData.ssid && !knownNetworks[modelData.ssid]) ? 145 : 50
-            Column {
+            height: (selectedSsid === modelData.ssid && !knownNetworks[modelData.ssid]) ? 160 : 64
+            color: "#1e1e2e"
+            radius: 16
+            border.color: selectedSsid === modelData.ssid ? Theme.accentColor : "#313244"
+            border.width: selectedSsid === modelData.ssid ? 2 : 1
+            clip: true
+
+            Behavior on height { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+
+            ColumnLayout {
                 anchors.fill: parent
-                spacing: 4
-                Rectangle {
-                    width: parent.width; height: 45
-                    color: m.containsMouse || selectedSsid === modelData.ssid ? "#1a1a1a" : "transparent"
-                    radius: 8
-                    MouseArea {
-                        id: m
-                        anchors.fill: parent; hoverEnabled: true
-                        onClicked: {
-                            if (knownNetworks[modelData.ssid]) connectTo(modelData.ssid, "");
-                            else selectedSsid = (selectedSsid === modelData.ssid) ? "" : modelData.ssid;
+                anchors.margins: 12
+                spacing: 10
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 15
+                    
+                    Rectangle {
+                        width: 40; height: 40
+                        radius: 20
+                        color: "#2a2a32"
+                        Text {
+                            anchors.centerIn: parent
+                            text: modelData.security === "psk" ? "󰷛" : "󰤨"
+                            font.family: Theme.iconFont
+                            font.pixelSize: 18
+                            color: "white"
                         }
                     }
+
+                    ColumnLayout {
+                        spacing: 2
+                        Layout.fillWidth: true
+                        Text { 
+                            text: modelData.ssid; 
+                            color: "white"; 
+                            font.bold: true; 
+                            font.pixelSize: 14; 
+                            elide: Text.ElideRight 
+                        }
+                        Text { 
+                            text: knownNetworks[modelData.ssid] ? "Saved" : (modelData.security === "psk" ? "Secured" : "Open")
+                            color: "#a6adc8"; 
+                            font.pixelSize: 11 
+                        }
+                    }
+
+                    // Forget/Connect Actions
                     RowLayout {
-                        anchors.fill: parent; anchors.margins: 10; spacing: 12
-                        Text { text: modelData.security === "psk" ? "󰷛" : "󰤨"; font.family: Theme.iconFont; color: Theme.fontColor }
-                        Text { text: modelData.ssid; color: Theme.fontColor; Layout.fillWidth: true; elide: Text.ElideRight }
-                        MouseArea {
-                            id: forgetBtn
-                            width: 24; height: 24; hoverEnabled: true
-                            visible: !!knownNetworks[modelData.ssid]
-                            onClicked: forgetNetwork(modelData.ssid)
-                            Text { anchors.centerIn: parent; text: "󱘖"; font.family: Theme.iconFont; color: forgetBtn.containsMouse ? "white" : "red" }
+                        spacing: 8
+                        visible: !!knownNetworks[modelData.ssid]
+                        
+                        Rectangle {
+                            width: 32; height: 32; radius: 16; color: "#313244"
+                            Text { anchors.centerIn: parent; text: "󱘖"; font.family: Theme.iconFont; color: "#f38ba8" }
+                            MouseArea { anchors.fill: parent; onClicked: forgetNetwork(modelData.ssid) }
+                        }
+                        
+                        Rectangle {
+                            width: 80; height: 32; radius: 16; color: Theme.accentColor
+                            Text { anchors.centerIn: parent; text: "Connect"; color: "black"; font.bold: true; font.pixelSize: 11 }
+                            MouseArea { anchors.fill: parent; onClicked: connectTo(modelData.ssid, "") }
+                        }
+                    }
+                    
+                    // Toggle Password Input for unknown networks
+                    Rectangle {
+                        width: 32; height: 32; radius: 16; color: "#313244"
+                        visible: !knownNetworks[modelData.ssid]
+                        Text { 
+                            anchors.centerIn: parent; 
+                            text: selectedSsid === modelData.ssid ? "󰅖" : "󰅂"; 
+                            font.family: Theme.iconFont; 
+                            color: "white" 
+                        }
+                        MouseArea { 
+                            anchors.fill: parent; 
+                            onClicked: selectedSsid = (selectedSsid === modelData.ssid) ? "" : modelData.ssid 
                         }
                     }
                 }
-                Rectangle {
-                    width: parent.width
-                    height: (selectedSsid === modelData.ssid && !knownNetworks[modelData.ssid]) ? 90 : 0
-                    visible: height > 0; clip: true; color: "#0a0a0a"; radius: 8
-                    ColumnLayout {
-                        anchors.fill: parent; anchors.margins: 10; spacing: 8
+
+                // Password Input Section
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    visible: selectedSsid === modelData.ssid && !knownNetworks[modelData.ssid]
+                    spacing: 12
+                    
+                    Rectangle {
+                        Layout.fillWidth: true
+                        height: 44
+                        color: "#2a2a32"
+                        radius: 12
+                        border.color: "#45475a"
+                        
                         RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: { left: 15; right: 10 }
+                            
                             TextInput {
                                 id: passInput
-                                Layout.fillWidth: true; color: "white"
+                                Layout.fillWidth: true
+                                color: "white"
+                                font.pixelSize: 14
                                 echoMode: showPassword ? TextInput.Normal : TextInput.Password
                                 focus: parent.visible && selectedSsid === modelData.ssid
-                                Text { text: "Enter Password..."; color: "#444"; visible: !passInput.text }
+                                
+                                Text {
+                                    text: "Password"
+                                    color: "#585b70"
+                                    visible: !passInput.text
+                                    font.pixelSize: 14
+                                }
                             }
-                            MouseArea {
-                                width: 24; height: 24; onClicked: showPassword = !showPassword
-                                Text { anchors.centerIn: parent; text: showPassword ? "󰈈" : "󰈉"; font.family: Theme.iconFont; color: Theme.accentColor }
+                            
+                            Rectangle {
+                                width: 32; height: 32; radius: 16; color: "transparent"
+                                Text { 
+                                    anchors.centerIn: parent; 
+                                    text: showPassword ? "󰈈" : "󰈉"; 
+                                    font.family: Theme.iconFont; 
+                                    color: "#a6adc8" 
+                                }
+                                MouseArea { anchors.fill: parent; onClicked: showPassword = !showPassword }
                             }
                         }
-                        Rectangle {
-                            Layout.fillWidth: true; height: 32; color: Theme.accentColor; radius: 6
-                            Text { anchors.centerIn: parent; text: "CONNECT"; color: "black"; font.bold: true; font.pixelSize: 11 }
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: { connectTo(modelData.ssid, passInput.text); passInput.text = ""; }
-                            }
+                    }
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        height: 44
+                        color: Theme.accentColor
+                        radius: 12
+                        Text { 
+                            anchors.centerIn: parent; 
+                            text: "Connect to " + modelData.ssid; 
+                            color: "black"; 
+                            font.bold: true; 
+                            font.pixelSize: 14 
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: { connectTo(modelData.ssid, passInput.text); passInput.text = ""; }
                         }
                     }
                 }
             }
-            Behavior on height { NumberAnimation { duration: 200 } }
+            
+            MouseArea {
+                anchors.fill: parent
+                enabled: !knownNetworks[modelData.ssid] && selectedSsid !== modelData.ssid
+                onClicked: selectedSsid = modelData.ssid
+                z: -1
+            }
         }
     }
 
+    // Speed Footer
     Rectangle {
-        Layout.fillWidth: true; height: 35; color: "#111"; radius: 8
+        Layout.fillWidth: true
+        height: 50
+        color: "#1e1e2e"
+        radius: 16
+        border.color: "#313244"
+        
         RowLayout {
-            anchors.centerIn: parent; spacing: 8
-            Text { text: "󰓅"; font.family: Theme.iconFont; color: Theme.accentColor }
-            Text { text: "Speed: " + currentSpeed; color: Theme.fontColor; font.pixelSize: 11 }
+            anchors.centerIn: parent
+            spacing: 10
+            Text { text: "󰓅"; font.family: Theme.iconFont; color: Theme.accentColor; font.pixelSize: 18 }
+            Text { text: "Network Speed: " + currentSpeed; color: "#a6adc8"; font.pixelSize: 13; font.bold: true }
         }
     }
 

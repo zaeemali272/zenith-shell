@@ -8,7 +8,7 @@ import Quickshell
 
 ColumnLayout {
     id: root
-    spacing: 12
+    spacing: 20
 
     function getDeviceIcon(iconName) {
         if (!iconName) return "󰂯";
@@ -26,27 +26,39 @@ ColumnLayout {
     // Header
     RowLayout {
         Layout.fillWidth: true
-        spacing: 10
+        spacing: 15
 
-        Text {
-            text: "Bluetooth"
-            color: Theme.fontColor
-            font.bold: true
-            font.pixelSize: 18
+        ColumnLayout {
+            spacing: 2
             Layout.fillWidth: true
+            Text {
+                text: "Bluetooth"
+                color: "white"
+                font.bold: true
+                font.pixelSize: 22
+            }
+            Text {
+                text: BluetoothService.powered ? (BluetoothService.scanning ? "Searching for devices..." : "Bluetooth is on") : "Bluetooth is off"
+                color: "#a6adc8"
+                font.pixelSize: 12
+            }
         }
 
         // Scan Button
-        MouseArea {
-            width: 32; height: 32
+        Rectangle {
+            width: 44; height: 44
+            radius: 22
+            color: "#1e1e2e"
+            border.color: "#313244"
             visible: BluetoothService.powered
-            onClicked: BluetoothService.toggleScan()
+            
             Text {
                 id: scanIcon
                 anchors.centerIn: parent
                 text: "󰑐"
                 font.family: Theme.iconFont
-                color: (BluetoothService.scanning || BluetoothService.busy) ? Theme.accentColor : Theme.fontColor
+                font.pixelSize: 20
+                color: (BluetoothService.scanning || BluetoothService.busy) ? Theme.accentColor : "white"
                 
                 RotationAnimation on rotation {
                     duration: 1000
@@ -56,18 +68,31 @@ ColumnLayout {
                     to: 360
                 }
             }
+            
+            MouseArea {
+                anchors.fill: parent
+                onClicked: BluetoothService.toggleScan()
+            }
         }
 
         // Power Toggle
-        MouseArea {
-            width: 32; height: 32
-            onClicked: BluetoothService.togglePower()
+        Rectangle {
+            width: 44; height: 44
+            radius: 22
+            color: BluetoothService.powered ? Theme.accentColor : "#1e1e2e"
+            border.color: "#313244"
+            
             Text {
                 anchors.centerIn: parent
                 text: BluetoothService.powered ? "󰂯" : "󰂲"
                 font.family: Theme.iconFont
                 font.pixelSize: 20
-                color: BluetoothService.powered ? Theme.accentColor : "#555"
+                color: BluetoothService.powered ? "black" : "#585b70"
+            }
+            
+            MouseArea {
+                anchors.fill: parent
+                onClicked: BluetoothService.togglePower()
             }
         }
     }
@@ -78,10 +103,24 @@ ColumnLayout {
         Layout.fillHeight: true
         visible: !BluetoothService.powered
 
-        Text {
+        ColumnLayout {
             anchors.centerIn: parent
-            text: "Bluetooth is powered off"
-            color: "#666"
+            spacing: 15
+            
+            Text {
+                text: "󰂲"
+                font.family: Theme.iconFont
+                font.pixelSize: 64
+                color: "#313244"
+                Layout.alignment: Qt.AlignHCenter
+            }
+            Text {
+                text: "Bluetooth is disabled"
+                color: "#6c7086"
+                font.pixelSize: 16
+                font.bold: true
+                Layout.alignment: Qt.AlignHCenter
+            }
         }
     }
 
@@ -92,68 +131,86 @@ ColumnLayout {
         Layout.fillHeight: true
         model: BluetoothService.devices
         visible: BluetoothService.powered
-        spacing: 8
+        spacing: 10
         clip: true
 
         delegate: Rectangle {
             width: deviceList.width
-            height: 55
-            color: connected ? "#1a1a1a" : (hoverArea.containsMouse ? "#111" : "transparent")
-            radius: 8
-            border.color: connected ? Theme.accentColor : "transparent"
-            border.width: 1
-
-            MouseArea {
-                id: hoverArea
-                anchors.fill: parent
-                hoverEnabled: true
-                onClicked: {
-                    if (connected) BluetoothService.action("disconnect", address);
-                    else if (paired) BluetoothService.action("connect", address);
-                    else BluetoothService.action("pair", address);
-                }
-            }
+            height: 70
+            color: "#1e1e2e"
+            radius: 16
+            border.color: connected ? Theme.accentColor : "#313244"
+            border.width: connected ? 2 : 1
 
             RowLayout {
                 anchors.fill: parent
-                anchors.margins: 10
-                spacing: 12
+                anchors.margins: 12
+                spacing: 15
 
-                Text {
-                    text: getDeviceIcon(icon)
-                    font.family: Theme.iconFont
-                    font.pixelSize: 20
-                    color: connected ? Theme.accentColor : Theme.fontColor
+                Rectangle {
+                    width: 46; height: 46
+                    radius: 23
+                    color: connected ? Theme.accentColor : "#2a2a32"
+                    Text {
+                        anchors.centerIn: parent
+                        text: getDeviceIcon(icon)
+                        font.family: Theme.iconFont
+                        font.pixelSize: 22
+                        color: connected ? "black" : "white"
+                    }
                 }
 
-                Column {
+                ColumnLayout {
                     Layout.fillWidth: true
+                    spacing: 2
                     Text {
                         text: name
-                        color: Theme.fontColor
+                        color: "white"
+                        font.bold: true
+                        font.pixelSize: 14
                         elide: Text.ElideRight
-                        font.bold: connected
                     }
                     Text {
                         text: {
                             if (connected) return "Connected";
                             if (paired) return "Paired";
-                            return "Available (Not Paired)";
+                            return "Available to pair";
                         }
-                        color: connected ? Theme.accentColor : (paired ? "#888" : Theme.yellow)
-                        font.pixelSize: 10
+                        color: connected ? Theme.accentColor : (paired ? "#a6adc8" : Theme.yellow)
+                        font.pixelSize: 11
                     }
                 }
 
-                // Remove Button
-                MouseArea {
-                    width: 24; height: 24
-                    onClicked: BluetoothService.action("remove", address)
-                    Text {
-                        anchors.centerIn: parent
-                        text: "󰆴"
-                        font.family: Theme.iconFont
-                        color: "#ee99a0"
+                // Action Buttons
+                RowLayout {
+                    spacing: 8
+                    
+                    // Remove/Unpair Button
+                    Rectangle {
+                        width: 36; height: 36; radius: 18; color: "#313244"
+                        Text { anchors.centerIn: parent; text: "󰆴"; font.family: Theme.iconFont; color: "#f38ba8"; font.pixelSize: 16 }
+                        MouseArea { anchors.fill: parent; onClicked: BluetoothService.action("remove", address) }
+                    }
+                    
+                    // Connect/Disconnect Toggle
+                    Rectangle {
+                        width: 100; height: 36; radius: 18
+                        color: connected ? "#313244" : Theme.accentColor
+                        Text { 
+                            anchors.centerIn: parent; 
+                            text: connected ? "Disconnect" : (paired ? "Connect" : "Pair"); 
+                            color: connected ? "white" : "black"; 
+                            font.bold: true; 
+                            font.pixelSize: 11 
+                        }
+                        MouseArea { 
+                            anchors.fill: parent; 
+                            onClicked: {
+                                if (connected) BluetoothService.action("disconnect", address);
+                                else if (paired) BluetoothService.action("connect", address);
+                                else BluetoothService.action("pair", address);
+                            }
+                        }
                     }
                 }
             }
