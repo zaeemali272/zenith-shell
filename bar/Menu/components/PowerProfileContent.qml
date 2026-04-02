@@ -6,54 +6,71 @@ import Quickshell
 
 ColumnLayout {
     id: root
-    spacing: 12
+    spacing: 20
+    Layout.fillWidth: true
 
     Text {
-        text: "Power Profiles"
-        font.pixelSize: 18
+        text: "Performance Mode"
+        color: "white"
         font.bold: true
-        color: Theme.fontColor
+        font.pixelSize: 22
     }
 
-    Repeater {
-        model: ["performance", "balanced", "powersave", "turbo"]
+    GridLayout {
+        columns: 2
+        Layout.fillWidth: true
+        rowSpacing: 15
+        columnSpacing: 15
 
-        delegate: Rectangle {
-            height: 45
-            radius: 8
-            color: PowerProfileService.currentProfile === modelData ? Theme.accentColor : "#1a1a1a"
-            Layout.fillWidth: true
+        Repeater {
+            model: [
+                { id: "performance", icon: "󰀦", color: "#f38ba8", label: "Performance" },
+                { id: "balanced", icon: "󰏤", color: "#89b4fa", label: "Balanced" },
+                { id: "powersave", icon: "󰍛", color: "#a6e3a1", label: "Power Save" },
+                { id: "turbo", icon: "󰞃", color: "#f9e2af", label: "Turbo" }
+            ]
 
-            RowLayout {
-                anchors.centerIn: parent
-                spacing: 12
+            delegate: Rectangle {
+                Layout.fillWidth: true
+                height: 80
+                color: PowerProfileService.currentProfile === modelData.id ? modelData.color : "#1e1e2e"
+                radius: 20
+                border.color: "#313244"
+                border.width: 1
 
-                Text {
-                    text: {
-                        switch (modelData) {
-                        case "performance": return "󰀦";
-                        case "powersave": return "󰍛";
-                        case "balanced": return "󰏤";
-                        case "turbo": return "󰞃";
-                        default: return "󰀄";
+                Behavior on color { ColorAnimation { duration: 200 } }
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: PowerProfileService.setProfile(modelData.id)
+                }
+
+                RowLayout {
+                    anchors.centerIn: parent
+                    spacing: 15
+
+                    Rectangle {
+                        width: 40; height: 40; radius: 20
+                        color: PowerProfileService.currentProfile === modelData.id ? "rgba(0,0,0,0.1)" : "#2a2a32"
+                        Text {
+                            anchors.centerIn: parent
+                            text: modelData.icon
+                            font.family: Theme.iconFont
+                            font.pixelSize: 20
+                            color: PowerProfileService.currentProfile === modelData.id ? "black" : modelData.color
                         }
                     }
-                    font.family: Theme.iconFont
-                    font.pixelSize: 16
-                    color: "white"
-                }
 
-                Text {
-                    text: modelData.charAt(0).toUpperCase() + modelData.slice(1)
-                    font.pixelSize: 13
-                    color: "white"
+                    Text {
+                        text: modelData.label
+                        font.pixelSize: 15
+                        font.bold: true
+                        color: PowerProfileService.currentProfile === modelData.id ? "black" : "white"
+                    }
                 }
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                onClicked: PowerProfileService.setProfile(modelData)
             }
         }
     }
+
+    Item { Layout.fillHeight: true }
 }
