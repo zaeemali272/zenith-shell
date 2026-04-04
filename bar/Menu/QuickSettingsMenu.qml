@@ -73,56 +73,64 @@ PopupWindow {
             spacing: 20
 
             // Modern Tab Buttons
-            RowLayout {
-                id: tabRow
+            Item {
                 Layout.fillWidth: true
-                spacing: 12
+                height: 48
                 
-                Repeater {
-                    model: [
-                        { id: "network", icon: "󰤨", title: "Wi-Fi" },
-                        { id: "bluetooth", icon: "󰂯", title: "BT" },
-                        { id: "volume", icon: "󰕾", title: "Audio" },
-                        { id: "powerprofile", icon: "󰍛", title: "Mode" },
-                        { id: "resources", icon: "󰘚", title: "System" },
-                        { id: "battery", icon: "󰁹", title: "Power" },
-                        { id: "power", icon: "󰐥", title: "Exit" }
-                    ]
+                Row {
+                    id: tabRow
+                    anchors.centerIn: parent
+                    spacing: 8// Reduced from 8
+                    
+                    Repeater {
+                        model: [
+                            { id: "network", icon: "󰤨", title: "Wi-Fi" },
+                            { id: "bluetooth", icon: "󰂯", title: "BT" },
+                            { id: "volume", icon: "󰕾", title: "Audio" },
+                            { id: "powerprofile", icon: "󰍛", title: "Mode" },
+                            { id: "resources", icon: "󰘚", title: "System" },
+                            { id: "battery", icon: "󰁹", title: "Power" },
+                            { id: "power", icon: "󰐥", title: "Exit" }
+                        ]
 
-                    delegate: Rectangle {
-                        id: tabButton
-                        Layout.fillWidth: true
-                        height: 48
-                        radius: 24
-                        color: QuickSettingsService.activeTab === modelData.id ? Theme.accentColor : "#1e1e2e"
-                        
-                        Behavior on color { ColorAnimation { duration: 200 } }
-
-                        RowLayout {
-                            anchors.centerIn: parent
-                            spacing: 10
+                        delegate: Rectangle {
+                            id: tabButton
+                            implicitWidth: innerRow.implicitWidth + 24 // Reduced padding from 28
+                            height: 48
+                            radius: 24
+                            color: QuickSettingsService.activeTab === modelData.id ? Theme.accentColor : "#1e1e2e"
                             
-                            Text {
-                                text: modelData.icon
-                                font.family: Theme.iconFont
-                                font.pixelSize: 18
-                                color: QuickSettingsService.activeTab === modelData.id ? "#000000" : "white"
-                            }
-                            
-                            Text {
-                                text: modelData.title
-                                font.pixelSize: 13
-                                font.bold: true
-                                color: QuickSettingsService.activeTab === modelData.id ? "#000000" : "white"
-                                visible: root.implicitWidth > 550
-                            }
-                        }
+                            Behavior on color { ColorAnimation { duration: 200 } }
 
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: {
-                                console.log(`[QuickSettingsMenu] Tab clicked: ${modelData.id}`)
-                                QuickSettingsService.activeTab = modelData.id
+                            Row {
+                                id: innerRow
+                                anchors.centerIn: parent
+                                spacing: 6
+                                
+                                Text {
+                                    text: modelData.icon
+                                    font.family: Theme.iconFont
+                                    font.pixelSize: 18
+                                    color: QuickSettingsService.activeTab === modelData.id ? "#000000" : "white"
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+                                
+                                Text {
+                                    text: modelData.title.substring(0, 7)
+                                    font.pixelSize: 12
+                                    font.bold: true
+                                    color: QuickSettingsService.activeTab === modelData.id ? "#000000" : "white"
+                                    visible: root.implicitWidth > 400
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                onClicked: {
+                                    console.log(`[QuickSettingsMenu] Tab clicked: ${modelData.id}`)
+                                    QuickSettingsService.activeTab = modelData.id
+                                }
                             }
                         }
                     }
