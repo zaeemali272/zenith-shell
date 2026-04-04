@@ -7,29 +7,35 @@ Item {
     id: root
 
     property bool qsVisible: false
-    onQsVisibleChanged: console.log("QuickSettingsService visible changed to:", qsVisible)
-    property bool isSticky: false // true if opened via click
-    property string activeTab: "network" // network, bluetooth, power, volume, battery
-    
-    // Position tracking for the menu
+    property bool isSticky: false 
+    property bool isHoveringMenu: false
+    property string activeTab: "network"
     property rect anchorRect: Qt.rect(0, 0, 0, 0)
 
+    onIsHoveringMenuChanged: {
+        if (!isHoveringMenu) startHideTimer();
+        else stopHideTimer();
+    }
+
+    onQsVisibleChanged: console.log(`[QuickSettingsService] Visible: ${qsVisible}, Sticky: ${isSticky}, Tab: ${activeTab}`)
+    onIsStickyChanged: console.log(`[QuickSettingsService] Sticky changed: ${isSticky}`)
+    
     Timer {
         id: hideTimer
-        interval: 500
+        interval: 300
         onTriggered: {
-            if (!isSticky) {
-                console.log("QuickSettingsService hideTimer triggered, closing hover menu")
+            if (!isSticky && !isHoveringMenu) {
+                console.log("[QuickSettingsService] hideTimer triggered - closing hover menu")
                 qsVisible = false;
             }
         }
     }
     
     function open(tab, rect, sticky = false) {
-        console.log("QuickSettingsService.open called:", tab, "sticky:", sticky);
+        console.log(`[QuickSettingsService] open request: tab=${tab}, sticky=${sticky}`)
         hideTimer.stop();
-        if (qsVisible && activeTab === tab && isSticky && !sticky) {
-            // Already open and sticky, hovering shouldn't change anything
+        
+        if (qsVisible && isSticky && !sticky) {
             return;
         }
         
@@ -40,32 +46,31 @@ Item {
     }
 
     function toggle(tab, rect) {
-        console.log("QuickSettingsService.toggle called:", tab, "visible:", qsVisible, "isSticky:", isSticky);
+        console.log(`[QuickSettingsService] toggle request: tab=${tab}, currentVisible=${qsVisible}`)
         hideTimer.stop();
+        
         if (qsVisible && activeTab === tab) {
-            if (isSticky) {
-                qsVisible = false;
-                isSticky = false;
-            } else {
-                isSticky = true;
-                console.log("QuickSettingsService: converted hover to sticky");
-            }
+            close();
         } else {
             open(tab, rect, true);
         }
     }
 
     function startHideTimer() {
-        if (!isSticky) {
+        if (!isSticky && qsVisible && !isHoveringMenu) {
             hideTimer.restart();
         }
     }
 
     function stopHideTimer() {
-        hideTimer.stop();
+        if (hideTimer.running) {
+            console.log("[QuickSettingsService] stopHideTimer - mouse returned")
+            hideTimer.stop();
+        }
     }
 
     function close() {
+        console.log("[QuickSettingsService] close explicitly called")
         qsVisible = false;
         isSticky = false;
         hideTimer.stop();

@@ -1,0 +1,9 @@
+Battery Battery.qml
+Bluetooth Bluetooth.qml
+Network Network.qml
+Power Power.qml
+PowerProfile PowerProfile.qml
+Resources Resources.qml
+Tray Tray.qml
+TrayItem TrayItem.qml
+Volume Volume.qml

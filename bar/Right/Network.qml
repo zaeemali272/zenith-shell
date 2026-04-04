@@ -94,21 +94,27 @@ Item {
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         onEntered: {
-            QuickSettingsService.open("network", root.mapToItem(null, 0, 0, root.width, root.height));
+            QuickSettingsService.open("network", root.mapToItem(null, 0, 0, root.width, root.height), false); // Hover is not sticky
         }
         onExited: QuickSettingsService.startHideTimer();
+
         onClicked: (mouse) => {
             if (mouse.button === Qt.RightButton)
                 showUpload = !showUpload;
             else if (mouse.button === Qt.LeftButton)
-                QuickSettingsService.toggle("network", root.mapToItem(null, 0, 0, root.width, root.height));
+                QuickSettingsService.toggle("network", root.mapToItem(null, 0, 0, root.width, root.height)); // Click is toggle (sticky)
         }
     }
 
     Process {
         id: netExec
 
-        command: ["sh", "-c", "IFACE=$(ip route | awk '/default/ {print $5; exit}'); " + "awk -v iface=\"$IFACE\" '$1 ~ iface\":\" {print \"SPEED\", $2, $10}' /proc/net/dev; " + "iwctl station $(ls /sys/class/net | grep ^wl | head -n1) show | grep 'Connected network' | awk '{$1=$2=\"\"; print \"SSID\", $0}'; " + "rfkill list wifi | grep -q 'Soft blocked: yes' && echo 'AIRPLANE ON' || echo 'AIRPLANE OFF'"]
+        command: ["sh", "-c",
+            `IFACE=$(ip route | awk '/default/ {print $5; exit}'); ` +
+            `awk -v iface="$IFACE" '$1 ~ iface":" {print "SPEED", $2, $10}' /proc/net/dev; ` +
+            `iwctl station $(ls /sys/class/net | grep ^wl | head -n1) show | grep 'Connected network' | awk '{$1=$2=""; print "SSID", $0}'; ` +
+            `rfkill list wifi | grep -q 'Soft blocked: yes' && echo 'AIRPLANE ON' || echo 'AIRPLANE OFF'`
+        ]
 
         stdout: StdioCollector {
             onStreamFinished: {

@@ -11,14 +11,10 @@ PopupWindow {
     id: menuRoot
 
     property var anchorItem: null
-
-    // --- FIX 1: The Native Window Hack (From your working WifiMenu) ---
-    Component.onCompleted: {
-        if (menuRoot.QsWindow && menuRoot.QsWindow.window)
-            menuRoot.QsWindow.window.focusable = true;
-
-    }
+    
     visible: CenterState.visible
+    grabFocus: true
+    
     anchor.window: bar
     anchor.edges: Edges.Top
     anchor.rect.y: bar.height + 8
@@ -27,15 +23,14 @@ PopupWindow {
         let targetX = barCenter - (implicitWidth / 2);
         return Math.max(10, Math.min(bar.width - implicitWidth - 10, targetX));
     }
+    
     implicitWidth: 850
     implicitHeight: 550
     color: "transparent"
 
-    // --- FIX 2: Correct Window List for Grab ---
     HyprlandFocusGrab {
         active: menuRoot.visible
-        // Include the menu's own window so it can actually receive the keys
-        windows: menuRoot.QsWindow ? [menuRoot.QsWindow.window, bar.QsWindow.window] : [bar.QsWindow.window]
+        windows: [menuRoot, bar]
         onCleared: CenterState.visible = false
     }
 
@@ -44,9 +39,13 @@ PopupWindow {
 
         anchors.fill: parent
         focus: true
+        
+        Keys.onPressed: (event) => {
+            if (event.key === Qt.Key_Escape) {
+                CenterState.visible = false;
+            }
+        }
 
-        // --- FIX 3: The "Grab Shield" (From your working WifiMenu) ---
-        // Consumes the click so Hyprland doesn't return focus to the terminal
         MouseArea {
             anchors.fill: parent
             onPressed: (mouse) => {

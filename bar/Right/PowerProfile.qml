@@ -57,7 +57,7 @@ Item {
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         onEntered: {
-            QuickSettingsService.open("powerprofile", root.mapToItem(null, 0, 0, root.width, root.height));
+            QuickSettingsService.open("powerprofile", root.mapToItem(null, 0, 0, root.width, root.height), false);
         }
         onExited: QuickSettingsService.startHideTimer();
         onClicked: (mouse) => {
