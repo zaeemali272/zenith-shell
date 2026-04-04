@@ -17,6 +17,7 @@ readonly property var _notifications: NotificationService // Add this!
 
     ControlCenter {
         id: controlCenter
+        parentWindow: bar
     }
 
     NotificationPopup {

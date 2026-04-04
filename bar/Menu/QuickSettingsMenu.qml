@@ -58,17 +58,10 @@ PopupWindow {
 
         layer.enabled: true
         
+        // Background clicks and focus management
         MouseArea {
-            id: mainMouse
             anchors.fill: parent
-            anchors.topMargin: -12
-            hoverEnabled: true
-            propagateComposedEvents: true
-            
-            onEntered: QuickSettingsService.isHoveringMenu = true
-            onExited: QuickSettingsService.isHoveringMenu = false
-
-            onClicked: (mouse) => {
+            onPressed: (mouse) => {
                 mouse.accepted = true; // Consume to prevent focus loss
                 mainContent.forceActiveFocus();
             }
@@ -170,6 +163,18 @@ PopupWindow {
                 BatteryContent { }
                 PowerContent { }
             }
+        }
+
+        // Hover tracking (on top of everything but blocks nothing)
+        MouseArea {
+            id: hoverTracker
+            anchors.fill: parent
+            anchors.topMargin: -12
+            hoverEnabled: true
+            acceptedButtons: Qt.NoButton
+            
+            onEntered: QuickSettingsService.isHoveringMenu = true
+            onExited: QuickSettingsService.isHoveringMenu = false
         }
     }
 }
