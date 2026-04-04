@@ -128,5 +128,6 @@ PanelWindow {
 
     TrayMenu {
         id: trayPopup
+        parentWindow: bar
     }
     }

@@ -13,16 +13,18 @@ MouseArea {
     implicitWidth: visible ? Theme.iconSize + 2 : 0
     implicitHeight: visible ? Theme.pillHeight : 0
     acceptedButtons: Qt.LeftButton | Qt.RightButton
-    onPressed: (event) => {
+    onClicked: (mouse) => {
+        console.log(`[TrayItem] Clicked! Button: ${mouse.button}, item exists: ${!!root.item}`);
         if (!root.item)
             return ;
 
-        if (event.button === Qt.LeftButton) {
+        if (mouse.button === Qt.LeftButton) {
+            console.log("[TrayItem] Activating item");
             root.item.activate();
-        } else if (event.button === Qt.RightButton && root.item.hasMenu) {
-            if (menuRef)
+        } else if (mouse.button === Qt.RightButton) {
+            console.log(`[TrayItem] Right click. hasMenu: ${root.item.hasMenu}, menuRef exists: ${!!menuRef}`);
+            if (root.item.hasMenu && menuRef)
                 menuRef.openFor(root.item, root);
-
         }
     }
 
