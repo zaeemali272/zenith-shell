@@ -11,83 +11,93 @@ ColumnLayout {
     property string icon: ""
     property int value: 0
     property var onChange: null
-    property color color: Theme.activeTextColor // This controls text & icons
-    property color sliderColor: Theme.accentColor // This will control the slider track
+    property color color: "white" 
+    property color sliderColor: Theme.accentColor
 
-    spacing: 6
+    spacing: 8
+    Layout.fillWidth: true
 
     RowLayout {
-        spacing: 6
+        spacing: 12
+        Layout.fillWidth: true
 
-        Text {
-            text: root.icon
-            font.family: Theme.iconFont
-            font.pixelSize: Theme.iconSize
-            color: root.color
+        Rectangle {
+            width: 36; height: 36
+            radius: 18
+            color: "#2a2a32"
+            Text {
+                anchors.centerIn: parent
+                text: root.icon
+                font.family: Theme.iconFont
+                font.pixelSize: 18
+                color: root.sliderColor
+            }
         }
 
-        Text {
-            text: root.label
+        ColumnLayout {
+            spacing: 0
             Layout.fillWidth: true
-            color: root.color
-            font.pixelSize: Theme.fontSize
+            Text {
+                text: root.label
+                color: "white"
+                font.bold: true
+                font.pixelSize: 13
+            }
+            Text {
+                text: root.value + "%"
+                color: "#a6adc8"
+                font.pixelSize: 11
+            }
         }
-
-        Text {
-            text: root.value + "%"
-            color: root.color
-            font.pixelSize: Theme.fontSize
-        }
-
     }
 
     Slider {
         id: control
-
         Layout.fillWidth: true
         from: 0
         to: 100
         value: root.value
+        
         onMoved: {
             const v = Math.round(value);
-            root.value = v;
+            // root.value = v; // Avoid binding loop if possible, but for simplicity:
             if (root.onChange)
                 root.onChange(v);
-
         }
 
-        // 1. Change the Handle (The Knob)
+        // Modern thick slider (Android 12+ style)
         handle: Rectangle {
             x: control.leftPadding + control.visualPosition * (control.availableWidth - width)
-            y: control.topPadding + control.availableHeight / 2 - height / 2
-            implicitWidth: 14
-            implicitHeight: 14
-            radius: 7
-            color: root.sliderColor
-            border.color: "#ffffff"
-            border.width: 1
+            y: control.topPadding + (control.availableHeight - height) / 2
+            implicitWidth: 20
+            implicitHeight: 20
+            radius: 10
+            color: "white"
+            border.color: root.sliderColor
+            border.width: 2
+            opacity: control.hovered || control.pressed ? 1 : 0
+            
+            Behavior on opacity { NumberAnimation { duration: 200 } }
         }
 
-        // 2. Change the Background (The Bar/Track)
         background: Rectangle {
             x: control.leftPadding
-            y: control.topPadding + control.availableHeight / 2 - height / 2
+            y: control.topPadding + (control.availableHeight - height) / 2
             implicitWidth: 200
-            implicitHeight: 4
+            implicitHeight: 12 // Thicker track
             width: control.availableWidth
             height: implicitHeight
-            radius: 2
-            color: "#333333" // Inactive track color
+            radius: 6
+            color: "#2a2a32"
 
             Rectangle {
                 width: control.visualPosition * parent.width
                 height: parent.height
-                color: root.sliderColor // Active (filled) track color
-                radius: 2
+                color: root.sliderColor
+                radius: 6
+                
+                // Add a subtle gradient or shine? Android is flat but let's keep it clean
             }
-
         }
-
     }
-
 }
