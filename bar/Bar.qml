@@ -2,6 +2,7 @@
 import ".."
 import "./Menu"
 import "./Right"
+import "../services"
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -13,35 +14,39 @@ PanelWindow {
 
     property var controlCenterMenuRef: null
 
-    WlrLayershell.keyboardFocus: WlrLayershell.None
-    implicitHeight: Theme.barHeight
-    color: "transparent"
-
-    anchors {
-        left: true
-        top: true
-        right: true
-    }
-
-    margins {
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+    WlrLayershell.layer: WlrLayer.Top
+    WlrLayershell.exclusionMode: ExclusionMode.Auto
+    WlrLayershell.margins {
         top: Theme.barMarginTop
         bottom: Theme.barMarginBottom
         left: Theme.barMarginLeft
         right: Theme.barMarginRight
     }
 
+    anchors {
+        top: true
+        left: true
+        right: true
+    }
+
+    implicitHeight: Theme.barHeight
+    implicitWidth: screen ? screen.width : 1920
+    color: "transparent"
+
+    // Removed generic anchors as they are not valid for PanelWindow positioning in Quickshell/Layershell
+
+
     Rectangle {
         id: barVisual
 
-        width: bar.width
-        height: bar.height
+        anchors.fill: parent
 
         color: Theme.barColor
         radius: Theme.barRadius || 0
         clip: true
         opacity: 0
         y: -height
-        Component.onCompleted: barEntryAnim.start()
 
         ParallelAnimation {
             id: barEntryAnim
@@ -60,14 +65,16 @@ PanelWindow {
                 to: 1
                 duration: 600
             }
+        }
 
+        Component.onCompleted: {
+            console.log("[Bar] Component.onCompleted: Starting barEntryAnim.");
+            barEntryAnim.start();
         }
 
         // --- LEFT SIDE ---
-        // Just anchor the module directly. No need for a container width loop.
         Left {
             id: leftSide
-
             anchors.left: parent.left
             anchors.leftMargin: Theme.barMarginLeft
             anchors.verticalCenter: parent.verticalCenter
@@ -76,133 +83,51 @@ PanelWindow {
         // --- PERFECT CENTER ---
         Center {
             id: centerSide
-
             anchors.verticalCenter: parent.verticalCenter
-            // --- SAFE DYNAMIC WIDTH ---
-            // We add a Math.max(100, ...) so it never shrinks below 100px
             width: {
                 let availableSpace = rightLayout.x - (leftSide.x + leftSide.width) - (Theme.pillGap * 2);
                 return Math.max(100, Math.min(implicitWidth, availableSpace));
             }
-            clip: true // Keeps the text from bleeding into other icons if it's too long
+            clip: true
             x: {
                 let preferredX = (parent.width - width) / 2;
                 let leftBound = leftSide.x + leftSide.width + Theme.pillGap;
                 let rightBound = rightLayout.x - width - Theme.pillGap;
-                // If the bar is still loading (rightLayout.x is 0), just center it normally
-                if (rightLayout.x <= 0)
+                if (rightLayout.x <= 0) {
+                    console.log("[Bar] Center centering normally (rightLayout.x <= 0).");
                     return preferredX;
-
+                }
                 return Math.max(leftBound, Math.min(preferredX, rightBound));
             }
             controlCenterMenuRef: bar.controlCenterMenuRef
         }
 
         // --- RIGHT SIDE ---
-        // Using RowLayout directly with anchors.
-        // RowLayout calculates its own width based on children automatically.
         RowLayout {
             id: rightLayout
-
             anchors.right: parent.right
             anchors.rightMargin: Theme.barMarginRight
             anchors.verticalCenter: parent.verticalCenter
             spacing: Theme.pillSpacing
 
-            Tray {
-                menuRef: trayPopup
-            }
-
-            Network {
-                id: wifiWidget
-
-                menuRef: wifiLoader
-            }
-
-            PowerProfile {
-                id: powerProfileWidget
-
-                menuRef: powerProfilePopup
-            }
-
-            Resources {
-            }
-
-            Volume {
-                id: volumeWidget
-
-                menuRef: volumePopup
-            }
-
-            Bluetooth {
-                id: bluetoothWidget
-
-                menuRef: bluetoothLoader
-            }
-
-            Battery {
-                id: batteryWidget
-            }
-
-            Power {
-            }
-
-        }
-
-    }
-
-    // Update your FocusGrab to include the Bluetooth menu
-    HyprlandFocusGrab {
-        active: wifiLoader.active || bluetoothLoader.active
-        windows: {
-            let winList = [bar.QsWindow.window];
-            if (wifiLoader.item)
-                winList.push(wifiLoader.item.QsWindow.window);
-
-            if (bluetoothLoader.item)
-                winList.push(bluetoothLoader.item.QsWindow.window);
-
-            return winList;
+            Tray { menuRef: trayPopup }
+            Network { id: wifiWidget }
+            PowerProfile { id: powerProfileWidget }
+            Resources { }
+            Volume { id: volumeWidget }
+            Bluetooth { id: bluetoothWidget }
+            Battery { id: batteryWidget }
+            Power { }
         }
     }
 
-    Loader {
-        id: wifiLoader
-
-        active: false
-        source: "Menu/WifiMenu.qml"
-        onLoaded: {
-            item.anchorItem = wifiWidget;
-        }
-    }
-
-    Loader {
-        id: bluetoothLoader
-
-        active: false
-        source: "Menu/BluetoothMenu.qml"
-        onLoaded: {
-            // Position it relative to the bluetooth widget
-            item.anchorItem = bluetoothWidget;
-        }
+    QuickSettingsMenu {
+        id: quickSettingsMenu
+        parentWindow: bar
     }
 
     TrayMenu {
         id: trayPopup
+        parentWindow: bar
     }
-
-    PowerProfilePopup {
-        id: powerProfilePopup
-
-        visible: false
-        anchor.window: bar
     }
-
-    VolumeMenu {
-        id: volumePopup
-
-        visible: false
-        anchor.window: bar
-    }
-
-}

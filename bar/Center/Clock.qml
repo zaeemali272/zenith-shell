@@ -42,20 +42,17 @@ Rectangle {
         }
     }
 
-    MouseArea { // This entire block was missing
+    MouseArea {
         anchors.fill: parent
+        hoverEnabled: true
+        onEntered: {
+            console.log("Clock hovered!");
+            CenterState.open(false); // Non-sticky hover
+        }
+        onExited: CenterState.startHideTimer()
         onClicked: {
-            console.log("Clock MouseArea clicked!");
-            if (controlCenterMenuRef) {
-                console.log("controlCenterMenuRef is valid. Toggling Control Center visibility.");
-                // Check if the property exists to stop the "non-existent property" error
-                if (controlCenterMenuRef.hasOwnProperty("anchorItem"))
-                    controlCenterMenuRef.anchorItem = clock;
-
-                // Use the Singleton as the single source of truth for visibility
-                CenterState.visible = !CenterState.visible;
-                console.log("Control Center toggled via CenterState:", CenterState.visible);
-            }
+            console.log("Clock clicked!");
+            CenterState.toggle();
         }
     }
 
