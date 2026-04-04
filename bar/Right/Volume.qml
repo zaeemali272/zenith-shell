@@ -84,7 +84,7 @@ Item {
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         onEntered: {
-            QuickSettingsService.open("volume", root.mapToItem(null, 0, 0, root.width, root.height));
+            QuickSettingsService.open("volume", root.mapToItem(null, 0, 0, root.width, root.height), false);
         }
         onExited: QuickSettingsService.startHideTimer();
         onClicked: function(mouse) {

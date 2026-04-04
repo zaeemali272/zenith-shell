@@ -15,6 +15,7 @@ PopupWindow {
 
     visible: false
     color: "transparent"
+    grabFocus: true
 
     // Use implicit dimensions as width/height are deprecated in 0.2.1
     // Add 5px extra height for the top margin
@@ -37,7 +38,8 @@ PopupWindow {
         
         root.menuHandle = handle;
         root.currentItem = item;
-        root.anchor.window = visualParent.QsWindow.window;
+        // Use the bar as the anchor window if visualParent is inside the bar
+        root.anchor.window = bar;
         root.anchor.rect = visualParent.mapToItem(null, 0, 0, visualParent.width, visualParent.height);
         root.anchor.edges = edges || Edges.Bottom;
         root.anchor.gravity = edges || Edges.Bottom;
@@ -46,6 +48,11 @@ PopupWindow {
 
     HyprlandFocusGrab {
         active: root.visible && !subMenuLoader.active
+        windows: {
+            let winList = [root, bar];
+            if (parentMenu) winList.push(parentMenu);
+            return winList;
+        }
         onCleared: {
             root.visible = false;
             if (parentMenu) parentMenu.visible = false;
@@ -54,16 +61,10 @@ PopupWindow {
 
     onVisibleChanged: {
         if (visible) {
-            focusTimer.start();
+            menuSurface.forceActiveFocus();
         } else {
             subMenuLoader.active = false;
         }
-    }
-
-    Timer {
-        id: focusTimer
-        interval: 10
-        onTriggered: menuSurface.forceActiveFocus()
     }
 
     // The actual visible box

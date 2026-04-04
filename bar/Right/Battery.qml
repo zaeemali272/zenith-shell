@@ -103,7 +103,7 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         onEntered: {
-            QuickSettingsService.open("battery", root.mapToItem(null, 0, 0, root.width, root.height));
+            QuickSettingsService.open("battery", root.mapToItem(null, 0, 0, root.width, root.height), false);
         }
         onExited: QuickSettingsService.startHideTimer();
         onClicked: (mouse) => {

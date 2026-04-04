@@ -4,50 +4,46 @@ import "./components"
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Hyprland
+import Quickshell.Wayland
 
 PopupWindow {
     id: root
 
     property var parentWindow: null
-
-    onVisibleChanged: {
-        if (visible) {
-            console.log("QuickSettingsMenu visible:", visible, "parentWindow:", parentWindow)
-        }
-    }
-
+    
     visible: QuickSettingsService.qsVisible
     color: "transparent"
+    grabFocus: QuickSettingsService.isSticky
+
+    HyprlandFocusGrab {
+        active: root.visible && QuickSettingsService.isSticky
+        windows: [root, parentWindow]
+        onCleared: QuickSettingsService.close()
+    }
     
-    // Anchor to the bar window
+    onVisibleChanged: {
+        if (visible && QuickSettingsService.isSticky) {
+            mainContent.forceActiveFocus();
+        }
+    }
+    
+    // Position the window relative to the bar
     anchor.window: parentWindow
-    anchor.edges: Edges.Bottom
-    anchor.gravity: Edges.Bottom
+    // Anchored to the bottom-right corner of the parent window.
+    anchor.edges: Edges.Bottom | Edges.Right 
+    anchor.gravity: Edges.Bottom | Edges.Right
     
+    // Attached to top-right side below the bar
     anchor.rect: {
-        const buttonRect = QuickSettingsService.anchorRect;
         const barHeight = (parentWindow && parentWindow.height > 0) ? parentWindow.height : 45;
         const barWidth = (parentWindow && parentWindow.width > 0) ? parentWindow.width : 1920;
-
-        if (!buttonRect || buttonRect.width <= 0) {
-            return Qt.rect(barWidth - implicitWidth - 10, barHeight, 0, 0); 
-        }
-
-        const buttonCenterX = buttonRect.x + buttonRect.width / 2;
-        const popupHalfWidth = implicitWidth / 2;
         
-        // Offset to the right: instead of pure centering, we favor the right side
-        // while still trying to stay near the button if possible.
-        // To "attach to the right side", we can shift the desired center.
-        const desiredPopupLeftX = buttonCenterX - (popupHalfWidth * 0.5); 
-
-        // Clamp to screen bounds with 10px margin
-        const boundedX = Math.max(10, Math.min(barWidth - implicitWidth - 10, desiredPopupLeftX));
-
-        return Qt.rect(Math.round(boundedX), barHeight, 0, 0);
+        // Align the right edge of the popup with the right edge of the bar, offset by 10px margin.
+        // The top edge is aligned with the bottom of the bar.
+        return Qt.rect(barWidth - implicitWidth - 10, barHeight, 0, 0);
     }
 
-    // Dynamic width based on the wide tabs layout
     implicitWidth: 650 
     implicitHeight: 600
 
@@ -63,16 +59,18 @@ PopupWindow {
         layer.enabled: true
         
         MouseArea {
-            id: menuMouse
-            anchors.top: parent.top
-            anchors.topMargin: -8 
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.bottom: parent.bottom
+            id: mainMouse
+            anchors.fill: parent
+            anchors.topMargin: -12
             hoverEnabled: true
-            onContainsMouseChanged: {
-                if (!containsMouse) QuickSettingsService.startHideTimer();
-                else QuickSettingsService.stopHideTimer();
+            propagateComposedEvents: true
+            
+            onEntered: QuickSettingsService.isHoveringMenu = true
+            onExited: QuickSettingsService.isHoveringMenu = false
+
+            onClicked: (mouse) => {
+                mouse.accepted = true; // Consume to prevent focus loss
+                mainContent.forceActiveFocus();
             }
         }
 
@@ -81,11 +79,11 @@ PopupWindow {
             anchors.margins: 24
             spacing: 20
 
-            // Modern Tab Buttons (Android-like Pill buttons)
+            // Modern Tab Buttons
             RowLayout {
                 id: tabRow
                 Layout.fillWidth: true
-                spacing: 12 // Increased spacing between tabs
+                spacing: 12
                 
                 Repeater {
                     model: [
@@ -109,7 +107,7 @@ PopupWindow {
 
                         RowLayout {
                             anchors.centerIn: parent
-                            spacing: 10 // Increased spacing between icon and text
+                            spacing: 10
                             
                             Text {
                                 text: modelData.icon
@@ -129,14 +127,15 @@ PopupWindow {
 
                         MouseArea {
                             anchors.fill: parent
-                            hoverEnabled: true
-                            onClicked: QuickSettingsService.activeTab = modelData.id
+                            onClicked: {
+                                console.log(`[QuickSettingsMenu] Tab clicked: ${modelData.id}`)
+                                QuickSettingsService.activeTab = modelData.id
+                            }
                         }
                     }
                 }
             }
 
-            // Divider
             Rectangle { 
                 Layout.fillWidth: true; 
                 height: 1; 
@@ -163,13 +162,13 @@ PopupWindow {
                     }
                 }
 
-                WifiContent { Layout.fillWidth: true; Layout.fillHeight: true }
-                BluetoothContent { Layout.fillWidth: true; Layout.fillHeight: true }
-                VolumeContent { Layout.fillWidth: true; Layout.fillHeight: true }
-                PowerProfileContent { Layout.fillWidth: true; Layout.fillHeight: true }
-                ResourcesContent { Layout.fillWidth: true; Layout.fillHeight: true }
-                BatteryContent { Layout.fillWidth: true; Layout.fillHeight: true }
-                PowerContent { Layout.fillWidth: true; Layout.fillHeight: true }
+                WifiContent { }
+                BluetoothContent { }
+                VolumeContent { }
+                PowerProfileContent { }
+                ResourcesContent { }
+                BatteryContent { }
+                PowerContent { }
             }
         }
     }

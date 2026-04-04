@@ -122,14 +122,15 @@ ColumnLayout {
                     color: "#1e1e2e"
                     radius: 16
                     border.color: "#313244"
+                    
+                    required property string name
+                    required property int volume
+                    required property int id
+                    required property string icon
 
                     VolumeSlider {
                         anchors.fill: parent
                         anchors.margins: 15
-                        required property string name
-                        required property int volume
-                        required property int id
-                        required property string icon
                         label: name; icon: "󰓃"; value: volume; Layout.fillWidth: true
                         onChange: (v) => {
                             setAppVol.command = ["pactl", "set-sink-input-volume", id, v + "%"];

@@ -13,7 +13,7 @@ MouseArea {
     implicitWidth: pill.implicitWidth
     
     onEntered: {
-        QuickSettingsService.open("power", root.mapToItem(null, 0, 0, root.width, root.height));
+        QuickSettingsService.open("power", root.mapToItem(null, 0, 0, root.width, root.height), false);
     }
     onExited: QuickSettingsService.startHideTimer();
     onClicked: (mouse) => {

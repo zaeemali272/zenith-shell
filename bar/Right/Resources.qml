@@ -36,7 +36,7 @@ MouseArea {
     height: implicitHeight
 
     onEntered: {
-        QuickSettingsService.open("resources", root.mapToItem(null, 0, 0, root.width, root.height));
+        QuickSettingsService.open("resources", root.mapToItem(null, 0, 0, root.width, root.height), false);
     }
     
     onExited: QuickSettingsService.startHideTimer();
