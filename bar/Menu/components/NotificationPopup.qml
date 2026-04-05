@@ -9,7 +9,7 @@ PopupWindow {
 
     anchor.window: bar
     anchor.edges: Edges.Top | Edges.Right
-    anchor.rect.y: bar.height + (osdPopup.visible ? 100 : 10)
+    anchor.rect.y: bar.height + (osdPopup.visible ? 105 : 10)
     anchor.rect.x: bar.width - implicitWidth - 5
 
     // Width and height logic
