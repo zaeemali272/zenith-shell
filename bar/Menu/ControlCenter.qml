@@ -10,18 +10,15 @@ PopupWindow {
     id: menuRoot
 
     property var parentWindow: null
-    
     visible: CenterState.qsVisible
     grabFocus: CenterState.isSticky
     
     anchor.window: parentWindow
     anchor.edges: Edges.Top
     
-    // Position below the bar, centered
     anchor.rect: {
         const barHeight = (parentWindow && parentWindow.height > 0) ? parentWindow.height : 45;
         const barWidth = (parentWindow && parentWindow.width > 0) ? parentWindow.width : 1920;
-        
         let targetX = (barWidth - implicitWidth) / 2;
         return Qt.rect(Math.max(10, Math.min(barWidth - implicitWidth - 10, targetX)), barHeight + 8, 0, 0);
     }
@@ -40,9 +37,9 @@ PopupWindow {
         id: mainContent
         anchors.fill: parent
         focus: true
-        color: "#010101"
-        radius: 10
-        border.color: '#181825'
+        color: "#11111b" // Zenith Dark Background
+        radius: 16
+        border.color: '#313244' // Catppuccin Surface
         border.width: 1
         
         Keys.onPressed: (event) => {
@@ -51,7 +48,6 @@ PopupWindow {
             }
         }
 
-        // Background clicks and focus management
         MouseArea {
             anchors.fill: parent
             onPressed: (mouse) => {
@@ -80,7 +76,6 @@ PopupWindow {
                 MprisPlayer {
                     Layout.fillWidth: true
                 }
-
             }
 
             // --- Right Column: Calendar & Todo ---
@@ -100,14 +95,12 @@ PopupWindow {
             }
         }
 
-        // Hover tracking (on top of everything but blocks nothing)
         MouseArea {
             id: hoverTracker
             anchors.fill: parent
             anchors.topMargin: -12
             hoverEnabled: true
             acceptedButtons: Qt.NoButton
-            
             onEntered: CenterState.isHoveringMenu = true
             onExited: CenterState.isHoveringMenu = false
         }

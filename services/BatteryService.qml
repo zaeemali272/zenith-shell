@@ -7,19 +7,31 @@ pragma Singleton
 Item {
     id: service
 
+    // Core Properties
     property int percentage: -1
     property string status: "unknown"
     property bool acOnline: false
+    
+    // Technical Detail Properties
+    property int cycleCount: 0
+    property real voltage: 0.0
+    property real energyRate: 0.0
+
+    // Internal State
     property string batPath: ""
     property string acPath: ""
-
-    // Notification State
     property string lastStatus: ""
     property int lastThreshold: 100
     property int updatesReceived: 0
+    property string timeRemaining: "Calculating..."
+    property real energyNow: 0.0
+    property real health: 0
+    property real temp: 0
 
     function update() {
-        updateExec.running = true;
+        if (service.batPath && service.acPath) {
+            updateExec.running = true;
+        }
     }
 
     function getIconPath(p, s) {
@@ -75,6 +87,7 @@ Item {
 
         if (s === lastStatus || s === "unknown" || s === "") return;
 
+        // Triggers for "Conservative/Limit" states as well
         if (s === "charging" || (s === "full" && lastStatus === "discharging") || (s === "not charging" && lastStatus === "discharging")) {
             sendNotify("Power Connected", "Finally, I can breathe again. Thanks for the juice.");
         } else if (s === "discharging") {
@@ -140,17 +153,68 @@ Item {
         }
     }
 
+    function formatTime(seconds) {
+        if (seconds <= 0 || isNaN(seconds) || seconds === Infinity) return "N/A";
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        return h + "h " + m + "m";
+    }
+
+
     Process {
         id: updateExec
-        command: ["sh", "-c", `cat ${service.batPath}/capacity ${service.batPath}/status ${service.acPath}/online`]
+        command: ["sh", "-c", `
+            cat ${service.batPath}/capacity \
+                ${service.batPath}/status \
+                ${service.acPath}/online \
+                ${service.batPath}/cycle_count \
+                ${service.batPath}/voltage_now \
+                ${service.batPath}/power_now \
+                ${service.batPath}/energy_now \
+                ${service.batPath}/energy_full \
+                ${service.batPath}/energy_full_design
+            cat /sys/class/hwmon/hwmon*/temp1_input 2>/dev/null | head -n1
+        `]
         stdout: StdioCollector {
             onStreamFinished: {
                 if (!text) return;
                 const parts = text.trim().split("\n");
-                if (parts.length >= 3) {
+                
+                // We need at least 9 parts from the first cat, 
+                // parts[9] will be the temperature from the second cat
+                if (parts.length >= 9) {
+                    // 1. Core Info
                     service.percentage = parseInt(parts[0]);
                     service.status = parts[1].toLowerCase().trim();
-                    service.acOnline = parts[2] === "1";
+                    service.acOnline = parts[2].trim() === "1";
+                    
+                    // 2. Tech Details
+                    service.cycleCount = Number(parts[3]) || 0;
+                    service.voltage = Number(parts[4]) || 0;
+                    service.energyRate = Number(parts[5]) || 0;
+                    service.energyNow = Number(parts[6]) || 0;
+                    
+                    // 3. Health Calculation
+                    let full = Number(parts[7]) || 1;
+                    let design = Number(parts[8]) || 1;
+                    service.health = (full / design) * 100;
+
+                    // 4. Temperature (Index 9 from the second cat command)
+                    if (parts.length > 9) {
+                        service.temp = parseInt(parts[9]) / 1000;
+                    }
+
+                    // 5. Time Remaining Calculation
+                    if (service.status === "discharging" && service.energyRate > 0) {
+                        let secondsLeft = (service.energyNow / service.energyRate) * 3600;
+                        service.timeRemaining = service.formatTime(secondsLeft);
+                    } else if (service.status === "charging" && service.energyRate > 0) {
+                        let energyFull = Number(parts[7]) || 40870000; 
+                        let secondsToFull = ((energyFull - service.energyNow) / service.energyRate) * 3600;
+                        service.timeRemaining = service.formatTime(secondsToFull) + " to full";
+                    } else {
+                        service.timeRemaining = "N/A";
+                    }
                 }
             }
         }
@@ -160,7 +224,7 @@ Item {
 
     Timer {
         id: pollTimer
-        interval: 100
+        interval: 2000 // Increased to 2s to reduce overhead, update() is manual enough
         running: false
         repeat: true
         onTriggered: service.update()

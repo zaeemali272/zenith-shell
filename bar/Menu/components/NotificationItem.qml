@@ -12,6 +12,35 @@ Rectangle {
 
     signal autoDismissed(real id)
 
+    // --- ZENITH THEMEING ---
+    color: "#11111b"
+    radius: 14
+    border.color: "#313244"
+    border.width: 1
+    clip: true
+
+    implicitHeight: layout.implicitHeight + 24
+    Layout.fillWidth: true
+
+    // --- ANIMATIONS ---
+    opacity: 0
+    scale: 0.95
+    transform: Translate { id: trans; x: 20 }
+
+    Component.onCompleted: appearAnim.start()
+
+    ParallelAnimation {
+        id: appearAnim
+        NumberAnimation { target: root; property: "opacity"; to: 1; duration: 300; easing.type: Easing.OutCubic }
+        NumberAnimation { target: root; property: "scale"; to: 1.0; duration: 400; easing.type: Easing.OutBack }
+        NumberAnimation { target: trans; property: "x"; to: 0; duration: 500; easing.type: Easing.OutExpo }
+    }
+
+    Behavior on implicitHeight {
+        NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+    }
+
+    // --- AUTO DISMISS LOGIC ---
     Timer {
         id: autoDismissTimer
         interval: 8000
@@ -25,41 +54,7 @@ Rectangle {
         }
     }
 
-    visible: !!notification
-    // Calculate height based on content
-    implicitHeight: layout.implicitHeight + 24
-    Layout.fillWidth: true
-    color: "#121212"
-    radius: 12
-    border.color: "#1a1a1a"
-    border.width: 1
-    clip: true
-
-    // --- ANIMATIONS ---
-    opacity: 0
-    scale: 0.8
-    transform: Translate { id: trans; x: 50 }
-
-    Component.onCompleted: {
-        appearAnim.start()
-    }
-
-    ParallelAnimation {
-        id: appearAnim
-        NumberAnimation { target: root; property: "opacity"; to: 1; duration: 400; easing.type: Easing.OutCubic }
-        NumberAnimation { target: root; property: "scale"; to: 1.0; duration: 500; easing.type: Easing.OutBack }
-        NumberAnimation { target: trans; property: "x"; to: 0; duration: 600; easing.type: Easing.OutExpo }
-    }
-
-    // Add smooth animation for expansion
-    Behavior on implicitHeight {
-        NumberAnimation {
-            duration: 250
-            easing.type: Easing.OutCubic
-        }
-    }
-
-    // --- ICON RESOLUTION LOGIC ---
+    // --- ICON RESOLUTION ---
     property var iconCandidates: []
     property int currentCandidateIndex: -1
 
@@ -67,11 +62,8 @@ Rectangle {
         currentCandidateIndex++;
         if (currentCandidateIndex < iconCandidates.length) {
             let nextSource = iconCandidates[currentCandidateIndex];
-            if (nextSource && nextSource !== "") {
-                iconImg.source = nextSource;
-            } else {
-                tryNextIcon();
-            }
+            if (nextSource && nextSource !== "") iconImg.source = nextSource;
+            else tryNextIcon();
         } else {
             iconImg.source = "image://icon/dialog-information";
         }
@@ -79,61 +71,27 @@ Rectangle {
 
     function updateCandidates() {
         if (!notification) return;
-        
         let raw = notification.rawIcon || "";
         let app = (notification.appName || "").toLowerCase().replace(/\s+/g, '-');
         let summary = (notification.summary || "").toLowerCase().replace(/\s+/g, '-');
-        
-        let names = [];
-        if (raw !== "") names.push(raw);
-        if (app !== "") names.push(app);
-        if (summary !== "") names.push(summary);
-        
-        // Remove duplicates
-        names = names.filter((v, i, a) => a.indexOf(v) === i);
+        let names = [raw, app, summary].filter((v, i, a) => v !== "" && a.indexOf(v) === i);
 
         let bases = [
-            "/usr/share/icons/OneUI/24/apps/",
-            "/usr/share/icons/OneUI/24/actions/",
-            "/usr/share/icons/OneUI/24/panel/",
-            "/usr/share/icons/OneUI/24/status/",
-            "/usr/share/icons/OneUI/24/devices/",
-            "/usr/share/icons/OneUI/24/places/",
-            "/usr/share/icons/OneUI/scalable/apps/",
-            "/usr/share/icons/OneUI/scalable/actions/",
-            "/usr/share/icons/OneUI/scalable/status/",
-            "/usr/share/icons/OneUI/scalable/devices/",
-            "/usr/share/icons/OneUI/scalable/places/",
-            "/usr/share/icons/OneUI/symbolic/apps/",
-            "/usr/share/icons/OneUI/symbolic/actions/",
-            "/usr/share/icons/OneUI/symbolic/status/",
-            "/usr/share/icons/OneUI/symbolic/devices/",
-            "/usr/share/icons/OneUI/symbolic/places/",
-            "/usr/share/icons/Adwaita/24x24/apps/",
-            "/usr/share/icons/Adwaita/scalable/apps/",
-            "/usr/share/icons/Adwaita/symbolic/ui/",
-            "/usr/share/icons/hicolor/48x48/apps/",
+            "/usr/share/icons/OneUI/24/apps/", "/usr/share/icons/OneUI/scalable/apps/",
+            "/usr/share/icons/OneUI/symbolic/apps/", "/usr/share/icons/Adwaita/scalable/apps/",
             "/usr/share/icons/hicolor/scalable/apps/"
         ];
 
         let candidates = [];
-        // 1. Original hinted icon or path
-        if (notification.appIcon && notification.appIcon !== "") {
-            candidates.push(notification.appIcon);
-        }
+        if (notification.appIcon) candidates.push(notification.appIcon);
 
-        // 2. Generate candidates from names and bases
         for (let name of names) {
             for (let base of bases) {
                 candidates.push("file://" + base + name + ".svg");
                 candidates.push("file://" + base + name + ".png");
-                if (base.includes("symbolic")) {
-                    candidates.push("file://" + base + name + "-symbolic.svg");
-                }
             }
             candidates.push("image://icon/" + name);
         }
-
         iconCandidates = candidates;
         currentCandidateIndex = -1;
         tryNextIcon();
@@ -141,75 +99,75 @@ Rectangle {
 
     onNotificationChanged: updateCandidates()
 
-    // 1. Background MouseArea for the whole notification (except dismiss button)
     MouseArea {
         id: mainMouseArea
         anchors.fill: parent
-        anchors.rightMargin: 44 // Ensure it doesn't overlap dismiss button
+        anchors.rightMargin: 44
         cursorShape: Qt.PointingHandCursor
         hoverEnabled: true
         z: 1
         onClicked: {
-            if (notification && notification.originalNotif) {
+            if (notification?.originalNotif) {
                 notification.originalNotif.invokeAction("default");
                 notification.originalNotif.dismiss();
-                autoDismissTimer.stop();
                 NotificationService.removeNotification(notification.id);
             }
         }
     }
 
-    // 2. Main content layout
+// --- Main layout ---
     RowLayout {
         id: layout
-        anchors.left: parent.left
-        anchors.right: dismissButton.left
-        anchors.top: parent.top
-        anchors.bottom: parent.bottom
+        anchors.fill: parent
         anchors.margins: 12
-        spacing: 12
+        spacing: 8
         z: 2
+        
+        // This ensures the entire row of content is centered 
+        // vertically if the notification body is short.
+        Layout.alignment: Qt.AlignVCenter 
 
-        // --- APP ICON SECTION ---
-        Item {
-            Layout.preferredWidth: 42
-            Layout.preferredHeight: 42
-            Layout.alignment: Qt.AlignVCenter
+        // Icon Container (Bigger & Centered)
+        Rectangle {
+            id: iconContainer
+            Layout.preferredWidth: 50
+            Layout.preferredHeight: 50
             
-            Rectangle {
-                anchors.fill: parent
-                color: "#1a1a1a"
-                radius: 8
-                visible: iconImg.status !== Image.Ready
-            }
+            // This centers the icon box vertically within the row
+            Layout.alignment: Qt.AlignVCenter 
+            
+            color: "#181825"
+            radius: 12
+            border.color: "#313244"
+            border.width: 1
 
             Image {
                 id: iconImg
-                anchors.fill: parent
+                anchors.centerIn: parent
+                
+                // Use standard width/height to avoid the "read-only" error
+                width: parent.width * 0.7 
+                height: parent.height * 0.7
+                
                 fillMode: Image.PreserveAspectFit
                 asynchronous: true
                 smooth: true
-                
-                onStatusChanged: {
-                    if (status === Image.Error) {
-                        tryNextIcon();
-                    }
-                }
+                onStatusChanged: if (status === Image.Error) tryNextIcon()
             }
         }
 
-        // --- TEXT CONTENT SECTION ---
+        // Text Section
         ColumnLayout {
             Layout.fillWidth: true
-            Layout.alignment: Qt.AlignVCenter
+            Layout.alignment: Qt.AlignVCenter // Centers the text block relative to the icon
             spacing: 2
 
             Label {
-                text: notification ? (notification.appName || "SYSTEM") : ""
-                color: "#6e738d"
+                text: notification ? (notification.appName || "SYSTEM").toUpperCase() : ""
+                color: "#89b4fa"
                 font.pixelSize: 10
-                font.bold: true
-                font.capitalization: Font.AllUppercase
+                font.weight: Font.Black
+                font.letterSpacing: 1.5
                 Layout.fillWidth: true
             }
 
@@ -225,52 +183,46 @@ Rectangle {
 
             Label {
                 text: notification ? (notification.body || "") : ""
-                color: "#cad3f5"
+                color: "#a6adc8"
                 font.pixelSize: 11
                 wrapMode: Text.WordWrap
                 elide: mainMouseArea.containsMouse ? Text.ElideNone : Text.ElideRight
-                maximumLineCount: mainMouseArea.containsMouse ? 50 : 2
+                maximumLineCount: mainMouseArea.containsMouse ? 20 : 2
                 Layout.fillWidth: true
             }
         }
     }
 
-    // 3. Dismiss button
+    // Dismiss Button
     Item {
         id: dismissButton
-        width: 32
-        height: 32
+        width: 32; height: 32
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
-        anchors.rightMargin: 8
+        anchors.rightMargin: 10
         z: 100
 
         Rectangle {
             anchors.fill: parent
-            radius: 16
-            color: dismissMouse.containsMouse ? "#2a2a2a" : "transparent"
+            radius: 8
+            color: dismissMouse.containsMouse ? "#313244" : "transparent"
             Behavior on color { ColorAnimation { duration: 150 } }
-        }
-
-        Text {
-            anchors.centerIn: parent
-            text: "󰅖"
-            // Color gets "darker" (stronger/more contrast) on hover
-            color: dismissMouse.containsMouse ? "#f38ba8" : "#6e738d"
-            font.pixelSize: 18
-            visible: !!notification
+            
+            Text {
+                anchors.centerIn: parent
+                text: "󰅖"
+                color: dismissMouse.containsMouse ? "#f38ba8" : "#585b70"
+                font.pixelSize: 16
+            }
         }
 
         MouseArea {
             id: dismissMouse
             anchors.fill: parent
             hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
             onClicked: {
                 if (notification) {
-                    if (notification.originalNotif)
-                        notification.originalNotif.dismiss();
-                    autoDismissTimer.stop();
+                    notification.originalNotif?.dismiss();
                     NotificationService.removeNotification(notification.id);
                 }
             }

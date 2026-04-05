@@ -14,6 +14,7 @@ ColumnLayout {
         color: "white"
         font.bold: true
         font.pixelSize: 22
+        Layout.leftMargin: 5
     }
 
     GridLayout {
@@ -24,10 +25,12 @@ ColumnLayout {
 
         Repeater {
             model: [
-                { icon: "󰐥", label: "Shutdown", cmd: "shutdown now", color: "#f38ba8" },
-                { icon: "󰑐", label: "Reboot", cmd: "reboot", color: "#89b4fa" },
-                { icon: "󰤄", label: "Suspend", cmd: "systemctl suspend", color: "#fab387" },
-                { icon: "󰗼", label: "Logout", cmd: "hyprctl dispatch exit", color: "#a6e3a1" }
+                { icon: "󰌾", label: "Lock",     cmd: "hyprlock --immediate-render --no-fade-in", color: "#b4befe" },
+                { icon: "󰒲", label: "BIOS",     cmd: "systemctl reboot --firmware-setup", color: "#cba6f7" },
+                { icon: "󰗼", label: "Logout",   cmd: "hyprctl dispatch exit", color: "#a6e3a1" },
+                { icon: "󰤄", label: "Suspend",  cmd: "systemctl suspend", color: "#fab387" },
+                { icon: "󰑐", label: "Reboot",   cmd: "reboot", color: "#89b4fa" },
+                { icon: "󰐥", label: "Power",    cmd: "shutdown now", color: "#f38ba8" }
             ]
 
             delegate: Rectangle {
@@ -36,10 +39,16 @@ ColumnLayout {
                 height: 120
                 color: "#1e1e2e"
                 radius: 24
+                
+                // Border lights up on hover
                 border.color: m.containsMouse ? modelData.color : "#313244"
                 border.width: m.containsMouse ? 2 : 1
                 
+                // Smooth scale effect for that "modern" feel
+                scale: m.pressed ? 0.95 : 1.0
+                
                 Behavior on border.color { ColorAnimation { duration: 200 } }
+                Behavior on scale { NumberAnimation { duration: 100 } }
 
                 MouseArea {
                     id: m
@@ -53,20 +62,19 @@ ColumnLayout {
 
                 ColumnLayout {
                     anchors.centerIn: parent
-                    spacing: 10
+                    spacing: 8
                     
-                    Rectangle {
-                        width: 48; height: 48; radius: 24
-                        color: m.containsMouse ? modelData.color : "#2a2a32"
+                    // Large Clean Icon (No Background)
+                    Text {
+                        text: modelData.icon
+                        font.family: Theme.iconFont
+                        font.pixelSize: 42 // Big icons as requested
+                        color: modelData.color
                         Layout.alignment: Qt.AlignHCenter
                         
-                        Text {
-                            anchors.centerIn: parent
-                            text: modelData.icon
-                            font.family: Theme.iconFont
-                            font.pixelSize: 24
-                            color: m.containsMouse ? "black" : modelData.color
-                        }
+                        // Subtle opacity shift when not hovering
+                        opacity: m.containsMouse ? 1.0 : 0.8
+                        Behavior on opacity { NumberAnimation { duration: 200 } }
                     }
                     
                     Text {
@@ -75,6 +83,7 @@ ColumnLayout {
                         font.bold: true
                         color: "white"
                         Layout.alignment: Qt.AlignHCenter
+                        opacity: m.containsMouse ? 1.0 : 0.7
                     }
                 }
             }
