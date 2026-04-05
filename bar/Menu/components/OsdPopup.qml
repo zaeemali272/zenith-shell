@@ -12,94 +12,82 @@ PopupWindow {
 
     anchor.window: bar
     anchor.edges: Edges.Top | Edges.Right
-    anchor.rect.x: 4
-    anchor.rect.y: bar.height + 10
+    anchor.rect.y: bar.height + 11
+    anchor.rect.x: bar.width - implicitWidth - 7
+
     implicitWidth: 350
-    implicitHeight: 80
-    // Use visible for the window, but opacity for the content
-    visible: osdTimer.running || content.opacity > 0
+    implicitHeight: 85
+    // Window stays visible if timer is running OR if the mouse is hovering/pressing
+    visible: osdTimer.running || content.opacity > 0 || mainMouseArea.containsMouse
     color: "transparent"
 
     Rectangle {
         id: content
-
         anchors.fill: parent
-        color: "#121212"
-        radius: 12
+        color: "#11111b"
+        radius: 13
         border.color: "#313244"
         border.width: 1
-        // Apply the fade here instead of the PopupWindow
-        opacity: osdTimer.running ? 1 : 0
+        // Fade logic: Stay visible on hover
+        opacity: (osdTimer.running || mainMouseArea.containsMouse) ? 1 : 0
+
+        // This mouse area detects hover to keep the OSD alive
+        MouseArea {
+            id: mainMouseArea
+            anchors.fill: parent
+            hoverEnabled: true
+            onEntered: osdTimer.stop()
+            onExited: osdTimer.restart()
+        }
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 15
-            spacing: 5
+            anchors.margins: 18
+            spacing: 8
+            z: 2 // Keep content above mouse area
 
-          RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 5 // Gives a nice gap between the icon and the label
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 12
 
-                        // Fixed-width container for the icon prevents "pushing" the text
-                        Item {
-                            implicitWidth: 24
-                            implicitHeight: 24
-
-                            Text {
-                                anchors.centerIn: parent
-                                font.pixelSize: 22 // Boosted slightly for better visibility
-                                
-                                // COLOR LOGIC: Red for Muted, Peach/Red for Over-vol, Green for Normal
-                                color: {
-                                    if (osdValue <= 0) return "#f38ba8";    // Muted Red
-                                    if (osdType === "volume" && osdValue > 1.0) return "#fab387"; // Over-vol Peach
-                                    return "#a6e3a1";                       // Normal Green
-                                }
-                            
-                                text: {
-                                    if (osdType === "brightness") {
-                                        if (osdValue <= 0.33) return "󰃞"; 
-                                        if (osdValue <= 0.66) return "󰃟"; 
-                                        return "󰃠";                       
-                                    } 
-                            
-                                    if (osdType === "volume") {
-                                        if (osdValue <= 0) return "󰝟";      // Muted
-                                        if (osdValue <= 0.33) return "󰕿";   // Low
-                                        if (osdValue <= 0.66) return "󰖀";   // Mid
-                                        if (osdValue <= 1.0) return "󰕾";    // High (100%)
-                                        return "󰓃";                        // Extra Vol / Over-amplified (Nerd Font: nf-md-volume_high_alert)
-                                    }
-                                    return "󰋽";
-                                }
-                            
-                                // Add a subtle glow when over-volting
-                                layer.enabled: osdType === "volume" && osdValue > 1.0
+                Rectangle {
+                    width: 32; height: 32; radius: 8; color: "#181825"
+                    Text {
+                        anchors.centerIn: parent
+                        font.pixelSize: 18
+                        color: (osdValue <= 0) ? "#f38ba8" : (osdType === "volume" && osdValue > 1.0 ? "#fab387" : "#a6e3a1")
+                        text: {
+                            if (osdType === "brightness") {
+                                if (osdValue <= 0.33) return "󰃞"; if (osdValue <= 0.66) return "󰃟"; return "󰃠"
+                            } 
+                            if (osdType === "volume") {
+                                if (osdValue <= 0) return "󰝟"; if (osdValue <= 0.33) return "󰕿"; 
+                                if (osdValue <= 0.66) return "󰖀"; if (osdValue <= 1.0) return "󰕾"; return "󰓃"
                             }
-                        }
-
-                        Text {
-                            text: osdType.toUpperCase()
-                            color: "white"
-                            font.bold: true
-                            font.letterSpacing: 1 // Makes it look a bit more "pro"
-                            Layout.fillWidth: true
-                        }
-
-                        Text {
-                            text: Math.round(osdValue * 100) + "%"
-                            color: "#cad3f5"
-                            font.family: "JetBrains Mono" // Use a mono font so the % doesn't jitter
+                            return "󰋽"
                         }
                     }
+                }
+
+                Text {
+                    text: osdType.toUpperCase()
+                    color: "#89b4fa"; font.weight: Font.Black; font.pixelSize: 12; font.letterSpacing: 2
+                    Layout.fillWidth: true
+                }
+
+                Text {
+                    text: Math.round(osdValue * 100) + "%"
+                    color: "white"; font.family: "JetBrains Mono"; font.weight: Font.Bold; font.pixelSize: 13
+                }
+            }
 
             Slider {
                 id: osdSlider
-
                 Layout.fillWidth: true
-                from: 0
-                to: 1
+                from: 0; to: 1
                 value: osdWindow.osdValue
+                
+                // --- Re-enabled functionality ---
                 onMoved: {
                     osdTimer.restart();
                     osdWindow.osdValue = value;
@@ -107,61 +95,41 @@ PopupWindow {
                 }
 
                 background: Rectangle {
-                    // Lowered from 6 to 3 for a thinner bar
-                    implicitHeight: 3
+                    implicitHeight: 6
                     width: osdSlider.availableWidth
-                    radius: 3
-                    color: "#313244"
-
+                    radius: 3; color: "#181825"
                     Rectangle {
                         width: osdSlider.visualPosition * parent.width
                         height: parent.height
-                        color: "#a6e3a1"
-                        radius: 3
+                        color: osdValue > 1.0 ? "#fab387" : "#a6e3a1"
+                        radius: 30
                     }
                 }
 
+                // Added handle back so you can actually grab it
                 handle: Rectangle {
-                    // This math ensures the center of the handle is always 
-                    // at the visual end of the progress bar.
-                    x: osdSlider.leftPadding + (osdSlider.visualPosition * osdSlider.availableWidth) - (width / 2)
-                    y: (osdSlider.availableHeight / 2) - (height / 2)
-                    
-                    implicitWidth: 10
-                    implicitHeight: 10
-                    radius: 5
-                    color: osdSlider.pressed ? "#a6e3a1" : "white"
-                    
-                    scale: osdSlider.pressed ? 1.3 : 1.0
-                    Behavior on scale { NumberAnimation { duration: 100 } }
+                    x: osdSlider.leftPadding + osdSlider.visualPosition * (osdSlider.availableWidth - width)
+                    y: osdSlider.topPadding + osdSlider.availableHeight / 2 - height / 2
+                    implicitWidth: 14; implicitHeight: 14; radius: 7
+                    color: "white"; border.color: "#313244"
                 }
             }
-
         }
 
-        Behavior on opacity {
-            NumberAnimation {
-                duration: 150
-            }
-
-        }
-
+        Behavior on opacity { NumberAnimation { duration: 200 } }
     }
 
     Timer {
         id: osdTimer
-
-        interval: 2500
+        interval: 2500 // Increased slightly for comfort
     }
 
     Connections {
-        function onOsdReceived(type, value) {
-            osdWindow.osdType = type;
-            osdWindow.osdValue = value;
-            osdTimer.restart();
-        }
-
         target: NotificationService
+        function onOsdReceived(type, value) {
+            osdWindow.osdType = type
+            osdWindow.osdValue = value
+            osdTimer.restart()
+        }
     }
-
 }
