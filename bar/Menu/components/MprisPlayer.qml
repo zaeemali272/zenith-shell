@@ -4,307 +4,192 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Services.Mpris
 
-Pane {
+Rectangle {
     id: mprisPlayer
-
-    // --- AUTO-SWITCH LOGIC ---
-    // Automatically picks the first playing player, or falls back to the first available
-    property var player: {
-        let active = Mpris.players.values.find((p) => {
-            return p.playbackState === MprisPlaybackState.Playing;
-        });
-        return active ? active : (Mpris.players.values.length > 0 ? Mpris.players.values[0] : null);
-    }
-    property real currentPos: player ? player.position : 0
-
-    function formatTime(s) {
-        if (s < 0 || isNaN(s))
-            return "0:00";
-
-        let hours = Math.floor(s / 3600);
-        let mins = Math.floor((s % 3600) / 60);
-        let secs = Math.floor(s % 60);
-        if (hours > 0)
-            // Format as H:MM:SS
-            return hours + ":" + (mins < 10 ? "0" : "") + mins + ":" + (secs < 10 ? "0" : "") + secs;
-        else
-            // Format as M:SS
-            return mins + ":" + (secs < 10 ? "0" : "") + secs;
-    }
-
-    onPlayerChanged: {
-        if (player)
-            currentPos = player.position;
-
-    }
+    color: "#11111b"
+    radius: 16
+    border.color: "#313244"
+    border.width: 1
     Layout.fillWidth: true
     implicitHeight: 110
 
-    // Update active player when the list of players changes
-    Connections {
-        target: Mpris.players
-        function onValuesChanged() {
-            // Re-evaluate the best player
-            let active = Mpris.players.values.find((p) => {
-                return p.playbackState === MprisPlaybackState.Playing;
-            });
-            mprisPlayer.player = active ? active : (Mpris.players.values.length > 0 ? Mpris.players.values[0] : null);
+    // --- State & Logic ---
+    property var player: {
+        let active = Mpris.players.values.find((p) => p.playbackState === MprisPlaybackState.Playing);
+        return active ? active : (Mpris.players.values.length > 0 ? Mpris.players.values[0] : null);
+    }
+    
+    property real currentPos: 0
+    property string currentTrackId: ""
+    property bool isResetting: false
+
+    function triggerReset() {
+        isResetting = true;
+        currentPos = 0;
+        let id = player ? player.identity.toLowerCase() : "";
+        let isBrowser = id.includes("zen") || id.includes("chrom") || id.includes("fox");
+        lockTimer.interval = isBrowser ? 2000 : 1000;
+        lockTimer.restart();
+    }
+
+    Timer {
+        id: lockTimer
+        repeat: false
+        onTriggered: {
+            if (player) currentPos = player.position;
+            isResetting = false;
         }
     }
 
-    // Logic to switch focus if any existing player starts playing
     Instantiator {
         model: Mpris.players.values
         onObjectAdded: (index, obj) => {
             obj.playbackStateChanged.connect(() => {
                 if (obj.playbackState === MprisPlaybackState.Playing)
                     mprisPlayer.player = obj;
-
             });
         }
     }
 
     Connections {
-        function onPositionChanged() {
-            mprisPlayer.currentPos = player.position;
-        }
-
-        // Force refresh on metadata change (VLC Fix)
-        function onMetadataChanged() {
-            mprisPlayer.currentPos = player.position;
-        }
-
         target: player
         ignoreUnknownSignals: true
+        function onMetadataChanged() {
+            let newId = String(player.trackTitle + player.trackArtist);
+            if (newId !== currentTrackId) {
+                currentTrackId = newId;
+                triggerReset();
+            }
+        }
     }
 
     Timer {
         interval: 1000
-        running: player && player.playbackState === MprisPlaybackState.Playing
+        running: player && player.playbackState === MprisPlaybackState.Playing && !isResetting
         repeat: true
-        onTriggered: mprisPlayer.currentPos = player.position
+        onTriggered: currentPos = player.position
     }
 
+    // --- UI Layout ---
     RowLayout {
-        anchors.fill: parent
-        anchors.margins: 12
-        spacing: 12
+        anchors.centerIn: parent
+        width: parent.width - 24
+        spacing: 15
 
+        // Album Art (Curved Radius)
         Rectangle {
-            width: 70
-            height: 70
-            radius: 6
-            color: "#181825"
-            clip: true
-
+            width: 80; height: 80; radius: 12; color: "#181825"; clip: true
+            Layout.alignment: Qt.AlignVCenter
             Image {
                 anchors.fill: parent
-                // VLC Fix: String cast to ensure property exists
                 source: player ? String(player.trackArtUrl || "") : ""
                 fillMode: Image.PreserveAspectCrop
-                // Smoothly show/hide based on image status
                 opacity: status === Image.Ready ? 1 : 0
-
-                Behavior on opacity {
-                    NumberAnimation {
-                        duration: 200
-                    }
-
-                }
-
+                Behavior on opacity { NumberAnimation { duration: 250 } }
             }
-
-            Text {
-                anchors.centerIn: parent
-                text: "󰎆"
-                color: "#45475a"
-                font.pixelSize: 24
-                visible: !player || !player.trackArtUrl || player.trackArtUrl === ""
+            Text { 
+                anchors.centerIn: parent; text: "󰎆"; color: "#313244"; font.pixelSize: 28
+                visible: !player || !player.trackArtUrl 
             }
-
         }
 
         ColumnLayout {
-            Layout.fillWidth: true
-            spacing: 4
-
+            Layout.fillWidth: true; spacing: 2
+            Layout.alignment: Qt.AlignVCenter // Ensures text/slider are centered with the image
+            
             Label {
-                // VLC Fix: String cast and explicit fallback for initialization lag
-                text: player ? String(player.trackTitle || "VLC Media Player") : "Idle"
-                color: "#cdd6f4"
-                font.bold: true
-                font.pixelSize: 13
-                Layout.fillWidth: true
-                elide: Text.ElideRight
+                text: player ? String(player.trackTitle || "Media") : "Idle"
+                color: "#cdd6f4"; font.bold: true; font.pixelSize: 13; elide: Text.ElideRight; Layout.fillWidth: true
             }
 
             ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 2
-
+                Layout.fillWidth: true; spacing: 0
                 Slider {
-                    id: posSlider
-
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 10
-                    from: 0
-                    to: (player && player.length > 0) ? player.length : 100
+                    id: posSlider; Layout.fillWidth: true; 
+                    Layout.preferredHeight: 18 // Slightly bigger height
+                    from: 0; to: (player && player.length > 0) ? player.length : 100
                     value: mprisPlayer.currentPos
-                    onMoved: player.position = value
-
+                    onMoved: { if(player) player.position = value }
+                    
                     background: Rectangle {
-                        y: posSlider.topPadding + posSlider.availableHeight / 2 - height / 2
-                        implicitHeight: 4
-                        width: posSlider.availableWidth
-                        radius: 2
-                        color: "#313244"
-
-                        Rectangle {
-                            width: posSlider.visualPosition * parent.width
-                            height: parent.height
-                            color: "#f5c2e7"
-                            radius: 2
+                        y: parent.height/2 - 3; height: 6; width: parent.width; radius: 3; color: "#313244"
+                        Rectangle { 
+                            width: posSlider.visualPosition * parent.width; height: 6; 
+                            color: "#89b4fa"; radius: 3 
                         }
-
                     }
-
                     handle: Rectangle {
-                        x: posSlider.leftPadding + posSlider.visualPosition * (posSlider.availableWidth - width)
-                        y: posSlider.topPadding + posSlider.availableHeight / 2 - height / 2
-                        width: 10.5
-                        height: 10.5
-                        radius: 4
-                        color: '#b59eaf'
+                        x: posSlider.visualPosition * (posSlider.availableWidth - 12); y: parent.height/2 - 6
+                        width: 12; height: 12; radius: 6; color: "#f5e0dc"
                         visible: posSlider.hovered || posSlider.pressed
                     }
-
                 }
-
                 RowLayout {
                     Layout.fillWidth: true
-
-                    Label {
-                        text: formatTime(mprisPlayer.currentPos)
-                        color: "#6c7086"
-                        font.pixelSize: 10
-                    }
-
-                    Item {
-                        Layout.fillWidth: true
-                    }
-
-                    Label {
-                        text: formatTime(player ? player.length : 0)
-                        color: "#6c7086"
-                        font.pixelSize: 10
-                    }
-
+                    Label { text: formatTime(mprisPlayer.currentPos); color: "#585b70"; font.pixelSize: 10 }
+                    Item { Layout.fillWidth: true }
+                    Label { text: formatTime(player ? player.length : 0); color: "#585b70"; font.pixelSize: 10 }
                 }
-
             }
 
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 0
-
                 RowLayout {
-                    spacing: 2
-
-                    Button {
-                        flat: true
-                        text: "󰒮"
-                        onClicked: player.previous()
-
-                        contentItem: Text {
-                            text: parent.text
-                            color: "#cdd6f4"
-                            font.pixelSize: 14
-                        }
-
+                    spacing: 0
+                    Button { 
+                        flat: true; implicitWidth: 32; implicitHeight: 32
+                        onClicked: { if(player) player.previous() }
+                        contentItem: Text { text: "󰒮"; color: "#cdd6f4"; font.pixelSize: 16; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter } 
                     }
-
-                    Button {
-                        flat: true
-                        text: (player && player.playbackState === MprisPlaybackState.Playing) ? "󰏤" : "󰐊"
-                        onClicked: player.playbackState === MprisPlaybackState.Playing ? player.pause() : player.play()
-
-                        contentItem: Text {
-                            text: parent.text
-                            color: "#f5c2e7"
-                            font.pixelSize: 18
-                        }
-
+                    Button { 
+                        flat: true; implicitWidth: 36; implicitHeight: 36
+                        onClicked: { if(player) player.playbackState === MprisPlaybackState.Playing ? player.pause() : player.play() }
+                        contentItem: Text { 
+                            text: (player && player.playbackState === MprisPlaybackState.Playing) ? "󰏤" : "󰐊"
+                            color: "#89b4fa"; font.pixelSize: 22; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter 
+                        } 
                     }
-
-                    Button {
-                        flat: true
-                        text: "󰒭"
-                        onClicked: player.next()
-
-                        contentItem: Text {
-                            text: parent.text
-                            color: "#cdd6f4"
-                            font.pixelSize: 14
-                        }
-
+                    Button { 
+                        flat: true; implicitWidth: 32; implicitHeight: 32
+                        onClicked: { if(player) player.next() }
+                        contentItem: Text { text: "󰒭"; color: "#cdd6f4"; font.pixelSize: 16; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter } 
                     }
-
                 }
-
-                Item {
-                    Layout.fillWidth: true
-                }
-
+                
+                Item { Layout.fillWidth: true }
+                
                 RowLayout {
-                    spacing: 10
-
+                    spacing: 12
                     Repeater {
                         model: Mpris.players.values
-
                         delegate: MouseArea {
-                            width: 18
-                            height: 18
+                            width: 20; height: 20
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: mprisPlayer.player = modelData
-
+                            onClicked: mprisPlayer.player = modelData // Icon Click Switch
+                            
                             Text {
                                 anchors.centerIn: parent
                                 font.pixelSize: 16
                                 color: (mprisPlayer.player === modelData) ? "#f5c2e7" : "#45475a"
                                 text: {
                                     let id = modelData.identity.toLowerCase();
-                                    if (id.includes("firefox"))
-                                        return "󰈹";
-
-                                    if (id.includes("chromium") || id.includes("chrome") || id.includes("zen"))
-                                        return "󰊯";
-
-                                    if (id.includes("spotify"))
-                                        return "󰓇";
-
-                                    if (id.includes("vlc"))
-                                        return "󰕼";
-
+                                    if (id.includes("firefox")) return "󰈹";
+                                    if (id.includes("chrom") || id.includes("zen")) return "󰊯";
+                                    if (id.includes("spotify")) return "󰓇";
+                                    if (id.includes("vlc")) return "󰕼";
                                     return "󰝚";
                                 }
                             }
-
                         }
-
                     }
-
                 }
-
             }
-
         }
-
     }
 
-    background: Rectangle {
-        color: "#11111b"
-        radius: 10
-        border.color: "#313244"
+    function formatTime(s) {
+        if (s < 0 || isNaN(s)) return "0:00"
+        let mins = Math.floor(s / 60); let secs = Math.floor(s % 60)
+        return mins + ":" + (secs < 10 ? "0" : "") + secs
     }
-
 }

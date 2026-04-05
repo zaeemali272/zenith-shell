@@ -14,9 +14,11 @@ Item {
     readonly property bool acOnline: BatteryService.acOnline
 
     function batteryIcon(p, state, ac) {
-        const isNotCharging = state.includes("not charging") || state.includes("idle") || state.includes("unknown") || state.includes("pending");
-        if (ac && isNotCharging)
-            return "";
+        // Updated to handle 'full' and 'not charging' for Conservative Mode
+        const isLimitActive = (state === "not charging" || state === "full" || state === "idle") && ac;
+        
+        if (isLimitActive)
+            return ""; // Plug icon for Conservative Mode
 
         if (state === "charging")
             return Theme.chargingIcon;
@@ -31,7 +33,8 @@ Item {
     }
 
     function batteryColor(p, state, ac) {
-        if (ac && state !== "charging")
+        // Matches Conservative Mode logic
+        if (ac && (state === "not charging" || state === "full"))
             return Theme.conserveColor;
 
         if (state === "charging")
@@ -44,24 +47,19 @@ Item {
     }
 
     implicitHeight: Theme.pillHeight
-    // Track the animated width
     implicitWidth: pill.width
 
     Pill {
         id: pill
-
         implicitHeight: Theme.pillHeight
-        // Calculate target width dynamically
         width: content.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
         clip: true
 
         RowLayout {
             id: content
-
             anchors.centerIn: parent
             spacing: Theme.pillGap
 
-            // Laptop Battery Section
             RowLayout {
                 visible: batPercent >= 0
                 spacing: 4
@@ -74,29 +72,22 @@ Item {
                 }
 
                 Text {
-                    // Padding to 2 digits (e.g., 05%)
                     text: batPercent.toString().padStart(2, '0') + "%"
                     color: root.batteryColor(batPercent, batState, acOnline)
                     font.pixelSize: Theme.fontSize
-                    // --- STABILITY FIX ---
                     font.family: "JetBrains Mono"
                     Layout.preferredWidth: 35
                     horizontalAlignment: Text.AlignHCenter
                 }
-
             }
-
         }
 
-        // --- SMOOTH EXPANSION ---
         Behavior on width {
             NumberAnimation {
                 duration: 400
                 easing.type: Easing.OutExpo
             }
-
         }
-
     }
 
     MouseArea {
@@ -111,5 +102,4 @@ Item {
                 QuickSettingsService.toggle("battery", root.mapToItem(null, 0, 0, root.width, root.height));
         }
     }
-
 }

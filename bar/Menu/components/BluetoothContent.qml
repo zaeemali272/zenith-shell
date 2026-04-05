@@ -8,7 +8,8 @@ import Quickshell
 
 ColumnLayout {
     id: root
-    spacing: 20
+    spacing: 25
+    Layout.fillWidth: true
 
     function getDeviceIcon(iconName) {
         if (!iconName) return "󰂯";
@@ -23,185 +24,86 @@ ColumnLayout {
         return "󰂯";
     }
 
-    // Header
+    // --- Header ---
     RowLayout {
-        Layout.fillWidth: true
-        spacing: 15
-
+        Layout.fillWidth: true; spacing: 15
         ColumnLayout {
-            spacing: 2
-            Layout.fillWidth: true
-            Text {
-                text: "Bluetooth"
-                color: "white"
-                font.bold: true
-                font.pixelSize: 22
-            }
-            Text {
-                text: BluetoothService.powered ? (BluetoothService.scanning ? "Searching for devices..." : "Bluetooth is on") : "Bluetooth is off"
-                color: "#a6adc8"
-                font.pixelSize: 12
+            spacing: 2; Layout.fillWidth: true
+            Text { text: "BLUETOOTH"; color: "#89b4fa"; font.pixelSize: 14; font.letterSpacing: 2; font.weight: Font.Black; opacity: 0.8 }
+            Text { 
+                text: BluetoothService.powered ? (BluetoothService.scanning ? "SCANNING..." : "ACTIVE") : "DISABLED"
+                color: "#585b70"; font.pixelSize: 10; font.weight: Font.Bold; font.letterSpacing: 1
             }
         }
 
-        // Scan Button
         Rectangle {
-            width: 44; height: 44
-            radius: 22
-            color: "#1e1e2e"
-            border.color: "#313244"
+            width: 48; height: 48; radius: 24; color: "#11111b"; border.color: BluetoothService.scanning ? "#f9e2af" : "#313244"; clip: true
             visible: BluetoothService.powered
-            
             Text {
-                id: scanIcon
-                anchors.centerIn: parent
-                text: "󰑐"
-                font.family: Theme.iconFont
-                font.pixelSize: 20
-                color: (BluetoothService.scanning || BluetoothService.busy) ? Theme.accentColor : "white"
-                
-                RotationAnimation on rotation {
-                    duration: 1000
-                    loops: Animation.Infinite
-                    running: (BluetoothService.scanning || BluetoothService.busy)
-                    from: 0
-                    to: 360
-                }
+                id: scanIcon; anchors.centerIn: parent; text: "󰑐"; font.family: Theme.iconFont; font.pixelSize: 20
+                color: BluetoothService.scanning ? "#f9e2af" : "#a6e3a1"
             }
-            
-            MouseArea {
-                anchors.fill: parent
-                onClicked: BluetoothService.toggleScan()
-            }
+            RotationAnimation { target: scanIcon; running: BluetoothService.scanning; from: 0; to: 360; duration: 1000; loops: Animation.Infinite }
+            MouseArea { anchors.fill: parent; onClicked: BluetoothService.toggleScan() }
         }
 
-        // Power Toggle
         Rectangle {
-            width: 44; height: 44
-            radius: 22
-            color: BluetoothService.powered ? Theme.accentColor : "#1e1e2e"
-            border.color: "#313244"
-            
+            width: 48; height: 48; radius: 24; color: BluetoothService.powered ? "#89b4fa" : "#11111b"
+            border.color: BluetoothService.powered ? "#89b4fa" : "#313244"
             Text {
-                anchors.centerIn: parent
-                text: BluetoothService.powered ? "󰂯" : "󰂲"
-                font.family: Theme.iconFont
-                font.pixelSize: 20
-                color: BluetoothService.powered ? "black" : "#585b70"
+                anchors.centerIn: parent; text: BluetoothService.powered ? "󰂯" : "󰂲"
+                font.family: Theme.iconFont; font.pixelSize: 20; color: BluetoothService.powered ? "black" : "#f38ba8"
             }
-            
-            MouseArea {
-                anchors.fill: parent
-                onClicked: BluetoothService.togglePower()
-            }
+            MouseArea { anchors.fill: parent; onClicked: BluetoothService.togglePower() }
         }
     }
 
-    // Status message when powered off
-    Item {
-        Layout.fillWidth: true
-        Layout.fillHeight: true
-        visible: !BluetoothService.powered
-
-        ColumnLayout {
-            anchors.centerIn: parent
-            spacing: 15
-            
-            Text {
-                text: "󰂲"
-                font.family: Theme.iconFont
-                font.pixelSize: 64
-                color: "#313244"
-                Layout.alignment: Qt.AlignHCenter
-            }
-            Text {
-                text: "Bluetooth is disabled"
-                color: "#6c7086"
-                font.pixelSize: 16
-                font.bold: true
-                Layout.alignment: Qt.AlignHCenter
-            }
-        }
-    }
-
-    // Device List
+    // --- Device List ---
     ListView {
-        id: deviceList
-        Layout.fillWidth: true
-        Layout.fillHeight: true
-        model: BluetoothService.devices
-        visible: BluetoothService.powered
-        spacing: 10
-        clip: true
+        id: deviceList; Layout.fillWidth: true; Layout.fillHeight: true
+        model: BluetoothService.devices; visible: BluetoothService.powered; spacing: 12; clip: true
 
         delegate: Rectangle {
-            width: deviceList.width
-            height: 70
-            color: "#1e1e2e"
-            radius: 16
-            border.color: connected ? Theme.accentColor : "#313244"
+            width: deviceList.width; height: 75; color: "#11111b"; radius: 20; border.color: connected ? "#89b4fa" : "#313244"
             border.width: connected ? 2 : 1
 
             RowLayout {
-                anchors.fill: parent
-                anchors.margins: 12
-                spacing: 15
-
+                anchors.fill: parent; anchors.margins: 12; spacing: 15
+                
                 Rectangle {
-                    width: 46; height: 46
-                    radius: 23
-                    color: connected ? Theme.accentColor : "#2a2a32"
-                    Text {
-                        anchors.centerIn: parent
-                        text: getDeviceIcon(icon)
-                        font.family: Theme.iconFont
-                        font.pixelSize: 22
-                        color: connected ? "black" : "white"
-                    }
+                    width: 44; height: 44; radius: 12; color: connected ? "#89b4fa" : "#181825"
+                    Text { anchors.centerIn: parent; text: getDeviceIcon(icon); font.family: Theme.iconFont; font.pixelSize: 22; color: connected ? "black" : "white" }
                 }
 
                 ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 2
-                    Text {
-                        text: name
-                        color: "white"
-                        font.bold: true
-                        font.pixelSize: 14
-                        elide: Text.ElideRight
-                    }
-                    Text {
-                        text: {
-                            if (connected) return "Connected";
-                            if (paired) return "Paired";
-                            return "Available to pair";
-                        }
-                        color: connected ? Theme.accentColor : (paired ? "#a6adc8" : Theme.yellow)
-                        font.pixelSize: 11
+                    Layout.fillWidth: true; spacing: 0
+                    Text { text: name; color: "white"; font.weight: Font.Bold; font.pixelSize: 14; elide: Text.ElideRight }
+                    Text { 
+                        text: connected ? "CONNECTED" : (paired ? "PAIRED" : "READY")
+                        color: connected ? "#89b4fa" : "#585b70"; font.pixelSize: 9; font.weight: Font.Black 
                     }
                 }
 
-                // Action Buttons
+                // --- Action Buttons (Right Aligned) ---
                 RowLayout {
+                    Layout.alignment: Qt.AlignRight
                     spacing: 8
-                    
-                    // Remove/Unpair Button
+
+                    // Forget/Remove
                     Rectangle {
-                        width: 36; height: 36; radius: 18; color: "#313244"
-                        Text { anchors.centerIn: parent; text: "󰆴"; font.family: Theme.iconFont; color: "#f38ba8"; font.pixelSize: 16 }
+                        width: 40; height: 40; radius: 12; color: "#181825"; border.color: "#313244"
+                        Text { anchors.centerIn: parent; text: "󰆴"; font.family: Theme.iconFont; color: "#f38ba8"; font.pixelSize: 18 }
                         MouseArea { anchors.fill: parent; onClicked: BluetoothService.action("remove", address) }
                     }
-                    
-                    // Connect/Disconnect Toggle
+
+                    // Connect/Disconnect Toggle Icon
                     Rectangle {
-                        width: 100; height: 36; radius: 18
-                        color: connected ? "#313244" : Theme.accentColor
+                        width: 40; height: 40; radius: 12; 
+                        color: connected ? "#f38ba8" : "#89b4fa" // Red for disconnect, Blue for connect
                         Text { 
-                            anchors.centerIn: parent; 
-                            text: connected ? "Disconnect" : (paired ? "Connect" : "Pair"); 
-                            color: connected ? "white" : "black"; 
-                            font.bold: true; 
-                            font.pixelSize: 11 
+                            anchors.centerIn: parent
+                            text: connected ? "󱘖" : "󱘖" // Use distinct icons if your font supports them, e.g., 󰂱 vs 󰂯
+                            font.family: Theme.iconFont; color: "black"; font.pixelSize: 20 
                         }
                         MouseArea { 
                             anchors.fill: parent; 

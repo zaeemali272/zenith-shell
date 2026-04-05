@@ -11,76 +11,59 @@ PopupWindow {
     id: root
 
     property var parentWindow: null
-    
     visible: QuickSettingsService.qsVisible
     color: "transparent"
+    
+    // Focus & Grab logic
     grabFocus: QuickSettingsService.isSticky
-
     HyprlandFocusGrab {
         active: root.visible && QuickSettingsService.isSticky
         windows: [root, parentWindow]
         onCleared: QuickSettingsService.close()
     }
     
-    onVisibleChanged: {
-        if (visible && QuickSettingsService.isSticky) {
-            mainContent.forceActiveFocus();
-        }
-    }
-    
-    // Position the window relative to the bar
+    // Positioning
     anchor.window: parentWindow
-    // Anchored to the bottom-right corner of the parent window.
     anchor.edges: Edges.Bottom | Edges.Right 
     anchor.gravity: Edges.Bottom | Edges.Right
     
-    // Attached to top-right side below the bar
     anchor.rect: {
         const barHeight = (parentWindow && parentWindow.height > 0) ? parentWindow.height : 45;
         const barWidth = (parentWindow && parentWindow.width > 0) ? parentWindow.width : 1920;
-        
-        // Align the right edge of the popup with the right edge of the bar, offset by 10px margin.
-        // The top edge is aligned with the bottom of the bar.
-        return Qt.rect(barWidth - implicitWidth - 10, barHeight, 0, 0);
+        return Qt.rect(barWidth - implicitWidth - 10, barHeight + 10, 0, 0);
     }
 
     implicitWidth: 650 
-    implicitHeight: 600
+    implicitHeight: 570
 
     Rectangle {
         id: mainContent
         anchors.fill: parent
-        anchors.topMargin: 8
-        color: "#0f0f14"
-        radius: 28
-        border.color: "#2a2a32"
+        color: "#11111b"
+        radius: 24
+        border.color: "#313244"
         border.width: 1
 
+        // Inner Shadow/Glow effect
         layer.enabled: true
-        
-        // Background clicks and focus management
-        MouseArea {
-            anchors.fill: parent
-            onPressed: (mouse) => {
-                mouse.accepted = true; // Consume to prevent focus loss
-                mainContent.forceActiveFocus();
-            }
-        }
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 24
-            spacing: 20
+            anchors.margins: 20
+            spacing: 15
 
-            // Modern Tab Buttons
-            Item {
+            // --- MODERN TAB BAR ---
+            Rectangle {
                 Layout.fillWidth: true
-                height: 48
-                
-                Row {
-                    id: tabRow
-                    anchors.centerIn: parent
-                    spacing: 8// Reduced from 8
+                height: 60
+                color: "#181825"
+                radius: 16
+                border.color: "#313244"
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 6
+                    spacing: 4
                     
                     Repeater {
                         model: [
@@ -88,80 +71,52 @@ PopupWindow {
                             { id: "bluetooth", icon: "󰂯", title: "BT" },
                             { id: "volume", icon: "󰕾", title: "Audio" },
                             { id: "powerprofile", icon: "󰍛", title: "Mode" },
-                            { id: "resources", icon: "󰘚", title: "System" },
-                            { id: "battery", icon: "󰁹", title: "Power" },
+                            { id: "resources", icon: "󰘚", title: "Sys" },
+                            { id: "battery", icon: "󰁹", title: "Pwr" },
                             { id: "power", icon: "󰐥", title: "Exit" }
                         ]
 
                         delegate: Rectangle {
-                            id: tabButton
-                            implicitWidth: innerRow.implicitWidth + 24 // Reduced padding from 28
-                            height: 48
-                            radius: 24
-                            color: QuickSettingsService.activeTab === modelData.id ? Theme.accentColor : "#1e1e2e"
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            radius: 12
+                            // Active tab gets the accent color, others are transparent
+                            color: QuickSettingsService.activeTab === modelData.id ? "#89b4fa" : "transparent"
                             
                             Behavior on color { ColorAnimation { duration: 200 } }
 
-                            Row {
-                                id: innerRow
+                            ColumnLayout {
                                 anchors.centerIn: parent
-                                spacing: 6
-                                
+                                spacing: 1
                                 Text {
                                     text: modelData.icon
-                                    font.family: Theme.iconFont
-                                    font.pixelSize: 18
-                                    color: QuickSettingsService.activeTab === modelData.id ? "#000000" : "white"
-                                    anchors.verticalCenter: parent.verticalCenter
+                                    font.family: Theme.iconFont; font.pixelSize: 18
+                                    color: QuickSettingsService.activeTab === modelData.id ? "#11111b" : "#a6adc8"
+                                    Layout.alignment: Qt.AlignHCenter
                                 }
-                                
                                 Text {
-                                    text: modelData.title.substring(0, 7)
-                                    font.pixelSize: 12
-                                    font.bold: true
-                                    color: QuickSettingsService.activeTab === modelData.id ? "#000000" : "white"
-                                    visible: root.implicitWidth > 400
-                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: modelData.title
+                                    font.pixelSize: 10; font.weight: Font.Black
+                                    color: QuickSettingsService.activeTab === modelData.id ? "#11111b" : "#585b70"
+                                    Layout.alignment: Qt.AlignHCenter
                                 }
                             }
 
                             MouseArea {
-                                anchors.fill: parent
-                                onClicked: {
-                                    console.log(`[QuickSettingsMenu] Tab clicked: ${modelData.id}`)
-                                    QuickSettingsService.activeTab = modelData.id
-                                }
+                                anchors.fill: parent; hoverEnabled: true
+                                onClicked: QuickSettingsService.activeTab = modelData.id
                             }
                         }
                     }
                 }
             }
 
-            Rectangle { 
-                Layout.fillWidth: true; 
-                height: 1; 
-                color: "#2a2a32" 
-                Layout.topMargin: 5
-                Layout.bottomMargin: 5
-            }
-
-            // Content Area
+            // --- CONTENT AREA ---
             StackLayout {
                 id: contentStack
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                currentIndex: {
-                    switch (QuickSettingsService.activeTab) {
-                        case "network": return 0;
-                        case "bluetooth": return 1;
-                        case "volume": return 2;
-                        case "powerprofile": return 3;
-                        case "resources": return 4;
-                        case "battery": return 5;
-                        case "power": return 6;
-                        default: return 0;
-                    }
-                }
+                currentIndex: ["network", "bluetooth", "volume", "powerprofile", "resources", "battery", "power"].indexOf(QuickSettingsService.activeTab)
 
                 WifiContent { }
                 BluetoothContent { }
@@ -173,14 +128,11 @@ PopupWindow {
             }
         }
 
-        // Hover tracking (on top of everything but blocks nothing)
+        // Hover tracking to prevent accidental closure
         MouseArea {
-            id: hoverTracker
             anchors.fill: parent
-            anchors.topMargin: -12
             hoverEnabled: true
             acceptedButtons: Qt.NoButton
-            
             onEntered: QuickSettingsService.isHoveringMenu = true
             onExited: QuickSettingsService.isHoveringMenu = false
         }
