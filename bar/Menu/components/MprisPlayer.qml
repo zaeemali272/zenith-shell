@@ -3,6 +3,7 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Services.Mpris
+import "../../../services"
 
 Rectangle {
     id: mprisPlayer
@@ -36,7 +37,7 @@ Rectangle {
         id: lockTimer
         repeat: false
         onTriggered: {
-            if (player) currentPos = player.position;
+            if (player && Mpris.players.values.indexOf(player) !== -1) currentPos = player.position;
             isResetting = false;
         }
     }
@@ -65,9 +66,13 @@ Rectangle {
 
     Timer {
         interval: 1000
-        running: player && player.playbackState === MprisPlaybackState.Playing && !isResetting
+        running: CenterState.qsVisible && player && player.playbackState === MprisPlaybackState.Playing && !isResetting
         repeat: true
-        onTriggered: currentPos = player.position
+        onTriggered: {
+            if (player && Mpris.players.values.indexOf(player) !== -1) {
+                currentPos = player.position
+            }
+        }
     }
 
     // --- UI Layout ---

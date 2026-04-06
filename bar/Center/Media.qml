@@ -73,7 +73,7 @@ Rectangle {
     }
 
     Instantiator {
-        model: Mpris.players
+        model: mediaWidget.players
         
         // Added onObjectAdded to catch VLC the exact moment it registers
         onObjectAdded: (index, player) => {
@@ -102,7 +102,7 @@ Rectangle {
             Component.onDestruction: {
                 if (mediaWidget.trackedPlayer === modelData) {
                     mediaWidget.trackedPlayer = null; // Reset first
-                    for (const p of Mpris.players.values) {
+                    for (const p of mediaWidget.players) {
                         if (p.isPlaying) {
                             mediaWidget.trackedPlayer = p
                             break
