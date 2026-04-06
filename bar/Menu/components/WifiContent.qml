@@ -6,157 +6,258 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 
-ColumnLayout {
+Item {
     id: root
-    spacing: 25
     Layout.fillWidth: true
+    Layout.fillHeight: true
     
     // Focus capture for the whole content area
     focus: true
     
     Component.onCompleted: {
         WifiService.refresh();
-        // Ensure the parent window is focusable (Restoring your working logic)
-        if (Quickshell.window) Quickshell.window.focusable = true;
+        if (root.QsWindow && root.QsWindow.window) {
+            root.QsWindow.window.focusable = true;
+        }
     }
 
     property var wifiSvc: WifiService
     property bool isAirplane: false
     property string selectedSsid: ""
+    property string lastFailedSsid: ""
 
-    // CRITICAL: The "Grab Shield" from your previous version
-    // This prevents clicks from dropping focus back to the desktop/Hyprland
+    Connections {
+        target: WifiService
+        function onConnectionFailed(ssid) {
+            if (ssid === selectedSsid) {
+                lastFailedSsid = ssid;
+                const timer = Qt.createQmlObject('import QtQuick; Timer { interval: 2000; onTriggered: destroy() }', root);
+                timer.triggered.connect(() => { if (lastFailedSsid === ssid) lastFailedSsid = ""; });
+                timer.start();
+            }
+        }
+        function onConnectionSuccess(ssid) {
+            selectedSsid = "";
+            lastFailedSsid = "";
+        }
+    }
+
+    Connections {
+        target: QuickSettingsService
+        function onQsVisibleChanged() {
+            if (!QuickSettingsService.qsVisible) {
+                selectedSsid = "";
+            }
+        }
+    }
+
+    // CRITICAL: The "Grab Shield"
     MouseArea {
         anchors.fill: parent
-        z: -1 // Keep behind other elements
         onPressed: (mouse) => {
+            QuickSettingsService.isSticky = true;
             mouse.accepted = true;
             root.forceActiveFocus();
         }
     }
 
-    // --- Header ---
-    RowLayout {
-        Layout.fillWidth: true; spacing: 15
-        
+    ColumnLayout {
+        anchors.fill: parent
+        spacing: 20
+
+        // --- Header & Status ---
         ColumnLayout {
-            spacing: 2; Layout.fillWidth: true
-            Text { text: "NETWORKS"; color: "#89b4fa"; font.pixelSize: 14; font.letterSpacing: 2; font.weight: Font.Black; opacity: 0.8 }
-            Text {
-                text: root.isAirplane ? "AIRPLANE MODE" : (wifiSvc.networks.length + " IN RANGE")
-                color: "#585b70"; font.pixelSize: 10; font.weight: Font.Bold; font.letterSpacing: 1
-            }
-        }
+            Layout.fillWidth: true; spacing: 15
+            RowLayout {
+                Layout.fillWidth: true; spacing: 15
+                ColumnLayout {
+                    spacing: 2; Layout.fillWidth: true
+                    Text { text: "NETWORKS"; color: "#89b4fa"; font.pixelSize: 14; font.letterSpacing: 2; font.weight: Font.Black; opacity: 0.8 }
+                    Text {
+                        text: root.isAirplane ? "AIRPLANE MODE" : (wifiSvc.networks.length + " IN RANGE")
+                        color: "#585b70"; font.pixelSize: 10; font.weight: Font.Bold; font.letterSpacing: 1
+                    }
+                }
 
-        // Refresh Button
-        Rectangle {
-            width: 48; height: 48; radius: 24; color: "#11111b"; border.color: wifiSvc.isTesting ? "#f9e2af" : "#313244"; clip: true
-            Text {
-                id: refreshIcon
-                anchors.centerIn: parent; text: wifiSvc.isTesting ? "󱐋" : "󰑐"; font.family: Theme.iconFont; font.pixelSize: 20
-                color: wifiSvc.isTesting ? "#f9e2af" : "#a6e3a1"
-            }
-            RotationAnimation { target: refreshIcon; running: wifiSvc.isTesting; from: 0; to: 360; duration: 1000; loops: Animation.Infinite }
-            MouseArea { anchors.fill: parent; onClicked: wifiSvc.refresh() }
-        }
+                // Refresh Button
+                Rectangle {
+                    width: 44; height: 44; radius: 22; color: "#181825"; border.color: wifiSvc.isTesting ? "#f9e2af" : "#313244"; clip: true
+                    Text {
+                        id: refreshIcon
+                        anchors.centerIn: parent; text: wifiSvc.isTesting ? "󱐋" : "󰑐"; font.family: Theme.iconFont; font.pixelSize: 18
+                        color: wifiSvc.isTesting ? "#f9e2af" : "#a6e3a1"
+                    }
+                    RotationAnimation { target: refreshIcon; running: wifiSvc.isTesting; from: 0; to: 360; duration: 1000; loops: Animation.Infinite }
+                    MouseArea { anchors.fill: parent; onClicked: wifiSvc.refresh() }
+                }
 
-        // Airplane Mode
-        Rectangle {
-            width: 48; height: 48; radius: 24; color: "#11111b"; border.color: root.isAirplane ? "#f38ba8" : "#313244"; clip: true
-            Text { anchors.centerIn: parent; text: "󰀝"; font.family: Theme.iconFont; font.pixelSize: 22; color: root.isAirplane ? "#f38ba8" : "#cdd6f4" }
-            MouseArea {
-                anchors.fill: parent
-                onClicked: {
-                    root.isAirplane = !root.isAirplane;
-                    rfkillProc.command = ["rfkill", root.isAirplane ? "block" : "unblock", "wifi"];
-                    rfkillProc.running = true;
+                // Airplane Mode
+                Rectangle {
+                    width: 44; height: 44; radius: 22; color: "#181825"; border.color: root.isAirplane ? "#f38ba8" : "#313244"; clip: true
+                    Text { anchors.centerIn: parent; text: "󰀝"; font.family: Theme.iconFont; font.pixelSize: 20; color: root.isAirplane ? "#f38ba8" : "#cdd6f4" }
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            root.isAirplane = !root.isAirplane;
+                            rfkillProc.command = ["rfkill", root.isAirplane ? "block" : "unblock", "wifi"];
+                            rfkillProc.running = true;
+                        }
+                    }
+                }
+            }
+            
+            // Current Connection Detailed Info
+            Rectangle {
+                Layout.fillWidth: true; height: 60; color: "#181825"; radius: 16; visible: wifiSvc.currentSsid !== ""
+                RowLayout {
+                    anchors.fill: parent; anchors.margins: 12; spacing: 15
+                    Rectangle { width: 36; height: 36; radius: 10; color: "#1e1e2e"
+                        Text { anchors.centerIn: parent; text: "󰤨"; font.family: Theme.iconFont; font.pixelSize: 18; color: "#a6e3a1" }
+                    }
+                    ColumnLayout { spacing: 0; Layout.fillWidth: true
+                        Text { text: wifiSvc.currentSsid; color: "white"; font.weight: Font.Bold; font.pixelSize: 13; elide: Text.ElideRight }
+                        Text { 
+                            text: wifiSvc.ipv4Address ? wifiSvc.ipv4Address : "Connecting..."
+                            color: "#585b70"; font.pixelSize: 10; font.weight: Font.Bold 
+                        }
+                    }
+                    ColumnLayout { spacing: 0; Layout.alignment: Qt.AlignRight
+                        Text { text: wifiSvc.rssi; color: "#f9e2af"; font.pixelSize: 10; font.weight: Font.Black; horizontalAlignment: Text.AlignRight }
+                        Text { text: wifiSvc.txBitrate ? (parseInt(wifiSvc.txBitrate)/1000).toFixed(0) + " MB/S" : ""; color: "#585b70"; font.pixelSize: 9; font.weight: Font.Black; horizontalAlignment: Text.AlignRight }
+                    }
                 }
             }
         }
-    }
 
-    // --- Network List ---
-    ListView {
-        id: list; Layout.fillWidth: true; Layout.fillHeight: true; model: wifiSvc.networks; spacing: 12; clip: true
-        
-        delegate: Rectangle {
-            id: card
-            width: list.width; height: (selectedSsid === modelData.ssid && !wifiSvc.knownNetworks[modelData.ssid]) ? 180 : 70
-            color: "#11111b"; radius: 20; border.color: selectedSsid === modelData.ssid ? "#89b4fa" : "#313244"; clip: true
-            Behavior on height { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+        // --- Network List ---
+        ListView {
+            id: list; Layout.fillWidth: true; Layout.fillHeight: true; model: wifiSvc.networks; spacing: 10; clip: true
             
-            ColumnLayout {
-                anchors.fill: parent; anchors.margins: 15; spacing: 15
-                RowLayout {
-                    Layout.fillWidth: true; spacing: 15
-                    Rectangle { width: 40; height: 40; radius: 12; color: "#181825"
-                        Text { anchors.centerIn: parent; text: modelData.security === "psk" ? "󰷛" : "󰤨"; font.family: Theme.iconFont; font.pixelSize: 20; color: "#cdd6f4" }
-                    }
-                    ColumnLayout { spacing: 0; Layout.fillWidth: true
-                        Text { text: modelData.ssid; color: "white"; font.weight: Font.Bold; font.pixelSize: 14 }
-                        Text { text: wifiSvc.knownNetworks[modelData.ssid] ? "SAVED" : "AVAILABLE"; color: "#585b70"; font.pixelSize: 9; font.weight: Font.Black }
-                    }
-                    RowLayout { spacing: 8
-                        Rectangle {
-                            visible: !!wifiSvc.knownNetworks[modelData.ssid]
-                            width: 36; height: 36; radius: 10; color: "#181825"
-                            Text { anchors.centerIn: parent; text: "󱘖"; font.family: Theme.iconFont; color: "#f38ba8" }
-                            MouseArea { anchors.fill: parent; onClicked: wifiSvc.forgetNetwork(modelData.ssid) }
-                        }
-                        Rectangle {
-                            width: wifiSvc.knownNetworks[modelData.ssid] ? 80 : 36; height: 36; radius: 10
-                            color: wifiSvc.knownNetworks[modelData.ssid] ? "#89b4fa" : "#181825"
-                            Text { 
-                                anchors.centerIn: parent; font.pixelSize: 11; font.weight: Font.Black
-                                text: wifiSvc.knownNetworks[modelData.ssid] ? "CONNECT" : "󰅂"; color: wifiSvc.knownNetworks[modelData.ssid] ? "black" : "#cdd6f4" 
+            delegate: FocusScope {
+                id: delegateRoot
+                width: list.width; height: (selectedSsid === modelData.ssid && !wifiSvc.knownNetworks[modelData.ssid]) ? 170 : 65
+                
+                Rectangle {
+                    anchors.fill: parent
+                    color: modelData.connected ? "#1e1e2e" : "#11111b"; radius: 18
+                    border.color: modelData.connected ? "#a6e3a1" : (selectedSsid === modelData.ssid ? "#89b4fa" : "#313244")
+                    border.width: modelData.connected ? 1.5 : 1
+                    clip: true
+                    Behavior on height { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+                    
+                    ColumnLayout {
+                        anchors.fill: parent; anchors.margins: 12; spacing: 12
+                        RowLayout {
+                            Layout.fillWidth: true; spacing: 12
+                            // Signal Icon
+                            Rectangle { width: 36; height: 36; radius: 10; color: "#181825"
+                                Text { 
+                                    anchors.centerIn: parent
+                                    text: {
+                                        if (modelData.connected) return "󰤨";
+                                        if (modelData.signal >= 4) return "󰤨";
+                                        if (modelData.signal >= 3) return "󰤥";
+                                        if (modelData.signal >= 2) return "󰤢";
+                                        if (modelData.signal >= 1) return "󰤟";
+                                        return "󰤯";
+                                    }
+                                    font.family: Theme.iconFont; font.pixelSize: 18
+                                    color: modelData.connected ? "#a6e3a1" : "#cdd6f4" 
+                                }
                             }
-                            MouseArea { 
-                                anchors.fill: parent; 
-                                onClicked: {
-                                    root.forceActiveFocus(); // Restored focus grab
-                                    if(wifiSvc.knownNetworks[modelData.ssid]) wifiSvc.connect(modelData.ssid, "");
-                                    else selectedSsid = (selectedSsid === modelData.ssid) ? "" : modelData.ssid;
+                            ColumnLayout { spacing: 0; Layout.fillWidth: true
+                                Text { text: modelData.ssid; color: "white"; font.weight: Font.Bold; font.pixelSize: 13; elide: Text.ElideRight }
+                                Text { 
+                                    text: modelData.connected ? "ACTIVE" : (wifiSvc.knownNetworks[modelData.ssid] ? "SAVED" : "AVAILABLE")
+                                    color: modelData.connected ? "#a6e3a1" : "#585b70"
+                                    font.pixelSize: 9; font.weight: Font.Black 
+                                }
+                            }
+                            RowLayout { spacing: 6
+                                // Disconnect Button (only for connected network)
+                                Rectangle {
+                                    visible: modelData.connected
+                                    width: 32; height: 32; radius: 8; color: "#1e1e2e"
+                                    Text { anchors.centerIn: parent; text: "󰤄"; font.family: Theme.iconFont; font.pixelSize: 14; color: "#f38ba8" }
+                                    MouseArea { anchors.fill: parent; onClicked: wifiSvc.disconnect() }
+                                }
+
+                                // Forget Button
+                                Rectangle {
+                                    visible: !!wifiSvc.knownNetworks[modelData.ssid]
+                                    width: 32; height: 32; radius: 8; color: "#1e1e2e"
+                                    Text { anchors.centerIn: parent; text: "󱘖"; font.family: Theme.iconFont; font.pixelSize: 14; color: "#fab387" }
+                                    MouseArea { anchors.fill: parent; onClicked: wifiSvc.forgetNetwork(modelData.ssid) }
+                                }
+                                
+                                // Action Button
+                                Rectangle {
+                                    visible: !modelData.connected
+                                    width: wifiSvc.knownNetworks[modelData.ssid] ? 75 : 32; height: 32; radius: 8
+                                    color: wifiSvc.knownNetworks[modelData.ssid] ? "#89b4fa" : "#1e1e2e"
+                                    Text { 
+                                        anchors.centerIn: parent; font.pixelSize: 10; font.weight: Font.Black
+                                        text: wifiSvc.knownNetworks[modelData.ssid] ? "CONNECT" : "󰅂"
+                                        color: wifiSvc.knownNetworks[modelData.ssid] ? "black" : "#cdd6f4"
+                                    }
+                                    MouseArea { 
+                                        anchors.fill: parent; 
+                                        onClicked: {
+                                            QuickSettingsService.isSticky = true;
+                                            root.forceActiveFocus();
+                                            if(wifiSvc.knownNetworks[modelData.ssid]) wifiSvc.connect(modelData.ssid, "");
+                                            else selectedSsid = (selectedSsid === modelData.ssid) ? "" : modelData.ssid;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // --- Password Input Section ---
+                        ColumnLayout {
+                            Layout.fillWidth: true; visible: selectedSsid === modelData.ssid && !wifiSvc.knownNetworks[modelData.ssid]; spacing: 10
+                            Rectangle { 
+                                Layout.fillWidth: true; height: 38; color: "#1e1e2e"; radius: 10; 
+                                border.color: lastFailedSsid === modelData.ssid ? "#f38ba8" : "#313244"
+                                border.width: 1
+                                
+                                TextInput { 
+                                    id: passInput; anchors.fill: parent; anchors.margins: 10; color: "white"; echoMode: TextInput.Password; font.pixelSize: 13
+                                    focus: true 
+                                    onVisibleChanged: if (visible && selectedSsid === modelData.ssid) passFocusTimer.start();
+                                    Timer { id: passFocusTimer; interval: 100; onTriggered: passInput.forceActiveFocus() }
+                                    Text { text: "Password..."; color: "#45475a"; visible: !passInput.text && !passInput.activeFocus }
+                                    onAccepted: { wifiSvc.connect(modelData.ssid, passInput.text); passInput.text = ""; }
+                                }
+                            }
+                            Rectangle { 
+                                Layout.fillWidth: true; height: 38; color: "#89b4fa"; radius: 10
+                                Text { anchors.centerIn: parent; text: "JOIN NETWORK"; color: "black"; font.weight: Font.Black; font.pixelSize: 10 }
+                                MouseArea { 
+                                    anchors.fill: parent; 
+                                    onClicked: { 
+                                        QuickSettingsService.isSticky = true;
+                                        wifiSvc.connect(modelData.ssid, passInput.text); 
+                                        passInput.text = ""; 
+                                    } 
                                 }
                             }
                         }
                     }
                 }
-                
-                // --- Password Input Section ---
-                ColumnLayout {
-                    Layout.fillWidth: true; visible: selectedSsid === modelData.ssid && !wifiSvc.knownNetworks[modelData.ssid]; spacing: 12
-                    Rectangle { 
-                        Layout.fillWidth: true; height: 44; color: "#181825"; radius: 12; border.color: "#313244"
-                        TextInput { 
-                            id: passInput; anchors.fill: parent; anchors.margins: 12; color: "white"; echoMode: TextInput.Password; font.pixelSize: 14
-                            
-                            // RESTORED FOCUS LOGIC
-                            focus: true 
-                            onVisibleChanged: { if (visible) forceActiveFocus(); }
-                            
-                            Text { text: "Password..."; color: "#45475a"; visible: !passInput.text && !passInput.activeFocus }
-                            onAccepted: { wifiSvc.connect(modelData.ssid, passInput.text); passInput.text = ""; }
-                        }
-                    }
-                    Rectangle { 
-                        Layout.fillWidth: true; height: 44; color: "#89b4fa"; radius: 12
-                        Text { anchors.centerIn: parent; text: "JOIN"; color: "black"; font.weight: Font.Black }
-                        MouseArea { anchors.fill: parent; onClicked: { wifiSvc.connect(modelData.ssid, passInput.text); passInput.text = ""; } }
-                    }
-                }
             }
         }
-    }
 
-    // --- Footer ---
-    Rectangle {
-        Layout.fillWidth: true; height: 55; color: "#11111b"; radius: 20; border.color: wifiSvc.isTesting ? "#f9e2af" : "#313244"
-        RowLayout {
-            anchors.centerIn: parent; spacing: 15
-            Text { text: wifiSvc.isTesting ? "󱑔" : "󰓅"; font.family: Theme.iconFont; color: wifiSvc.isTesting ? "#f9e2af" : "#89b4fa"; font.pixelSize: 22 }
-            ColumnLayout { spacing: 0
-                Text { text: wifiSvc.isTesting ? "TESTING MAX SPEED..." : "DOWNLOAD SPEED"; color: "#585b70"; font.pixelSize: 8; font.weight: Font.Black }
-                Text { text: wifiSvc.currentSpeed.toUpperCase(); color: "white"; font.pixelSize: 16; font.weight: Font.Black }
+        // --- Footer (Speed Test) ---
+        Rectangle {
+            Layout.fillWidth: true; height: 50; color: "#181825"; radius: 16; border.color: wifiSvc.isTesting ? "#f9e2af" : "#313244"
+            RowLayout {
+                anchors.centerIn: parent; spacing: 15
+                Text { text: wifiSvc.isTesting ? "󱑔" : "󰓅"; font.family: Theme.iconFont; color: wifiSvc.isTesting ? "#f9e2af" : "#89b4fa"; font.pixelSize: 20 }
+                ColumnLayout { spacing: 0
+                    Text { text: wifiSvc.isTesting ? "TESTING MAX SPEED..." : "DOWNLOAD SPEED"; color: "#585b70"; font.pixelSize: 7; font.weight: Font.Black }
+                    Text { text: wifiSvc.currentSpeed.toUpperCase(); color: "white"; font.pixelSize: 14; font.weight: Font.Black }
+                }
             }
         }
     }

@@ -137,15 +137,15 @@ Item {
 
     Process {
         id: findPaths
-        command: ["sh", "-c", "echo BAT=$(ls -d /sys/class/power_supply/BAT* | head -n1); echo AC=$(ls -d /sys/class/power_supply/AC* /sys/class/power_supply/ADP* 2>/dev/null | head -n1)"]
+        command: ["sh", "-c", "echo BATS=$(ls -d /sys/class/power_supply/BAT* 2>/dev/null); echo AC=$(ls -d /sys/class/power_supply/AC* /sys/class/power_supply/ADP* /sys/class/power_supply/Mains* 2>/dev/null | head -n1)"]
         stdout: StdioCollector {
             onStreamFinished: {
                 const lines = text.trim().split("\n");
                 lines.forEach((l) => {
-                    if (l.startsWith("BAT=")) service.batPath = l.slice(4);
+                    if (l.startsWith("BATS=")) service.batPath = l.slice(5);
                     if (l.startsWith("AC=")) service.acPath = l.slice(3);
                 });
-                if (service.batPath && service.acPath) {
+                if (service.batPath) {
                     service.update();
                     pollTimer.running = true;
                 }
@@ -164,57 +164,105 @@ Item {
     Process {
         id: updateExec
         command: ["sh", "-c", `
-            cat ${service.batPath}/capacity \
-                ${service.batPath}/status \
-                ${service.acPath}/online \
-                ${service.batPath}/cycle_count \
-                ${service.batPath}/voltage_now \
-                ${service.batPath}/power_now \
-                ${service.batPath}/energy_now \
-                ${service.batPath}/energy_full \
-                ${service.batPath}/energy_full_design
-            cat /sys/class/hwmon/hwmon*/temp1_input 2>/dev/null | head -n1
+            AC="${service.acPath}"
+            [ -n "$AC" ] && cat "$AC/online" 2>/dev/null || echo 0
+            
+            for B in ${service.batPath}; do
+                [ ! -d "$B" ] && continue
+                cat "$B/capacity" 2>/dev/null || echo 0
+                cat "$B/status" 2>/dev/null || echo unknown
+                cat "$B/cycle_count" 2>/dev/null || echo 0
+                cat "$B/voltage_now" 2>/dev/null || cat "$B/voltage_avg" 2>/dev/null || echo 0
+                
+                # Rate
+                if [ -f "$B/power_now" ]; then cat "$B/power_now"
+                elif [ -f "$B/current_now" ]; then cat "$B/current_now"
+                else echo 0; fi
+                
+                # Now
+                if [ -f "$B/energy_now" ]; then cat "$B/energy_now"
+                elif [ -f "$B/charge_now" ]; then cat "$B/charge_now"
+                else echo 0; fi
+                
+                # Full
+                if [ -f "$B/energy_full" ]; then cat "$B/energy_full"
+                elif [ -f "$B/charge_full" ]; then cat "$B/charge_full"
+                else echo 0; fi
+                
+                # Design
+                if [ -f "$B/energy_full_design" ]; then cat "$B/energy_full_design"
+                elif [ -f "$B/charge_full_design" ]; then cat "$B/charge_full_design"
+                else echo 0; fi
+            done
+            
+            # Temperature
+            cat /sys/class/hwmon/hwmon*/temp1_input 2>/dev/null | head -n1 || echo 0
         `]
         stdout: StdioCollector {
             onStreamFinished: {
                 if (!text) return;
                 const parts = text.trim().split("\n");
+                if (parts.length < 2) return;
                 
-                // We need at least 9 parts from the first cat, 
-                // parts[9] will be the temperature from the second cat
-                if (parts.length >= 9) {
-                    // 1. Core Info
-                    service.percentage = parseInt(parts[0]);
-                    service.status = parts[1].toLowerCase().trim();
-                    service.acOnline = parts[2].trim() === "1";
-                    
-                    // 2. Tech Details
-                    service.cycleCount = Number(parts[3]) || 0;
-                    service.voltage = Number(parts[4]) || 0;
-                    service.energyRate = Number(parts[5]) || 0;
-                    service.energyNow = Number(parts[6]) || 0;
-                    
-                    // 3. Health Calculation
-                    let full = Number(parts[7]) || 1;
-                    let design = Number(parts[8]) || 1;
-                    service.health = (full / design) * 100;
+                service.acOnline = parts[0].trim() === "1";
+                
+                let totalEnergyNow = 0;
+                let totalEnergyFull = 0;
+                let totalEnergyDesign = 0;
+                let totalRate = 0;
+                let totalVoltage = 0;
+                let totalCycles = 0;
+                let mainStatus = "unknown";
+                let batCount = 0;
 
-                    // 4. Temperature (Index 9 from the second cat command)
-                    if (parts.length > 9) {
-                        service.temp = parseInt(parts[9]) / 1000;
-                    }
+                // Each battery provides 8 lines of data
+                for (let i = 1; i < parts.length - 1; i += 8) {
+                    if (i + 7 >= parts.length - 1) break;
+                    
+                    batCount++;
+                    let cap = parseInt(parts[i]);
+                    let stat = parts[i+1].toLowerCase().trim();
+                    let cycles = parseInt(parts[i+2]);
+                    let volt = parseInt(parts[i+3]);
+                    let rate = Math.abs(parseInt(parts[i+4]));
+                    let now = parseInt(parts[i+5]);
+                    let full = parseInt(parts[i+6]);
+                    let design = parseInt(parts[i+7]);
 
-                    // 5. Time Remaining Calculation
-                    if (service.status === "discharging" && service.energyRate > 0) {
-                        let secondsLeft = (service.energyNow / service.energyRate) * 3600;
-                        service.timeRemaining = service.formatTime(secondsLeft);
-                    } else if (service.status === "charging" && service.energyRate > 0) {
-                        let energyFull = Number(parts[7]) || 40870000; 
-                        let secondsToFull = ((energyFull - service.energyNow) / service.energyRate) * 3600;
-                        service.timeRemaining = service.formatTime(secondsToFull) + " to full";
+                    totalEnergyNow += now;
+                    totalEnergyFull += full;
+                    totalEnergyDesign += design;
+                    totalRate += rate;
+                    totalVoltage += volt;
+                    totalCycles += cycles;
+
+                    if (stat === "charging") mainStatus = "charging";
+                    else if (stat === "discharging" && mainStatus !== "charging") mainStatus = "discharging";
+                    else if (stat === "full" && mainStatus === "unknown") mainStatus = "full";
+                    else if (mainStatus === "unknown") mainStatus = stat;
+                }
+
+                if (batCount > 0) {
+                    service.percentage = totalEnergyFull > 0 ? Math.round((totalEnergyNow / totalEnergyFull) * 100) : 0;
+                    service.status = mainStatus;
+                    service.cycleCount = totalCycles;
+                    service.voltage = (totalVoltage / batCount) / 1000000;
+                    service.energyRate = totalRate;
+                    service.energyNow = totalEnergyNow;
+                    service.health = totalEnergyDesign > 0 ? (totalEnergyFull / totalEnergyDesign) * 100 : 0;
+                    
+                    if (service.status === "discharging" && totalRate > 0) {
+                        service.timeRemaining = service.formatTime((totalEnergyNow / totalRate) * 3600);
+                    } else if (service.status === "charging" && totalRate > 0) {
+                        service.timeRemaining = service.formatTime(((totalEnergyFull - totalEnergyNow) / totalRate) * 3600) + " to full";
                     } else {
                         service.timeRemaining = "N/A";
                     }
+                }
+
+                // Last line is temp
+                if (parts.length > 0) {
+                    service.temp = parseInt(parts[parts.length - 1]) / 1000;
                 }
             }
         }
@@ -224,7 +272,7 @@ Item {
 
     Timer {
         id: pollTimer
-        interval: 2000 // Increased to 2s to reduce overhead, update() is manual enough
+        interval: 2000 
         running: false
         repeat: true
         onTriggered: service.update()

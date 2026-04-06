@@ -20,6 +20,11 @@ readonly property var _notifications: NotificationService // Add this!
         parentWindow: bar
     }
 
+    QuickSettingsMenu {
+        id: quickSettingsMenu
+        parentWindow: bar
+    }
+
     NotificationPopup {
         id: notificationPopup
     }
