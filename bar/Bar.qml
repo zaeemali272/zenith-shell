@@ -121,13 +121,8 @@ PanelWindow {
         }
     }
 
-    QuickSettingsMenu {
-        id: quickSettingsMenu
-        parentWindow: bar
-    }
-
     TrayMenu {
         id: trayPopup
-        parentWindow: bar
+        anchor.window: bar
     }
     }
