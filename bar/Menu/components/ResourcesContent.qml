@@ -62,21 +62,21 @@ ColumnLayout {
         rowSpacing: 20
         columnSpacing: 20
 
-        Repeater {
-            model: [
-                { t: "PROCESSOR", v: root.cpu,  i: "", a: "#89b4fa", s: "%" },
-                { t: "MEMORY",    v: root.mem,  i: "", a: "#cba6f7", s: "%" },
-                { t: "THERMAL",   v: root.temp, i: "", a: root.temp > 70 ? "#f38ba8" : "#94e2d5", s: "°C" },
-                { t: "STORAGE",   v: root.fs,   i: "󰋊", a: "#fab387", s: "%" }
-            ]
-            
-            delegate: ResourceCard {
-                title: modelData.t
-                value: modelData.v
-                icon: modelData.i
-                accent: modelData.a
-                suffix: modelData.s
-            }
+        ResourceCard {
+            Layout.fillWidth: true
+            title: "PROCESSOR"; value: root.cpu; icon: ""; accent: "#89b4fa"; suffix: "%"
+        }
+        ResourceCard {
+            Layout.fillWidth: true
+            title: "MEMORY"; value: root.mem; icon: ""; accent: "#cba6f7"; suffix: "%"
+        }
+        ResourceCard {
+            Layout.fillWidth: true
+            title: "THERMAL"; value: root.temp; icon: ""; accent: root.temp > 70 ? "#f38ba8" : "#94e2d5"; suffix: "°C"
+        }
+        ResourceCard {
+            Layout.fillWidth: true
+            title: "STORAGE"; value: root.fs; icon: "󰋊"; accent: "#fab387"; suffix: "%"
         }
     }
 
@@ -94,57 +94,37 @@ ColumnLayout {
             Layout.leftMargin: 5
         }
 
-        GridLayout {
-            columns: 4
+        Flow {
             Layout.fillWidth: true
-            rowSpacing: 10
-            columnSpacing: 10
+            spacing: 10
 
             Repeater {
-    model: root.coreUsages
-    delegate: Rectangle {
-        Layout.fillWidth: true
-        height: 40
-        radius: 12
-        border.width: 1
-        border.color: modelData > 70 ? Qt.alpha("#f38ba8", 0.4) : "#313244"
-        
-        // We use a gradient to create the "fill" effect. 
-        // This is part of the background, so it CANNOT leak.
-        gradient: Gradient {
-            // The "Empty" part (Top)
-            GradientStop { 
-                position: 0.0
-                color: "#181825" 
-            }
-            GradientStop { 
-                position: 1.0 - (modelData / 100)
-                color: "#181825" 
-            }
-            // The "Fill" part (Bottom)
-            GradientStop { 
-                position: 1.0 - (modelData / 100) 
-                color: Qt.alpha(modelData > 70 ? "#f38ba8" : "#89b4fa", 0.15)
-            }
-            GradientStop { 
-                position: 1.0
-                color: Qt.alpha(modelData > 70 ? "#f38ba8" : "#89b4fa", 0.15)
-            }
-        }
+                model: root.coreUsages
+                delegate: Rectangle {
+                    width: (root.width - 70) / 4
+                    height: 40
+                    radius: 12
+                    border.width: 1
+                    border.color: modelData > 70 ? Qt.alpha("#f38ba8", 0.4) : "#313244"
+                    
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: "#181825" }
+                        GradientStop { position: 1.0 - (modelData / 100); color: "#181825" }
+                        GradientStop { position: 1.0 - (modelData / 100); color: Qt.alpha(modelData > 70 ? "#f38ba8" : "#89b4fa", 0.15) }
+                        GradientStop { position: 1.0; color: Qt.alpha(modelData > 70 ? "#f38ba8" : "#89b4fa", 0.15) }
+                    }
 
-        // We remove the inner Rectangle entirely!
-
-        Text {
-            anchors.centerIn: parent
-            text: modelData + "%"
-            color: modelData > 70 ? "#f38ba8" : "#cdd6f4"
-            font.pixelSize: 12
-            font.weight: Font.Black
-            style: Text.Outline
-            styleColor: "#181825" 
-        }
-    }
-}
+                    Text {
+                        anchors.centerIn: parent
+                        text: modelData + "%"
+                        color: modelData > 70 ? "#f38ba8" : "#cdd6f4"
+                        font.pixelSize: 12
+                        font.weight: Font.Black
+                        style: Text.Outline
+                        styleColor: "#181825" 
+                    }
+                }
+            }
         }
     }
 
@@ -159,7 +139,6 @@ ColumnLayout {
         property string icon
         property color accent
         
-        Layout.fillWidth: true
         height: 120
         color: "#11111b"
         radius: 28
