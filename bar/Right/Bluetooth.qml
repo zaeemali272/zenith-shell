@@ -18,6 +18,11 @@ Item {
 
         implicitHeight: Theme.pillHeight
         width: content.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
+        
+        onClicked: (mouse) => {
+            if (mouse.button === Qt.LeftButton)
+                QuickSettingsService.toggle("bluetooth", root.mapToItem(null, 0, 0, root.width, root.height));
+        }
 
         RowLayout {
             id: content
@@ -38,19 +43,6 @@ Item {
                 duration: 400
                 easing.type: Easing.OutExpo
             }
-        }
-    }
-
-    MouseArea {
-        anchors.fill: parent
-        hoverEnabled: true
-        onEntered: {
-            QuickSettingsService.open("bluetooth", root.mapToItem(null, 0, 0, root.width, root.height), false);
-        }
-        onExited: QuickSettingsService.startHideTimer();
-        onClicked: (mouse) => {
-            if (mouse.button === Qt.LeftButton)
-                QuickSettingsService.toggle("bluetooth", root.mapToItem(null, 0, 0, root.width, root.height));
         }
     }
 }

@@ -76,8 +76,8 @@ Item {
             Text {
                 text: airplaneMode ? "Airplane Mode" : (mainMouse.containsMouse ? (wifiConnected ? wifiSSID : "Disconnected") : formatSpeed(showUpload ? upSpeed : downSpeed))
                 horizontalAlignment: Text.AlignHCenter
-                Layout.preferredWidth: mainMouse.containsMouse ? -1 : 55 // Fixed 80px for speed, auto for SSID
-                Layout.fillWidth: mainMouse.containsMouse // Let it grow only when showing SSID
+                Layout.preferredWidth: mainMouse.containsMouse ? -1 : 55 
+                Layout.fillWidth: mainMouse.containsMouse 
                 font.pixelSize: Theme.fontSize
                 color: airplaneMode ? Theme.backgroundColor : Theme.activeTextColor
                 font.bold: airplaneMode
@@ -93,16 +93,19 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.RightButton
+        
         onEntered: {
-            QuickSettingsService.open("network", root.mapToItem(null, 0, 0, root.width, root.height), false); // Hover is not sticky
+            if (!airplaneMode) pill.color = pill.hoverColor
         }
-        onExited: QuickSettingsService.startHideTimer();
+        onExited: {
+            pill.color = airplaneMode ? Theme.accentColor : pill.normalColor
+        }
 
         onClicked: (mouse) => {
             if (mouse.button === Qt.RightButton)
                 showUpload = !showUpload;
             else if (mouse.button === Qt.LeftButton)
-                QuickSettingsService.toggle("network", root.mapToItem(null, 0, 0, root.width, root.height)); // Click is toggle (sticky)
+                QuickSettingsService.toggle("network", root.mapToItem(null, 0, 0, root.width, root.height)); 
         }
     }
 
@@ -130,7 +133,6 @@ Item {
                         const rx = parseFloat(parts[1]);
                         const tx = parseFloat(parts[2]);
                         if (rxPrev > 0) {
-                            // FIXED CALCULATION: Divide by 3 to get average KB per second
                             downSpeed = Math.max(0, Math.floor(((rx - rxPrev) / 1024) / 3));
                             upSpeed = Math.max(0, Math.floor(((tx - txPrev) / 1024) / 3));
                         }
@@ -157,7 +159,7 @@ Item {
     Timer {
         id: refreshTimer
 
-        interval: 3000 // Set to 3 seconds as requested
+        interval: 3000 
         onTriggered: netExec.running = true
     }
 

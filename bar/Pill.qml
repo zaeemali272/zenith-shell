@@ -17,7 +17,7 @@ Rectangle {
     // ✅ SAFE: children is bindable
     property bool hasCustomContent: contentItem.children.length > 1
 
-    signal clicked()
+    signal clicked(var mouse)
 
     radius: Theme.pillRadius
     implicitHeight: Theme.pillHeight
@@ -60,9 +60,10 @@ Rectangle {
     MouseArea {
         anchors.fill: parent
         hoverEnabled: true
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
         onEntered: pill.color = hoverColor
         onExited: pill.color = normalColor
-        onClicked: pill.clicked()
+        onClicked: (mouse) => pill.clicked(mouse)
     }
 
 }

@@ -5,29 +5,23 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-MouseArea {
+Item {
     id: root
 
-    hoverEnabled: true
     implicitHeight: Theme.pillHeight
     implicitWidth: pill.implicitWidth
     
-    onEntered: {
-        QuickSettingsService.open("power", root.mapToItem(null, 0, 0, root.width, root.height), false);
-    }
-    onExited: QuickSettingsService.startHideTimer();
-    onClicked: (mouse) => {
-        if (mouse.button === Qt.LeftButton)
-            QuickSettingsService.toggle("power", root.mapToItem(null, 0, 0, root.width, root.height));
-        else if (mouse.button === Qt.RightButton)
-            powerExec.running = true;
-    }
-
     Pill {
         id: pill
 
         icon: " "
         text: ""
+        onClicked: (mouse) => {
+            if (mouse.button === Qt.LeftButton)
+                QuickSettingsService.toggle("power", root.mapToItem(null, 0, 0, root.width, root.height));
+            else if (mouse.button === Qt.RightButton)
+                powerExec.running = true;
+        }
 
         Item {
             width: Theme.implicitWidth
@@ -47,7 +41,6 @@ MouseArea {
             }
 
         }
-
     }
 
     Process {
@@ -55,5 +48,4 @@ MouseArea {
 
         command: ["sh", "-c", "pkill wlogout || wlogout -m 300px -p layer-shell"]
     }
-
 }

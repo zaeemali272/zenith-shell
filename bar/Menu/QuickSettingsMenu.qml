@@ -15,11 +15,26 @@ PopupWindow {
     color: "transparent"
     
     // Focus & Grab logic
-    grabFocus: QuickSettingsService.isSticky
+    // Disable native grabFocus to avoid conflicts with HyprlandFocusGrab
+    grabFocus: false
+
+    property bool _grabActive: false
+    Timer {
+        id: grabDelay
+        interval: 100
+        running: root.visible && QuickSettingsService.isSticky
+        onTriggered: root._grabActive = true
+    }
+    onVisibleChanged: if (!visible) root._grabActive = false;
+
     HyprlandFocusGrab {
-        active: root.visible && QuickSettingsService.isSticky
+        active: root._grabActive
         windows: [root, parentWindow]
-        onCleared: QuickSettingsService.close()
+        onActiveChanged: console.log(`[QuickSettingsMenu] HyprlandFocusGrab active: ${active}`)
+        onCleared: {
+            console.log("[QuickSettingsMenu] Focus grab cleared (clicked outside)!");
+            QuickSettingsService.close("focus_cleared");
+        }
     }
     
     // Positioning
@@ -39,6 +54,7 @@ PopupWindow {
     Rectangle {
         id: mainContent
         anchors.fill: parent
+        focus: true
         color: "#11111b"
         radius: 24
         border.color: "#313244"

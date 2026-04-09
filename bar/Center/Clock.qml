@@ -45,13 +45,9 @@ Rectangle {
     MouseArea {
         anchors.fill: parent
         hoverEnabled: true
-        onEntered: {
-            console.log("Clock hovered!");
-            CenterState.open(false); // Non-sticky hover
-        }
-        onExited: CenterState.startHideTimer()
+        onEntered: clock.color = Theme.pillHoverColor
+        onExited: clock.color = Theme.pillColor
         onClicked: {
-            console.log("Clock clicked!");
             CenterState.toggle();
         }
     }
