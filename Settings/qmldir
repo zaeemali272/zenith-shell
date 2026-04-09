@@ -1,1 +1,2 @@
 singleton ClockSettings ClockSettings.qml
+singleton GeneralSettings GeneralSettings.qml

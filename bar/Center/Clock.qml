@@ -1,7 +1,7 @@
 import ".."
 import "../.."
 import "../../Settings"
-import "../../services" // This was missing
+import "../../services" 
 import QtQuick
 import Quickshell
 
