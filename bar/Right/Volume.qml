@@ -39,54 +39,19 @@ Item {
 
         anchors.fill: parent
         implicitWidth: volumeContent.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
-
-        RowLayout {
-            id: volumeContent
-
-            anchors.centerIn: parent
-            spacing: Theme.pillGap
-
-            Text {
-                visible: root.micActive
-                text: VolumeService.micMuted ? "\uf131" : "\uf130"
-                font.family: Theme.iconFont
-                font.pixelSize: Theme.iconSize
-                color: Theme.accentColor // Make it stand out (e.g., Red or Green)
-            }
-
-            Text {
-                visible: root.btActive
-                text: Theme.btIcon
-                font.family: Theme.iconFont
-                font.pixelSize: Theme.iconSize
-                color: root.activeColor
-            }
-
-            Text {
-                text: volumeIcon(root.volume, root.muted)
-                font.family: Theme.iconFont
-                font.pixelSize: Theme.iconSize
-                color: root.activeColor
-            }
-
-            Text {
-                text: root.muted ? "Muted" : root.volume + "%"
-                font.pixelSize: Theme.fontSize
-                color: root.activeColor
-            }
-
-        }
-
+        
+        // Removed onClicked from here as we use the outer MouseArea
     }
 
     MouseArea {
         anchors.fill: parent
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.RightButton
-        onEntered: {
-            QuickSettingsService.open("volume", root.mapToItem(null, 0, 0, root.width, root.height), false);
-        }
-        onExited: QuickSettingsService.startHideTimer();
+        
+        // Handle Hover Color manually since this MouseArea is on top
+        onEntered: pill.color = pill.hoverColor
+        onExited: pill.color = pill.normalColor
+        
         onClicked: function(mouse) {
             if (mouse.button === Qt.RightButton) {
                 muteExec.running = true;
@@ -101,6 +66,42 @@ Item {
                 volDown.running = true;
             // Tell the service to refresh immediately for a snappy UI
             VolumeService.update();
+        }
+    }
+
+    RowLayout {
+        id: volumeContent
+        parent: pill
+        anchors.centerIn: parent
+        spacing: Theme.pillGap
+
+        Text {
+            visible: root.micActive
+            text: VolumeService.micMuted ? "\uf131" : "\uf130"
+            font.family: Theme.iconFont
+            font.pixelSize: Theme.iconSize
+            color: Theme.accentColor // Make it stand out (e.g., Red or Green)
+        }
+
+        Text {
+            visible: root.btActive
+            text: Theme.btIcon
+            font.family: Theme.iconFont
+            font.pixelSize: Theme.iconSize
+            color: root.activeColor
+        }
+
+        Text {
+            text: volumeIcon(root.volume, root.muted)
+            font.family: Theme.iconFont
+            font.pixelSize: Theme.iconSize
+            color: root.activeColor
+        }
+
+        Text {
+            text: root.muted ? "Muted" : root.volume + "%"
+            font.pixelSize: Theme.fontSize
+            color: root.activeColor
         }
     }
 

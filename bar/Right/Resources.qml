@@ -7,7 +7,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 
-MouseArea {
+Item {
     id: root
 
     property int cpu: 0
@@ -29,26 +29,16 @@ MouseArea {
         command: ["kitty", "-e", "glances"]
     }
 
-    hoverEnabled: true
     implicitHeight: Theme.pillHeight
     implicitWidth: pill.width
     width: implicitWidth
     height: implicitHeight
-
-    onEntered: {
-        QuickSettingsService.open("resources", root.mapToItem(null, 0, 0, root.width, root.height), false);
-    }
-    
-    onExited: QuickSettingsService.startHideTimer();
 
     Pill {
         id: pill
         implicitHeight: Theme.pillHeight
         width: content.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
         clip: true
-        onClicked: {
-            QuickSettingsService.toggle("resources", root.mapToItem(null, 0, 0, root.width, root.height));
-        }
 
         RowLayout {
             id: content
@@ -62,6 +52,16 @@ MouseArea {
 
         Behavior on width {
             NumberAnimation { duration: 400; easing.type: Easing.OutExpo }
+        }
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        hoverEnabled: true
+        onEntered: pill.color = pill.hoverColor
+        onExited: pill.color = pill.normalColor
+        onClicked: {
+            QuickSettingsService.toggle("resources", root.mapToItem(null, 0, 0, root.width, root.height));
         }
     }
 

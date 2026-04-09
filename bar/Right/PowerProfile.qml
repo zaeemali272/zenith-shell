@@ -21,6 +21,10 @@ Item {
 
         anchors.fill: parent
         implicitWidth: content.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
+        onClicked: (mouse) => {
+            if (mouse.button === Qt.LeftButton)
+                QuickSettingsService.toggle("powerprofile", root.mapToItem(null, 0, 0, root.width, root.height));
+        }
 
         RowLayout {
             id: content
@@ -50,20 +54,6 @@ Item {
 
         }
 
-    }
-
-    MouseArea {
-        anchors.fill: parent
-        hoverEnabled: true
-        acceptedButtons: Qt.LeftButton | Qt.RightButton
-        onEntered: {
-            QuickSettingsService.open("powerprofile", root.mapToItem(null, 0, 0, root.width, root.height), false);
-        }
-        onExited: QuickSettingsService.startHideTimer();
-        onClicked: (mouse) => {
-            if (mouse.button === Qt.LeftButton)
-                QuickSettingsService.toggle("powerprofile", root.mapToItem(null, 0, 0, root.width, root.height));
-        }
     }
 
 }

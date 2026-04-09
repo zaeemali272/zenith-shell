@@ -11,7 +11,29 @@ PopupWindow {
 
     property var parentWindow: null
     visible: CenterState.qsVisible
-    grabFocus: CenterState.isSticky
+    
+    // Focus & Grab logic
+    // Disable native grabFocus to avoid conflicts with HyprlandFocusGrab
+    grabFocus: false
+
+    property bool _grabActive: false
+    Timer {
+        id: grabDelay
+        interval: 100
+        running: menuRoot.visible && CenterState.isSticky
+        onTriggered: menuRoot._grabActive = true
+    }
+    onVisibleChanged: if (!visible) menuRoot._grabActive = false;
+
+    HyprlandFocusGrab {
+        active: menuRoot._grabActive
+        windows: [menuRoot, parentWindow]
+        onActiveChanged: console.log(`[ControlCenter] HyprlandFocusGrab active: ${active}`)
+        onCleared: {
+            console.log("[ControlCenter] Focus grab cleared (clicked outside)!");
+            CenterState.close("focus_cleared");
+        }
+    }
     
     anchor.window: parentWindow
     anchor.edges: Edges.Top
@@ -27,12 +49,6 @@ PopupWindow {
     implicitHeight: 550
     color: "transparent"
 
-    HyprlandFocusGrab {
-        active: menuRoot.visible && CenterState.isSticky
-        windows: [menuRoot, parentWindow]
-        onCleared: CenterState.close()
-    }
-
     Rectangle {
         id: mainContent
         anchors.fill: parent
@@ -44,7 +60,7 @@ PopupWindow {
         
         Keys.onPressed: (event) => {
             if (event.key === Qt.Key_Escape) {
-                CenterState.close();
+                CenterState.close("escape_key");
             }
         }
 
