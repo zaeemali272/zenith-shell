@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import "../Settings"
 
 pragma Singleton
 
@@ -15,7 +16,7 @@ Item {
     property bool _toggleLocked: false
     Timer {
         id: debounceTimer
-        interval: 500
+        interval: GeneralSettings.debounceInterval
         onTriggered: root._toggleLocked = false
     }
 
@@ -30,7 +31,7 @@ Item {
 
     Timer {
         id: hideTimer
-        interval: 300
+        interval: GeneralSettings.hideTimerInterval
         onTriggered: {
             console.log(`[QuickSettingsService] hideTimer triggered! sticky=${isSticky}, hovering=${isHoveringMenu}`)
             if (!isSticky && !isHoveringMenu) {

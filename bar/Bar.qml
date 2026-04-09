@@ -3,6 +3,7 @@ import ".."
 import "./Menu"
 import "./Right"
 import "../services"
+import "../Settings"
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -34,9 +35,6 @@ PanelWindow {
     implicitWidth: screen ? screen.width : 1920
     color: "transparent"
 
-    // Removed generic anchors as they are not valid for PanelWindow positioning in Quickshell/Layershell
-
-
     Rectangle {
         id: barVisual
 
@@ -45,8 +43,8 @@ PanelWindow {
         color: Theme.barColor
         radius: Theme.barRadius || 0
         clip: true
-        opacity: 0
-        y: -height
+        opacity: GeneralSettings.barEntryAnimation ? 0 : 1
+        y: GeneralSettings.barEntryAnimation ? -height : 0
 
         ParallelAnimation {
             id: barEntryAnim
@@ -55,7 +53,7 @@ PanelWindow {
                 target: barVisual
                 property: "y"
                 to: 0
-                duration: 800
+                duration: GeneralSettings.barAnimationDuration
                 easing.type: Easing.OutExpo
             }
 
@@ -63,13 +61,15 @@ PanelWindow {
                 target: barVisual
                 property: "opacity"
                 to: 1
-                duration: 600
+                duration: GeneralSettings.barAnimationDuration * 0.75
             }
         }
 
         Component.onCompleted: {
-            console.log("[Bar] Component.onCompleted: Starting barEntryAnim.");
-            barEntryAnim.start();
+            if (GeneralSettings.barEntryAnimation) {
+                console.log("[Bar] Starting barEntryAnim.");
+                barEntryAnim.start();
+            }
         }
 
         // --- LEFT SIDE ---
@@ -94,7 +94,6 @@ PanelWindow {
                 let leftBound = leftSide.x + leftSide.width + Theme.pillGap;
                 let rightBound = rightLayout.x - width - Theme.pillGap;
                 if (rightLayout.x <= 0) {
-                    console.log("[Bar] Center centering normally (rightLayout.x <= 0).");
                     return preferredX;
                 }
                 return Math.max(leftBound, Math.min(preferredX, rightBound));
@@ -111,12 +110,33 @@ PanelWindow {
             spacing: Theme.pillSpacing
 
             Tray { menuRef: trayPopup }
-            Network { id: wifiWidget }
-            PowerProfile { id: powerProfileWidget }
-            Resources { }
-            Volume { id: volumeWidget }
-            Bluetooth { id: bluetoothWidget }
-            Battery { id: batteryWidget }
+            
+            Network { 
+                id: wifiWidget 
+                visible: GeneralSettings.enableResources // Actually should have its own toggle but for now using resources or just true
+            }
+            
+            PowerProfile { 
+                id: powerProfileWidget 
+                visible: GeneralSettings.enablePowerProfiles
+            }
+            
+            Resources { 
+                visible: GeneralSettings.enableResources
+            }
+            
+            Volume { 
+                id: volumeWidget 
+            }
+            
+            Bluetooth { 
+                id: bluetoothWidget 
+            }
+            
+            Battery { 
+                id: batteryWidget 
+            }
+            
             Power { }
         }
     }
@@ -125,4 +145,4 @@ PanelWindow {
         id: trayPopup
         anchor.window: bar
     }
-    }
+}

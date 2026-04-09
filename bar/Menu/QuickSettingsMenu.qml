@@ -1,5 +1,6 @@
 import "../.."
 import "../../services"
+import "../../Settings"
 import "./components"
 import QtQuick
 import QtQuick.Layouts
@@ -15,7 +16,6 @@ PopupWindow {
     color: "transparent"
     
     // Focus & Grab logic
-    // Disable native grabFocus to avoid conflicts with HyprlandFocusGrab
     grabFocus: false
 
     property bool _grabActive: false
@@ -55,9 +55,9 @@ PopupWindow {
         id: mainContent
         anchors.fill: parent
         focus: true
-        color: "#11111b"
-        radius: 24
-        border.color: "#313244"
+        color: Theme.menuBackground
+        radius: Theme.menuRadius
+        border.color: Theme.menuBorder
         border.width: 1
 
         // Inner Shadow/Glow effect
@@ -65,16 +65,16 @@ PopupWindow {
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 20
-            spacing: 15
+            anchors.margins: Theme.menuPadding
+            spacing: Theme.menuSpacing
 
             // --- MODERN TAB BAR ---
             Rectangle {
                 Layout.fillWidth: true
                 height: 60
-                color: "#181825"
+                color: Theme.mantle
                 radius: 16
-                border.color: "#313244"
+                border.color: Theme.menuBorder
 
                 RowLayout {
                     anchors.fill: parent
@@ -96,8 +96,7 @@ PopupWindow {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             radius: 12
-                            // Active tab gets the accent color, others are transparent
-                            color: QuickSettingsService.activeTab === modelData.id ? "#89b4fa" : "transparent"
+                            color: QuickSettingsService.activeTab === modelData.id ? Theme.menuActiveTab : Theme.menuInactiveTab
                             
                             Behavior on color { ColorAnimation { duration: 200 } }
 
@@ -107,13 +106,13 @@ PopupWindow {
                                 Text {
                                     text: modelData.icon
                                     font.family: Theme.iconFont; font.pixelSize: 18
-                                    color: QuickSettingsService.activeTab === modelData.id ? "#11111b" : "#a6adc8"
+                                    color: QuickSettingsService.activeTab === modelData.id ? Theme.crust : Theme.subtext0
                                     Layout.alignment: Qt.AlignHCenter
                                 }
                                 Text {
                                     text: modelData.title
                                     font.pixelSize: 10; font.weight: Font.Black
-                                    color: QuickSettingsService.activeTab === modelData.id ? "#11111b" : "#585b70"
+                                    color: QuickSettingsService.activeTab === modelData.id ? Theme.crust : Theme.surface2
                                     Layout.alignment: Qt.AlignHCenter
                                 }
                             }

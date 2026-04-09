@@ -1,4 +1,6 @@
+import "../.."
 import "../../services"
+import "../../Settings"
 import "./components"
 import QtQuick
 import QtQuick.Layouts
@@ -13,7 +15,6 @@ PopupWindow {
     visible: CenterState.qsVisible
     
     // Focus & Grab logic
-    // Disable native grabFocus to avoid conflicts with HyprlandFocusGrab
     grabFocus: false
 
     property bool _grabActive: false
@@ -53,9 +54,9 @@ PopupWindow {
         id: mainContent
         anchors.fill: parent
         focus: true
-        color: "#11111b" // Zenith Dark Background
-        radius: 16
-        border.color: '#313244' // Catppuccin Surface
+        color: Theme.menuBackground
+        radius: Theme.pillRadius
+        border.color: Theme.menuBorder
         border.width: 1
         
         Keys.onPressed: (event) => {
@@ -74,22 +75,24 @@ PopupWindow {
 
         RowLayout {
             anchors.fill: parent
-            anchors.margins: 15
-            spacing: 15
+            anchors.margins: Theme.menuPadding
+            spacing: Theme.menuSpacing
 
             // --- Left Column: Notifications & Media ---
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 Layout.preferredWidth: 450
-                spacing: 15
+                spacing: Theme.menuSpacing
 
                 NotificationList {
+                    visible: GeneralSettings.enableNotifications
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                 }
 
                 MprisPlayer {
+                    visible: GeneralSettings.enableMedia
                     Layout.fillWidth: true
                 }
             }
@@ -98,13 +101,14 @@ PopupWindow {
             ColumnLayout {
                 Layout.preferredWidth: 320
                 Layout.fillHeight: true
-                spacing: 15
+                spacing: Theme.menuSpacing
 
                 CalendarWidget {
                     Layout.fillWidth: true
                 }
 
                 WeatherWidget {
+                    visible: GeneralSettings.enableWeather
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                 }
