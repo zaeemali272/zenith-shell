@@ -35,6 +35,9 @@ PopupWindow {
     onVisibleChanged: {
         if (visible) {
             BluetoothService.refresh();
+            if (BluetoothService.powered) {
+                BluetoothService.startScan();
+            }
             openAnim.start();
         }
     }

@@ -15,6 +15,9 @@ QtObject {
     property bool barEntryAnimation: true
     property int barAnimationDuration: 800
     
+    // Workspaces
+    property string workspaceDisplayStyle: "numbers" // "dots" or "numbers"
+    
     // Quick Settings
     property int debounceInterval: 500
     property int hideTimerInterval: 300

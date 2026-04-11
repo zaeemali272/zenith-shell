@@ -1,5 +1,6 @@
 import "../.."
 import "../../services"
+import "./components"
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -32,7 +33,7 @@ PopupWindow {
         anchors.margins: 5
         radius: 12
         color: Theme.backgroundColor || "#111111"
-        border.color: Theme.borderColor
+        border.color: hoverTracker.containsMouse ? Theme.menuHoverBorder : Theme.menuBorder
         border.width: 1
         clip: true
         focus: true
@@ -47,15 +48,6 @@ PopupWindow {
             interval: 10
             running: menuRoot.visible
             onTriggered: mainContent.forceActiveFocus()
-        }
-
-        // Consume clicks inside the menu to prevent focus loss
-        MouseArea {
-            anchors.fill: parent
-            onPressed: (mouse) => {
-                mouse.accepted = true;
-                mainContent.forceActiveFocus();
-            }
         }
 
         ColumnLayout {
@@ -76,10 +68,13 @@ PopupWindow {
                 model: ["performance", "balanced", "powersave", "turbo"]
 
                 delegate: Rectangle {
-                    height: 35
+                    height: 38
                     radius: 8
-                    color: PowerProfileService.currentProfile === modelData ? Theme.accentColor : "#1a1a1a"
+                    // Darker on hover: #0a0a0a instead of #1a1a1a
+                    color: PowerProfileService.currentProfile === modelData ? Theme.accentColor : (delegateMouse.containsMouse ? "#0a0a0a" : "#1a1a1a")
                     Layout.fillWidth: true
+                    
+                    Behavior on color { ColorAnimation { duration: 200 } }
 
                     RowLayout {
                         anchors.centerIn: parent
@@ -102,19 +97,22 @@ PopupWindow {
                             }
                             font.family: Theme.iconFont
                             font.pixelSize: 14
-                            color: "white"
+                            color: PowerProfileService.currentProfile === modelData ? "black" : (delegateMouse.containsMouse ? "white" : "#cdd6f4")
                         }
 
                         Text {
                             text: modelData.charAt(0).toUpperCase() + modelData.slice(1)
                             font.pixelSize: 12
-                            color: "white"
+                            font.bold: PowerProfileService.currentProfile === modelData
+                            color: PowerProfileService.currentProfile === modelData ? "black" : (delegateMouse.containsMouse ? "white" : "#cdd6f4")
                         }
 
                     }
 
                     MouseArea {
+                        id: delegateMouse
                         anchors.fill: parent
+                        hoverEnabled: true
                         onClicked: {
                             PowerProfileService.setProfile(modelData);
                             menuRoot.visible = false;
@@ -126,7 +124,17 @@ PopupWindow {
             }
 
         }
-
+        
+        // Hover tracking and click handling
+        MouseArea {
+            id: hoverTracker
+            anchors.fill: parent
+            hoverEnabled: true
+            acceptedButtons: Qt.NoButton
+            onPressed: (mouse) => {
+                mouse.accepted = true;
+                mainContent.forceActiveFocus();
+            }
+        }
     }
-
 }

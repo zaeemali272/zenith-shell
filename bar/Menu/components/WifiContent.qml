@@ -16,9 +16,6 @@ Item {
     
     Component.onCompleted: {
         WifiService.refresh();
-        if (root.QsWindow && root.QsWindow.window) {
-            root.QsWindow.window.focusable = true;
-        }
     }
 
     property var wifiSvc: WifiService
@@ -51,16 +48,6 @@ Item {
         }
     }
 
-    // CRITICAL: The "Grab Shield"
-    MouseArea {
-        anchors.fill: parent
-        onPressed: (mouse) => {
-            QuickSettingsService.isSticky = true;
-            mouse.accepted = true;
-            root.forceActiveFocus();
-        }
-    }
-
     ColumnLayout {
         anchors.fill: parent
         spacing: 20
@@ -81,22 +68,24 @@ Item {
 
                 // Refresh Button
                 Rectangle {
-                    width: 44; height: 44; radius: 22; color: "#181825"; border.color: wifiSvc.isTesting ? "#f9e2af" : "#313244"; clip: true
+                    width: 44; height: 44; radius: 22; color: (refreshMouse.containsMouse ? "#0a0a0a" : "#181825"); border.color: wifiSvc.isTesting ? "#f9e2af" : "#313244"; clip: true
+                    Behavior on color { ColorAnimation { duration: 200 } }
                     Text {
                         id: refreshIcon
                         anchors.centerIn: parent; text: wifiSvc.isTesting ? "󱐋" : "󰑐"; font.family: Theme.iconFont; font.pixelSize: 18
                         color: wifiSvc.isTesting ? "#f9e2af" : "#a6e3a1"
                     }
                     RotationAnimation { target: refreshIcon; running: wifiSvc.isTesting; from: 0; to: 360; duration: 1000; loops: Animation.Infinite }
-                    MouseArea { anchors.fill: parent; onClicked: wifiSvc.refresh() }
+                    MouseArea { id: refreshMouse; anchors.fill: parent; hoverEnabled: true; onClicked: wifiSvc.refresh() }
                 }
 
                 // Airplane Mode
                 Rectangle {
-                    width: 44; height: 44; radius: 22; color: "#181825"; border.color: root.isAirplane ? "#f38ba8" : "#313244"; clip: true
+                    width: 44; height: 44; radius: 22; color: (airplaneMouse.containsMouse ? "#0a0a0a" : "#181825"); border.color: root.isAirplane ? "#f38ba8" : "#313244"; clip: true
+                    Behavior on color { ColorAnimation { duration: 200 } }
                     Text { anchors.centerIn: parent; text: "󰀝"; font.family: Theme.iconFont; font.pixelSize: 20; color: root.isAirplane ? "#f38ba8" : "#cdd6f4" }
                     MouseArea {
-                        anchors.fill: parent
+                        id: airplaneMouse; anchors.fill: parent; hoverEnabled: true
                         onClicked: {
                             root.isAirplane = !root.isAirplane;
                             rfkillProc.command = ["rfkill", root.isAirplane ? "block" : "unblock", "wifi"];
@@ -138,13 +127,33 @@ Item {
                 width: list.width; height: (selectedSsid === modelData.ssid && !wifiSvc.knownNetworks[modelData.ssid]) ? 170 : 65
                 
                 Rectangle {
+                    id: backgroundRect
                     anchors.fill: parent
-                    color: modelData.connected ? "#1e1e2e" : "#11111b"; radius: 18
-                    border.color: modelData.connected ? "#a6e3a1" : (selectedSsid === modelData.ssid ? "#89b4fa" : "#313244")
+                    // Darker on hover: #0a0a0a instead of #11111b
+                    color: modelData.connected ? "#1e1e2e" : (delegateMouse.containsMouse ? "#0a0a0a" : "#11111b")
+                    radius: 18
+                    border.color: modelData.connected ? "#a6e3a1" : (selectedSsid === modelData.ssid ? "#89b4fa" : (delegateMouse.containsMouse ? "#45475a" : "#313244"))
                     border.width: modelData.connected ? 1.5 : 1
                     clip: true
+                    
+                    Behavior on color { ColorAnimation { duration: 200 } }
+                    Behavior on border.color { ColorAnimation { duration: 200 } }
                     Behavior on height { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
                     
+                    MouseArea {
+                        id: delegateMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: {
+                            QuickSettingsService.isSticky = true;
+                            if(wifiSvc.knownNetworks[modelData.ssid]) {
+                                wifiSvc.connect(modelData.ssid, "");
+                            } else {
+                                selectedSsid = (selectedSsid === modelData.ssid) ? "" : modelData.ssid;
+                            }
+                        }
+                    }
+
                     ColumnLayout {
                         anchors.fill: parent; anchors.margins: 12; spacing: 12
                         RowLayout {
@@ -185,26 +194,29 @@ Item {
                                 // Forget Button
                                 Rectangle {
                                     visible: !!wifiSvc.knownNetworks[modelData.ssid]
-                                    width: 32; height: 32; radius: 8; color: "#1e1e2e"
+                                    width: 32; height: 32; radius: 8; color: (forgetMouse.containsMouse ? "#0a0a0a" : "#1e1e2e")
+                                    Behavior on color { ColorAnimation { duration: 200 } }
                                     Text { anchors.centerIn: parent; text: "󱘖"; font.family: Theme.iconFont; font.pixelSize: 14; color: "#fab387" }
-                                    MouseArea { anchors.fill: parent; onClicked: wifiSvc.forgetNetwork(modelData.ssid) }
+                                    MouseArea { id: forgetMouse; anchors.fill: parent; hoverEnabled: true; onClicked: wifiSvc.forgetNetwork(modelData.ssid) }
                                 }
                                 
                                 // Action Button
                                 Rectangle {
                                     visible: !modelData.connected
                                     width: wifiSvc.knownNetworks[modelData.ssid] ? 75 : 32; height: 32; radius: 8
-                                    color: wifiSvc.knownNetworks[modelData.ssid] ? "#89b4fa" : "#1e1e2e"
+                                    color: wifiSvc.knownNetworks[modelData.ssid] ? (actionMouse.containsMouse ? "#74a2f7" : "#89b4fa") : (actionMouse.containsMouse ? "#0a0a0a" : "#1e1e2e")
+                                    Behavior on color { ColorAnimation { duration: 200 } }
                                     Text { 
                                         anchors.centerIn: parent; font.pixelSize: 10; font.weight: Font.Black
                                         text: wifiSvc.knownNetworks[modelData.ssid] ? "CONNECT" : "󰅂"
                                         color: wifiSvc.knownNetworks[modelData.ssid] ? "black" : "#cdd6f4"
                                     }
                                     MouseArea { 
+                                        id: actionMouse
                                         anchors.fill: parent; 
+                                        hoverEnabled: true
                                         onClicked: {
                                             QuickSettingsService.isSticky = true;
-                                            root.forceActiveFocus();
                                             if(wifiSvc.knownNetworks[modelData.ssid]) wifiSvc.connect(modelData.ssid, "");
                                             else selectedSsid = (selectedSsid === modelData.ssid) ? "" : modelData.ssid;
                                         }
@@ -225,16 +237,19 @@ Item {
                                     id: passInput; anchors.fill: parent; anchors.margins: 10; color: "white"; echoMode: TextInput.Password; font.pixelSize: 13
                                     focus: true 
                                     onVisibleChanged: if (visible && selectedSsid === modelData.ssid) passFocusTimer.start();
-                                    Timer { id: passFocusTimer; interval: 100; onTriggered: passInput.forceActiveFocus() }
+                                    Timer { id: passFocusTimer; interval: 50; onTriggered: passInput.forceActiveFocus() }
                                     Text { text: "Password..."; color: "#45475a"; visible: !passInput.text && !passInput.activeFocus }
                                     onAccepted: { wifiSvc.connect(modelData.ssid, passInput.text); passInput.text = ""; }
                                 }
                             }
                             Rectangle { 
-                                Layout.fillWidth: true; height: 38; color: "#89b4fa"; radius: 10
+                                Layout.fillWidth: true; height: 38; color: (joinMouse.containsMouse ? "#74a2f7" : "#89b4fa"); radius: 10
+                                Behavior on color { ColorAnimation { duration: 200 } }
                                 Text { anchors.centerIn: parent; text: "JOIN NETWORK"; color: "black"; font.weight: Font.Black; font.pixelSize: 10 }
                                 MouseArea { 
+                                    id: joinMouse
                                     anchors.fill: parent; 
+                                    hoverEnabled: true
                                     onClicked: { 
                                         QuickSettingsService.isSticky = true;
                                         wifiSvc.connect(modelData.ssid, passInput.text); 
@@ -250,15 +265,24 @@ Item {
 
         // --- Footer (Speed Test) ---
         Rectangle {
-            Layout.fillWidth: true; height: 50; color: "#181825"; radius: 16; border.color: wifiSvc.isTesting ? "#f9e2af" : "#313244"
+            Layout.fillWidth: true; height: 50; color: (speedMouse.containsMouse ? "#0a0a0a" : "#181825"); radius: 16; border.color: wifiSvc.isTesting ? "#f9e2af" : "#313244"
+            Behavior on color { ColorAnimation { duration: 200 } }
             RowLayout {
                 anchors.centerIn: parent; spacing: 15
                 Text { text: wifiSvc.isTesting ? "󱑔" : "󰓅"; font.family: Theme.iconFont; color: wifiSvc.isTesting ? "#f9e2af" : "#89b4fa"; font.pixelSize: 20 }
                 ColumnLayout { spacing: 0
                     Text { text: wifiSvc.isTesting ? "TESTING MAX SPEED..." : "DOWNLOAD SPEED"; color: "#585b70"; font.pixelSize: 7; font.weight: Font.Black }
-                    Text { text: wifiSvc.currentSpeed.toUpperCase(); color: "white"; font.pixelSize: 14; font.weight: Font.Black }
+                    Text { 
+                        text: {
+                            if (wifiSvc.isTesting) return "TESTING...";
+                            if (wifiSvc.currentSpeed === "0.0 Mbps") return speedMouse.containsMouse ? "CLICK TO RUN" : "0.0 MBPS";
+                            return wifiSvc.currentSpeed.toUpperCase();
+                        }
+                        color: "white"; font.pixelSize: 14; font.weight: Font.Black 
+                    }
                 }
             }
+            MouseArea { id: speedMouse; anchors.fill: parent; hoverEnabled: true; onClicked: wifiSvc.runMaxSpeedTest() }
         }
     }
 

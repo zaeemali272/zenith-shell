@@ -25,7 +25,12 @@ PopupWindow {
         running: root.visible && QuickSettingsService.isSticky
         onTriggered: root._grabActive = true
     }
-    onVisibleChanged: if (!visible) root._grabActive = false;
+    onVisibleChanged: {
+        if (!visible) {
+            root._grabActive = false;
+            QuickSettingsService.isHoveringMenu = false;
+        }
+    }
 
     HyprlandFocusGrab {
         active: root._grabActive
@@ -57,11 +62,8 @@ PopupWindow {
         focus: true
         color: Theme.menuBackground
         radius: Theme.menuRadius
-        border.color: Theme.menuBorder
+        border.color: hoverTracker.containsMouse ? Theme.menuHoverBorder : Theme.menuBorder
         border.width: 1
-
-        // Inner Shadow/Glow effect
-        layer.enabled: true
 
         ColumnLayout {
             anchors.fill: parent
@@ -93,10 +95,12 @@ PopupWindow {
                         ]
 
                         delegate: Rectangle {
+                            id: tabRect
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             radius: 12
-                            color: QuickSettingsService.activeTab === modelData.id ? Theme.menuActiveTab : Theme.menuInactiveTab
+                            // Make active tab the accent color, and inactive tabs darker on hover
+                            color: QuickSettingsService.activeTab === modelData.id ? Theme.accentColor : (tabMouse.containsMouse ? "#1e1e2e" : "transparent")
                             
                             Behavior on color { ColorAnimation { duration: 200 } }
 
@@ -106,18 +110,19 @@ PopupWindow {
                                 Text {
                                     text: modelData.icon
                                     font.family: Theme.iconFont; font.pixelSize: 18
-                                    color: QuickSettingsService.activeTab === modelData.id ? Theme.crust : Theme.subtext0
+                                    color: QuickSettingsService.activeTab === modelData.id ? "black" : (tabMouse.containsMouse ? "white" : Theme.subtext0)
                                     Layout.alignment: Qt.AlignHCenter
                                 }
                                 Text {
                                     text: modelData.title
                                     font.pixelSize: 10; font.weight: Font.Black
-                                    color: QuickSettingsService.activeTab === modelData.id ? Theme.crust : Theme.surface2
+                                    color: QuickSettingsService.activeTab === modelData.id ? "black" : (tabMouse.containsMouse ? "white" : Theme.surface2)
                                     Layout.alignment: Qt.AlignHCenter
                                 }
                             }
 
                             MouseArea {
+                                id: tabMouse
                                 anchors.fill: parent; hoverEnabled: true
                                 onClicked: QuickSettingsService.activeTab = modelData.id
                             }
@@ -145,11 +150,11 @@ PopupWindow {
 
         // Hover tracking to prevent accidental closure
         MouseArea {
+            id: hoverTracker
             anchors.fill: parent
             hoverEnabled: true
             acceptedButtons: Qt.NoButton
-            onEntered: QuickSettingsService.isHoveringMenu = true
-            onExited: QuickSettingsService.isHoveringMenu = false
+            onContainsMouseChanged: QuickSettingsService.isHoveringMenu = containsMouse
         }
     }
 }
