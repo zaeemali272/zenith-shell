@@ -47,6 +47,7 @@ Item {
                 QuickSettingsService.toggle("volume", root.mapToItem(null, 0, 0, root.width, root.height));
             }
         }
+
         onWheel: (wheel) => {
             if (wheel.angleDelta.y > 0)
                 volUp.running = true;

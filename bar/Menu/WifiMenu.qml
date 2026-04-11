@@ -33,20 +33,13 @@ PopupWindow {
 
     }
 
-    // Disable native grabFocus
     grabFocus: false
 
     HyprlandFocusGrab {
-        // Delay grab activation
-        active: menuRoot.visible && !grabDelay.running
-        windows: [menuRoot]
+        active: menuRoot.visible
+        // Include bar via anchorItem
+        windows: [menuRoot, anchorItem ? anchorItem.QsWindow.window : null]
         onCleared: menuRoot.visible = false
-    }
-
-    Timer {
-        id: grabDelay
-        interval: 100
-        running: menuRoot.visible
     }
 
     onVisibleChanged: {

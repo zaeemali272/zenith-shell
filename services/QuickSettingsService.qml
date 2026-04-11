@@ -29,10 +29,11 @@ Item {
     }
 
     onQsVisibleChanged: {
-        console.log(`[QuickSettingsService] qsVisible -> ${qsVisible}`)
         if (qsVisible) {
             _focusCloseLocked = true;
             focusCloseLockTimer.restart();
+            // Close the other menu if it's open
+            if (typeof CenterState !== "undefined") CenterState.close("switch");
         }
     }
 
@@ -59,6 +60,12 @@ Item {
         qsVisible = true;
     }
 
+    function hoverOpen(tab, rect) {
+        if (qsVisible || (typeof CenterState !== "undefined" && CenterState.qsVisible)) {
+            open(tab, rect);
+        }
+    }
+
     function toggle(tab, rect) {
         if (_toggleLocked) return;
         _toggleLocked = true;
@@ -83,7 +90,6 @@ Item {
 
     function close(reason = "unknown") {
         if (reason === "focus_cleared" && _focusCloseLocked) return;
-        console.log(`[QuickSettingsService] close called by: ${reason}`)
         qsVisible = false;
         isSticky = false;
         hideTimer.stop();

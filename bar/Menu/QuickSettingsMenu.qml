@@ -15,20 +15,14 @@ PopupWindow {
     visible: QuickSettingsService.qsVisible
     color: "transparent"
     
-    // Disable native grabFocus to avoid instant close conflicts
-    grabFocus: false
+    // Focus & Grab logic - Re-enabled grabFocus: true to restore hover responsiveness
+    grabFocus: true
 
     HyprlandFocusGrab {
-        // Delay grab activation slightly
-        active: root.visible && !grabDelay.running
-        windows: [root]
+        active: root.visible
+        // Include bar to prevent instant close on widget click
+        windows: [root, parentWindow]
         onCleared: QuickSettingsService.close("focus_cleared")
-    }
-
-    Timer {
-        id: grabDelay
-        interval: 100
-        running: root.visible
     }
     
     onVisibleChanged: {
@@ -60,22 +54,17 @@ PopupWindow {
         border.color: hoverTracker.containsMouse ? Theme.menuHoverBorder : Theme.menuBorder
         border.width: 1
 
-        // Background area focus catch
-        MouseArea {
-            anchors.fill: parent
-            onPressed: (mouse) => {
-                mouse.accepted = true;
-                mainContent.forceActiveFocus();
-            }
-        }
-
-        // Hover tracking - in background
+        // Hover tracking and background catch area
+        // Placed as first child to not intercept events from tab buttons
         MouseArea {
             id: hoverTracker
             anchors.fill: parent
             hoverEnabled: true
-            acceptedButtons: Qt.NoButton
             onContainsMouseChanged: QuickSettingsService.isHoveringMenu = containsMouse
+            onPressed: (mouse) => {
+                mouse.accepted = true;
+                mainContent.forceActiveFocus();
+            }
         }
 
         ColumnLayout {
@@ -138,6 +127,11 @@ PopupWindow {
                                 id: tabMouse
                                 anchors.fill: parent; hoverEnabled: true
                                 onClicked: QuickSettingsService.activeTab = modelData.id
+                                onEntered: {
+                                    if (QuickSettingsService.qsVisible) {
+                                        QuickSettingsService.activeTab = modelData.id;
+                                    }
+                                }
                             }
                         }
                     }

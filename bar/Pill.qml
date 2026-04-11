@@ -20,6 +20,7 @@ Rectangle {
 
     signal clicked(var mouse)
     signal wheel(var wheel)
+    signal entered()
 
     radius: Theme.pillRadius
     implicitHeight: Theme.pillHeight
@@ -64,7 +65,10 @@ Rectangle {
         anchors.fill: parent
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.RightButton
-        onEntered: pill.color = hoverColor
+        onEntered: {
+            pill.color = hoverColor;
+            pill.entered();
+        }
         onExited: pill.color = normalColor
         onClicked: (mouse) => pill.clicked(mouse)
         onWheel: (wheel) => pill.wheel(wheel)

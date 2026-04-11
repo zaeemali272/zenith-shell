@@ -45,8 +45,6 @@ Rectangle {
     MouseArea {
         anchors.fill: parent
         hoverEnabled: true
-        onEntered: clock.color = Theme.pillHoverColor
-        onExited: clock.color = Theme.pillColor
         onClicked: {
             CenterState.toggle();
         }

@@ -13,21 +13,14 @@ PopupWindow {
 
     property var parentWindow: null
     visible: CenterState.qsVisible
-    
-    // Disable native grabFocus to avoid instant close conflicts
+    // Focus & Grab logic
     grabFocus: false
 
     HyprlandFocusGrab {
-        // Delay grab activation slightly
-        active: menuRoot.visible && !grabDelay.running
-        windows: [menuRoot]
+        active: menuRoot.visible
+        // Include bar to prevent instant close on widget click
+        windows: [menuRoot, parentWindow]
         onCleared: CenterState.close("focus_cleared")
-    }
-
-    Timer {
-        id: grabDelay
-        interval: 100
-        running: menuRoot.visible
     }
     
     onVisibleChanged: {
