@@ -27,7 +27,6 @@ Item {
         startHardwareScan();
         updateKnownNetworks();
         updateStationInfo();
-        runMaxSpeedTest();
     }
 
     function startHardwareScan() {

@@ -31,6 +31,14 @@ Item {
         scanning = !scanning;
     }
 
+    function startScan() {
+        if (!scanning) {
+            actionExec.command = ["sh", "-c", `echo -e "scan on\\nquit" | bluetoothctl`];
+            actionExec.running = true;
+            scanning = true;
+        }
+    }
+
     function action(mode, addr) {
         actionExec.command = ["sh", "-c", `echo -e "agent on\\ndefault-agent\\n${mode} ${addr}\\nquit" | bluetoothctl`];
         actionExec.running = true;
@@ -53,7 +61,6 @@ Item {
     // --- Rule-Based Watcher ---
     Process {
         id: btWatcher
-        // Monitor property changes and interface changes (connection events) continuously
         command: ["dbus-monitor", "--system", "sender='org.bluez'"]
         running: false
         
@@ -62,8 +69,6 @@ Item {
                 if (!btWatcher.running) btWatcher.running = true;
             }
             onTextChanged: {
-                // Throttle updates: only refresh if not already busy/queued
-                // We listen for any output from dbus-monitor on bluez sender
                 if (!refreshTimer.running) {
                     refreshTimer.start();
                 }
@@ -73,62 +78,90 @@ Item {
 
     Timer {
         id: refreshTimer
-        interval: 2000 // 2s throttle window
+        interval: 1000 
         onTriggered: refresh()
     }
 
     // --- Data Collection ---
     Process {
         id: btCheck
-        command: ["sh", "-c", `
-            # Fetch status
-            bluetoothctl show | grep -i -q "Powered: yes" && echo "POWER|ON" || echo "POWER|OFF"
-
-            # Fetch devices and connection status
-            bluetoothctl devices | while read -r _ addr name; do
-                info=$(bluetoothctl info "$addr")
-                c="NO"; p="NO"
-                echo "$info" | grep -i -q "Connected: yes" && c="YES"
-                echo "$info" | grep -i -q "Paired: yes" && p="YES"
-                echo "DEV|$addr|$c|$p|bluetooth|$name"
-            done
-        `]
+        command: ["busctl", "call", "org.bluez", "/", "org.freedesktop.DBus.ObjectManager", "GetManagedObjects", "--json=short"]
 
         stdout: StdioCollector {
             onStreamFinished: {
                 if (!text) return;
 
-                const lines = text.trim().split("\n");
-                let newDevices = [];
-                let isPowered = false;
-                let anyConnected = false;
-                
-                for (let line of lines) {
-                    if (line === "POWER|ON") {
-                        isPowered = true;
-                    } else if (line.startsWith("DEV|")) {
-                        let parts = line.split("|");
-                        if (parts.length >= 6) {
-                            let isDevConnected = (parts[2] === "YES");
+                try {
+                    const response = JSON.parse(text);
+                    if (!response.data || response.data.length === 0) return;
+                    
+                    const objects = response.data[0];
+                    let newDevices = [];
+                    let isPowered = false;
+                    let anyConnected = false;
+                    let isScanning = false;
+
+                    for (const path in objects) {
+                        const interfaces = objects[path];
+                        
+                        // Check for Adapter (to get power and scanning status)
+                        if (interfaces["org.bluez.Adapter1"]) {
+                            const adapter = interfaces["org.bluez.Adapter1"];
+                            if (adapter.Powered && adapter.Powered.data) isPowered = true;
+                            if (adapter.Discovering && adapter.Discovering.data) isScanning = true;
+                        }
+
+                        // Check for Device
+                        if (interfaces["org.bluez.Device1"]) {
+                            const device = interfaces["org.bluez.Device1"];
+                            const isDevConnected = (device.Connected && device.Connected.data === true);
                             if (isDevConnected) anyConnected = true;
                             
                             newDevices.push({
-                                "address": parts[1],
+                                "address": device.Address ? device.Address.data : "",
                                 "connected": isDevConnected,
-                                "paired": parts[3] === "YES",
-                                "icon": parts[4],
-                                "name": parts[5]
+                                "paired": (device.Paired && device.Paired.data === true),
+                                "icon": device.Icon ? device.Icon.data : "bluetooth",
+                                "name": device.Name ? device.Name.data : (device.Alias ? device.Alias.data : (device.Address ? device.Address.data : "Unknown Device"))
                             });
                         }
                     }
+
+                    root.powered = isPowered;
+                    root.connected = anyConnected;
+                    root.scanning = isScanning;
+
+                    // Sort newDevices
+                    newDevices.sort((a, b) => {
+                        if (a.connected !== b.connected) return b.connected ? -1 : 1;
+                        if (a.paired !== b.paired) return b.paired ? -1 : 1;
+                        return a.name.localeCompare(b.name);
+                    });
+
+                    // Incremental update to avoid flicker
+                    let i = 0;
+                    while (i < newDevices.length) {
+                        const nd = newDevices[i];
+                        if (i < deviceModel.count) {
+                            const ed = deviceModel.get(i);
+                            // Only update if something changed
+                            if (ed.address !== nd.address || ed.connected !== nd.connected || ed.paired !== nd.paired || ed.name !== nd.name || ed.icon !== nd.icon) {
+                                deviceModel.set(i, nd);
+                            }
+                        } else {
+                            deviceModel.append(nd);
+                        }
+                        i++;
+                    }
+                    
+                    // Remove extra items
+                    while (deviceModel.count > newDevices.length) {
+                        deviceModel.remove(deviceModel.count - 1);
+                    }
+
+                } catch (e) {
+                    console.error("Error parsing bluetooth objects: " + e);
                 }
-                
-                root.powered = isPowered;
-                root.connected = anyConnected;
-                
-                deviceModel.clear();
-                newDevices.sort((a, b) => b.connected - a.connected);
-                for (let d of newDevices) deviceModel.append(d);
             }
         }
     }

@@ -10,7 +10,7 @@ QtObject {
     readonly property color base: "#1e1e2e"
     readonly property color mantle: "#181825"
     readonly property color crust: "#11111b"
-    readonly property color surface0: "#313244"
+    readonly property color surface0: '#242532'
     readonly property color surface1: "#45475a"
     readonly property color surface2: "#585b70"
     readonly property color overlay0: "#6c7086"
@@ -47,6 +47,15 @@ QtObject {
     readonly property color accentColor: mauve
     readonly property real barOpacity: 0.92
 
+    // ===== Workspaces =====
+    readonly property int wsHeight: 10
+    readonly property int wsActiveWidth: 28
+    readonly property int wsInactiveWidth: 10
+    readonly property int wsSpacing: 6
+    readonly property color wsActiveColor: mauve
+    readonly property color wsOccupiedColor: lavender
+    readonly property color wsEmptyColor: surface1
+
     // ===== Pills =====
     readonly property int pillHeight: 28
     readonly property int pillRadius: 14
@@ -69,6 +78,7 @@ QtObject {
     // ===== Menu / Popup Styling =====
     readonly property color menuBackground: "#11111b"
     readonly property color menuBorder: surface0
+    readonly property color menuHoverBorder: '#00b4befe'
     readonly property int menuRadius: 24
     readonly property int menuPadding: 20
     readonly property int menuSpacing: 15
@@ -88,9 +98,9 @@ QtObject {
     readonly property color mediaGray: surface2
 
     // ===== Active States =====
-    readonly property color activePillColor: "#6100ffcc"
-    readonly property color activeBorderColor: "#ffffff88"
-    readonly property color activeTextColor: text
+    readonly property color activePillColor: surface0
+    readonly property color activeBorderColor: '#130d21'
+    readonly property color activeTextColor: '#9c9c9c'
     readonly property color inactiveTextColor: overlay1
 
     // ===== Battery thresholds =====

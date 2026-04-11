@@ -1,7 +1,7 @@
-import "../.."
 import "../../services"
 import "../../Settings"
 import "./components"
+import "../.."
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -15,6 +15,7 @@ PopupWindow {
     visible: CenterState.qsVisible
     
     // Focus & Grab logic
+    // Disable native grabFocus to avoid conflicts with HyprlandFocusGrab
     grabFocus: false
 
     property bool _grabActive: false
@@ -56,20 +57,12 @@ PopupWindow {
         focus: true
         color: Theme.menuBackground
         radius: Theme.pillRadius
-        border.color: Theme.menuBorder
+        border.color: hoverTracker.containsMouse ? Theme.menuHoverBorder : Theme.menuBorder
         border.width: 1
         
         Keys.onPressed: (event) => {
             if (event.key === Qt.Key_Escape) {
                 CenterState.close("escape_key");
-            }
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            onPressed: (mouse) => {
-                mouse.accepted = true;
-                mainContent.forceActiveFocus();
             }
         }
 
@@ -115,6 +108,7 @@ PopupWindow {
             }
         }
 
+        // Hover tracking to prevent accidental closure
         MouseArea {
             id: hoverTracker
             anchors.fill: parent
@@ -123,6 +117,10 @@ PopupWindow {
             acceptedButtons: Qt.NoButton
             onEntered: CenterState.isHoveringMenu = true
             onExited: CenterState.isHoveringMenu = false
+            onPressed: (mouse) => {
+                mouse.accepted = true;
+                mainContent.forceActiveFocus();
+            }
         }
     }
 }
