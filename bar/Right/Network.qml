@@ -67,6 +67,11 @@ Item {
                 QuickSettingsService.toggle("network", root.mapToItem(null, 0, 0, root.width, root.height)); 
         }
 
+        onEntered: {
+            if (QuickSettingsService.qsVisible || CenterState.qsVisible)
+                QuickSettingsService.toggle("network", root.mapToItem(null, 0, 0, root.width, root.height));
+        }
+
         RowLayout {
             id: content
 

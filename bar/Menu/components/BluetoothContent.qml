@@ -73,9 +73,11 @@ ColumnLayout {
             width: deviceList.width; height: 75; color: connected ? "#1e1e2e" : (delegateMouse.containsMouse ? "#0a0a0a" : "#11111b")
             radius: 20; border.color: connected ? "#89b4fa" : (delegateMouse.containsMouse ? "#45475a" : "#313244")
             border.width: connected ? 2 : 1
+            scale: delegateMouse.pressed ? 0.98 : 1.0
             
             Behavior on color { ColorAnimation { duration: 200 } }
             Behavior on border.color { ColorAnimation { duration: 200 } }
+            Behavior on scale { NumberAnimation { duration: 100 } }
 
             MouseArea {
                 id: delegateMouse
