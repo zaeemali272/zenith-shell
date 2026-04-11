@@ -18,18 +18,8 @@ Item {
         onTriggered: root._toggleLocked = false
     }
 
-    // Lock focus-based close for a short time after opening
-    property bool _focusCloseLocked: false
-    Timer {
-        id: focusCloseLockTimer
-        interval: 300
-        onTriggered: root._focusCloseLocked = false
-    }
-
     onQsVisibleChanged: {
         if (qsVisible) {
-            _focusCloseLocked = true;
-            focusCloseLockTimer.restart();
             // Close the other menu if it's open
             if (typeof QuickSettingsService !== "undefined") QuickSettingsService.close("switch");
         }
@@ -85,7 +75,6 @@ Item {
     }
 
     function close(reason = "unknown") {
-        if (reason === "focus_cleared" && _focusCloseLocked) return;
         qsVisible = false;
         isSticky = false;
         hideTimer.stop();

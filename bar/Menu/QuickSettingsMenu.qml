@@ -15,15 +15,9 @@ PopupWindow {
     visible: QuickSettingsService.qsVisible
     color: "transparent"
     
-    // Focus & Grab logic - Re-enabled grabFocus: true to restore hover responsiveness
     grabFocus: true
 
-    HyprlandFocusGrab {
-        active: root.visible
-        // Include bar to prevent instant close on widget click
-        windows: [root, parentWindow]
-        onCleared: QuickSettingsService.close("focus_cleared")
-    }
+    // Removed HyprlandFocusGrab to prevent instant close on widget click
     
     onVisibleChanged: {
         if (visible) {
@@ -54,15 +48,16 @@ PopupWindow {
         border.color: hoverTracker.containsMouse ? Theme.menuHoverBorder : Theme.menuBorder
         border.width: 1
 
-        // Hover tracking and background catch area
-        // Placed as first child to not intercept events from tab buttons
+        // MouseArea for background handling - keeps focus and tracks hover
         MouseArea {
             id: hoverTracker
             anchors.fill: parent
             hoverEnabled: true
+            // acceptedButtons: Qt.NoButton is problematic for focus
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
             onContainsMouseChanged: QuickSettingsService.isHoveringMenu = containsMouse
             onPressed: (mouse) => {
-                mouse.accepted = true;
+                mouse.accepted = false; // Let events propagate to children
                 mainContent.forceActiveFocus();
             }
         }
@@ -101,7 +96,6 @@ PopupWindow {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             radius: 12
-                            // Make active tab the accent color, and inactive tabs darker on hover
                             color: QuickSettingsService.activeTab === modelData.id ? Theme.accentColor : (tabMouse.containsMouse ? "#1e1e2e" : "transparent")
                             
                             Behavior on color { ColorAnimation { duration: 200 } }

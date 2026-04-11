@@ -13,15 +13,10 @@ PopupWindow {
 
     property var parentWindow: null
     visible: CenterState.qsVisible
-    // Focus & Grab logic
-    grabFocus: false
+    
+    grabFocus: true
 
-    HyprlandFocusGrab {
-        active: menuRoot.visible
-        // Include bar to prevent instant close on widget click
-        windows: [menuRoot, parentWindow]
-        onCleared: CenterState.close("focus_cleared")
-    }
+    // Removed HyprlandFocusGrab to prevent instant close on widget click
     
     onVisibleChanged: {
         if (visible) {
@@ -54,22 +49,16 @@ PopupWindow {
         
         // Background area focus catch
         MouseArea {
-            anchors.fill: parent
-            onPressed: (mouse) => {
-                mouse.accepted = true;
-                mainContent.forceActiveFocus();
-            }
-        }
-
-        // Hover tracking - in background
-        MouseArea {
             id: hoverTracker
             anchors.fill: parent
             anchors.topMargin: -12
             hoverEnabled: true
-            acceptedButtons: Qt.NoButton
             onEntered: CenterState.isHoveringMenu = true
             onExited: CenterState.isHoveringMenu = false
+            onPressed: (mouse) => {
+                mouse.accepted = false; // Propagate click
+                mainContent.forceActiveFocus();
+            }
         }
 
         Keys.onPressed: (event) => {
