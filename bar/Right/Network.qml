@@ -60,6 +60,13 @@ Item {
         implicitWidth: content.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
         color: airplaneMode ? Theme.accentColor : Theme.pillColor
 
+        onClicked: (mouse) => {
+            if (mouse.button === Qt.RightButton)
+                showUpload = !showUpload;
+            else if (mouse.button === Qt.LeftButton)
+                QuickSettingsService.toggle("network", root.mapToItem(null, 0, 0, root.width, root.height)); 
+        }
+
         RowLayout {
             id: content
 
@@ -74,38 +81,14 @@ Item {
             }
 
             Text {
-                text: airplaneMode ? "Airplane Mode" : (mainMouse.containsMouse ? (wifiConnected ? wifiSSID : "Disconnected") : formatSpeed(showUpload ? upSpeed : downSpeed))
+                text: airplaneMode ? "Airplane Mode" : (pill.containsMouse ? (wifiConnected ? wifiSSID : "Disconnected") : formatSpeed(showUpload ? upSpeed : downSpeed))
                 horizontalAlignment: Text.AlignHCenter
-                Layout.preferredWidth: mainMouse.containsMouse ? -1 : 55 
-                Layout.fillWidth: mainMouse.containsMouse 
+                Layout.preferredWidth: pill.containsMouse ? -1 : 55 
+                Layout.fillWidth: pill.containsMouse 
                 font.pixelSize: Theme.fontSize
                 color: airplaneMode ? Theme.backgroundColor : Theme.activeTextColor
                 font.bold: airplaneMode
             }
-
-        }
-
-    }
-
-    MouseArea {
-        id: mainMouse
-
-        anchors.fill: parent
-        hoverEnabled: true
-        acceptedButtons: Qt.LeftButton | Qt.RightButton
-        
-        onEntered: {
-            if (!airplaneMode) pill.color = pill.hoverColor
-        }
-        onExited: {
-            pill.color = airplaneMode ? Theme.accentColor : pill.normalColor
-        }
-
-        onClicked: (mouse) => {
-            if (mouse.button === Qt.RightButton)
-                showUpload = !showUpload;
-            else if (mouse.button === Qt.LeftButton)
-                QuickSettingsService.toggle("network", root.mapToItem(null, 0, 0, root.width, root.height)); 
         }
     }
 

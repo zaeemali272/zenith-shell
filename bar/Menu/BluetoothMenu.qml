@@ -4,13 +4,14 @@ import QtQuick
 import QtQuick.Controls 2.15
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Hyprland
 
 PopupWindow {
     id: popup
 
     property var anchorItem: null
 
-    visible: true
+    visible: false
     color: "transparent"
     implicitWidth: 320
     implicitHeight: 450
@@ -18,6 +19,33 @@ PopupWindow {
     anchor.rect: anchorItem ? anchorItem.mapToItem(null, 0, 0, anchorItem.width, anchorItem.height) : Qt.rect(0, 0, 0, 0)
     anchor.edges: Edges.Bottom
     anchor.gravity: Edges.Bottom
+
+    // Disable native grabFocus
+    grabFocus: false
+
+    HyprlandFocusGrab {
+        // Delay grab activation
+        active: popup.visible && !grabDelay.running
+        windows: [popup]
+        onCleared: popup.visible = false
+    }
+
+    Timer {
+        id: grabDelay
+        interval: 100
+        running: popup.visible
+    }
+
+    onVisibleChanged: {
+        if (visible) {
+            mainContent.forceActiveFocus();
+            BluetoothService.refresh();
+            if (BluetoothService.powered) {
+                BluetoothService.startScan();
+            }
+            openAnim.start();
+        }
+    }
 
     function getDeviceIcon(iconName) {
         if (!iconName) return "󰂯";
@@ -32,16 +60,6 @@ PopupWindow {
         return "󰂯";
     }
 
-    onVisibleChanged: {
-        if (visible) {
-            BluetoothService.refresh();
-            if (BluetoothService.powered) {
-                BluetoothService.startScan();
-            }
-            openAnim.start();
-        }
-    }
-
     Rectangle {
         id: mainContent
         anchors.fill: parent
@@ -52,6 +70,16 @@ PopupWindow {
         border.width: 1
         opacity: 0
         y: -20
+        focus: true
+
+        // Background area focus catch
+        MouseArea {
+            anchors.fill: parent
+            onPressed: (mouse) => {
+                mouse.accepted = true;
+                mainContent.forceActiveFocus();
+            }
+        }
 
         ParallelAnimation {
             id: openAnim

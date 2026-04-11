@@ -40,26 +40,14 @@ Item {
         anchors.fill: parent
         implicitWidth: volumeContent.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
         
-        // Removed onClicked from here as we use the outer MouseArea
-    }
-
-    MouseArea {
-        anchors.fill: parent
-        hoverEnabled: true
-        acceptedButtons: Qt.LeftButton | Qt.RightButton
-        
-        // Handle Hover Color manually since this MouseArea is on top
-        onEntered: pill.color = pill.hoverColor
-        onExited: pill.color = pill.normalColor
-        
-        onClicked: function(mouse) {
+        onClicked: (mouse) => {
             if (mouse.button === Qt.RightButton) {
                 muteExec.running = true;
             } else if (mouse.button === Qt.LeftButton) {
                 QuickSettingsService.toggle("volume", root.mapToItem(null, 0, 0, root.width, root.height));
             }
         }
-        onWheel: function(wheel) {
+        onWheel: (wheel) => {
             if (wheel.angleDelta.y > 0)
                 volUp.running = true;
             else

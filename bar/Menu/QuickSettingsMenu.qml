@@ -15,33 +15,28 @@ PopupWindow {
     visible: QuickSettingsService.qsVisible
     color: "transparent"
     
-    // Focus & Grab logic
+    // Disable native grabFocus to avoid instant close conflicts
     grabFocus: false
 
-    property bool _grabActive: false
+    HyprlandFocusGrab {
+        // Delay grab activation slightly
+        active: root.visible && !grabDelay.running
+        windows: [root]
+        onCleared: QuickSettingsService.close("focus_cleared")
+    }
+
     Timer {
         id: grabDelay
         interval: 100
-        running: root.visible && QuickSettingsService.isSticky
-        onTriggered: root._grabActive = true
+        running: root.visible
     }
+    
     onVisibleChanged: {
-        if (!visible) {
-            root._grabActive = false;
-            QuickSettingsService.isHoveringMenu = false;
+        if (visible) {
+            mainContent.forceActiveFocus();
         }
     }
 
-    HyprlandFocusGrab {
-        active: root._grabActive
-        windows: [root, parentWindow]
-        onActiveChanged: console.log(`[QuickSettingsMenu] HyprlandFocusGrab active: ${active}`)
-        onCleared: {
-            console.log("[QuickSettingsMenu] Focus grab cleared (clicked outside)!");
-            QuickSettingsService.close("focus_cleared");
-        }
-    }
-    
     // Positioning
     anchor.window: parentWindow
     anchor.edges: Edges.Bottom | Edges.Right 
@@ -64,6 +59,24 @@ PopupWindow {
         radius: Theme.menuRadius
         border.color: hoverTracker.containsMouse ? Theme.menuHoverBorder : Theme.menuBorder
         border.width: 1
+
+        // Background area focus catch
+        MouseArea {
+            anchors.fill: parent
+            onPressed: (mouse) => {
+                mouse.accepted = true;
+                mainContent.forceActiveFocus();
+            }
+        }
+
+        // Hover tracking - in background
+        MouseArea {
+            id: hoverTracker
+            anchors.fill: parent
+            hoverEnabled: true
+            acceptedButtons: Qt.NoButton
+            onContainsMouseChanged: QuickSettingsService.isHoveringMenu = containsMouse
+        }
 
         ColumnLayout {
             anchors.fill: parent
@@ -146,15 +159,6 @@ PopupWindow {
                 BatteryContent { }
                 PowerContent { }
             }
-        }
-
-        // Hover tracking to prevent accidental closure
-        MouseArea {
-            id: hoverTracker
-            anchors.fill: parent
-            hoverEnabled: true
-            acceptedButtons: Qt.NoButton
-            onContainsMouseChanged: QuickSettingsService.isHoveringMenu = containsMouse
         }
     }
 }
