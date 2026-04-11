@@ -16,8 +16,10 @@ Rectangle {
     default property alias content: contentItem.data
     // ✅ SAFE: children is bindable
     property bool hasCustomContent: contentItem.children.length > 1
+    property alias containsMouse: mouseArea.containsMouse
 
     signal clicked(var mouse)
+    signal wheel(var wheel)
 
     radius: Theme.pillRadius
     implicitHeight: Theme.pillHeight
@@ -58,12 +60,14 @@ Rectangle {
     }
 
     MouseArea {
+        id: mouseArea
         anchors.fill: parent
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         onEntered: pill.color = hoverColor
         onExited: pill.color = normalColor
         onClicked: (mouse) => pill.clicked(mouse)
+        onWheel: (wheel) => pill.wheel(wheel)
     }
 
 }

@@ -18,11 +18,23 @@ Item {
         onTriggered: root._toggleLocked = false
     }
 
-    onQsVisibleChanged: console.log(`[CenterState] qsVisible -> ${qsVisible}`)
-    onIsStickyChanged: console.log(`[CenterState] isSticky -> ${isSticky}`)
+    // Lock focus-based close for a short time after opening
+    property bool _focusCloseLocked: false
+    Timer {
+        id: focusCloseLockTimer
+        interval: 300
+        onTriggered: root._focusCloseLocked = false
+    }
+
+    onQsVisibleChanged: {
+        console.log(`[CenterState] qsVisible -> ${qsVisible}`)
+        if (qsVisible) {
+            _focusCloseLocked = true;
+            focusCloseLockTimer.restart();
+        }
+    }
 
     onIsHoveringMenuChanged: {
-        console.log(`[CenterState] isHoveringMenu: ${isHoveringMenu}`)
         if (!isHoveringMenu) startHideTimer();
         else stopHideTimer();
     }
@@ -31,30 +43,23 @@ Item {
         id: hideTimer
         interval: GeneralSettings.hideTimerInterval
         onTriggered: {
-            console.log(`[CenterState] hideTimer triggered! sticky=${isSticky}, hovering=${isHoveringMenu}`)
             if (!isSticky && !isHoveringMenu) {
-                console.log("[CenterState] hideTimer closing menu")
                 qsVisible = false;
             }
         }
     }
 
     function open() {
-        console.log("[CenterState] open()")
         hideTimer.stop();
         isSticky = true;
         qsVisible = true;
     }
 
     function toggle() {
-        if (_toggleLocked) {
-            console.log("[CenterState] toggle ignored (debounced)")
-            return;
-        }
+        if (_toggleLocked) return;
         _toggleLocked = true;
         debounceTimer.restart();
 
-        console.log(`[CenterState] toggle() - visible=${qsVisible}`)
         if (qsVisible) {
             close("toggle");
         } else {
@@ -64,7 +69,6 @@ Item {
 
     function startHideTimer() {
         if (!isSticky && qsVisible && !isHoveringMenu) {
-            console.log("[CenterState] starting hideTimer")
             hideTimer.restart();
         }
     }
@@ -74,6 +78,7 @@ Item {
     }
 
     function close(reason = "unknown") {
+        if (reason === "focus_cleared" && _focusCloseLocked) return;
         console.log(`[CenterState] close called by: ${reason}`)
         qsVisible = false;
         isSticky = false;

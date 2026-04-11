@@ -33,23 +33,33 @@ PopupWindow {
 
     }
 
-    // Attempt to set focusable through the underlying window
-    Component.onCompleted: {
-        if (menuRoot.QsWindow && menuRoot.QsWindow.window)
-            menuRoot.QsWindow.window.focusable = true;
+    // Disable native grabFocus
+    grabFocus: false
 
+    HyprlandFocusGrab {
+        // Delay grab activation
+        active: menuRoot.visible && !grabDelay.running
+        windows: [menuRoot]
+        onCleared: menuRoot.visible = false
     }
+
+    Timer {
+        id: grabDelay
+        interval: 100
+        running: menuRoot.visible
+    }
+
     onVisibleChanged: {
         if (visible) {
             console.log("WIFI_DEBUG: Menu opened, refreshing focus and scan...");
+            mainContent.forceActiveFocus();
             focusTimer.start();
-            // TRIGGER THE REFRESH HERE
             if (typeof WifiService !== "undefined")
                 WifiService.scan();
-
         }
     }
-    visible: true
+
+    visible: false
     color: "transparent"
     implicitWidth: 320
     implicitHeight: 500
@@ -90,17 +100,14 @@ PopupWindow {
         Component.onCompleted: openAnim.start()
         Keys.onPressed: (event) => {
             if (event.key === Qt.Key_Escape)
-                menuRoot.QsWindow.window.close();
-
+                menuRoot.visible = false;
         }
 
-        // CRITICAL FIX: The "Grab Shield"
-        // We set propagateComposedEvents to false and accepted to true.
-        // This tells Hyprland: "I handled this click, do not drop the focus grab."
+        // Background area focus catch
         MouseArea {
             anchors.fill: parent
             onPressed: (mouse) => {
-                mouse.accepted = true; // Consumes the event so compositor stays happy
+                mouse.accepted = true;
                 mainContent.forceActiveFocus();
                 console.log("WIFI_DEBUG: Click consumed by menu background");
             }

@@ -14,29 +14,28 @@ PopupWindow {
     property var parentWindow: null
     visible: CenterState.qsVisible
     
-    // Focus & Grab logic
-    // Disable native grabFocus to avoid conflicts with HyprlandFocusGrab
+    // Disable native grabFocus to avoid instant close conflicts
     grabFocus: false
 
-    property bool _grabActive: false
+    HyprlandFocusGrab {
+        // Delay grab activation slightly
+        active: menuRoot.visible && !grabDelay.running
+        windows: [menuRoot]
+        onCleared: CenterState.close("focus_cleared")
+    }
+
     Timer {
         id: grabDelay
         interval: 100
-        running: menuRoot.visible && CenterState.isSticky
-        onTriggered: menuRoot._grabActive = true
-    }
-    onVisibleChanged: if (!visible) menuRoot._grabActive = false;
-
-    HyprlandFocusGrab {
-        active: menuRoot._grabActive
-        windows: [menuRoot, parentWindow]
-        onActiveChanged: console.log(`[ControlCenter] HyprlandFocusGrab active: ${active}`)
-        onCleared: {
-            console.log("[ControlCenter] Focus grab cleared (clicked outside)!");
-            CenterState.close("focus_cleared");
-        }
+        running: menuRoot.visible
     }
     
+    onVisibleChanged: {
+        if (visible) {
+            mainContent.forceActiveFocus();
+        }
+    }
+
     anchor.window: parentWindow
     anchor.edges: Edges.Top
     
@@ -60,6 +59,26 @@ PopupWindow {
         border.color: hoverTracker.containsMouse ? Theme.menuHoverBorder : Theme.menuBorder
         border.width: 1
         
+        // Background area focus catch
+        MouseArea {
+            anchors.fill: parent
+            onPressed: (mouse) => {
+                mouse.accepted = true;
+                mainContent.forceActiveFocus();
+            }
+        }
+
+        // Hover tracking - in background
+        MouseArea {
+            id: hoverTracker
+            anchors.fill: parent
+            anchors.topMargin: -12
+            hoverEnabled: true
+            acceptedButtons: Qt.NoButton
+            onEntered: CenterState.isHoveringMenu = true
+            onExited: CenterState.isHoveringMenu = false
+        }
+
         Keys.onPressed: (event) => {
             if (event.key === Qt.Key_Escape) {
                 CenterState.close("escape_key");
@@ -105,21 +124,6 @@ PopupWindow {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                 }
-            }
-        }
-
-        // Hover tracking to prevent accidental closure
-        MouseArea {
-            id: hoverTracker
-            anchors.fill: parent
-            anchors.topMargin: -12
-            hoverEnabled: true
-            acceptedButtons: Qt.NoButton
-            onEntered: CenterState.isHoveringMenu = true
-            onExited: CenterState.isHoveringMenu = false
-            onPressed: (mouse) => {
-                mouse.accepted = true;
-                mainContent.forceActiveFocus();
             }
         }
     }

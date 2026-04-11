@@ -20,11 +20,23 @@ Item {
         onTriggered: root._toggleLocked = false
     }
 
-    onQsVisibleChanged: console.log(`[QuickSettingsService] qsVisible -> ${qsVisible}`)
-    onIsStickyChanged: console.log(`[QuickSettingsService] isSticky -> ${isSticky}`)
+    // Lock focus-based close for a short time after opening
+    property bool _focusCloseLocked: false
+    Timer {
+        id: focusCloseLockTimer
+        interval: 300
+        onTriggered: root._focusCloseLocked = false
+    }
+
+    onQsVisibleChanged: {
+        console.log(`[QuickSettingsService] qsVisible -> ${qsVisible}`)
+        if (qsVisible) {
+            _focusCloseLocked = true;
+            focusCloseLockTimer.restart();
+        }
+    }
 
     onIsHoveringMenuChanged: {
-        console.log(`[QuickSettingsService] isHoveringMenu: ${isHoveringMenu}`)
         if (!isHoveringMenu) startHideTimer();
         else stopHideTimer();
     }
@@ -33,16 +45,13 @@ Item {
         id: hideTimer
         interval: GeneralSettings.hideTimerInterval
         onTriggered: {
-            console.log(`[QuickSettingsService] hideTimer triggered! sticky=${isSticky}, hovering=${isHoveringMenu}`)
             if (!isSticky && !isHoveringMenu) {
-                console.log("[QuickSettingsService] hideTimer closing menu")
                 qsVisible = false;
             }
         }
     }
     
     function open(tab, rect) {
-        console.log(`[QuickSettingsService] open(tab=${tab})`)
         hideTimer.stop();
         activeTab = tab;
         anchorRect = rect;
@@ -51,14 +60,10 @@ Item {
     }
 
     function toggle(tab, rect) {
-        if (_toggleLocked) {
-            console.log("[QuickSettingsService] toggle ignored (debounced)")
-            return;
-        }
+        if (_toggleLocked) return;
         _toggleLocked = true;
         debounceTimer.restart();
 
-        console.log(`[QuickSettingsService] toggle(tab=${tab}, visible=${qsVisible}, activeTab=${activeTab})`)
         if (qsVisible && activeTab === tab) {
             close("toggle");
         } else {
@@ -68,7 +73,6 @@ Item {
 
     function startHideTimer() {
         if (!isSticky && qsVisible && !isHoveringMenu) {
-            console.log("[QuickSettingsService] Starting hideTimer")
             hideTimer.restart();
         }
     }
@@ -78,6 +82,7 @@ Item {
     }
 
     function close(reason = "unknown") {
+        if (reason === "focus_cleared" && _focusCloseLocked) return;
         console.log(`[QuickSettingsService] close called by: ${reason}`)
         qsVisible = false;
         isSticky = false;
