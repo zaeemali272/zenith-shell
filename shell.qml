@@ -18,11 +18,13 @@ readonly property var _notifications: NotificationService // Add this!
     ControlCenter {
         id: controlCenter
         parentWindow: bar
+        Component.onCompleted: CenterState.menuRef = controlCenter
     }
 
     QuickSettingsMenu {
         id: quickSettingsMenu
         parentWindow: bar
+        Component.onCompleted: QuickSettingsService.menuRef = quickSettingsMenu
     }
 
     NotificationPopup {

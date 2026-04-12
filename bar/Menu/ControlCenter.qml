@@ -12,15 +12,22 @@ PopupWindow {
     id: menuRoot
 
     property var parentWindow: null
-    visible: CenterState.qsVisible
+    visible: false
     
     grabFocus: true
 
-    // Removed HyprlandFocusGrab to prevent instant close on widget click
+    HyprlandFocusGrab {
+        active: menuRoot.visible
+        windows: [menuRoot]
+        onCleared: menuRoot.visible = false
+    }
     
     onVisibleChanged: {
         if (visible) {
+            CenterState.qsVisible = true;
             mainContent.forceActiveFocus();
+        } else {
+            CenterState.qsVisible = false;
         }
     }
 

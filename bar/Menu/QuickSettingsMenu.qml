@@ -12,16 +12,23 @@ PopupWindow {
     id: root
 
     property var parentWindow: null
-    visible: QuickSettingsService.qsVisible
+    visible: false
     color: "transparent"
     
     grabFocus: true
 
-    // Removed HyprlandFocusGrab to prevent instant close on widget click
+    HyprlandFocusGrab {
+        active: root.visible
+        windows: [root]
+        onCleared: root.visible = false
+    }
     
     onVisibleChanged: {
         if (visible) {
+            QuickSettingsService.qsVisible = true;
             mainContent.forceActiveFocus();
+        } else {
+            QuickSettingsService.qsVisible = false;
         }
     }
 
