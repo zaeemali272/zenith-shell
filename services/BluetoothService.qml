@@ -11,30 +11,49 @@ Item {
     property bool powered: false
     property bool connected: false
     property bool scanning: false
-    property bool busy: actionExec.running || btCheck.running
+    property bool busy: actionExec.running || btCheck.running || powerExec.running || scanExec.running
+    property bool _actionInProgress: false
+
+    Timer {
+        id: actionGuard
+        interval: 1500
+        onTriggered: root._actionInProgress = false
+    }
 
     function refresh() {
-        if (!btCheck.running)
-            btCheck.running = true;
+        if (_actionInProgress) return;
+        btCheck.running = false;
+        btCheck.running = true;
     }
 
     // --- Actions ---
     function togglePower() {
-        actionExec.command = ["rfkill", powered ? "block" : "unblock", "bluetooth"];
-        actionExec.running = true;
+        let newState = !powered;
+        _actionInProgress = true;
+        actionGuard.restart();
+        powered = newState;
+
+        if (newState) {
+            powerExec.command = ["sh", "-c", "rfkill unblock bluetooth && bluetoothctl power on"];
+        } else {
+            powerExec.command = ["bluetoothctl", "power", "off"];
+        }
+        powerExec.running = true;
     }
 
     function toggleScan() {
-        let cmd = scanning ? "scan off" : "scan on";
-        actionExec.command = ["sh", "-c", `echo -e "${cmd}\\nquit" | bluetoothctl`];
-        actionExec.running = true;
+        _actionInProgress = true;
+        actionGuard.restart();
         scanning = !scanning;
+
+        scanExec.command = ["bluetoothctl", "scan", scanning ? "on" : "off"];
+        scanExec.running = true;
     }
 
     function startScan() {
         if (!scanning) {
-            actionExec.command = ["sh", "-c", `echo -e "scan on\\nquit" | bluetoothctl`];
-            actionExec.running = true;
+            scanExec.command = ["bluetoothctl", "scan", "on"];
+            scanExec.running = true;
             scanning = true;
         }
     }
@@ -53,10 +72,9 @@ Item {
         id: deviceModel
     }
 
-    Process {
-        id: actionExec
-        onExited: refresh()
-    }
+    Process { id: powerExec; onExited: refresh() }
+    Process { id: scanExec; onExited: refresh() }
+    Process { id: actionExec; onExited: refresh() }
 
     // --- Rule-Based Watcher ---
     Process {
@@ -79,6 +97,14 @@ Item {
     Timer {
         id: refreshTimer
         interval: 1000 
+        onTriggered: refresh()
+    }
+
+    Timer {
+        id: pollingTimer
+        interval: 2000
+        repeat: true
+        running: true
         onTriggered: refresh()
     }
 

@@ -37,12 +37,25 @@ Rectangle {
 
     signal trackChanged()
 
+    function formatMediaTitle(title, identity) {
+        if (!title) return "";
+        let id = identity ? identity.toLowerCase() : "";
+        if (id.includes("mpv") || id.includes("vlc")) {
+            // Remove common media extensions
+            title = title.replace(/\.(mp3|mp4|mkv|avi|flac|wav|ogg|webm|mov|m4a|wmv|mpg|mpeg)$/i, "");
+            // Remove everything in parentheses and brackets
+            title = title.replace(/\s*[\(\[].*?[\)\]]/g, "");
+        }
+        return title.trim();
+    }
+
     function updateTrack() {
         if (!trackedPlayer || !trackedPlayer.isPlaying) {
             activeTrack = { "title": "Nothing playing", "artist": "", "artUrl": "" }
         } else {
+            let rawTitle = String(trackedPlayer.trackTitle || trackedPlayer.identity || "Unknown Player");
             activeTrack = {
-                title: String(trackedPlayer.trackTitle || trackedPlayer.identity || "Unknown Player"),
+                title: formatMediaTitle(rawTitle, trackedPlayer.identity),
                 artist: String(trackedPlayer.trackArtist || ""),
                 artUrl: String(trackedPlayer.trackArtUrl || "")
             }

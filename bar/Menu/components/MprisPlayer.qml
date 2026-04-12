@@ -75,6 +75,18 @@ Rectangle {
         }
     }
 
+    function formatMediaTitle(title, identity) {
+        if (!title) return "";
+        let id = identity ? identity.toLowerCase() : "";
+        if (id.includes("mpv") || id.includes("vlc")) {
+            // Remove common media extensions
+            title = title.replace(/\.(mp3|mp4|mkv|avi|flac|wav|ogg|webm|mov|m4a|wmv|mpg|mpeg)$/i, "");
+            // Remove everything in parentheses and brackets
+            title = title.replace(/\s*[\(\[].*?[\)\]]/g, "");
+        }
+        return title.trim();
+    }
+
     // --- UI Layout ---
     RowLayout {
         anchors.centerIn: parent
@@ -103,7 +115,7 @@ Rectangle {
             Layout.alignment: Qt.AlignVCenter // Ensures text/slider are centered with the image
             
             Label {
-                text: player ? String(player.trackTitle || "Media") : "Idle"
+                text: player ? formatMediaTitle(String(player.trackTitle || "Media"), player.identity) : "Idle"
                 color: "#cdd6f4"; font.bold: true; font.pixelSize: 13; elide: Text.ElideRight; Layout.fillWidth: true
             }
 
