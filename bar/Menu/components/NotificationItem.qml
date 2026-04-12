@@ -1,8 +1,9 @@
-import "../../../services"
 import QtQuick
 import QtQuick.Controls 2.15
 import QtQuick.Layouts
 import Quickshell.Services.Notifications
+import "../../../services"
+import "../../../"
 
 Rectangle {
     id: root
