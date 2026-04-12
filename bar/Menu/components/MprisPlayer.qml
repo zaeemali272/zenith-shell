@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Services.Mpris
 import "../../../services"
+import "../../../"
 
 Rectangle {
     id: mprisPlayer
