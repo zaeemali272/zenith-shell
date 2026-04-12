@@ -71,7 +71,7 @@ Flickable {
             Repeater {
                 model: NotificationService.notifications
                 delegate: NotificationItem {
-                    notification: model
+                    notification: NotificationService.notifications.get(index)
                     Layout.fillWidth: true
                 }
             }
