@@ -11,39 +11,39 @@ Rectangle {
     function nextMonth() { viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1) }
     function prevMonth() { viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1) }
 
-    implicitHeight: 290
-    implicitWidth: 320
+    implicitHeight: Theme.scaled(290)
+    implicitWidth: Theme.scaled(320)
     color: "#11111b"
-    radius: 16
+    radius: Theme.scaled(16)
     border.color: "#313244"
     border.width: 1
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 20
-        spacing: 12
+        anchors.margins: Theme.scaled(20)
+        spacing: Theme.scaled(12)
 
         RowLayout {
             Layout.fillWidth: true
             Label {
                 text: Qt.formatDateTime(root.viewDate, "MMMM yyyy")
                 color: "#cdd6f4"
-                font.pixelSize: 18; font.weight: Font.Bold
+                font.pixelSize: Theme.scaled(18); font.weight: Font.Bold
             }
             Item { Layout.fillWidth: true }
             RowLayout {
-                spacing: 8
+                spacing: Theme.scaled(8)
                 Button {
-                    flat: true; implicitWidth: 32; implicitHeight: 32
+                    flat: true; implicitWidth: Theme.scaled(32); implicitHeight: Theme.scaled(32)
                     onClicked: root.prevMonth()
-                    background: Rectangle { color: parent.hovered ? "#313244" : "transparent"; radius: 8 }
-                    contentItem: Text { text: "󰁍"; color: "#89b4fa"; font.pixelSize: 16; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                    background: Rectangle { color: parent.hovered ? "#313244" : "transparent"; radius: Theme.scaled(8) }
+                    contentItem: Text { text: "󰁍"; color: "#89b4fa"; font.pixelSize: Theme.scaled(16); horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
                 }
                 Button {
-                    flat: true; implicitWidth: 32; implicitHeight: 32
+                    flat: true; implicitWidth: Theme.scaled(32); implicitHeight: Theme.scaled(32)
                     onClicked: root.nextMonth()
-                    background: Rectangle { color: parent.hovered ? "#313244" : "transparent"; radius: 8 }
-                    contentItem: Text { text: "󰁔"; color: "#89b4fa"; font.pixelSize: 16; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                    background: Rectangle { color: parent.hovered ? "#313244" : "transparent"; radius: Theme.scaled(8) }
+                    contentItem: Text { text: "󰁔"; color: "#89b4fa"; font.pixelSize: Theme.scaled(16); horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
                 }
             }
         }
@@ -55,7 +55,7 @@ Rectangle {
                 delegate: Label {
                     text: modelData; Layout.fillWidth: true
                     horizontalAlignment: Text.AlignHCenter
-                    color: "#585b70"; font.pixelSize: 11; font.weight: Font.Black
+                    color: "#585b70"; font.pixelSize: Theme.scaled(11); font.weight: Font.Black
                 }
             }
         }
@@ -64,8 +64,8 @@ Rectangle {
             id: calendarGrid
             columns: 7
             rows: 5 // Force 5 rows
-            columnSpacing: 4
-            rowSpacing: 4
+            columnSpacing: Theme.scaled(4)
+            rowSpacing: Theme.scaled(4)
             Layout.fillWidth: true
             Layout.fillHeight: true
 
@@ -86,7 +86,7 @@ Rectangle {
 
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    radius: 8
+                    radius: Theme.scaled(8)
                     
                     // Style matching Zenith
                     color: isSelected ? "#89b4fa" : (isToday ? "#313244" : "transparent")
@@ -95,7 +95,7 @@ Rectangle {
                     Label {
                         anchors.centerIn: parent
                         text: dayCell.dateValue.getDate()
-                        font.pixelSize: 12
+                        font.pixelSize: Theme.scaled(12)
                         font.bold: dayCell.isToday || dayCell.isSelected
                         color: !dayCell.isCurrentMonth ? "#45475a" : (dayCell.isSelected ? "#11111b" : (dayCell.isToday ? "#89b4fa" : "#cdd6f4"))
                     }

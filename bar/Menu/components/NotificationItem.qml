@@ -14,12 +14,12 @@ Rectangle {
 
     // --- ZENITH THEMEING ---
     color: "#11111b"
-    radius: 14
+    radius: Theme.scaled(14)
     border.color: "#313244"
     border.width: 1
     clip: true
 
-    implicitHeight: layout.implicitHeight + 24
+    implicitHeight: layout.implicitHeight + Theme.scaled(24)
     Layout.fillWidth: true
 
     // --- ANIMATIONS ---
@@ -119,8 +119,8 @@ Rectangle {
     RowLayout {
         id: layout
         anchors.fill: parent
-        anchors.margins: 12
-        spacing: 8
+        anchors.margins: Theme.scaled(12)
+        spacing: Theme.scaled(8)
         z: 2
         
         // This ensures the entire row of content is centered 
@@ -130,14 +130,14 @@ Rectangle {
         // Icon Container (Bigger & Centered)
         Rectangle {
             id: iconContainer
-            Layout.preferredWidth: 50
-            Layout.preferredHeight: 50
+            Layout.preferredWidth: Theme.scaled(50)
+            Layout.preferredHeight: Theme.scaled(50)
             
             // This centers the icon box vertically within the row
             Layout.alignment: Qt.AlignVCenter 
             
             color: "#181825"
-            radius: 12
+            radius: Theme.scaled(12)
             border.color: "#313244"
             border.width: 1
 
@@ -160,12 +160,12 @@ Rectangle {
         ColumnLayout {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignVCenter // Centers the text block relative to the icon
-            spacing: 2
+            spacing: Theme.scaled(2)
 
             Label {
                 text: notification ? (notification.appName || "SYSTEM").toUpperCase() : ""
                 color: "#89b4fa"
-                font.pixelSize: 10
+                font.pixelSize: Theme.scaled(10)
                 font.weight: Font.Black
                 font.letterSpacing: 1.5
                 Layout.fillWidth: true
@@ -175,7 +175,7 @@ Rectangle {
                 text: notification ? (notification.summary || "Notification") : ""
                 color: "white"
                 font.bold: true
-                font.pixelSize: 13
+                font.pixelSize: Theme.scaled(13)
                 elide: mainMouseArea.containsMouse ? Text.ElideNone : Text.ElideRight
                 wrapMode: mainMouseArea.containsMouse ? Text.WordWrap : Text.NoWrap
                 Layout.fillWidth: true
@@ -184,7 +184,7 @@ Rectangle {
             Label {
                 text: notification ? (notification.body || "") : ""
                 color: "#a6adc8"
-                font.pixelSize: 11
+                font.pixelSize: Theme.scaled(11)
                 wrapMode: Text.WordWrap
                 elide: mainMouseArea.containsMouse ? Text.ElideNone : Text.ElideRight
                 maximumLineCount: mainMouseArea.containsMouse ? 20 : 2
@@ -196,15 +196,15 @@ Rectangle {
     // Dismiss Button
     Item {
         id: dismissButton
-        width: 32; height: 32
+        width: Theme.scaled(32); height: Theme.scaled(32)
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
-        anchors.rightMargin: 10
+        anchors.rightMargin: Theme.scaled(10)
         z: 100
 
         Rectangle {
             anchors.fill: parent
-            radius: 8
+            radius: Theme.scaled(8)
             color: dismissMouse.containsMouse ? "#313244" : "transparent"
             Behavior on color { ColorAnimation { duration: 150 } }
             
@@ -212,7 +212,7 @@ Rectangle {
                 anchors.centerIn: parent
                 text: "󰅖"
                 color: dismissMouse.containsMouse ? "#f38ba8" : "#585b70"
-                font.pixelSize: 16
+                font.pixelSize: Theme.scaled(16)
             }
         }
 
