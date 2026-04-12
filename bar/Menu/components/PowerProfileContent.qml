@@ -6,7 +6,7 @@ import Quickshell
 
 ColumnLayout {
     id: root
-    spacing: 28
+    spacing: Theme.scaled(28)
     Layout.fillWidth: true
 
     // --- Header ---
@@ -15,19 +15,19 @@ ColumnLayout {
         Text {
             text: "PERFORMANCE MODES"
             color: "#cba6f7" // Mauve header to distinguish from system monitor
-            font.pixelSize: 14
+            font.pixelSize: Theme.scaled(14)
             font.letterSpacing: 2
             font.weight: Font.Black
             opacity: 0.8
         }
-        Rectangle { Layout.fillWidth: true; height: 1; color: "#313244"; opacity: 0.4; Layout.leftMargin: 10 }
+        Rectangle { Layout.fillWidth: true; height: 1; color: "#313244"; opacity: 0.4; Layout.leftMargin: Theme.scaled(10) }
     }
 
     GridLayout {
         columns: 2
         Layout.fillWidth: true
-        rowSpacing: 15
-        columnSpacing: 15
+        rowSpacing: Theme.scaled(15)
+        columnSpacing: Theme.scaled(15)
 
         Repeater {
             model: [
@@ -40,9 +40,9 @@ ColumnLayout {
             delegate: Rectangle {
                 id: profileCard
                 Layout.fillWidth: true
-                height: 80
+                height: Theme.scaled(80)
                 color: "#11111b" // Deep navy base
-                radius: 20
+                radius: Theme.scaled(20)
                 border.width: 1
                 // Border lights up when active
                 border.color: PowerProfileService.currentProfile === modelData.id ? modelData.color : "#313244"
@@ -57,7 +57,7 @@ ColumnLayout {
                     
                     // If active, height is 100%, else 0%
                     height: PowerProfileService.currentProfile === modelData.id ? parent.height : 0
-                    radius: 20
+                    radius: Theme.scaled(20)
                     color: modelData.color
                     opacity: 0.15 // Subtle highlight fill
 
@@ -78,19 +78,19 @@ ColumnLayout {
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.margins: 15
-                    spacing: 12
+                    anchors.margins: Theme.scaled(15)
+                    spacing: Theme.scaled(12)
 
                     // Icon Circle
                     Rectangle {
-                        width: 40; height: 40; radius: 20
+                        width: Theme.scaled(40); height: Theme.scaled(40); radius: Theme.scaled(20)
                         color: PowerProfileService.currentProfile === modelData.id ? Qt.alpha(modelData.color, 0.2) : "#181825"
                         
                         Text {
                             anchors.centerIn: parent
                             text: modelData.icon
                             font.family: Theme.iconFont
-                            font.pixelSize: 20
+                            font.pixelSize: Theme.scaled(20)
                             color: PowerProfileService.currentProfile === modelData.id ? modelData.color : "#585b70"
                             
                             Behavior on color { ColorAnimation { duration: 200 } }
@@ -98,16 +98,16 @@ ColumnLayout {
                     }
 
                     ColumnLayout {
-                        spacing: 2
+                        spacing: Theme.scaled(2)
                         Text {
                             text: modelData.label
-                            font.pixelSize: 14
+                            font.pixelSize: Theme.scaled(14)
                             font.weight: Font.Black
                             color: PowerProfileService.currentProfile === modelData.id ? "white" : "#cdd6f4"
                         }
                         Text {
                             text: PowerProfileService.currentProfile === modelData.id ? "ACTIVE" : "SELECT"
-                            font.pixelSize: 9
+                            font.pixelSize: Theme.scaled(9)
                             font.weight: Font.Bold
                             font.letterSpacing: 1
                             color: PowerProfileService.currentProfile === modelData.id ? modelData.color : "#585b70"

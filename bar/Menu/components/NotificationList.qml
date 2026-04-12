@@ -15,29 +15,29 @@ Flickable {
     ColumnLayout {
         id: mainLayout
         width: parent.width
-        spacing: 16
+        spacing: Theme.scaled(16)
 
         // Header
         RowLayout {
             Layout.fillWidth: true
-            Layout.leftMargin: 4
-            Layout.rightMargin: 4
+            Layout.leftMargin: Theme.scaled(4)
+            Layout.rightMargin: Theme.scaled(4)
 
             Label {
                 text: "Notifications"
                 color: "#cdd6f4"
-                font.pixelSize: 18
+                font.pixelSize: Theme.scaled(18)
                 font.bold: true
             }
 
             Rectangle {
-                width: 22; height: 22; radius: 6
+                width: Theme.scaled(22); height: Theme.scaled(22); radius: Theme.scaled(6)
                 color: "#313244"
                 Label {
                     anchors.centerIn: parent
                     text: NotificationService.notifications.count
                     color: "#89b4fa"
-                    font.pixelSize: 11; font.bold: true
+                    font.pixelSize: Theme.scaled(11); font.bold: true
                 }
             }
 
@@ -46,16 +46,16 @@ Flickable {
             Button {
                 id: clearBtn
                 flat: true
-                padding: 8
+                padding: Theme.scaled(8)
                 contentItem: Text {
                     text: "Clear All"
                     color: clearBtn.hovered ? "#f38ba8" : "#585b70"
-                    font.pixelSize: 12; font.bold: true
+                    font.pixelSize: Theme.scaled(12); font.bold: true
                     horizontalAlignment: Text.AlignHCenter
                 }
                 background: Rectangle { 
                     color: clearBtn.hovered ? "#313244" : "transparent"
-                    radius: 8 
+                    radius: Theme.scaled(8) 
                 }
                 onClicked: NotificationService.clearAll()
             }
@@ -65,7 +65,7 @@ Flickable {
         ColumnLayout {
             id: notificationsColumn
             Layout.fillWidth: true
-            spacing: 8
+            spacing: Theme.scaled(8)
 
             Repeater {
                 model: NotificationService.notifications
@@ -79,22 +79,22 @@ Flickable {
         // Empty State
         ColumnLayout {
             Layout.fillWidth: true
-            Layout.preferredHeight: 200
+            Layout.preferredHeight: Theme.scaled(200)
             visible: NotificationService.notifications.count === 0
             Layout.alignment: Qt.AlignHCenter 
-            spacing: 8
+            spacing: Theme.scaled(8)
             opacity: 0.5
             
             Text {
                 text: "󰂚"
-                font.pixelSize: 80
+                font.pixelSize: Theme.scaled(80)
                 color: "#313244"
                 Layout.alignment: Qt.AlignCenter
             }
             Text {
                 text: "All caught up"
                 color: "#585b70"
-                font.pixelSize: 13
+                font.pixelSize: Theme.scaled(13)
                 Layout.alignment: Qt.AlignCenter
             }
         }

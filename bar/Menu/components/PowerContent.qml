@@ -6,22 +6,22 @@ import Quickshell.Io
 
 ColumnLayout {
     id: root
-    spacing: 20
+    spacing: Theme.scaled(20)
     Layout.fillWidth: true
 
     Text {
         text: "Power Options"
         color: "white"
         font.bold: true
-        font.pixelSize: 22
-        Layout.leftMargin: 5
+        font.pixelSize: Theme.scaled(22)
+        Layout.leftMargin: Theme.scaled(5)
     }
 
     GridLayout {
         columns: 2
         Layout.fillWidth: true
-        rowSpacing: 15
-        columnSpacing: 15
+        rowSpacing: Theme.scaled(15)
+        columnSpacing: Theme.scaled(15)
 
         Repeater {
             model: [
@@ -36,9 +36,9 @@ ColumnLayout {
             delegate: Rectangle {
                 id: powerBtn
                 Layout.fillWidth: true
-                height: 120
+                height: Theme.scaled(120)
                 color: "#1e1e2e"
-                radius: 24
+                radius: Theme.scaled(24)
                 
                 // Border lights up on hover
                 border.color: m.containsMouse ? modelData.color : "#313244"
@@ -62,13 +62,13 @@ ColumnLayout {
 
                 ColumnLayout {
                     anchors.centerIn: parent
-                    spacing: 8
+                    spacing: Theme.scaled(8)
                     
                     // Large Clean Icon (No Background)
                     Text {
                         text: modelData.icon
                         font.family: Theme.iconFont
-                        font.pixelSize: 42 // Big icons as requested
+                        font.pixelSize: Theme.scaled(42) // Big icons as requested
                         color: modelData.color
                         Layout.alignment: Qt.AlignHCenter
                         
@@ -79,7 +79,7 @@ ColumnLayout {
                     
                     Text {
                         text: modelData.label
-                        font.pixelSize: 14
+                        font.pixelSize: Theme.scaled(14)
                         font.bold: true
                         color: "white"
                         Layout.alignment: Qt.AlignHCenter
