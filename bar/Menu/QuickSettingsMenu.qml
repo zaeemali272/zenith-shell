@@ -128,11 +128,6 @@ PopupWindow {
                                 id: tabMouse
                                 anchors.fill: parent; hoverEnabled: true
                                 onClicked: QuickSettingsService.activeTab = modelData.id
-                                onEntered: {
-                                    if (QuickSettingsService.qsVisible) {
-                                        QuickSettingsService.activeTab = modelData.id;
-                                    }
-                                }
                             }
                         }
                     }
