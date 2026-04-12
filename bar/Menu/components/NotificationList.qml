@@ -3,6 +3,7 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts
 import Quickshell.Services.Notifications
 import "../../../services"
+import "../../../"
 
 Flickable {
     id: root
