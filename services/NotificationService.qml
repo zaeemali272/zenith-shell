@@ -1,5 +1,6 @@
 import ".."
 import QtQuick
+import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Notifications
 pragma Singleton
@@ -72,24 +73,14 @@ Item {
     }
 
     NotificationServer {
-        // Secondary fallback if Priority 3/4 fails (Checkerboard prevention)
-
         id: server
-
-        function getSafeHint(notif, key) {
-            let h = notif.hints[key];
-            if (!h)
-                return "";
-
-            if (typeof h === "object")
-                return h.string || (h.value !== undefined ? h.value.toString() : "");
-
-            return h.toString();
-        }
+        imageSupported: true
 
         onNotification: (notif) => {
-            let syncHint = getSafeHint(notif, "x-canonical-private-synchronous");
-            let category = getSafeHint(notif, "category") || notif.category || "";
+            // OSD Filtering
+            let syncHint = notif.hints["x-canonical-private-synchronous"] || "";
+            let category = notif.hints["category"] || notif.category || "";
+            
             if (syncHint === "volume" || syncHint === "brightness" || category === "volume" || category === "brightness") {
                 let type = (syncHint === "volume" || category === "volume") ? "volume" : "brightness";
                 let text = (notif.summary || "") + " " + (notif.body || "");
@@ -102,13 +93,13 @@ Item {
                     return ;
                 }
             }
+
+            // Duplicate Filtering
             let currentKey = notif.summary + "|" + notif.body + "|" + notif.appName;
-            // Check the entire history for duplicates
             if (notif.appName !== "Battery") {
                 for (let i = 0; i < historyModel.count; i++) {
                     let item = historyModel.get(i);
                     if (item.summary === notif.summary && item.body === notif.body && item.appName === notif.appName) {
-                        // Duplicate found anywhere in history, discard the new one
                         notif.dismiss();
                         return ;
                     }
@@ -116,25 +107,35 @@ Item {
             }
             root.lastNotifKey = currentKey;
             duplicateResetTimer.restart();
-            // --- IMPROVED ICON LOGIC ---
-            let finalIcon = "";
-            let imageHint = notif.hints["image-data"] || notif.hints["image_data"] || notif.hints["icon_data"];
-            let rawIcon = notif.appIcon || getSafeHint(notif, "image-path") || getSafeHint(notif, "image_path") || "";
-            if (imageHint) {
-                finalIcon = "image://notification/" + notif.id;
-            } else if (rawIcon !== "") {
-                // Try the themed icon first
 
-                if (rawIcon.startsWith("/") || rawIcon.startsWith("file://"))
-                    finalIcon = rawIcon.startsWith("file://") ? rawIcon : "file://" + rawIcon;
-                else
-                    finalIcon = "image://icon/" + rawIcon;
+            // Icon Resolution
+            let finalIcon = "";
+            let rawIcon = notif.appIcon || "";
+            
+            // If appIcon is empty but image is an image://icon URL, extract the name
+            if (rawIcon === "" && notif.image && notif.image.startsWith("image://icon/")) {
+                rawIcon = notif.image.substring(13);
             }
-            // If finalIcon is still empty, or to ensure we have a "safe" string for the model:
+
+            // Priority 1: Raw image or direct path from Quickshell (notif.image)
+            if (notif.image && notif.image !== "") {
+                finalIcon = notif.image;
+            } 
+            // Priority 2: Themed icon name (notif.appIcon)
+            else if (notif.appIcon && notif.appIcon !== "") {
+                if (notif.appIcon.startsWith("/") || notif.appIcon.startsWith("file://")) {
+                    finalIcon = notif.appIcon.startsWith("file://") ? notif.appIcon : "file://" + notif.appIcon;
+                } else {
+                    finalIcon = Quickshell.iconPath(notif.appIcon);
+                }
+            }
+            
+            // Priority 3: Fallback based on app name
             if (finalIcon === "") {
                 let fallback = (notif.appName || "dialog-information").toLowerCase().replace(/\s+/g, '-');
-                finalIcon = "image://icon/" + fallback;
+                finalIcon = Quickshell.iconPath(fallback);
             }
+
             let notifData = {
                 "id": Date.now() + Math.random(),
                 "summary": notif.summary || "",
@@ -142,6 +143,7 @@ Item {
                 "appIcon": finalIcon,
                 "rawIcon": rawIcon,
                 "appName": notif.appName || "System",
+                "desktopEntry": notif.desktopEntry || "",
                 "originalNotif": notif
             };
             historyModel.insert(0, notifData);

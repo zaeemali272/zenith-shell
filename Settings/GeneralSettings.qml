@@ -22,6 +22,9 @@ QtObject {
     property int debounceInterval: 200
     property int hideTimerInterval: 250
     
+    // Icon Theme
+    property string iconTheme: "Adwaita"
+    
     // Media settings
     property bool truncateTrackTitle: true
     property int maxTrackTitleLength: 85

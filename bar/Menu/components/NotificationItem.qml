@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls 2.15
 import QtQuick.Layouts
+import Quickshell
 import Quickshell.Services.Notifications
 import "../../../services"
 import "../../../"
@@ -66,34 +67,71 @@ Rectangle {
             if (nextSource && nextSource !== "") iconImg.source = nextSource;
             else tryNextIcon();
         } else {
-            iconImg.source = "image://icon/dialog-information";
+            iconImg.source = Quickshell.iconPath("dialog-information");
         }
     }
 
     function updateCandidates() {
         if (!notification) return;
-        let raw = notification.rawIcon || "";
-        let app = (notification.appName || "").toLowerCase().replace(/\s+/g, '-');
+        
+        let candidates = [];
+        
+        // Collect names to try
+        let raw = (notification.rawIcon || "").toLowerCase();
+        let desktop = (notification.desktopEntry || "").toLowerCase();
+        let app = (notification.appName || "").toLowerCase();
         let summary = (notification.summary || "").toLowerCase().replace(/\s+/g, '-');
-        let names = [raw, app, summary].filter((v, i, a) => v !== "" && a.indexOf(v) === i);
+        let appDashed = app.replace(/\s+/g, '-');
+        let appNoSpace = app.replace(/\s+/g, '');
+        
+        let names = [raw, desktop, appDashed, appNoSpace, app, summary].filter((v, i, a) => v !== "" && a.indexOf(v) === i);
 
+        // System directories to scan
         let bases = [
-            "/usr/share/icons/OneUI/24/apps/", "/usr/share/icons/OneUI/scalable/apps/",
-            "/usr/share/icons/OneUI/symbolic/apps/", "/usr/share/icons/Adwaita/scalable/apps/",
-            "/usr/share/icons/hicolor/scalable/apps/"
+            "/usr/share/icons/hicolor/scalable/apps/",
+            "/usr/share/icons/hicolor/256x256/apps/",
+            "/usr/share/icons/hicolor/128x128/apps/",
+            "/usr/share/icons/hicolor/64x64/apps/",
+            "/usr/share/icons/hicolor/48x48/apps/",
+            "/usr/share/icons/OneUI/scalable/apps/",
+            "/usr/share/icons/OneUI/48x48/apps/",
+            "/usr/share/icons/Adwaita/scalable/apps/",
+            "/usr/share/icons/Adwaita/48x48/apps/",
+            "/usr/share/icons/breeze/apps/48/",
+            "/usr/share/icons/breeze-dark/apps/48/",
+            "/usr/share/icons/hicolor/scalable/status/",
+            "/usr/share/icons/hicolor/48x48/status/"
         ];
 
-        let candidates = [];
+        // 1. First try exactly what the service resolved (image://notification or already resolved iconPath)
         if (notification.appIcon) candidates.push(notification.appIcon);
+        
+        // 2. Try variations of names via Quickshell provider
+        for (let name of names) {
+            candidates.push(Quickshell.iconPath(name));
+            if (!name.endsWith("-bin")) {
+                candidates.push(Quickshell.iconPath(name + "-bin"));
+            }
+        }
 
+        // 3. Try manual file paths
         for (let name of names) {
             for (let base of bases) {
                 candidates.push("file://" + base + name + ".svg");
                 candidates.push("file://" + base + name + ".png");
+                if (!name.endsWith("-bin")) {
+                    candidates.push("file://" + base + name + "-bin.png");
+                    candidates.push("file://" + base + name + "-bin.svg");
+                }
             }
-            candidates.push("image://icon/" + name);
         }
-        iconCandidates = candidates;
+        
+        // Final generic fallbacks
+        candidates.push(Quickshell.iconPath("dialog-information"));
+        candidates.push(Quickshell.iconPath("application-x-executable"));
+        
+        // Deduplicate
+        iconCandidates = candidates.filter((v, i, a) => v !== "" && a.indexOf(v) === i);
         currentCandidateIndex = -1;
         tryNextIcon();
     }
@@ -124,17 +162,13 @@ Rectangle {
         spacing: Theme.scaled(8)
         z: 2
         
-        // This ensures the entire row of content is centered 
-        // vertically if the notification body is short.
         Layout.alignment: Qt.AlignVCenter 
 
-        // Icon Container (Bigger & Centered)
+        // Icon Container
         Rectangle {
             id: iconContainer
             Layout.preferredWidth: Theme.scaled(50)
             Layout.preferredHeight: Theme.scaled(50)
-            
-            // This centers the icon box vertically within the row
             Layout.alignment: Qt.AlignVCenter 
             
             color: "#181825"
@@ -146,21 +180,33 @@ Rectangle {
                 id: iconImg
                 anchors.centerIn: parent
                 
-                // Use standard width/height to avoid the "read-only" error
-                width: parent.width * 0.7 
-                height: parent.height * 0.7
+                // Fixed size for the image to avoid QSize(2, 2) warnings
+                width: Theme.scaled(35)
+                height: Theme.scaled(35)
                 
                 fillMode: Image.PreserveAspectFit
                 asynchronous: true
                 smooth: true
-                onStatusChanged: if (status === Image.Error) tryNextIcon()
+                
+                onStatusChanged: {
+                    if (status === Image.Ready) {
+                         // Quickshell's icon provider returns a 100x100 checkerboard if not found
+                         if (iconImg.implicitWidth === 100 && iconImg.implicitHeight === 100 && source.toString().startsWith("image://icon/")) {
+                             tryNextIcon();
+                         } else if (iconImg.implicitWidth <= 2) {
+                             tryNextIcon();
+                         }
+                    } else if (status === Image.Error) {
+                         tryNextIcon();
+                    }
+                }
             }
         }
 
         // Text Section
         ColumnLayout {
             Layout.fillWidth: true
-            Layout.alignment: Qt.AlignVCenter // Centers the text block relative to the icon
+            Layout.alignment: Qt.AlignVCenter
             spacing: Theme.scaled(2)
 
             Label {

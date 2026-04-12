@@ -39,17 +39,10 @@ PopupWindow {
 
             delegate: NotificationItem {
                 id: delegateRoot
-                notification: model
+                notification: activeNotifications.get(index)
                 Layout.fillWidth: true
                 
-                onAutoDismissed: (id) => {
-                    for (let i = 0; i < activeNotifications.count; i++) {
-                        if (activeNotifications.get(i).id === id) {
-                            activeNotifications.remove(i);
-                            break;
-                        }
-                    }
-                }
+                onAutoDismissed: (id) => NotificationService.removeNotification(id)
             }
 
         }
