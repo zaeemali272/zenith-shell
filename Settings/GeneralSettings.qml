@@ -19,8 +19,8 @@ QtObject {
     property string workspaceDisplayStyle: "numbers" // "dots" or "numbers"
     
     // Quick Settings
-    property int debounceInterval: 500
-    property int hideTimerInterval: 300
+    property int debounceInterval: 200
+    property int hideTimerInterval: 250
     
     // Media settings
     property bool truncateTrackTitle: true

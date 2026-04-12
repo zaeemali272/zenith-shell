@@ -69,7 +69,7 @@ Item {
 
         onEntered: {
             if (QuickSettingsService.qsVisible || CenterState.qsVisible)
-                QuickSettingsService.toggle("network", root.mapToItem(null, 0, 0, root.width, root.height));
+                QuickSettingsService.hoverOpen("network", root.mapToItem(null, 0, 0, root.width, root.height));
         }
 
         RowLayout {

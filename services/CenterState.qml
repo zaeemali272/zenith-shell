@@ -7,21 +7,22 @@ pragma Singleton
 Item {
     id: root
 
+    property var menuRef: null
     property bool qsVisible: false
     property bool isSticky: false
     property bool isHoveringMenu: false
     
     property bool _toggleLocked: false
+
     Timer {
         id: debounceTimer
-        interval: GeneralSettings.debounceInterval
+        interval: 300
         onTriggered: root._toggleLocked = false
     }
 
     onQsVisibleChanged: {
         if (qsVisible) {
-            // Close the other menu if it's open
-            if (typeof QuickSettingsService !== "undefined") QuickSettingsService.close("switch");
+            if (typeof QuickSettingsService !== "undefined") QuickSettingsService.close();
         }
     }
 
@@ -35,15 +36,14 @@ Item {
         interval: GeneralSettings.hideTimerInterval
         onTriggered: {
             if (!isSticky && !isHoveringMenu) {
-                qsVisible = false;
+                close();
             }
         }
     }
 
     function open() {
-        hideTimer.stop();
         isSticky = true;
-        qsVisible = true;
+        if (menuRef) menuRef.visible = true;
     }
 
     function hoverOpen() {
@@ -56,9 +56,9 @@ Item {
         if (_toggleLocked) return;
         _toggleLocked = true;
         debounceTimer.restart();
-
+        
         if (qsVisible) {
-            close("toggle");
+            close();
         } else {
             open();
         }
@@ -74,8 +74,8 @@ Item {
         hideTimer.stop();
     }
 
-    function close(reason = "unknown") {
-        qsVisible = false;
+    function close() {
+        if (menuRef) menuRef.visible = false;
         isSticky = false;
         hideTimer.stop();
     }

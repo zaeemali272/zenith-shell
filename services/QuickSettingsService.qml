@@ -7,6 +7,7 @@ pragma Singleton
 Item {
     id: root
 
+    property var menuRef: null
     property bool qsVisible: false
     property bool isSticky: false 
     property bool isHoveringMenu: false
@@ -14,16 +15,16 @@ Item {
     property rect anchorRect: Qt.rect(0, 0, 0, 0)
     
     property bool _toggleLocked: false
+
     Timer {
         id: debounceTimer
-        interval: GeneralSettings.debounceInterval
+        interval: 300 
         onTriggered: root._toggleLocked = false
     }
 
     onQsVisibleChanged: {
         if (qsVisible) {
-            // Close the other menu if it's open
-            if (typeof CenterState !== "undefined") CenterState.close("switch");
+            if (typeof CenterState !== "undefined") CenterState.close();
         }
     }
 
@@ -37,17 +38,16 @@ Item {
         interval: GeneralSettings.hideTimerInterval
         onTriggered: {
             if (!isSticky && !isHoveringMenu) {
-                qsVisible = false;
+                close();
             }
         }
     }
     
     function open(tab, rect) {
-        hideTimer.stop();
         activeTab = tab;
         anchorRect = rect;
         isSticky = true;
-        qsVisible = true;
+        if (menuRef) menuRef.visible = true;
     }
 
     function hoverOpen(tab, rect) {
@@ -62,7 +62,7 @@ Item {
         debounceTimer.restart();
 
         if (qsVisible && activeTab === tab) {
-            close("toggle");
+            close();
         } else {
             open(tab, rect);
         }
@@ -78,8 +78,8 @@ Item {
         hideTimer.stop();
     }
 
-    function close(reason = "unknown") {
-        qsVisible = false;
+    function close() {
+        if (menuRef) menuRef.visible = false;
         isSticky = false;
         hideTimer.stop();
     }
