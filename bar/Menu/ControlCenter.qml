@@ -41,8 +41,8 @@ PopupWindow {
         return Qt.rect(Math.max(10, Math.min(barWidth - implicitWidth - 10, targetX)), barHeight + 8, 0, 0);
     }
     
-    implicitWidth: 850
-    implicitHeight: 550
+    implicitWidth: Theme.scaled(850)
+    implicitHeight: Theme.scaled(550)
     color: "transparent"
 
     Rectangle {

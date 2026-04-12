@@ -43,8 +43,8 @@ PopupWindow {
         return Qt.rect(barWidth - implicitWidth - 10, barHeight + 10, 0, 0);
     }
 
-    implicitWidth: 650 
-    implicitHeight: 570
+    implicitWidth: Theme.scaled(650) 
+    implicitHeight: Theme.scaled(570)
 
     Rectangle {
         id: mainContent
