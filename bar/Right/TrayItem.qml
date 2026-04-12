@@ -35,42 +35,58 @@ MouseArea {
         width: Theme.iconSize
         height: Theme.iconSize
         fillMode: Image.PreserveAspectFit
+        asynchronous: true
+        smooth: true
+        
+        // --- MODIFIED ICON RESOLUTION ---
         source: {
-            if (!root.item || !root.item.icon)
-                return "";
+            if (!root.item) return ""; // Ensure item exists
 
-            var iconName = String(root.item.icon);
-            // FIX: If the app already provided the full image:// URI or a file path
-            if (iconName.startsWith("image://") || iconName.startsWith("/") || iconName.startsWith("file://"))
-                return iconName;
+            var icon = root.item.icon;
+            var iconName = "";
 
-            // Fallback for raw pixmaps if the ID is missing from the name
-            if (root.item.iconPixmap && !iconName)
+            // Safely get the icon name and check for standard URI/path formats
+            if (icon !== null && icon !== undefined) {
+                iconName = String(icon);
+                // If the app already provided the full image:// URI or a file path
+                if (iconName.startsWith("image://") || iconName.startsWith("/") || iconName.startsWith("file://"))
+                    return iconName;
+            }
+
+            // Fallback for raw pixmaps if the icon name was not provided or not a valid URI/path
+            // This is used if iconName is still empty after the above checks, or if iconPixmap exists.
+            if (root.item.iconPixmap && !iconName) { // iconName will be "" if root.item.icon was null/undefined
                 return "image://qspixmap/" + root.item.id;
+            }
 
             // Standard lookup for simple names like "discord" or "network-vignette"
-            return "image://icon/" + iconName;
+            // This is used if iconName was derived but not a URI/path, or if iconPixmap was not available.
+            if (iconName) { // If iconName has a value from root.item.icon, try the standard lookup.
+                return "image://icon/" + iconName;
+            }
+
+            // If all else fails, return an empty string to avoid rendering issues
+            return "";
         }
-        // If it still fails, show a placeholder instead of a checkerboard
+        
+        // If it still fails to load, try to resolve with Quickshell's helper
         onStatusChanged: {
             if (status === Image.Error) {
-                let iconName = String(root.item ? root.item.icon : "");
-                if (iconName && !iconName.includes("://") && !iconName.startsWith("/")) {
-                    // Try OneUI paths before giving up
-                    let oneUIPath = "file:///usr/share/icons/OneUI/24/actions/" + iconName + ".svg";
-                    if (source.toString() !== oneUIPath) {
-                        source = oneUIPath;
-                        return;
-                    }
-                    let oneUIApp = "file:///usr/share/icons/OneUI/24/apps/" + iconName + ".svg";
-                    if (source.toString() !== oneUIApp) {
-                        source = oneUIApp;
+                // Attempt to use Quickshell's iconPath for a more reliable lookup
+                let iconName = String(root.item && root.item.icon ? root.item.icon : "");
+                if (iconName && !iconName.includes("://") && !iconName.startsWith("/") && !iconName.startsWith("image://")) {
+                    // Only try Quickshell if it's a simple name and not already a path/URI
+                    let quickshellSource = Quickshell.iconPath(iconName);
+                    if (source.toString() !== quickshellSource) {
+                        source = quickshellSource;
                         return;
                     }
                 }
-                console.warn("Failed to load: " + source);
+                // If Quickshell also fails or no iconName, use a generic fallback
+                if (source.toString() !== Quickshell.iconPath("dialog-information")) {
+                    source = Quickshell.iconPath("dialog-information");
+                }
             }
-
         }
     }
 
@@ -81,5 +97,4 @@ MouseArea {
         opacity: 0.3
         visible: trayIcon.status === Image.Error
     }
-
 }
