@@ -1,10 +1,21 @@
 import QtQuick
+import Quickshell
 pragma Singleton
 
 QtObject {
     // =====================================================
-    // ================= HELPER FUNCTIONS ==================
+    // ================= DYNAMIC SCALING ===================
     // =====================================================
+    
+    // We use 1080 as our reference height (1080p)
+    readonly property real referenceHeight: 1080
+    readonly property real screenHeight: Quickshell.screens.length > 0 ? Quickshell.screens[0].height : 1080
+    
+    // Scale factor: e.g., 0.66 for 720p, 1.0 for 1080p, 2.0 for 4K
+    readonly property real scale: screenHeight / referenceHeight
+
+    // Helper to scale values manually if needed
+    function scaled(val) { return Math.round(val * scale); }
 
     // ===== Colors (Catppuccin Mocha inspired) =====
     readonly property color base: "#1e1e2e"
@@ -35,11 +46,11 @@ QtObject {
     readonly property color rosewater: "#f5e0dc"
 
     // ===== Bar =====
-    readonly property int barHeight: 30
-    readonly property int barRadius: 18
-    readonly property int barMarginLeft: 5
-    readonly property int barMarginRight: 5
-    readonly property int barMarginTop: 5
+    readonly property int barHeight: scaled(30)
+    readonly property int barRadius: scaled(18)
+    readonly property int barMarginLeft: scaled(5)
+    readonly property int barMarginRight: scaled(5)
+    readonly property int barMarginTop: scaled(5)
     readonly property int barMarginBottom: 0
     readonly property color barColor: "#00000000"
     readonly property color backgroundColor: mantle
@@ -48,30 +59,30 @@ QtObject {
     readonly property real barOpacity: 0.92
 
     // ===== Workspaces =====
-    readonly property int wsHeight: 10
-    readonly property int wsActiveWidth: 28
-    readonly property int wsInactiveWidth: 10
-    readonly property int wsSpacing: 6
+    readonly property int wsHeight: scaled(10)
+    readonly property int wsActiveWidth: scaled(28)
+    readonly property int wsInactiveWidth: scaled(10)
+    readonly property int wsSpacing: scaled(6)
     readonly property color wsActiveColor: mauve
     readonly property color wsOccupiedColor: lavender
     readonly property color wsEmptyColor: surface1
 
     // ===== Pills =====
-    readonly property int pillHeight: 28
-    readonly property int pillRadius: 14
-    readonly property int pillPadding: 16
-    readonly property int extraPillPadding: 5
+    readonly property int pillHeight: scaled(28)
+    readonly property int pillRadius: scaled(14)
+    readonly property int pillPadding: scaled(16)
+    readonly property int extraPillPadding: scaled(5)
     readonly property color pillColor: "#bd000000"
-    readonly property int pillSpacing: 4
-    readonly property int pillGap: 6
+    readonly property int pillSpacing: scaled(4)
+    readonly property int pillGap: scaled(6)
     readonly property color pillBorderColor: "#ffffff22"
     readonly property int pillBorderWidth: 1
     readonly property int pillHoverBorderWidth: 2
     readonly property color pillHoverColor: surface0
     
     // ===== Typography =====
-    readonly property int fontSize: 13
-    readonly property int iconSize: 14
+    readonly property int fontSize: scaled(13)
+    readonly property int iconSize: scaled(14)
     readonly property string iconFont: "MesloLGS NF"
     readonly property color fontColor: text
     
@@ -79,9 +90,9 @@ QtObject {
     readonly property color menuBackground: "#11111b"
     readonly property color menuBorder: surface0
     readonly property color menuHoverBorder: '#00b4befe'
-    readonly property int menuRadius: 24
-    readonly property int menuPadding: 20
-    readonly property int menuSpacing: 15
+    readonly property int menuRadius: scaled(24)
+    readonly property int menuPadding: scaled(20)
+    readonly property int menuSpacing: scaled(15)
     readonly property color menuActiveTab: blue
     readonly property color menuInactiveTab: "transparent"
     

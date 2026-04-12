@@ -13,21 +13,21 @@ ColumnLayout {
     property var onChange: null
     property color sliderColor: "#89b4fa" // Default to a nice blue
 
-    spacing: 8
+    spacing: Theme.scaled(8)
     Layout.fillWidth: true
 
     // --- Header Section ---
     RowLayout {
-        spacing: 12
+        spacing: Theme.scaled(12)
         Layout.fillWidth: true
 
         Rectangle {
-            width: 38; height: 38; radius: 12
+            width: Theme.scaled(38); height: Theme.scaled(38); radius: Theme.scaled(12)
             color: "#181825"; border.color: "#313244"
             Text {
                 anchors.centerIn: parent
                 text: root.icon; font.family: Theme.iconFont
-                font.pixelSize: 18; color: root.sliderColor
+                font.pixelSize: Theme.scaled(18); color: root.sliderColor
             }
         }
 
@@ -36,12 +36,12 @@ ColumnLayout {
             Text { 
                 text: root.label.toUpperCase()
                 color: "#89b4fa"; font.weight: Font.Black
-                font.pixelSize: 11; font.letterSpacing: 1.5 
+                font.pixelSize: Theme.scaled(11); font.letterSpacing: 1.5 
             }
             Text { 
                 text: root.value + "%"
                 color: "white"; font.family: "JetBrains Mono"
-                font.weight: Font.Bold; font.pixelSize: 13 
+                font.weight: Font.Bold; font.pixelSize: Theme.scaled(13) 
             }
         }
     }
@@ -70,12 +70,12 @@ ColumnLayout {
             x: Math.max(0, Math.min(control.visualPosition * control.availableWidth - width / 2, control.availableWidth - width))
             y: (control.availableHeight - height) / 2
             
-            implicitWidth: 24
-            implicitHeight: 24
-            radius: 12
+            implicitWidth: Theme.scaled(24)
+            implicitHeight: Theme.scaled(24)
+            radius: Theme.scaled(12)
             color: "white"
             border.color: root.sliderColor
-            border.width: 3
+            border.width: Theme.scaled(3)
             
             // Interaction feedback
             scale: control.pressed ? 1.15 : (control.hovered ? 1.05 : 1.0)
@@ -85,7 +85,7 @@ ColumnLayout {
             // Subtle inner dot for that "pro" look
             Rectangle {
                 anchors.centerIn: parent
-                width: 6; height: 6; radius: 3
+                width: Theme.scaled(6); height: Theme.scaled(6); radius: Theme.scaled(3)
                 color: root.sliderColor; opacity: control.pressed ? 1 : 0.5
             }
         }
@@ -96,8 +96,8 @@ ColumnLayout {
             x: control.leftPadding
             y: (control.availableHeight - height) / 2
             width: control.availableWidth
-            height: 12 
-            radius: 6
+            height: Theme.scaled(12) 
+            radius: Theme.scaled(6)
             color: "#181825"
             border.color: "#313244"; border.width: 1
 
@@ -106,7 +106,7 @@ ColumnLayout {
                 width: control.visualPosition * parent.width
                 height: parent.height
                 color: root.sliderColor
-                radius: 6
+                radius: Theme.scaled(6)
 
                 // Smoothly clip the right side of the fill to match handle center
                 layer.enabled: true

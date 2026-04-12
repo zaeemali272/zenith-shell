@@ -15,8 +15,8 @@ PopupWindow {
 
     visible: false
     color: "transparent"
-    implicitWidth: 280
-    implicitHeight: content.implicitHeight + 35
+    implicitWidth: Theme.scaled(280)
+    implicitHeight: content.implicitHeight + Theme.scaled(35)
     anchor.window: anchorItem ? anchorItem.QsWindow.window : null
     anchor.rect: anchorItem ? anchorItem.mapToItem(null, 0, 0, anchorItem.width, anchorItem.height) : Qt.rect(0, 0, 0, 0)
     anchor.edges: Edges.Bottom
