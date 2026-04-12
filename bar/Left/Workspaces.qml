@@ -1,106 +1,85 @@
 import ".."
 import "../.."
 import QtQuick
-import QtQuick.Layouts
-import Qt5Compat.GraphicalEffects
+import QtQuick.Controls
 import Quickshell
 import Quickshell.Hyprland
-import "../../Settings"
 
-Pill {
-    id: workspaceRoot
-    
-    // Use the setting from GeneralSettings
-    readonly property string displayStyle: GeneralSettings.workspaceDisplayStyle
-    
+Item {
+    id: workspaceBar
+    implicitWidth: row.implicitWidth
     implicitHeight: Theme.pillHeight
-    implicitWidth: row.width + (Theme.pillPadding * 2)
-    anchors.verticalCenter: parent.verticalCenter
-    clip: true 
-
-    readonly property HyprlandMonitor monitor: Hyprland.monitorFor(workspaceRoot.QsWindow.window?.screen)
+    
+    readonly property HyprlandMonitor monitor: Hyprland.monitorFor(workspaceBar.QsWindow.window?.screen)
     property var activeWorkspaces: []
-    property int activeIndex: 0
 
-    function update() {
-        let wsList = Hyprland.workspaces.values
-            .filter(ws => ws && ws.id > 0)
+    function updateActiveWorkspaces() {
+        activeWorkspaces = Hyprland.workspaces.values
+            .filter(ws => ws)
             .sort((a, b) => a.id - b.id);
-        activeWorkspaces = wsList;
-        
-        let focusedId = Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : -1;
-        activeIndex = wsList.findIndex(ws => ws.id === focusedId);
-        if (activeIndex === -1) activeIndex = 0;
     }
 
-    Component.onCompleted: update()
-    Connections { target: Hyprland.workspaces; function onValuesChanged() { update(); } }
-    Connections { target: Hyprland; function onFocusedWorkspaceChanged() { update(); } }
+    Component.onCompleted: updateActiveWorkspaces()
 
-    // THE RUNNING INDICATOR (Layer 1)
+    Connections {
+        target: Hyprland.workspaces
+        function onValuesChanged() { updateActiveWorkspaces(); }
+    }
+    Connections {
+        target: Hyprland
+        function onFocusedWorkspaceChanged() { updateActiveWorkspaces(); }
+    }
+    Connections {
+        target: monitor
+        function onActiveWorkspaceChanged() { updateActiveWorkspaces(); }
+    }
+    
+    // Background handling
     Rectangle {
-        id: activeIndicator
-        z: 1 // Lower than the row to not block clicks
-        width: 32; height: parent.height - 8
-        anchors.verticalCenter: parent.verticalCenter
-        radius: Theme.pillRadius - 2
-        color: Theme.activePillColor
-        
-        // Logical X: Tied to the row's position
-        x: row.x + (activeIndex * (26 + row.spacing)) - ((width - 26) / 2)
-        
-        Behavior on x {
-            SpringAnimation { spring: 4; damping: 0.4; mass: 0.8 }
-        }
-
-        // Active ID Text
-        Text {
-            anchors.centerIn: parent
-            text: activeWorkspaces[activeIndex]?.id || ""
-            font.pixelSize: 11; font.bold: true
-            color: Theme.activeTextColor
-        }
+        anchors.fill: row
+        anchors.margins: -Theme.scaled(4)
+        color: Theme.pillColor
+        radius: Theme.pillRadius + Theme.scaled(20)
+        visible: Theme.workspaceBackgroundStyle === "full"
+        z: -1
     }
 
-    // THE TRACK (Layer 2)
     Row {
         id: row
-        spacing: 6 // Reduced spacing
-        anchors.centerIn: parent
-        z: 10 // CRITICAL: Higher than Pill's internal MouseArea to receive clicks
+        spacing: Theme.scaled(Theme.pillSpacing)
+        anchors.verticalCenter: parent.verticalCenter
 
         Repeater {
             model: activeWorkspaces.length
-            delegate: Item {
-                width: 26; height: 26
-                
-                // Content Switcher
-                Rectangle {
-                    visible: workspaceRoot.displayStyle === "dots"
-                    anchors.centerIn: parent
-                    width: 6; height: 6; radius: 3
-                    color: Theme.fontColor || "#ffffff" 
-                    opacity: activeIndex === index ? 0 : 0.5
-                    Behavior on opacity { NumberAnimation { duration: 200 } }
-                }
 
-                Text {
-                    visible: workspaceRoot.displayStyle === "numbers"
-                    anchors.centerIn: parent
-                    text: activeWorkspaces[index].id
-                    font.pixelSize: 10; font.bold: true
-                    color: Theme.fontColor || "#ffffff" 
-                    opacity: activeIndex === index ? 0 : 0.5
-                    Behavior on opacity { NumberAnimation { duration: 200 } }
-                }
+            delegate: Rectangle {
+                width: Theme.scaled(25)
+                implicitHeight: Theme.workspaceBackgroundStyle === "full" ? Theme.scaled(Theme.pillHeight - Theme.scaled(8)) : Theme.scaled(Theme.pillHeight)
+                radius: Theme.pillRadius
+                smooth: true
+
+                property var workspace: activeWorkspaces[index]
+                property bool isOccupied: workspace.windows > 0
+
+                // Fill color logic
+                color: Theme.workspaceBackgroundStyle === "full" ? "transparent" : (workspace.active ? Theme.wsActiveColor : (isOccupied ? Theme.wsOccupiedColor : Theme.wsEmptyColor))
+                border.color: Theme.workspaceBackgroundStyle === "full" ? "transparent" : (workspace.active ? Theme.wsActiveColor : "transparent")
+                border.width: Theme.scaled(1)
 
                 MouseArea {
                     anchors.fill: parent
                     hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        console.log(`[Workspaces] Clicked workspace ${activeWorkspaces[index].id}`)
-                        Hyprland.dispatch(`workspace ${activeWorkspaces[index].id}`)
+                        Hyprland.dispatch(`workspace ${workspace.id}`)
                     }
+                }
+
+                Text {
+                    anchors.centerIn: parent
+                    text: workspace.id.toString()
+                    font.pixelSize: Theme.scaled(12)
+                    color: Theme.workspaceBackgroundStyle === "full" ? (workspace.active ? Theme.wsActiveColor : Theme.text) : (workspace.active ? Theme.wsActiveTextColor : Theme.inactiveTextColor)
                 }
             }
         }
@@ -111,5 +90,6 @@ Pill {
             if (event.angleDelta.y < 0) Hyprland.dispatch(`workspace r+1`)
             else if (event.angleDelta.y > 0) Hyprland.dispatch(`workspace r-1`)
         }
+        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
     }
 }

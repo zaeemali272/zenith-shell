@@ -59,13 +59,15 @@ QtObject {
     readonly property real barOpacity: 0.92
 
     // ===== Workspaces =====
+    readonly property string workspaceBackgroundStyle: "full" // "full" or "pills"
     readonly property int wsHeight: scaled(10)
     readonly property int wsActiveWidth: scaled(28)
     readonly property int wsInactiveWidth: scaled(10)
     readonly property int wsSpacing: scaled(6)
-    readonly property color wsActiveColor: mauve
+    readonly property color wsActiveColor: '#ff5757'
+    readonly property color wsActiveTextColor: '#111111'
     readonly property color wsOccupiedColor: lavender
-    readonly property color wsEmptyColor: surface1
+    readonly property color wsEmptyColor: pillColor
 
     // ===== Pills =====
     readonly property int pillHeight: scaled(28)
