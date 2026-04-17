@@ -92,6 +92,7 @@ Rectangle {
 
         // System directories to scan
         let bases = [
+            "/usr/share/icons/OneUI/symbolic/status/",
             "/usr/share/icons/hicolor/scalable/apps/",
             "/usr/share/icons/hicolor/256x256/apps/",
             "/usr/share/icons/hicolor/128x128/apps/",
@@ -104,25 +105,55 @@ Rectangle {
             "/usr/share/icons/breeze/apps/48/",
             "/usr/share/icons/breeze-dark/apps/48/",
             "/usr/share/icons/hicolor/scalable/status/",
-            "/usr/share/icons/hicolor/48x48/status/"
+            "/usr/share/icons/hicolor/48x48/status/",
+            "/usr/share/icons/OneUI/symbolic/actions/",
+            "/usr/share/icons/OneUI/24/actions/"
         ];
 
-        // 1. First try exactly what the service resolved (image://notification or already resolved iconPath)
+        // 1. First try exactly what the service resolved
         if (notification.appIcon) candidates.push(notification.appIcon);
         
         // 2. Try variations of names via Quickshell provider
         for (let name of names) {
-            candidates.push(Quickshell.iconPath(name));
-            if (!name.endsWith("-bin")) {
-                candidates.push(Quickshell.iconPath(name + "-bin"));
+            // Only use Quickshell.iconPath for non-path names
+            if (!name.includes("/")) {
+                candidates.push(Quickshell.iconPath(name));
+                if (!name.endsWith("-bin")) {
+                    candidates.push(Quickshell.iconPath(name + "-bin"));
+                }
             }
         }
 
         // 3. Try manual file paths
         for (let name of names) {
+            if (name.includes("/")) continue; // Skip if it looks like a path
             for (let base of bases) {
                 candidates.push("file://" + base + name + ".svg");
                 candidates.push("file://" + base + name + ".png");
+                
+                // Specific battery naming variations for OneUI
+                if (name.startsWith("battery-")) {
+                    // Try to match both battery-level-080 and battery-080
+                    if (name.startsWith("battery-level-")) {
+                        let shortName = name.replace("battery-level-", "battery-");
+                        let match = name.match(/battery-level-(\d+)/);
+                        if (match) {
+                            let val = match[1].padStart(3, '0');
+                            let suffix = name.split(match[1])[1];
+                            candidates.push("file://" + base + "battery-" + val + suffix + ".svg");
+                        }
+                        candidates.push("file://" + base + shortName + ".svg");
+                    } else {
+                        // If it's battery-080, try battery-level-80
+                        let match = name.match(/battery-(\d+)/);
+                        if (match) {
+                            let val = parseInt(match[1]);
+                            let suffix = name.split(match[1])[1];
+                            candidates.push("file://" + base + "battery-level-" + val + suffix + ".svg");
+                        }
+                    }
+                }
+                
                 if (!name.endsWith("-bin")) {
                     candidates.push("file://" + base + name + "-bin.png");
                     candidates.push("file://" + base + name + "-bin.svg");
@@ -134,8 +165,8 @@ Rectangle {
         candidates.push(Quickshell.iconPath("dialog-information"));
         candidates.push(Quickshell.iconPath("application-x-executable"));
         
-        // Deduplicate
-        iconCandidates = candidates.filter((v, i, a) => v !== "" && a.indexOf(v) === i);
+        // Deduplicate and filter out empty
+        iconCandidates = candidates.filter((v, i, a) => v && v !== "" && a.indexOf(v) === i);
         currentCandidateIndex = -1;
         tryNextIcon();
     }

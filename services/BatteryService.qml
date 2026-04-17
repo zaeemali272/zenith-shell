@@ -34,8 +34,7 @@ Item {
         }
     }
 
-    function getIconPath(p, s) {
-        const basePath = "/usr/share/icons/OneUI/symbolic/status/";
+    function getIconName(p, s) {
         let name = "";
         if (s === "charging" || s === "full") {
             if (p >= 100) name = "battery-level-100-charged-symbolic";
@@ -62,16 +61,16 @@ Item {
             else if (p >= 10) name = "battery-level-10-symbolic";
             else name = "battery-level-0-symbolic";
         }
-        return basePath + name + ".svg";
+        return name;
     }
 
     function sendNotify(title, msg, urgency) {
         if (updatesReceived < 2 || status === "" || status === "unknown")
             return;
 
-        let iconPath = getIconPath(percentage, status);
+        let iconName = getIconName(percentage, status);
         let u = urgency || "normal";
-        notifyProc.command = ["notify-send", "-u", u, "-a", "Battery", "-i", iconPath, title, msg];
+        notifyProc.command = ["notify-send", "-u", u, "-a", "Battery", "-i", iconName, title, msg];
         notifyProc.running = true;
     }
 
