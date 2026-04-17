@@ -17,14 +17,20 @@ Item {
 
     // Helper to format icon names into various possible system paths
     function getHardcodedPath(iconName) {
-        if (!iconName || iconName.startsWith("/") || iconName.startsWith("image://"))
-            return "";
+        if (!iconName) return "";
+        if (iconName.startsWith("file://") || iconName.startsWith("image://"))
+            return iconName;
+            
+        if (iconName.startsWith("/"))
+            return "file://" + iconName;
 
-        // List of base paths to check if themed lookup fails
-        // We prioritize OneUI since you know they are there
-        const bases = ["/usr/share/icons/OneUI/24/actions/", "/usr/share/icons/OneUI/symbolic/actions/", "/usr/share/icons/Adwaita/symbolic/actions/"];
-        // This is a bit "hacky" but works when the theme index is broken
-        // Note: QML Image can take raw paths.
+        // If it's a battery icon, we know where they are
+        if (iconName.startsWith("battery-")) {
+            // OneUI theme often has multiple names for the same icon
+            // battery-level-X and battery-0X
+            return "file:///usr/share/icons/OneUI/symbolic/status/" + iconName + ".svg";
+        }
+
         return iconName;
     }
 
@@ -119,14 +125,24 @@ Item {
 
             // Priority 1: Raw image or direct path from Quickshell (notif.image)
             if (notif.image && notif.image !== "") {
-                finalIcon = notif.image;
+                if (notif.image.startsWith("/") || notif.image.startsWith("file://")) {
+                    finalIcon = notif.image.startsWith("file://") ? notif.image : "file://" + notif.image;
+                } else {
+                    finalIcon = notif.image;
+                }
             } 
             // Priority 2: Themed icon name (notif.appIcon)
             else if (notif.appIcon && notif.appIcon !== "") {
                 if (notif.appIcon.startsWith("/") || notif.appIcon.startsWith("file://")) {
                     finalIcon = notif.appIcon.startsWith("file://") ? notif.appIcon : "file://" + notif.appIcon;
                 } else {
-                    finalIcon = Quickshell.iconPath(notif.appIcon);
+                    // Try hardcoded path first for known themes like OneUI
+                    let hardPath = root.getHardcodedPath(notif.appIcon);
+                    if (hardPath !== notif.appIcon) {
+                        finalIcon = hardPath;
+                    } else {
+                        finalIcon = Quickshell.iconPath(notif.appIcon);
+                    }
                 }
             }
             
