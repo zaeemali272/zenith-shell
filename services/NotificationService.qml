@@ -102,13 +102,11 @@ Item {
 
             // Duplicate Filtering
             let currentKey = notif.summary + "|" + notif.body + "|" + notif.appName;
-            if (notif.appName !== "Battery") {
-                for (let i = 0; i < historyModel.count; i++) {
-                    let item = historyModel.get(i);
-                    if (item.summary === notif.summary && item.body === notif.body && item.appName === notif.appName) {
-                        notif.dismiss();
-                        return ;
-                    }
+            for (let i = 0; i < historyModel.count; i++) {
+                let item = historyModel.get(i);
+                if (item.summary === notif.summary && item.body === notif.body && item.appName === notif.appName) {
+                    notif.dismiss();
+                    return ;
                 }
             }
             root.lastNotifKey = currentKey;

@@ -10,7 +10,19 @@ Rectangle {
     id: root
 
     property var notification: null
-    readonly property bool hovered: mainMouseArea.containsMouse || dismissMouse.containsMouse
+    
+    // Stability: Debounced hovered state
+    property bool realHovered: false
+    Timer {
+        id: unhoverTimer
+        interval: 150
+        onTriggered: {
+            if (!mainMouseArea.containsMouse && !dismissMouse.containsMouse) {
+                root.realHovered = false;
+                autoDismissTimer.restart();
+            }
+        }
+    }
 
     signal autoDismissed(real id)
 
@@ -26,8 +38,8 @@ Rectangle {
 
     // --- ANIMATIONS ---
     opacity: 0
-    scale: 0.95
-    transform: Translate { id: trans; x: 20 }
+    scale: 0.90
+    transform: Translate { id: trans; x: 60 }
 
     Component.onCompleted: appearAnim.start()
 
@@ -45,13 +57,12 @@ Rectangle {
     // --- AUTO DISMISS LOGIC ---
     Timer {
         id: autoDismissTimer
-        interval: 8000
+        interval: 4000
         running: !!notification
-        repeat: true
+        repeat: false
         onTriggered: {
-            if (!root.hovered) {
+            if (!root.realHovered) {
                 root.autoDismissed(root.notification.id);
-                stop();
             }
         }
     }
@@ -172,10 +183,18 @@ Rectangle {
     MouseArea {
         id: mainMouseArea
         anchors.fill: parent
-        anchors.rightMargin: 44
         cursorShape: Qt.PointingHandCursor
         hoverEnabled: true
         z: 1
+        
+        onEntered: {
+            unhoverTimer.stop();
+            root.realHovered = true;
+            autoDismissTimer.stop();
+        }
+        
+        onExited: unhoverTimer.restart();
+
         onClicked: {
             if (notification?.originalNotif) {
                 notification.originalNotif.invokeAction("default");
@@ -254,8 +273,8 @@ Rectangle {
                 color: "white"
                 font.bold: true
                 font.pixelSize: Theme.scaled(13)
-                elide: mainMouseArea.containsMouse ? Text.ElideNone : Text.ElideRight
-                wrapMode: mainMouseArea.containsMouse ? Text.WordWrap : Text.NoWrap
+                elide: root.realHovered ? Text.ElideNone : Text.ElideRight
+                wrapMode: root.realHovered ? Text.Wrap : Text.NoWrap
                 Layout.fillWidth: true
             }
 
@@ -263,11 +282,18 @@ Rectangle {
                 text: notification ? (notification.body || "") : ""
                 color: "#a6adc8"
                 font.pixelSize: Theme.scaled(11)
-                wrapMode: Text.WordWrap
-                elide: mainMouseArea.containsMouse ? Text.ElideNone : Text.ElideRight
-                maximumLineCount: mainMouseArea.containsMouse ? 20 : 2
+                wrapMode: root.realHovered ? Text.Wrap : Text.NoWrap
+                elide: root.realHovered ? Text.ElideNone : Text.ElideRight
+                maximumLineCount: root.realHovered ? 20 : 2
                 Layout.fillWidth: true
             }
+        }
+
+        // Dynamic spacer to push text left when dismiss button appears
+        Item {
+            Layout.preferredWidth: root.realHovered ? Theme.scaled(42) : Theme.scaled(10)
+            Layout.minimumWidth: Layout.preferredWidth
+            Behavior on Layout.preferredWidth { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
         }
     }
 
@@ -279,11 +305,15 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         anchors.rightMargin: Theme.scaled(10)
         z: 100
+        visible: root.realHovered
 
         Rectangle {
             anchors.fill: parent
             radius: Theme.scaled(8)
-            color: dismissMouse.containsMouse ? "#313244" : "transparent"
+            // Solid background highlight when hovering the button itself to obscure text
+            color: dismissMouse.containsMouse ? "#11111b" : "transparent"
+            border.color: dismissMouse.containsMouse ? "#313244" : "transparent"
+            border.width: 1
             Behavior on color { ColorAnimation { duration: 150 } }
             
             Text {
@@ -298,6 +328,11 @@ Rectangle {
             id: dismissMouse
             anchors.fill: parent
             hoverEnabled: true
+            onEntered: {
+                unhoverTimer.stop();
+                root.realHovered = true;
+            }
+            onExited: unhoverTimer.restart();
             onClicked: {
                 if (notification) {
                     notification.originalNotif?.dismiss();
