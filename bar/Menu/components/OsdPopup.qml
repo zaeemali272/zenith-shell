@@ -86,6 +86,16 @@ PopupWindow {
                 Layout.fillWidth: true
                 from: 0; to: 1
                 value: osdWindow.osdValue
+                hoverEnabled: true
+
+                // Reset all paddings for pixel-perfect alignment
+                padding: 0
+                leftPadding: 0
+                rightPadding: 0
+                topPadding: 0
+                bottomPadding: 0
+
+                readonly property real handleWidth: 14
                 
                 // --- Re-enabled functionality ---
                 onMoved: {
@@ -95,8 +105,10 @@ PopupWindow {
                 }
 
                 background: Rectangle {
-                    implicitHeight: 6
-                    width: osdSlider.availableWidth
+                    x: osdSlider.leftPadding + osdSlider.handleWidth / 2
+                    y: osdSlider.topPadding + (osdSlider.availableHeight - height) / 2
+                    implicitHeight: 10
+                    width: osdSlider.availableWidth - osdSlider.handleWidth
                     radius: 3; color: "#181825"
                     Rectangle {
                         width: osdSlider.visualPosition * parent.width
@@ -106,12 +118,14 @@ PopupWindow {
                     }
                 }
 
-                // Added handle back so you can actually grab it
                 handle: Rectangle {
                     x: osdSlider.leftPadding + osdSlider.visualPosition * (osdSlider.availableWidth - width)
-                    y: osdSlider.topPadding + osdSlider.availableHeight / 2 - height / 2
-                    implicitWidth: 14; implicitHeight: 14; radius: 7
+                    y: osdSlider.topPadding + (osdSlider.availableHeight - height) / 2
+                    implicitWidth: osdSlider.handleWidth; implicitHeight: 14; radius: 7
                     color: "white"; border.color: "#313244"
+
+                    scale: osdSlider.pressed ? 1.2 : (osdSlider.hovered ? 1.1 : 1.0)
+                    Behavior on scale { NumberAnimation { duration: 100 } }
                 }
             }
         }

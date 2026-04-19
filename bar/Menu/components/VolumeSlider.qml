@@ -53,10 +53,14 @@ ColumnLayout {
         from: 0; to: 100
         value: root.value
         
-        // Reset paddings for pixel-perfect math
+        // Reset all paddings for pixel-perfect alignment
         padding: 0
         leftPadding: 0
         rightPadding: 0
+        topPadding: 0
+        bottomPadding: 0
+
+        readonly property real handleWidth: Theme.scaled(24)
 
         onMoved: {
             const v = Math.round(value);
@@ -65,14 +69,12 @@ ColumnLayout {
 
         // --- THE HANDLE ---
         handle: Rectangle {
-            // MATH: Center the handle on the visual position, 
-            // then clamp it so it doesn't clip out of the slider bounds.
-            x: Math.max(0, Math.min(control.visualPosition * control.availableWidth - width / 2, control.availableWidth - width))
-            y: (control.availableHeight - height) / 2
+            x: control.leftPadding + control.visualPosition * (control.availableWidth - width)
+            y: control.topPadding + (control.availableHeight - height) / 2
             
-            implicitWidth: Theme.scaled(24)
-            implicitHeight: Theme.scaled(24)
-            radius: Theme.scaled(12)
+            implicitWidth: control.handleWidth
+            implicitHeight: control.handleWidth
+            radius: width / 2
             color: "white"
             border.color: root.sliderColor
             border.width: Theme.scaled(3)
@@ -93,9 +95,9 @@ ColumnLayout {
         // --- THE TRACK ---
         background: Rectangle {
             id: bg
-            x: control.leftPadding
-            y: (control.availableHeight - height) / 2
-            width: control.availableWidth
+            x: control.leftPadding + control.handleWidth / 2
+            y: control.topPadding + (control.availableHeight - height) / 2
+            width: control.availableWidth - control.handleWidth
             height: Theme.scaled(12) 
             radius: Theme.scaled(6)
             color: "#181825"
