@@ -71,6 +71,7 @@ Item {
                 Text {
                     text: root.batteryIcon(batPercent, batState, acOnline)
                     font.family: Theme.iconFont
+                    font.pixelSize: Theme.iconSize
                     color: root.batteryColor(batPercent, batState, acOnline)
                     Layout.alignment: Qt.AlignVCenter
                 }
@@ -80,7 +81,7 @@ Item {
                     color: root.batteryColor(batPercent, batState, acOnline)
                     font.pixelSize: Theme.fontSize
                     font.family: "JetBrains Mono"
-                    Layout.preferredWidth: 35
+                    Layout.preferredWidth: Theme.scaled(35)
                     horizontalAlignment: Text.AlignHCenter
                 }
             }

@@ -3,17 +3,18 @@ import QtQuick
 import QtQuick.Controls 2.15
 import QtQuick.Layouts
 import Quickshell
+import "../../.."
 
 PopupWindow {
     id: popupStack
 
     anchor.window: bar
     anchor.edges: Edges.Top | Edges.Right
-    anchor.rect.y: bar.height + (osdPopup.visible ? 105 : 10)
-    anchor.rect.x: bar.width - implicitWidth - 5
+    anchor.rect.y: bar.height + (osdPopup.visible ? Theme.scaled(105) : Theme.scaled(10))
+    anchor.rect.x: bar.width - implicitWidth - Theme.scaled(5)
 
     // Width and height logic
-    implicitWidth: 350
+    implicitWidth: Theme.scaled(370)
     implicitHeight: mainColumn.implicitHeight
     visible: activeNotifications.count > 0
     color: "transparent"
@@ -25,8 +26,8 @@ PopupWindow {
     ColumnLayout {
         id: mainColumn
 
-        width: 350
-        spacing: 10
+        width: Theme.scaled(370)
+        spacing: Theme.scaled(10)
         // FIX: Ensure notifications are centered horizontally in the popup window
         anchors.horizontalCenter: parent.horizontalCenter
 

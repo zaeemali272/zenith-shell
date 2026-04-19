@@ -21,6 +21,7 @@ Item {
     property string batPath: ""
     property string acPath: ""
     property string lastStatus: ""
+    property bool lastAcState: false
     property int lastThreshold: 100
     property int updatesReceived: 0
     property string timeRemaining: "Calculating..."
@@ -74,6 +75,22 @@ Item {
         notifyProc.running = true;
     }
 
+    onAcOnlineChanged: {
+        if (updatesReceived < 2) {
+            lastAcState = acOnline;
+            return;
+        }
+
+        if (acOnline === lastAcState) return;
+
+        if (acOnline) {
+            sendNotify("Power Connected", "Finally, I can breathe again. Thanks for the juice.");
+        } else {
+            sendNotify("Power Disconnected", "Running Wild. Hope you're near an outlet.");
+        }
+        lastAcState = acOnline;
+    }
+
     onStatusChanged: {
         let s = status.toLowerCase().trim();
         if (updatesReceived < 2) {
@@ -85,13 +102,6 @@ Item {
         }
 
         if (s === lastStatus || s === "unknown" || s === "") return;
-
-        // Triggers for "Conservative/Limit" states as well
-        if (s === "charging" || (s === "full" && lastStatus === "discharging") || (s === "not charging" && lastStatus === "discharging")) {
-            sendNotify("Power Connected", "Finally, I can breathe again. Thanks for the juice.");
-        } else if (s === "discharging") {
-            sendNotify("Power Disconnected", "Running Wild. Hope you're near an outlet.");
-        }
         lastStatus = s;
     }
 

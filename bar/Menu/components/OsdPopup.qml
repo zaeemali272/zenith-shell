@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Controls 2.15
 import QtQuick.Layouts
 import Quickshell
+import "../../.."
 
 PopupWindow {
     id: osdWindow
@@ -12,11 +13,11 @@ PopupWindow {
 
     anchor.window: bar
     anchor.edges: Edges.Top | Edges.Right
-    anchor.rect.y: bar.height + 11
-    anchor.rect.x: bar.width - implicitWidth - 7
+    anchor.rect.y: bar.height + Theme.scaled(11)
+    anchor.rect.x: bar.width - implicitWidth - Theme.scaled(7)
 
-    implicitWidth: 350
-    implicitHeight: 85
+    implicitWidth: Theme.scaled(370)
+    implicitHeight: Theme.scaled(85)
     // Window stays visible if timer is running OR if the mouse is hovering/pressing
     visible: osdTimer.running || content.opacity > 0 || mainMouseArea.containsMouse
     color: "transparent"
@@ -25,7 +26,7 @@ PopupWindow {
         id: content
         anchors.fill: parent
         color: "#11111b"
-        radius: 13
+        radius: Theme.scaled(13)
         border.color: "#313244"
         border.width: 1
         // Fade logic: Stay visible on hover
@@ -42,19 +43,19 @@ PopupWindow {
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 18
-            spacing: 8
+            anchors.margins: Theme.scaled(18)
+            spacing: Theme.scaled(8)
             z: 2 // Keep content above mouse area
 
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 12
+                spacing: Theme.scaled(12)
 
                 Rectangle {
-                    width: 32; height: 32; radius: 8; color: "#181825"
+                    width: Theme.scaled(32); height: Theme.scaled(32); radius: Theme.scaled(8); color: "#181825"
                     Text {
                         anchors.centerIn: parent
-                        font.pixelSize: 18
+                        font.pixelSize: Theme.scaled(18)
                         color: (osdValue <= 0) ? "#f38ba8" : (osdType === "volume" && osdValue > 1.0 ? "#fab387" : "#a6e3a1")
                         text: {
                             if (osdType === "brightness") {
@@ -71,13 +72,13 @@ PopupWindow {
 
                 Text {
                     text: osdType.toUpperCase()
-                    color: "#89b4fa"; font.weight: Font.Black; font.pixelSize: 12; font.letterSpacing: 2
+                    color: "#89b4fa"; font.weight: Font.Black; font.pixelSize: Theme.scaled(12); font.letterSpacing: 2
                     Layout.fillWidth: true
                 }
 
                 Text {
                     text: Math.round(osdValue * 100) + "%"
-                    color: "white"; font.family: "JetBrains Mono"; font.weight: Font.Bold; font.pixelSize: 13
+                    color: "white"; font.family: "JetBrains Mono"; font.weight: Font.Bold; font.pixelSize: Theme.scaled(13)
                 }
             }
 
@@ -95,7 +96,7 @@ PopupWindow {
                 topPadding: 0
                 bottomPadding: 0
 
-                readonly property real handleWidth: 14
+                readonly property real handleWidth: Theme.scaled(14)
                 
                 // --- Re-enabled functionality ---
                 onMoved: {
@@ -107,24 +108,24 @@ PopupWindow {
                 background: Rectangle {
                     x: osdSlider.leftPadding + osdSlider.handleWidth / 2
                     y: osdSlider.topPadding + (osdSlider.availableHeight - height) / 2
-                    implicitHeight: 10
+                    implicitHeight: Theme.scaled(10)
                     width: osdSlider.availableWidth - osdSlider.handleWidth
-                    radius: 3; color: "#181825"
+                    radius: Theme.scaled(3); color: "#181825"
                     Rectangle {
                         width: osdSlider.visualPosition * parent.width
                         height: parent.height
                         color: osdValue > 1.0 ? "#fab387" : "#a6e3a1"
-                        radius: 30
+                        radius: Theme.scaled(30)
                     }
                 }
 
                 handle: Rectangle {
                     x: osdSlider.leftPadding + osdSlider.visualPosition * (osdSlider.availableWidth - width)
                     y: osdSlider.topPadding + (osdSlider.availableHeight - height) / 2
-                    implicitWidth: osdSlider.handleWidth; implicitHeight: 14; radius: 7
+                    implicitWidth: osdSlider.handleWidth; implicitHeight: Theme.scaled(14); radius: width / 2
                     color: "white"; border.color: "#313244"
 
-                    scale: osdSlider.pressed ? 1.2 : (osdSlider.hovered ? 1.1 : 1.0)
+                    scale: osdSlider.pressed ? 1.3 : (osdSlider.hovered ? 1.2 : 1.1)
                     Behavior on scale { NumberAnimation { duration: 100 } }
                 }
             }
