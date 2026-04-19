@@ -120,7 +120,7 @@ Rectangle {
                 color: "#cdd6f4"; font.bold: true; font.pixelSize: Theme.scaled(13); elide: Text.ElideRight; Layout.fillWidth: true
             }
 
-            ColumnLayout {
+                ColumnLayout {
                 Layout.fillWidth: true; spacing: 0
                 Slider {
                     id: posSlider; Layout.fillWidth: true; 
@@ -128,17 +128,28 @@ Rectangle {
                     from: 0; to: (player && player.length > 0) ? player.length : 100
                     value: mprisPlayer.currentPos
                     onMoved: { if(player) player.position = value }
+
+                    padding: 0
+                    leftPadding: 0
+                    rightPadding: 0
+                    topPadding: 0
+                    bottomPadding: 0
+
+                    readonly property real handleWidth: Theme.scaled(12)
                     
                     background: Rectangle {
-                        y: parent.height/2 - Theme.scaled(3); height: Theme.scaled(6); width: parent.width; radius: Theme.scaled(3); color: "#313244"
+                        x: posSlider.leftPadding + posSlider.handleWidth / 2
+                        y: posSlider.topPadding + (posSlider.availableHeight - height) / 2
+                        height: Theme.scaled(6); width: posSlider.availableWidth - posSlider.handleWidth; radius: Theme.scaled(3); color: "#313244"
                         Rectangle { 
                             width: posSlider.visualPosition * parent.width; height: Theme.scaled(6); 
                             color: "#89b4fa"; radius: Theme.scaled(3) 
                         }
                     }
                     handle: Rectangle {
-                        x: posSlider.visualPosition * (posSlider.availableWidth - Theme.scaled(12)); y: parent.height/2 - Theme.scaled(6)
-                        width: Theme.scaled(12); height: Theme.scaled(12); radius: Theme.scaled(6); color: "#f5e0dc"
+                        x: posSlider.leftPadding + posSlider.visualPosition * (posSlider.availableWidth - width)
+                        y: posSlider.topPadding + (posSlider.availableHeight - height) / 2
+                        width: posSlider.handleWidth; height: Theme.scaled(12); radius: Theme.scaled(6); color: "#f5e0dc"
                         visible: posSlider.hovered || posSlider.pressed
                     }
                 }
