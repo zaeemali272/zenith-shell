@@ -20,11 +20,15 @@ Rectangle {
     implicitHeight: Theme.scaled(110)
 
     // --- State & Logic ---
-    property var player: {
+    property var player: null
+    
+    function findActivePlayer() {
         let active = Mpris.players.values.find((p) => p.playbackState === MprisPlaybackState.Playing);
         return active ? active : (Mpris.players.values.length > 0 ? Mpris.players.values[0] : null);
     }
-    
+
+    Component.onCompleted: player = findActivePlayer()
+
     property real currentPos: 0
     property string currentTrackId: ""
     property bool isResetting: false
@@ -50,10 +54,21 @@ Rectangle {
     Instantiator {
         model: Mpris.players.values
         onObjectAdded: (index, obj) => {
+            if (obj.playbackState === MprisPlaybackState.Playing) {
+                mprisPlayer.player = obj;
+            }
             obj.playbackStateChanged.connect(() => {
-                if (obj.playbackState === MprisPlaybackState.Playing)
+                if (obj.playbackState === MprisPlaybackState.Playing) {
                     mprisPlayer.player = obj;
+                } else if (mprisPlayer.player === obj) {
+                    mprisPlayer.player = findActivePlayer();
+                }
             });
+        }
+        onObjectRemoved: (index, obj) => {
+            if (mprisPlayer.player === obj) {
+                mprisPlayer.player = findActivePlayer();
+            }
         }
     }
 
