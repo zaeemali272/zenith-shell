@@ -1,9 +1,0 @@
-fix netspeed widget
-add power/battery widget
-add power profiles
-make App + Search + Workspace menu like gnome
-change/redesign tray menu
-setup matugen to get color scheme/pallete
-add a login prompt on boot (optional)
-impreve boot time(systemd-analyze critical-chain)
-

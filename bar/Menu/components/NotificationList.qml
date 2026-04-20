@@ -73,6 +73,7 @@ Flickable {
                 delegate: NotificationItem {
                     notification: NotificationService.notifications.get(index)
                     Layout.fillWidth: true
+                    enableAutoDismiss: false
                 }
             }
         }

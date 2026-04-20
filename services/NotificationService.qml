@@ -63,6 +63,10 @@ Item {
         root.notificationDismissed(notifId);
     }
 
+    function dismissNotification(notifId) {
+        root.notificationDismissed(notifId);
+    }
+
     Timer {
         id: duplicateResetTimer
 
