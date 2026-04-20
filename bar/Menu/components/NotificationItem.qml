@@ -10,6 +10,7 @@ Rectangle {
     id: root
 
     property var notification: null
+    property bool enableAutoDismiss: true
     
     // Stability: Debounced hovered state
     property bool realHovered: false
@@ -58,7 +59,7 @@ Rectangle {
     Timer {
         id: autoDismissTimer
         interval: 4000
-        running: !!notification
+        running: !!notification && enableAutoDismiss
         repeat: false
         onTriggered: {
             if (!root.realHovered) {
@@ -199,7 +200,7 @@ Rectangle {
             if (notification?.originalNotif) {
                 notification.originalNotif.invokeAction("default");
                 notification.originalNotif.dismiss();
-                NotificationService.removeNotification(notification.id);
+                NotificationService.dismissNotification(notification.id);
             }
         }
     }

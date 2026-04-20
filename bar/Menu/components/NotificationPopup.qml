@@ -43,7 +43,7 @@ PopupWindow {
                 notification: activeNotifications.get(index)
                 Layout.fillWidth: true
                 
-                onAutoDismissed: (id) => NotificationService.removeNotification(id)
+                onAutoDismissed: (id) => NotificationService.dismissNotification(id)
             }
 
         }
