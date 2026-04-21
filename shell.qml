@@ -5,6 +5,7 @@ import "bar/"
 import "bar/Menu"
 import "bar/Menu/components"
 import "services/"
+import "windows" as Windows
 
 Scope {
 // We need to reference both the Battery and the Notification services

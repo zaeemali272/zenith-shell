@@ -1,6 +1,6 @@
+pragma Singleton
 import QtQuick
 import Quickshell
-pragma Singleton
 
 QtObject {
     // =====================================================
@@ -16,6 +16,9 @@ QtObject {
 
     // Helper to scale values manually if needed
     function scaled(val) { return Math.round(val * scale); }
+    
+    
+    readonly property int appMenuCol: 6
 
     // ===== Colors (Catppuccin Mocha inspired) =====
     readonly property color base: "#1e1e2e"

@@ -1,27 +1,33 @@
 #!/bin/bash
 
 # Define paths
-# Get the directory where the script is stored
 SHELL_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export ZENITH_ROOT="$SHELL_DIR"
 LOG_FILE="$SHELL_DIR/zenith.log"
 
+# Set QML import paths
+export QML_IMPORT_PATH="$SHELL_DIR"
+export QML2_IMPORT_PATH="$SHELL_DIR"
+
 case "$1" in
     wallpaperSelector)
-        # Toggle logic: if it's already running, kill it and exit
-        if pgrep -f "quickshell --path $SHELL_DIR/windows/WallpaperWindow.qml" > /dev/null; then
-            pkill -f "quickshell --path $SHELL_DIR/windows/WallpaperWindow.qml"
-            echo "[$(date +%T)] Wallpaper Selector closed via toggle" >> "$LOG_FILE"
+        if pgrep -f "quickshell.*windows/WallpaperWindow.qml" > /dev/null; then
+            pkill -f "quickshell.*windows/WallpaperWindow.qml"
             exit 0
         fi
-
-        # Otherwise, launch it
-        echo "[$(date +%T)] Launching Wallpaper Selector..." >> "$LOG_FILE"
-        quickshell --path "$SHELL_DIR/windows/WallpaperWindow.qml" >> "$LOG_FILE" 2>&1
+        quickshell -p "$SHELL_DIR/windows/WallpaperWindow.qml" >> "$LOG_FILE" 2>&1 &
         ;;
-    
+
+    overview)
+        if pgrep -f "quickshell.*windows/Overview.qml" > /dev/null; then
+            pkill -f "quickshell.*windows/Overview.qml"
+            exit 0
+        fi
+        quickshell -p "$SHELL_DIR/windows/Overview.qml" >> "$LOG_FILE" 2>&1 &
+        ;;
+
     *)
-        echo "Usage: $0 {wallpaperSelector}"
+        echo "Usage: $0 {wallpaperSelector|overview}"
         exit 1
         ;;
 esac

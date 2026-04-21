@@ -1,3 +1,5 @@
-singleton Theme theme.qml
-singleton NotificationService 1.0 services/NotificationService.qml
-singleton CenterState 1.0 services/CenterState.qml
+singleton Theme Theme.qml
+Overview windows/Overview.qml
+WorkspaceView windows/components/WorkspaceView.qml
+AppMenu windows/components/AppMenu.qml
+SearchBar windows/components/SearchBar.qml
