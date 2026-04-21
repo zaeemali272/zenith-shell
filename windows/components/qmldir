@@ -1,0 +1,3 @@
+WorkspaceView WorkspaceView.qml
+AppMenu AppMenu.qml
+SearchBar SearchBar.qml
