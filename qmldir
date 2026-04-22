@@ -1,4 +1,13 @@
 singleton Theme Theme.qml
+singleton IconsFetcher windows/IconsFetcher.qml
+singleton NotificationService services/NotificationService.qml
+singleton CenterState services/CenterState.qml
+singleton BatteryService services/BatteryService.qml
+singleton VolumeService services/VolumeService.qml
+singleton WifiService services/WifiService.qml
+singleton BluetoothService services/BluetoothService.qml
+singleton PowerProfileService services/PowerProfileService.qml
+singleton QuickSettingsService services/QuickSettingsService.qml
 Overview windows/Overview.qml
 WorkspaceView windows/components/WorkspaceView.qml
 AppMenu windows/components/AppMenu.qml

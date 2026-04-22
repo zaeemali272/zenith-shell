@@ -4,8 +4,8 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
+import "../" as Root
 import "components"
-import ".." as Root
 
 PanelWindow {
     id: win
@@ -75,11 +75,11 @@ PanelWindow {
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.topMargin: (Root.Theme && Root.Theme.scaled) ? Root.Theme.scaled(15) : 15
-            anchors.bottomMargin: (Root.Theme && Root.Theme.scaled) ? Root.Theme.scaled(20) : 20
-            anchors.leftMargin: (Root.Theme && Root.Theme.scaled) ? Root.Theme.scaled(100) : 100
-            anchors.rightMargin: (Root.Theme && Root.Theme.scaled) ? Root.Theme.scaled(100) : 100
-            spacing: (Root.Theme && Root.Theme.scaled) ? Root.Theme.scaled(20) : 20
+            anchors.topMargin: Root.Theme.scaled ? Root.Theme.scaled(15) : 15
+            anchors.bottomMargin: Root.Theme.scaled ? Root.Theme.scaled(20) : 20
+            anchors.leftMargin: Root.Theme.scaled ? Root.Theme.scaled(100) : 100
+            anchors.rightMargin: Root.Theme.scaled ? Root.Theme.scaled(100) : 100
+            spacing: Root.Theme.scaled ? Root.Theme.scaled(20) : 20
 
             // Search Bar
             SearchBar {
@@ -92,7 +92,7 @@ PanelWindow {
             WorkspaceView {
                 id: workspaceView
                 Layout.fillWidth: true
-                Layout.preferredHeight: (Root.Theme && Root.Theme.scaled) ? Root.Theme.scaled(250) : 250
+                Layout.preferredHeight: Root.Theme.scaled ? Root.Theme.scaled(250) : 250
             }
 
             // App Grid
