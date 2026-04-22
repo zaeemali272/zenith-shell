@@ -1,9 +1,9 @@
-singleton NotificationService 1.0 NotificationService.qml
-singleton CenterState 1.0 CenterState.qml
-singleton BatteryService 1.0 BatteryService.qml
-singleton VolumeService 1.0 VolumeService.qml
-singleton WifiService 1.0 WifiService.qml
-singleton BluetoothService 1.0 BluetoothService.qml
-singleton PowerProfileService 1.0 PowerProfileService.qml
-singleton QuickSettingsService 1.0 QuickSettingsService.qml
-singleton IconsFetcher 1.0 IconsFetcher.qml
+IconsFetcher IconsFetcher.qml
+NotificationService NotificationService.qml
+CenterState CenterState.qml
+BatteryService BatteryService.qml
+VolumeService VolumeService.qml
+WifiService WifiService.qml
+BluetoothService BluetoothService.qml
+PowerProfileService PowerProfileService.qml
+QuickSettingsService QuickSettingsService.qml

@@ -3,17 +3,18 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
-import "../../" as Root
-import "../../services" as Services
+import "../../" as Shell
+import ".." as Windows
 
 Item {
     id: root
-    implicitHeight: (Root.Theme && Root.Theme.scaled) ? Root.Theme.scaled(200) : 200
+    implicitHeight: (Shell.Theme && Shell.Theme.scaled) ? Shell.Theme.scaled(200) : 200
     
     property var activeWorkspaces: []
     property string currentWallpaper: ""
 
-    // Read wallpaper path reliably using cat via Process
+    onVisibleChanged: if (visible) updateWorkspaces()
+
     Process {
         id: wallpaperReader
         command: ["cat", Quickshell.env("HOME") + "/.config/current_wallpaper.txt"]
@@ -63,8 +64,8 @@ Item {
                 Layout.preferredWidth: 280
                 Layout.preferredHeight: 160
                 radius: 16
-                color: (Root.Theme && Root.Theme.mantle) ? Root.Theme.mantle : "#181825"
-                border.color: modelData.active ? ((Root.Theme && Root.Theme.mauve) ? Root.Theme.mauve : "#cba6f7") : "transparent"
+                color: (Shell.Theme && Shell.Theme.mantle) ? Shell.Theme.mantle : "#181825"
+                border.color: modelData.active ? ((Shell.Theme && Shell.Theme.mauve) ? Shell.Theme.mauve : "#cba6f7") : "transparent"
                 border.width: 2
                 
                 readonly property var workspace: modelData
@@ -74,12 +75,11 @@ Item {
                     anchors.margins: 8
                     spacing: 6
 
-                    // Workspace Preview with Wallpaper
                     Rectangle {
                         id: previewArea
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        color: (Root.Theme && Root.Theme.crust) ? Root.Theme.crust : "#11111b"
+                        color: (Shell.Theme && Shell.Theme.crust) ? Shell.Theme.crust : "#11111b"
                         radius: 12
                         clip: true
 
@@ -91,13 +91,13 @@ Item {
                             opacity: 0.4
                         }
 
-                        // Windows / App Icons
                         Repeater {
                             model: {
                                 if (!workspace || !workspace.toplevels) return 0;
                                 return workspace.toplevels.values || workspace.toplevels;
                             }
                             delegate: Rectangle {
+                                id: winRect
                                 readonly property var win: modelData
                                 readonly property var mon: workspace.monitor || { width: 1920, height: 1080, x: 0, y: 0 }
                                 
@@ -108,45 +108,55 @@ Item {
 
                                 x: ((rawX - (mon.x || 0)) / mon.width) * previewArea.width
                                 y: ((rawY - (mon.y || 0)) / mon.height) * previewArea.height
-                                width: Math.max(20, (rawW / mon.width) * previewArea.width)
-                                height: Math.max(20, (rawH / mon.height) * previewArea.height)
+                                width: Math.max(40, (rawW / mon.width) * previewArea.width)
+                                height: Math.max(40, (rawH / mon.height) * previewArea.height)
                                 
-                                color: (Root.Theme && Root.Theme.surface0) ? Root.Theme.surface0 : "#313244"
-                                radius: 4
-                                border.color: (Root.Theme && Root.Theme.surface1) ? Root.Theme.surface1 : "#45475a"
+                                color: (Shell.Theme && Shell.Theme.surface0) ? Shell.Theme.surface0 : "#313244"
+                                radius: 8
+                                border.color: win.active ? ((Shell.Theme && Shell.Theme.mauve) ? Shell.Theme.mauve : "#cba6f7") : ((Shell.Theme && Shell.Theme.surface1) ? Shell.Theme.surface1 : "#45475a")
                                 border.width: 1
-                                opacity: 0.9
+                                opacity: 0.95
 
                                 ColumnLayout {
-                                    anchors.centerIn: parent
-                                    width: parent.width * 0.9
-                                    height: parent.height * 0.9
-                                    spacing: 2
+                                    anchors.fill: parent
+                                    anchors.margins: 6
+                                    spacing: 4
 
                                     Image {
+                                        id: appIcon
                                         Layout.alignment: Qt.AlignHCenter
-                                        Layout.preferredWidth: Math.min(parent.width, 32)
-                                        Layout.preferredHeight: Math.min(parent.height * 0.6, 32)
-                                        source: Services.IconsFetcher.getIconPath(win.appName, win.desktopEntry, win.initialClass || win.appId || win.title)
+                                        Layout.preferredWidth: Math.min(parent.width * 0.8, 32)
+                                        Layout.preferredHeight: Math.min(parent.height * 0.5, 32)
+                                        source: Windows.IconsFetcher.getIconPath(win.initialClass || "", "", win.appId || win.initialClass || "")
                                         fillMode: Image.PreserveAspectFit
                                         smooth: true
+                                        asynchronous: true
+                                        
+                                        onStatusChanged: {
+                                            if (status === Image.Error) {
+                                                source = "image://icon/application-x-executable"
+                                            }
+                                        }
                                     }
 
                                     Text {
                                         Layout.fillWidth: true
+                                        Layout.fillHeight: true
                                         text: win.title || ""
-                                        font.pixelSize: 8
-                                        color: (Root.Theme && Root.Theme.text) ? Root.Theme.text : "#cdd6f4"
+                                        font.pixelSize: 9
+                                        color: (Shell.Theme && Shell.Theme.text) ? Shell.Theme.text : "#cdd6f4"
                                         elide: Text.ElideRight
                                         horizontalAlignment: Text.AlignHCenter
-                                        visible: parent.height > 30
+                                        verticalAlignment: Text.AlignVCenter
+                                        wrapMode: Text.WordWrap
+                                        maximumLineCount: 2
+                                        visible: parent.height > 40
                                     }
                                 }
                             }
                         }
                     }
 
-                    // Bottom Info Row
                     RowLayout {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 18
@@ -155,7 +165,7 @@ Item {
                             text: "WS " + workspace.id
                             font.bold: true
                             font.pixelSize: 12
-                            color: workspace.active ? ((Root.Theme && Root.Theme.mauve) ? Root.Theme.mauve : "#cba6f7") : ((Root.Theme && Root.Theme.subtext0) ? Root.Theme.subtext0 : "gray")
+                            color: workspace.active ? ((Shell.Theme && Shell.Theme.mauve) ? Shell.Theme.mauve : "#cba6f7") : ((Shell.Theme && Shell.Theme.subtext0) ? Shell.Theme.subtext0 : "gray")
                         }
 
                         Item { Layout.fillWidth: true }
@@ -169,7 +179,7 @@ Item {
                                 return count + (count === 1 ? " window" : " windows");
                             }
                             font.pixelSize: 10
-                            color: (Root.Theme && Root.Theme.overlay1) ? Root.Theme.overlay1 : "#7f849c"
+                            color: (Shell.Theme && Shell.Theme.overlay1) ? Shell.Theme.overlay1 : "#7f849c"
                         }
                     }
                 }

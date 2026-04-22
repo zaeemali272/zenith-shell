@@ -3,14 +3,14 @@ import QtQuick.Layouts
 import Qt.labs.folderlistmodel
 import Quickshell
 import Quickshell.Io
-import "../../" as Root
+import "../../" as Shell
+import ".." as Windows
 
 Item {
     id: root
     property string searchText: ""
     property int currentIndex: 0
 
-    // Filtered model management
     ListModel { id: filteredModel }
     
     FolderListModel {
@@ -29,6 +29,7 @@ Item {
             let fn = folderModel.get(i, "fileName");
             let name = fn.replace(".desktop", "").replace(/-/g, " ");
             name = name.charAt(0).toUpperCase() + name.slice(1);
+            
             if (root.searchText === "" || name.toLowerCase().includes(root.searchText.toLowerCase())) {
                 arr.push({ fileName: fn, displayName: name });
             }
@@ -43,46 +44,58 @@ Item {
     GridView {
         id: grid
         anchors.fill: parent
-        cellWidth: Math.floor(grid.width / 6)
-        cellHeight: Root.Theme.scaled ? Root.Theme.scaled(150) : 150
+        cellWidth: Math.floor(grid.width / (Shell.Theme.appMenuCol || 6))
+        cellHeight: Shell.Theme.scaled ? Shell.Theme.scaled(120) : 120
         clip: true
         model: filteredModel
-        // Snap movement
         snapMode: GridView.SnapToRow
         
         delegate: Item {
             width: grid.cellWidth
             height: grid.cellHeight
             
-            ColumnLayout {
-                anchors.centerIn: parent
-                spacing: 10
-                width: grid.cellWidth - 20
-                // Visual selection indicator
-                Rectangle {
-                    anchors.fill: parent
-                    anchors.margins: -5
-                    color: (index === root.currentIndex) ? (Root.Theme.surface1 || "#45475a") : "transparent"
-                    radius: 15
-                }
+            Rectangle {
+                anchors.fill: layout
+                anchors.margins: -5
+                color: (index === root.currentIndex) ? (Shell.Theme.surface1 || "#45475a") : "transparent"
+                radius: 12
+                z: -1
+            }
 
+            ColumnLayout {
+                id: layout
+                anchors.centerIn: parent
+                spacing: 8
+                width: grid.cellWidth - 20
+                
                 Rectangle {
-                    width: 60; height: 60; radius: 15
-                    color: Root.Theme.surface0 || "#242532"
+                    width: Shell.Theme.scaled ? Shell.Theme.scaled(56) : 56
+                    height: width
+                    radius: 14
+                    color: (index === root.currentIndex) ? (Shell.Theme.surface2 || "#585b70") : (Shell.Theme.surface0 || "#242532")
                     Layout.alignment: Qt.AlignHCenter
-                    Text {
+                    
+                    Image {
                         anchors.centerIn: parent
-                        text: getIconForApp(model.displayName)
-                        font.family: Root.Theme.iconFont || "monospace"
-                        font.pixelSize: 30
-                        color: getIconColorForApp(model.displayName)
+                        width: parent.width * 0.7
+                        height: parent.height * 0.7
+                        source: Windows.IconsFetcher.getIconPath("", model.fileName, "")
+                        fillMode: Image.PreserveAspectFit
+                        smooth: true
+                        
+                        onStatusChanged: {
+                            if (status === Image.Error) {
+                                source = "image://icon/application-x-executable"
+                            }
+                        }
                     }
                 }
+
                 Text {
                     text: model.displayName
-                    color: Root.Theme.text || "#cdd6f4"
-                    font.pixelSize: 12
-                    font.bold: true
+                    color: (index === root.currentIndex) ? (Shell.Theme.mauve || "#cba6f7") : (Shell.Theme.text || "#cdd6f4")
+                    font.pixelSize: 11
+                    font.bold: index === root.currentIndex
                     Layout.alignment: Qt.AlignHCenter
                     horizontalAlignment: Text.AlignHCenter
                     elide: Text.ElideRight
@@ -92,7 +105,9 @@ Item {
 
             MouseArea {
                 anchors.fill: parent
-                onClicked: { root.currentIndex = index; launchApp(model.fileName); }
+                hoverEnabled: true
+                onEntered: root.currentIndex = index
+                onClicked: { launchApp(model.fileName); }
             }
         }
     }
@@ -100,7 +115,15 @@ Item {
     function launchApp(fileName) {
         launchProcess.command = ["gtk-launch", fileName];
         launchProcess.running = true;
-        if (win) win.active = false;
+        
+        let p = root.parent;
+        while (p) {
+            if (p.visible !== undefined && p.hasOwnProperty("active")) {
+                p.active = false;
+                break;
+            }
+            p = p.parent;
+        }
     }
 
     Keys.onPressed: (event) => {
@@ -112,22 +135,12 @@ Item {
             root.currentIndex = Math.min(root.currentIndex + 1, filteredModel.count - 1);
         } else if (event.key === Qt.Key_Left) {
             root.currentIndex = Math.max(root.currentIndex - 1, 0);
+        } else if (event.key === Qt.Key_Down) {
+            root.currentIndex = Math.min(root.currentIndex + (Root.Theme.appMenuCol || 6), filteredModel.count - 1);
+        } else if (event.key === Qt.Key_Up) {
+            root.currentIndex = Math.max(root.currentIndex - (Root.Theme.appMenuCol || 6), 0);
         }
     }
     
     Process { id: launchProcess }
-
-    function getIconForApp(name) {
-        let n = name.toLowerCase();
-        if (n.includes("youtube")) return "󰗃";
-        if (n.includes("term") || n.includes("kitty")) return "󰆍";
-        if (n.includes("browser") || n.includes("firefox")) return "󰈹";
-        return "󰀻";
-    }
-
-    function getIconColorForApp(name) {
-        let n = name.toLowerCase();
-        if (n.includes("youtube")) return "#ff0000";
-        return "#89b4fa";
-    }
 }
