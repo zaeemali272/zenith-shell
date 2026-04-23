@@ -10,6 +10,7 @@ Item {
     id: root
     property string searchText: ""
     property int currentIndex: 0
+    signal closeRequested()
 
     ListModel { id: filteredModel }
     
@@ -121,15 +122,7 @@ Item {
     function launchApp(fileName) {
         launchProcess.command = ["gtk-launch", fileName];
         launchProcess.running = true;
-        
-        let p = root.parent;
-        while (p) {
-            if (p.visible !== undefined && p.hasOwnProperty("active")) {
-                p.active = false;
-                break;
-            }
-            p = p.parent;
-        }
+        root.closeRequested();
     }
 
     Keys.onPressed: (event) => {

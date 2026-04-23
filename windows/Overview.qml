@@ -53,7 +53,6 @@ PanelWindow {
             NumberAnimation { target: root; property: "scale"; to: 0.98; duration: 250; easing.type: Easing.InCubic }
         }
         PropertyAction { target: win; property: "visible"; value: false }
-        ScriptAction { script: Qt.quit(); }
     }
 
     // Full screen background blur effect (simulated with dark transparent rect)
@@ -100,6 +99,7 @@ PanelWindow {
                 id: appMenu
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                onCloseRequested: active = false
             }
         }
     }
