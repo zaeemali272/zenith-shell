@@ -93,18 +93,35 @@ Item {
 
                         Repeater {
                             model: {
-                                if (!workspace || !workspace.toplevels) return 0;
-                                return workspace.toplevels.values || workspace.toplevels;
+                                if (!workspace || !workspace.toplevels) return [];
+                                let list = workspace.toplevels.values || [];
+                                
+                                // Filter for main apps only
+                                let filtered = [];
+                                for (let i = 0; i < list.length; i++) {
+                                    let w = list[i];
+                                    if (!w) continue;
+                                    let id = w.appId || w.initialClass || "";
+                                    let t = w.title || w.initialTitle || "";
+                                    
+                                    // If everything is empty, it's definitely not a main app we want to show
+                                    if (!id && !t) continue;
+                                    
+                                    if (Windows.IconsFetcher.isMainApp(id, t)) {
+                                        filtered.push(w);
+                                    }
+                                }
+                                return filtered;
                             }
                             delegate: Rectangle {
                                 id: winRect
                                 readonly property var win: modelData
                                 readonly property var mon: workspace.monitor || { width: 1920, height: 1080, x: 0, y: 0 }
                                 
-                                readonly property real rawX: win.x !== undefined ? win.x : (win.lastIpcObject?.at?.[0] || 0)
-                                readonly property real rawY: win.y !== undefined ? win.y : (win.lastIpcObject?.at?.[1] || 0)
-                                readonly property real rawW: win.width !== undefined ? win.width : (win.lastIpcObject?.size?.[0] || 400)
-                                readonly property real rawH: win.height !== undefined ? win.height : (win.lastIpcObject?.size?.[1] || 300)
+                                readonly property real rawX: (win && win.x !== undefined) ? win.x : (win?.lastIpcObject?.at?.[0] || 0)
+                                readonly property real rawY: (win && win.y !== undefined) ? win.y : (win?.lastIpcObject?.at?.[1] || 0)
+                                readonly property real rawW: (win && win.width !== undefined) ? win.width : (win?.lastIpcObject?.size?.[0] || 400)
+                                readonly property real rawH: (win && win.height !== undefined) ? win.height : (win?.lastIpcObject?.size?.[1] || 300)
 
                                 x: ((rawX - (mon.x || 0)) / mon.width) * previewArea.width
                                 y: ((rawY - (mon.y || 0)) / mon.height) * previewArea.height
@@ -113,7 +130,7 @@ Item {
                                 
                                 color: (Shell.Theme && Shell.Theme.surface0) ? Shell.Theme.surface0 : "#313244"
                                 radius: 8
-                                border.color: win.active ? ((Shell.Theme && Shell.Theme.mauve) ? Shell.Theme.mauve : "#cba6f7") : ((Shell.Theme && Shell.Theme.surface1) ? Shell.Theme.surface1 : "#45475a")
+                                border.color: (win && win.active) ? ((Shell.Theme && Shell.Theme.mauve) ? Shell.Theme.mauve : "#cba6f7") : ((Shell.Theme && Shell.Theme.surface1) ? Shell.Theme.surface1 : "#45475a")
                                 border.width: 1
                                 opacity: 0.95
 
@@ -122,27 +139,33 @@ Item {
                                     anchors.margins: 6
                                     spacing: 4
 
-                                    Image {
+                                    IconImage {
                                         id: appIcon
                                         Layout.alignment: Qt.AlignHCenter
                                         Layout.preferredWidth: Math.min(parent.width * 0.8, 32)
                                         Layout.preferredHeight: Math.min(parent.height * 0.5, 32)
-                                        source: Windows.IconsFetcher.getIconPath(win.initialClass || "", "", win.appId || win.initialClass || "")
-                                        fillMode: Image.PreserveAspectFit
-                                        smooth: true
-                                        asynchronous: true
-                                        
-                                        onStatusChanged: {
-                                            if (status === Image.Error) {
-                                                source = "image://icon/application-x-executable"
-                                            }
+                                        // Try to find a valid identifier for the window
+                                        candidates: {
+                                            if (!win) return [];
+                                            let id = (win.appId && win.appId !== "") ? win.appId : win.initialClass;
+                                            return Windows.IconsFetcher.getCandidates(id || "", "", win.title || "");
                                         }
                                     }
 
                                     Text {
                                         Layout.fillWidth: true
                                         Layout.fillHeight: true
-                                        text: win.title || ""
+                                        // Clean display name strictly
+                                        text: {
+                                            if (!win) return "Unknown";
+                                            let raw = win.appId || win.initialClass || "";
+                                            if (!raw) return win.title || "Unknown";
+                                            let parts = raw.split(".");
+                                            let name = parts[parts.length - 1];
+                                            if (!name) return win.title || "Unknown";
+                                            name = name.replace(/[-_]/g, " ");
+                                            return name.charAt(0).toUpperCase() + name.slice(1);
+                                        }
                                         font.pixelSize: 9
                                         color: (Shell.Theme && Shell.Theme.text) ? Shell.Theme.text : "#cdd6f4"
                                         elide: Text.ElideRight

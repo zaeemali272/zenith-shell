@@ -27,11 +27,24 @@ Item {
         let arr = [];
         for (let i = 0; i < folderModel.count; i++) {
             let fn = folderModel.get(i, "fileName");
-            let name = fn.replace(".desktop", "").replace(/-/g, " ");
-            name = name.charAt(0).toUpperCase() + name.slice(1);
+            let rawId = fn.replace(".desktop", "");
             
-            if (root.searchText === "" || name.toLowerCase().includes(root.searchText.toLowerCase())) {
-                arr.push({ fileName: fn, displayName: name });
+            // Clean name for display: io.element.Element -> Element
+            let nameParts = rawId.split(".");
+            let baseName = nameParts[nameParts.length - 1];
+            
+            // Remove generic prefixes/suffixes and fix spacing
+            let displayName = baseName.replace(/[-_]/g, " ");
+            displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+            
+            if (!Windows.IconsFetcher.isMainApp(rawId, displayName)) continue;
+            
+            if (root.searchText === "" || displayName.toLowerCase().includes(root.searchText.toLowerCase())) {
+                arr.push({ 
+                    fileName: fn, 
+                    appId: rawId,
+                    displayName: displayName 
+                });
             }
         }
         arr.sort((a, b) => a.displayName.localeCompare(b.displayName));
@@ -75,19 +88,12 @@ Item {
                     color: (index === root.currentIndex) ? (Shell.Theme.surface2 || "#585b70") : (Shell.Theme.surface0 || "#242532")
                     Layout.alignment: Qt.AlignHCenter
                     
-                    Image {
+                    IconImage {
                         anchors.centerIn: parent
                         width: parent.width * 0.7
                         height: parent.height * 0.7
-                        source: Windows.IconsFetcher.getIconPath("", model.fileName, "")
-                        fillMode: Image.PreserveAspectFit
-                        smooth: true
-                        
-                        onStatusChanged: {
-                            if (status === Image.Error) {
-                                source = "image://icon/application-x-executable"
-                            }
-                        }
+                        // Pass appId and fileName for best matching
+                        candidates: Windows.IconsFetcher.getCandidates(model.appId, model.fileName, "")
                     }
                 }
 
@@ -136,9 +142,9 @@ Item {
         } else if (event.key === Qt.Key_Left) {
             root.currentIndex = Math.max(root.currentIndex - 1, 0);
         } else if (event.key === Qt.Key_Down) {
-            root.currentIndex = Math.min(root.currentIndex + (Root.Theme.appMenuCol || 6), filteredModel.count - 1);
+            root.currentIndex = Math.min(root.currentIndex + (Shell.Theme.appMenuCol || 6), filteredModel.count - 1);
         } else if (event.key === Qt.Key_Up) {
-            root.currentIndex = Math.max(root.currentIndex - (Root.Theme.appMenuCol || 6), 0);
+            root.currentIndex = Math.max(root.currentIndex - (Shell.Theme.appMenuCol || 6), 0);
         }
     }
     
