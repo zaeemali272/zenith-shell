@@ -123,10 +123,11 @@ Item {
                                 readonly property real rawW: (win && win.width !== undefined) ? win.width : (win?.lastIpcObject?.size?.[0] || 400)
                                 readonly property real rawH: (win && win.height !== undefined) ? win.height : (win?.lastIpcObject?.size?.[1] || 300)
 
+                                readonly property real barHeight: 40
                                 x: ((rawX - (mon.x || 0)) / mon.width) * previewArea.width
-                                y: ((rawY - (mon.y || 0)) / mon.height) * previewArea.height
+                                y: ((rawY - (mon.y || 0) - barHeight) / (mon.height - barHeight)) * previewArea.height
                                 width: Math.max(40, (rawW / mon.width) * previewArea.width)
-                                height: Math.max(40, (rawH / mon.height) * previewArea.height)
+                                height: Math.max(40, (rawH / (mon.height - barHeight)) * previewArea.height)
                                 
                                 color: (Shell.Theme && Shell.Theme.surface0) ? Shell.Theme.surface0 : "#313244"
                                 radius: 8
@@ -136,14 +137,16 @@ Item {
 
                                 ColumnLayout {
                                     anchors.fill: parent
-                                    anchors.margins: 6
-                                    spacing: 4
+                                    anchors.margins: 10
+                                    spacing: 6
+
+                                    Item { Layout.fillHeight: true }
 
                                     IconImage {
                                         id: appIcon
                                         Layout.alignment: Qt.AlignHCenter
-                                        Layout.preferredWidth: Math.min(parent.width * 0.8, 32)
-                                        Layout.preferredHeight: Math.min(parent.height * 0.5, 32)
+                                        Layout.preferredWidth: Math.min(parent.width * 0.85, 48)
+                                        Layout.preferredHeight: Math.min(parent.height * 0.45, 48)
                                         // Try to find a valid identifier for the window
                                         candidates: {
                                             if (!win) return [];
@@ -154,7 +157,6 @@ Item {
 
                                     Text {
                                         Layout.fillWidth: true
-                                        Layout.fillHeight: true
                                         // Clean display name strictly
                                         text: {
                                             if (!win) return "Unknown";
@@ -166,15 +168,17 @@ Item {
                                             name = name.replace(/[-_]/g, " ");
                                             return name.charAt(0).toUpperCase() + name.slice(1);
                                         }
-                                        font.pixelSize: 9
+                                        font.pixelSize: 10
                                         color: (Shell.Theme && Shell.Theme.text) ? Shell.Theme.text : "#cdd6f4"
                                         elide: Text.ElideRight
                                         horizontalAlignment: Text.AlignHCenter
                                         verticalAlignment: Text.AlignVCenter
                                         wrapMode: Text.WordWrap
                                         maximumLineCount: 2
-                                        visible: parent.height > 40
+                                        visible: parent.height > 55
                                     }
+
+                                    Item { Layout.fillHeight: true }
                                 }
                             }
                         }
