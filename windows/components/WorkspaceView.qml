@@ -69,6 +69,20 @@ Item {
                 border.width: 2
                 
                 readonly property var workspace: modelData
+                readonly property var displayWindows: {
+                    if (!workspace || !workspace.toplevels) return [];
+                    let list = workspace.toplevels.values || [];
+                    let filtered = [];
+                    for (let i = 0; i < list.length; i++) {
+                        let w = list[i];
+                        if (!w) continue;
+                        let id = w.appId || w.initialClass || "";
+                        let t = w.title || w.initialTitle || "";
+                        if (!id && !t) continue;
+                        if (Windows.IconsFetcher.isMainApp(id, t)) filtered.push(w);
+                    }
+                    return filtered;
+                }
 
                 ColumnLayout {
                     anchors.fill: parent
@@ -87,32 +101,12 @@ Item {
                             anchors.fill: parent
                             source: root.currentWallpaper
                             fillMode: Image.PreserveAspectCrop
-                            visible: source != ""
+                            visible: source != "" && displayWindows.length === 0
                             opacity: 0.4
                         }
 
                         Repeater {
-                            model: {
-                                if (!workspace || !workspace.toplevels) return [];
-                                let list = workspace.toplevels.values || [];
-                                
-                                // Filter for main apps only
-                                let filtered = [];
-                                for (let i = 0; i < list.length; i++) {
-                                    let w = list[i];
-                                    if (!w) continue;
-                                    let id = w.appId || w.initialClass || "";
-                                    let t = w.title || w.initialTitle || "";
-                                    
-                                    // If everything is empty, it's definitely not a main app we want to show
-                                    if (!id && !t) continue;
-                                    
-                                    if (Windows.IconsFetcher.isMainApp(id, t)) {
-                                        filtered.push(w);
-                                    }
-                                }
-                                return filtered;
-                            }
+                            model: displayWindows
                             delegate: Rectangle {
                                 id: winRect
                                 readonly property var win: modelData
