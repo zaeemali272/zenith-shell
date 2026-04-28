@@ -1,7 +1,6 @@
-make App + Search + Workspace menu like gnome
 setup matugen to get color scheme/pallete
 add a login prompt on boot (optional)
-impreve boot time(systemd-analyze critical-chain)
+improve boot time(systemd-analyze critical-chain)
 menu  config editor
 emoji selector
 cheatsheet

@@ -4,6 +4,7 @@ import "../../Settings"
 import "./components"
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
@@ -135,20 +136,51 @@ PopupWindow {
             }
 
             // --- CONTENT AREA ---
-            StackLayout {
-                id: contentStack
+            ScrollView {
+                id: scrollArea
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                currentIndex: ["network", "bluetooth", "volume", "powerprofile", "resources", "battery", "power"].indexOf(QuickSettingsService.activeTab)
+                clip: true
+                
+                contentHeight: {
+                    if (contentStack.currentIndex < 0 || contentStack.currentIndex >= contentStack.children.length) 
+                        return scrollArea.height;
+                    let item = contentStack.children[contentStack.currentIndex];
+                    return Math.max(scrollArea.height, item ? item.implicitHeight : 0);
+                }
 
-                WifiContent { }
-                BluetoothContent { }
-                VolumeContent { }
-                PowerProfileContent { }
-                ResourcesContent { }
-                BatteryContent { }
-                PowerContent { }
+                ScrollBar.vertical: ScrollBar {
+                    parent: scrollArea
+                    anchors.top: scrollArea.top
+                    anchors.bottom: scrollArea.bottom
+                    anchors.right: scrollArea.right
+                    policy: ScrollBar.AsNeeded
+                    width: Theme.scaled(4)
+                    
+                    background: Rectangle { color: "transparent" }
+                    contentItem: Rectangle {
+                        radius: width / 2
+                        color: Theme.surface2
+                        opacity: 0.5
+                    }
+                }
+
+                StackLayout {
+                    id: contentStack
+                    width: scrollArea.availableWidth
+                    height: scrollArea.contentHeight
+                    currentIndex: ["network", "bluetooth", "volume", "powerprofile", "resources", "battery", "power"].indexOf(QuickSettingsService.activeTab)
+
+                    WifiContent { }
+                    BluetoothContent { }
+                    VolumeContent { }
+                    PowerProfileContent { }
+                    ResourcesContent { }
+                    BatteryContent { }
+                    PowerContent { }
+                }
             }
         }
     }
 }
+
