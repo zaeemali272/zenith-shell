@@ -13,8 +13,12 @@ QtObject {
         let desktop = (desktopEntry || "").replace(".desktop", "");
         let app = (appName || "");
         
+        // 0. Handle absolute paths immediately
+        if (raw.startsWith("/")) candidates.push("file://" + raw);
+        if (app.startsWith("/")) candidates.push("file://" + app);
+        
         // Search string includes everything we know about the app
-        let searchStr = (desktop + app + raw).toLowerCase();
+        let searchStr = (desktop + " " + app + " " + raw).toLowerCase();
         
         // 1. High-Priority Manual Overrides
         if (searchStr.includes("element")) names.push("io.element.Element", "element", "element-desktop");
@@ -29,9 +33,21 @@ QtObject {
         if (searchStr.includes("thunar")) names.push("thunar", "system-file-manager", "org.gnome.Nautilus");
         if (searchStr.includes("obsidian")) names.push("obsidian", "obsidian-icon");
         if (searchStr.includes("pavucontrol") || searchStr.includes("volume")) names.push("multimedia-volume-control", "pavucontrol");
+        if (searchStr.includes("beekeeper")) names.push("beekeeper-studio", "beekeeper");
+        if (searchStr.includes("youtube music") || searchStr.includes("youtube-music") || searchStr.includes("yt-music") || searchStr.includes("ytmusic")) names.push("com.github.th-ch.youtube-music", "youtube-music", "yt-music", "multimedia-audio-player");
+        if (searchStr.includes("goverlay")) names.push("goverlay");
+        if (searchStr.includes("wine")) names.push("wine", "wine-icon", "wine-desktop");
+        if (searchStr.includes("winetricks")) names.push("winetricks");
+        if (searchStr.includes("steam")) names.push("steam", "steam_icon_logo", "steam-icon");
+        if (searchStr.includes("discord")) names.push("com.discordapp.Discord", "discord", "discord-icon");
+        if (searchStr.includes("spotify")) names.push("com.spotify.Client", "spotify", "spotify-client");
+        if (searchStr.includes("browser") || searchStr.includes("firefox")) names.push("firefox", "browser", "firefox-browser");
+        if (searchStr.includes("chrome") || searchStr.includes("google-chrome")) names.push("google-chrome", "chrome", "google-chrome-stable");
+        if (searchStr.includes("kvantum")) names.push("kvantum", "kvantummanager", "kvantum-manager");
+        if (searchStr.includes("freedownloadmanager") || searchStr.includes("fdm")) names.push("freedownloadmanager", "fdm", "org.freedownloadmanager.fdm", "freedownloadmanager-bin");
         
         // 2. Collect names from inputs (preserving case)
-        if (raw !== "") names.push(raw);
+        if (raw !== "" && !raw.startsWith("/")) names.push(raw);
         if (desktop !== "") {
             names.push(desktop);
             names.push(desktop.replace(/\./g, '-'));
@@ -39,7 +55,7 @@ QtObject {
             if (parts.length > 1) names.push(parts[parts.length - 1]);
         }
         
-        if (app !== "") {
+        if (app !== "" && !app.startsWith("/")) {
             names.push(app);
             names.push(app.replace(/\s+/g, '-'));
             names.push(app.replace(/\./g, '-'));
@@ -74,10 +90,12 @@ QtObject {
             "/usr/share/icons/OneUI/48x48/apps/",
             "/usr/share/icons/OneUI/symbolic/status/",
             "/usr/share/icons/hicolor/scalable/apps/",
+            "/usr/share/icons/hicolor/512x512/apps/",
             "/usr/share/icons/hicolor/256x256/apps/",
             "/usr/share/icons/hicolor/128x128/apps/",
             "/usr/share/icons/hicolor/64x64/apps/",
             "/usr/share/icons/hicolor/48x48/apps/",
+            "/usr/share/icons/hicolor/32x32/apps/",
             "/usr/share/icons/Adwaita/scalable/apps/",
             "/usr/share/icons/Adwaita/48x48/apps/",
             "/usr/share/icons/breeze/apps/48/",
@@ -91,6 +109,7 @@ QtObject {
                 candidates.push("file://" + base + name + ".svg");
                 candidates.push("file://" + base + name + ".png");
                 candidates.push("file://" + base + name + ".xpm");
+                // Try with @48 or similar if needed (optional)
             }
         }
         
@@ -115,35 +134,37 @@ QtObject {
         let disp = (name || "").toLowerCase();
         
         const hideKeywords = [
-            "lutris1", "pinentry", "bulk-rename", "volman", "settings", "preferences",
+            "lutris1", "pinentry", "bulk-rename", "volman", 
             "assistant", "designer", "linguist", "qdbusviewer", "qv4l2", "qvidcap",
-            "avahi", "bwa-", "nm-connection-editor", "system-config-", "hplip", "cups",
+            "avahi", "bwa-", "system-config-", "hplip", "cups",
             "software-properties", "java-settings", "gcr-", "debian-uxterm", "debian-xterm",
             "texdoctk", "recons", "fcitx", "ibus", "im-config", "xdg-desktop-portal",
-            "vnc", "server", "backend", "helper", "engine", "service", "setup", "install",
+            "vnc", "server", "backend", "helper", "engine", "service", "setup", 
             "wizard", "debug", "test", "monitor", "agent", "handler", "mounter", "writer",
             "config", "profile", "session", "daemon", "kiod", "ksecretd", "nonplasma",
             "picker", "discover", "editor", "info", "utility", "manager", "qt6", "qt5", 
-            "bssh", "bvnc", "btop", "htop", "glances", "nvtop", "xterm", "uxterm",
-            "wayland", "x11", "tty", "shell", "console", "terminal", "xfce", "about",
-            "open", "url", "handler"
+            "bssh", "bvnc", "xterm", "uxterm", "wayland", "x11", "tty", "shell", "console", 
+            "xfce", "about", "open", "url", "handler"
         ];
 
-        for (let kw of hideKeywords) {
-            if (id.includes(kw) || disp.includes(kw)) return false;
-        }
-
+        // Only hide if it's NOT in the mainApps list
         const mainApps = [
             "firefox", "chrome", "chromium", "code", "thunar", "kitty", "obsidian", 
             "discord", "spotify", "telegram", "vlc", "mpv", "steam", "zed", "element", 
             "messenger", "whatsapp", "slack", "missioncenter", "lutris", 
             "beekeeper", "vscode", "nautilus", "dolphin", "ark", "file-roller", "zen",
             "pavucontrol", "qemu", "virt-manager", "goverlay", "dosbox", "winetricks", "xarchiver",
-            "youtube-music", "tor-browser", "cmake", "zenity"
+            "youtube-music", "yt-music", "ytmusic", "youtube music", "tor-browser", "cmake", "zenity", "lollypop", "cameractrls",
+            "pupgui2", "wine", "terminal", "browser", "manager", "editor", "player", "office",
+            "kvantum", "fdm", "freedownloadmanager"
         ];
 
         for (let app of mainApps) {
             if (id.includes(app) || disp.includes(app)) return true;
+        }
+
+        for (let kw of hideKeywords) {
+            if (id.includes(kw) || disp.includes(kw)) return false;
         }
 
         if (disp.length <= 3 && !mainApps.some(a => id.includes(a))) return false;

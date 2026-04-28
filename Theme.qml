@@ -67,7 +67,7 @@ QtObject {
     readonly property int wsActiveWidth: scaled(28)
     readonly property int wsInactiveWidth: scaled(10)
     readonly property int wsSpacing: scaled(6)
-    readonly property color wsActiveColor: '#9a1db7'
+    readonly property color wsActiveColor: '#ff5757'
     readonly property color wsActiveTextColor: '#111111'
     readonly property color wsOccupiedColor: lavender
     readonly property color wsEmptyColor: pillColor
