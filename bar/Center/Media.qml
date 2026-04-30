@@ -88,9 +88,8 @@ Rectangle {
     Instantiator {
         model: Mpris.players
         
-        // Added onObjectAdded to catch VLC the exact moment it registers
         onObjectAdded: (index, player) => {
-            if (mediaWidget.trackedPlayer === null || player.isPlaying) {
+            if (mediaWidget.trackedPlayer === null || player.playbackState === MprisPlaybackState.Playing) {
                 mediaWidget.trackedPlayer = player
                 mediaWidget.updateTrack()
             }
@@ -99,28 +98,22 @@ Rectangle {
         Connections {
             required property MprisPlayer modelData
             target: modelData
-            Component.onCompleted: {
-                if (mediaWidget.trackedPlayer === null || modelData.isPlaying) {
-                    mediaWidget.trackedPlayer = modelData
-                    mediaWidget.updateTrack()
-                }
-            }
             function onPlaybackStateChanged() {
-                if (mediaWidget.trackedPlayer !== modelData && modelData.isPlaying) {
+                if (modelData.playbackState === MprisPlaybackState.Playing) {
                     mediaWidget.trackedPlayer = modelData
+                } else if (mediaWidget.trackedPlayer === modelData) {
+                    // Current player stopped, look for another playing one
+                    let anyPlaying = Mpris.players.values.find(p => p.playbackState === MprisPlaybackState.Playing);
+                    if (anyPlaying) mediaWidget.trackedPlayer = anyPlaying;
                 }
                 mediaWidget.updateTrack()
             }
             function onMetadataChanged() { mediaWidget.updateTrack() }
             Component.onDestruction: {
                 if (mediaWidget.trackedPlayer === modelData) {
-                    mediaWidget.trackedPlayer = null; // Reset first
-                    for (const p of Mpris.players.values) {
-                        if (p.isPlaying) {
-                            mediaWidget.trackedPlayer = p
-                            break
-                        }
-                    }
+                    mediaWidget.trackedPlayer = null;
+                    let anyPlaying = Mpris.players.values.find(p => p.playbackState === MprisPlaybackState.Playing);
+                    if (anyPlaying) mediaWidget.trackedPlayer = anyPlaying;
                     mediaWidget.updateTrack()
                 }
             }
