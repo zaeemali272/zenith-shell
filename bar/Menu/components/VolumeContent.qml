@@ -75,12 +75,12 @@ ColumnLayout {
                 model: VolumeService.appsModel
                 delegate: Rectangle {
                     Layout.fillWidth: true; height: Theme.scaled(130); color: "#11111b"; radius: Theme.scaled(20); border.color: "#313244"
-                    required property string name; required property int volume; required property int id; required property string icon
+                    required property string name; required property int volume; required property int appId; required property string icon
                     ColumnLayout {
                         anchors.fill: parent; anchors.margins: Theme.scaled(15)
                         VolumeSlider {
                             label: name.toUpperCase(); icon: "󰓃"; value: volume; sliderColor: "#a6e3a1"
-                            onChange: (v) => { setAppVol.command = ["pactl", "set-sink-input-volume", id, v + "%"]; setAppVol.running = true; }
+                            onChange: (v) => { setAppVol.command = ["pactl", "set-sink-input-volume", appId, v + "%"]; setAppVol.running = true; }
                             Process { id: setAppVol }
                         }
                     }

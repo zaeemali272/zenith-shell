@@ -21,15 +21,37 @@ QtObject {
         let searchStr = (desktop + " " + app + " " + raw).toLowerCase();
         
         // 1. High-Priority Manual Overrides
+        let id = (app + " " + desktop).toLowerCase();
+        
+        // --- VS Code ---
+        if (id.includes("code") || id.includes("visualstudio") || searchStr.includes("visual studio code") || searchStr.includes("vscode")) {
+            names.push("com.visualstudio.code", "vscode", "code", "visual-studio-code");
+        } 
+        // --- Zen Browser ---
+        else if (id.includes("zen") || searchStr.includes("zen")) {
+            if (!id.includes("zenity") && !searchStr.includes("zenity")) {
+                names.push("zen-browser", "zen", "zen-icon", "browser-zen", "zen-alpha");
+            }
+        }
+        
+        // --- Terminal ---
+        if (id.includes("kitty") || searchStr.includes("kitty")) {
+            names.push("kitty", "terminal-kitty", "utilities-terminal", "terminal", "terminal-icon");
+        } else if (id.includes("terminal") || id.includes("console") || id.includes("foot") || id.includes("alacritty")) {
+            names.push("utilities-terminal", "terminal", "terminal-icon", "kitty", "gnome-terminal", "xfce4-terminal");
+        }
+
+        // --- Generic Overrides ---
         if (searchStr.includes("element")) names.push("io.element.Element", "element", "element-desktop");
         if (searchStr.includes("lutris")) names.push("net.lutris.Lutris", "lutris");
         if (searchStr.includes("missioncenter") || searchStr.includes("mission center")) names.push("io.missioncenter.MissionCenter", "missioncenter");
         if (searchStr.includes("fileroller") || searchStr.includes("file-roller")) names.push("org.gnome.FileRoller", "file-roller", "gnome-fileroller");
         if (searchStr.includes("zed")) names.push("zed", "dev.zed.Zed");
-        if (searchStr.includes("zen")) names.push("zen-browser", "zen", "zen-icon", "browser-zen");
         if (searchStr.includes("cmake")) names.push("CMakeSetup", "cmake", "cmake-gui");
-        if (searchStr.includes("code") || searchStr.includes("visualstudio") || searchStr.includes("visual studio")) names.push("com.visualstudio.code", "vscode", "code", "visual-studio-code");
-        if (searchStr.includes("kitty") || searchStr.includes("terminal")) names.push("kitty", "utilities-terminal", "terminal", "terminal-icon");
+        
+        if (searchStr.includes("kitty")) names.push("kitty", "terminal", "utilities-terminal", "terminal-icon");
+        if (searchStr.includes("terminal")) names.push("utilities-terminal", "terminal", "terminal-icon", "kitty", "gnome-terminal", "xfce4-terminal");
+        
         if (searchStr.includes("thunar")) names.push("thunar", "system-file-manager", "org.gnome.Nautilus");
         if (searchStr.includes("obsidian")) names.push("obsidian", "obsidian-icon");
         if (searchStr.includes("pavucontrol") || searchStr.includes("volume")) names.push("multimedia-volume-control", "pavucontrol");
@@ -41,13 +63,23 @@ QtObject {
         if (searchStr.includes("steam")) names.push("steam", "steam_icon_logo", "steam-icon");
         if (searchStr.includes("discord")) names.push("com.discordapp.Discord", "discord", "discord-icon");
         if (searchStr.includes("spotify")) names.push("com.spotify.Client", "spotify", "spotify-client");
-        if (searchStr.includes("browser") || searchStr.includes("firefox")) names.push("firefox", "browser", "firefox-browser");
+        
+        if (searchStr.includes("firefox")) names.push("firefox", "firefox-browser");
         if (searchStr.includes("chrome") || searchStr.includes("google-chrome")) names.push("google-chrome", "chrome", "google-chrome-stable");
+        if (searchStr.includes("browser") && !names.some(n => n.includes("zen"))) names.push("browser", "internet-browser");
+        
         if (searchStr.includes("kvantum")) names.push("kvantum", "kvantummanager", "kvantum-manager");
         if (searchStr.includes("freedownloadmanager") || searchStr.includes("fdm")) names.push("freedownloadmanager", "fdm", "org.freedownloadmanager.fdm", "freedownloadmanager-bin");
         
         // 2. Collect names from inputs (preserving case)
-        if (raw !== "" && !raw.startsWith("/")) names.push(raw);
+        if (raw !== "" && !raw.startsWith("/")) {
+            // Only use the first word of the title if it's reasonably long
+            let parts = raw.split(/[ \-~:]/);
+            let firstWord = parts[0];
+            if (firstWord.length > 3 && !firstWord.includes("/")) {
+                names.push(firstWord);
+            }
+        }
         if (desktop !== "") {
             names.push(desktop);
             names.push(desktop.replace(/\./g, '-'));
