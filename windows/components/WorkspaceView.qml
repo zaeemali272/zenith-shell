@@ -141,11 +141,19 @@ Item {
                                         Layout.alignment: Qt.AlignHCenter
                                         Layout.preferredWidth: Math.min(parent.width * 0.85, 48)
                                         Layout.preferredHeight: Math.min(parent.height * 0.45, 48)
+                                        appName: {
+                                            if (!win) return "";
+                                            let raw = win.appId || win.initialClass || "";
+                                            if (!raw) return win.title || "";
+                                            let parts = raw.split(".");
+                                            return parts[parts.length - 1];
+                                        }
                                         // Try to find a valid identifier for the window
                                         candidates: {
                                             if (!win) return [];
-                                            let id = (win.appId && win.appId !== "") ? win.appId : win.initialClass;
-                                            return Windows.IconsFetcher.getCandidates(id || "", "", win.title || "");
+                                            let id = (win.appId && win.appId !== "") ? win.appId : (win.initialClass || "");
+                                            let title = win.title || win.initialTitle || "";
+                                            return Windows.IconsFetcher.getCandidates(id, id, title);
                                         }
                                     }
 

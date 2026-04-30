@@ -31,49 +31,73 @@ Singleton {
         command: ["pactl", "-f", "json", "list", "sink-inputs"]
         stdout: StdioCollector {
             onStreamFinished: {
-                if (!text) return;
+                if (!text || text.trim() === "") return;
                 try {
                     const data = JSON.parse(text);
-                    let currentIds = new Set();
-                    for (let i = 0; i < data.length; i++) {
-                        let app = data[i];
-                        if (!app.volume) continue;
-                        let vol = 0;
-                        for (let channel in app.volume) {
-                            if (app.volume[channel].value_percent) {
-                                vol = parseInt(app.volume[channel].value_percent);
-                                break;
-                            }
+                    if (!Array.isArray(data)) {
+                        if (data && typeof data === "object") {
+                            // If it's a single object, wrap it in an array
+                            processData([data]);
                         }
-                        let name = app.properties["application.name"] || "Unknown";
-                        let id = app.index;
-                        currentIds.add(id);
-                        let found = false;
-                        for (let j = 0; j < appModel.count; j++) {
-                            if (appModel.get(j).id === id) {
-                                let item = appModel.get(j);
-                                if (item.volume !== vol) appModel.setProperty(j, "volume", vol);
-                                if (item.muted !== app.mute) appModel.setProperty(j, "muted", app.mute);
-                                found = true;
-                                break;
-                            }
-                        }
-                        if (!found) {
-                            appModel.append({
-                                "id": id,
-                                "name": name,
-                                "volume": vol,
-                                "muted": app.mute,
-                                "icon": "\uf2d2"
-                            });
-                        }
+                        return;
                     }
-                    for (let j = appModel.count - 1; j >= 0; j--) {
-                        if (!currentIds.has(appModel.get(j).id)) appModel.remove(j);
-                    }
+                    processData(data);
                 } catch (e) {
-                    console.error("JSON Parse error: " + e.message);
+                    console.error("VolumeService: JSON Parse error: " + e.message);
                 }
+            }
+        }
+    }
+
+    function processData(data) {
+        let currentIds = new Set();
+        for (let i = 0; i < data.length; i++) {
+            let app = data[i];
+            if (!app || typeof app !== "object" || !app.volume) continue;
+            
+            let vol = 0;
+            for (let channel in app.volume) {
+                if (app.volume[channel].value_percent) {
+                    vol = parseInt(app.volume[channel].value_percent);
+                    break;
+                }
+            }
+            
+            let name = "Unknown";
+            if (app.properties) {
+                name = app.properties["application.name"] || app.properties["media.name"] || "Unknown App";
+            }
+            
+            let appId = app.index;
+            if (appId === undefined) continue;
+            
+            currentIds.add(appId);
+            let found = false;
+            for (let j = 0; j < appModel.count; j++) {
+                let item = appModel.get(j);
+                if (item && item.appId === appId) {
+                    if (item.volume !== vol) appModel.setProperty(j, "volume", vol);
+                    if (item.muted !== app.mute) appModel.setProperty(j, "muted", app.mute);
+                    found = true;
+                    break;
+                }
+            }
+            
+            if (!found) {
+                appModel.append({
+                    "appId": appId,
+                    "name": name,
+                    "volume": vol,
+                    "muted": app.mute,
+                    "icon": "\uf2d2"
+                });
+            }
+        }
+        
+        for (let j = appModel.count - 1; j >= 0; j--) {
+            let item = appModel.get(j);
+            if (item && !currentIds.has(item.appId)) {
+                appModel.remove(j);
             }
         }
     }

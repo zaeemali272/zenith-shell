@@ -153,7 +153,7 @@ PopupWindow {
                 delegate: VolumeSlider {
                     required property string name
                     required property int volume
-                    required property int id
+                    required property int appId
                     required property string icon
                     label: name
                     icon: icon
@@ -161,7 +161,7 @@ PopupWindow {
                     color: Theme.fontColor
                     Layout.fillWidth: true
                     onChange: (v) => {
-                        setAppVol.command = ["pactl", "set-sink-input-volume", id, v + "%"];
+                        setAppVol.command = ["pactl", "set-sink-input-volume", appId, v + "%"];
                         setAppVol.running = true;
                     }
                     Process { id: setAppVol }

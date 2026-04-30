@@ -133,27 +133,33 @@ Item {
                         // Check for Adapter (to get power and scanning status)
                         if (interfaces["org.bluez.Adapter1"]) {
                             const adapter = interfaces["org.bluez.Adapter1"];
-                            if (adapter.Powered && adapter.Powered.data) isPowered = true;
-                            if (adapter.Discovering && adapter.Discovering.data) isScanning = true;
+                            if (adapter.Powered) {
+                                if (adapter.Powered.data !== undefined) isPowered = adapter.Powered.data === true;
+                                else isPowered = adapter.Powered === true;
+                            }
+                            if (adapter.Discovering) {
+                                if (adapter.Discovering.data !== undefined) isScanning = adapter.Discovering.data === true;
+                                else isScanning = adapter.Discovering === true;
+                            }
                         }
 
                         // Check for Device
                         if (interfaces["org.bluez.Device1"]) {
                             const device = interfaces["org.bluez.Device1"];
-                            const isDevConnected = (device.Connected && device.Connected.data === true);
+                            const isDevConnected = (device.Connected && (device.Connected.data === true || device.Connected === true));
                             if (isDevConnected) anyConnected = true;
                             
                             newDevices.push({
-                                "address": device.Address ? device.Address.data : "",
+                                "address": device.Address ? (device.Address.data || device.Address) : "",
                                 "connected": isDevConnected,
-                                "paired": (device.Paired && device.Paired.data === true),
-                                "icon": device.Icon ? device.Icon.data : "bluetooth",
-                                "name": device.Name ? device.Name.data : (device.Alias ? device.Alias.data : (device.Address ? device.Address.data : "Unknown Device"))
+                                "paired": (device.Paired && (device.Paired.data === true || device.Paired === true)),
+                                "icon": device.Icon ? (device.Icon.data || device.Icon) : "bluetooth",
+                                "name": device.Name ? (device.Name.data || device.Name) : (device.Alias ? (device.Alias.data || device.Alias) : (device.Address ? (device.Address.data || device.Address) : "Unknown Device"))
                             });
                         }
                     }
 
-                    root.powered = isPowered;
+                    root.powered = isPowered || anyConnected;
                     root.connected = anyConnected;
                     root.scanning = isScanning;
 
