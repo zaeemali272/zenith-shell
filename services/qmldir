@@ -7,4 +7,3 @@ WifiService WifiService.qml
 BluetoothService BluetoothService.qml
 PowerProfileService PowerProfileService.qml
 QuickSettingsService QuickSettingsService.qml
-MediaFocusService MediaFocusService.qml
