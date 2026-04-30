@@ -11,7 +11,6 @@ Scope {
 // We need to reference these services to ensure they start listening for system events.
     readonly property var _notifications: NotificationService
     readonly property var _battery: BatteryService
-    readonly property var _mediaFocus: MediaFocusService
 
     Bar {
         id: bar

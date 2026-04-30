@@ -30,6 +30,7 @@ Rectangle {
                            !player.dbusName?.startsWith("org.mpris.MediaPlayer2.playerctld"))
 
     property MprisPlayer trackedPlayer: null
+    property var lastPlayer: null
     property var activeTrack: { "title": "Nothing playing", "artist": "", "artUrl": "" }
 
     // implicitWidth must follow the animated width for the parent layout to respect it
@@ -88,7 +89,7 @@ Rectangle {
     Instantiator {
         model: Mpris.players
         
-        onObjectAdded: (index, player) => {
+        onObjectAdded: (key, player) => {
             if (mediaWidget.trackedPlayer === null || player.playbackState === MprisPlaybackState.Playing) {
                 mediaWidget.trackedPlayer = player
                 mediaWidget.updateTrack()
@@ -96,15 +97,39 @@ Rectangle {
         }
 
         Connections {
-            required property MprisPlayer modelData
+            required property var modelData
             target: modelData
             function onPlaybackStateChanged() {
                 if (modelData.playbackState === MprisPlaybackState.Playing) {
+                    // --- MEDIA FOCUS LOGIC ---
+                    console.log("[MediaFocus] " + modelData.identity + " started. Pausing others.");
+                    let all = Mpris.players.values;
+                    for (let i = 0; i < all.length; i++) {
+                        let other = all[i];
+                        if (other && other.dbusName !== modelData.dbusName && other.playbackState === MprisPlaybackState.Playing) {
+                            mediaWidget.lastPlayer = other;
+                            other.pause();
+                        }
+                    }
                     mediaWidget.trackedPlayer = modelData
-                } else if (mediaWidget.trackedPlayer === modelData) {
-                    // Current player stopped, look for another playing one
-                    let anyPlaying = Mpris.players.values.find(p => p.playbackState === MprisPlaybackState.Playing);
-                    if (anyPlaying) mediaWidget.trackedPlayer = anyPlaying;
+                } else if (modelData.playbackState === MprisPlaybackState.Paused || modelData.playbackState === MprisPlaybackState.Stopped) {
+                    // Resume last player if no one else is playing
+                    if (mediaWidget.trackedPlayer === modelData) {
+                        if (mediaWidget.lastPlayer && mediaWidget.lastPlayer.playbackState !== MprisPlaybackState.Playing) {
+                            console.log("[MediaFocus] Focus returned. Resuming " + mediaWidget.lastPlayer.identity);
+                            mediaWidget.lastPlayer.play();
+                            mediaWidget.lastPlayer = null;
+                        } else {
+                            // Look for another playing one
+                            let values = Mpris.players.values;
+                            for (let i = 0; i < values.length; i++) {
+                                if (values[i].playbackState === MprisPlaybackState.Playing) {
+                                    mediaWidget.trackedPlayer = values[i];
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 }
                 mediaWidget.updateTrack()
             }
@@ -112,8 +137,13 @@ Rectangle {
             Component.onDestruction: {
                 if (mediaWidget.trackedPlayer === modelData) {
                     mediaWidget.trackedPlayer = null;
-                    let anyPlaying = Mpris.players.values.find(p => p.playbackState === MprisPlaybackState.Playing);
-                    if (anyPlaying) mediaWidget.trackedPlayer = anyPlaying;
+                    let values = Mpris.players.values;
+                    for (let i = 0; i < values.length; i++) {
+                        if (values[i].playbackState === MprisPlaybackState.Playing) {
+                            mediaWidget.trackedPlayer = values[i];
+                            break;
+                        }
+                    }
                     mediaWidget.updateTrack()
                 }
             }
@@ -123,7 +153,7 @@ Rectangle {
     Connections {
         id: trackedPlayerConnections
         target: trackedPlayer
-        ignoreUnknownSignals: true // Prevents errors if trackedPlayer is null
+        ignoreUnknownSignals: true
         function onMetadataChanged() { mediaWidget.updateTrack() }
         function onPlaybackStateChanged() { mediaWidget.updateTrack() }
     }
