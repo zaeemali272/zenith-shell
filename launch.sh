@@ -26,8 +26,16 @@ case "$1" in
         quickshell -p "$SHELL_DIR/windows/Overview.qml" >> "$LOG_FILE" 2>&1 &
         ;;
 
+    cheatsheet)
+        if pgrep -f "quickshell.*windows/Cheatsheet.qml" > /dev/null; then
+            pkill -f "quickshell.*windows/Cheatsheet.qml"
+            exit 0
+        fi
+        quickshell -p "$SHELL_DIR/windows/Cheatsheet.qml" >> "$LOG_FILE" 2>&1 &
+        ;;
+
     *)
-        echo "Usage: $0 {wallpaperSelector|overview}"
+        echo "Usage: $0 {wallpaperSelector|overview|cheatsheet}"
         exit 1
         ;;
 esac

@@ -158,6 +158,27 @@ Rectangle {
         function onPlaybackStateChanged() { mediaWidget.updateTrack() }
     }
 
+    property bool pausedByMic: false
+
+    Connections {
+        target: VolumeService
+        function onMicActiveChanged() {
+            if (VolumeService.micActive) {
+                if (trackedPlayer && trackedPlayer.isPlaying) {
+                    console.log("[MediaFocus] Mic active. Pausing media.");
+                    mediaWidget.pausedByMic = true;
+                    trackedPlayer.pause();
+                }
+            } else {
+                if (mediaWidget.pausedByMic) {
+                    console.log("[MediaFocus] Mic inactive. Resuming media.");
+                    if (trackedPlayer) trackedPlayer.play();
+                    mediaWidget.pausedByMic = false;
+                }
+            }
+        }
+    }
+
     RowLayout {
         id: contentLayout
         anchors.centerIn: parent
