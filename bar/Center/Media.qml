@@ -24,11 +24,6 @@ Rectangle {
         }
     }
 
-    readonly property list<MprisPlayer> players: Mpris.players.values
-        .filter(player => !player.dbusName?.startsWith("org.mpris.MediaPlayer2.chromium") &&
-                           !player.dbusName?.startsWith("org.mpris.MediaPlayer2.firefox") &&
-                           !player.dbusName?.startsWith("org.mpris.MediaPlayer2.playerctld"))
-
     property MprisPlayer trackedPlayer: null
     property var lastPlayer: null
     property var activeTrack: { "title": "Nothing playing", "artist": "", "artUrl": "" }
@@ -112,6 +107,7 @@ Rectangle {
                         }
                     }
                     mediaWidget.trackedPlayer = modelData
+                    mediaWidget.updateTrack()
                 } else if (modelData.playbackState === MprisPlaybackState.Paused || modelData.playbackState === MprisPlaybackState.Stopped) {
                     // Resume last player if no one else is playing
                     if (mediaWidget.trackedPlayer === modelData) {
@@ -129,11 +125,13 @@ Rectangle {
                                 }
                             }
                         }
+                        mediaWidget.updateTrack()
                     }
                 }
-                mediaWidget.updateTrack()
             }
-            function onMetadataChanged() { mediaWidget.updateTrack() }
+            function onMetadataChanged() { 
+                if (mediaWidget.trackedPlayer === modelData) mediaWidget.updateTrack() 
+            }
             Component.onDestruction: {
                 if (mediaWidget.trackedPlayer === modelData) {
                     mediaWidget.trackedPlayer = null;
@@ -148,14 +146,6 @@ Rectangle {
                 }
             }
         }
-    }
-
-    Connections {
-        id: trackedPlayerConnections
-        target: trackedPlayer
-        ignoreUnknownSignals: true
-        function onMetadataChanged() { mediaWidget.updateTrack() }
-        function onPlaybackStateChanged() { mediaWidget.updateTrack() }
     }
 
     property bool pausedByMic: false

@@ -164,13 +164,13 @@ Item {
 
     Process {
         id: btWatcher
-        command: ["dbus-monitor", "--system", "sender='org.bluez'"]
+        command: ["dbus-monitor", "--system", "sender='org.bluez',interface='org.freedesktop.DBus.Properties',member='PropertiesChanged'"]
         running: true
         stdout: StdioCollector {
             onTextChanged: if (!refreshTimer.running) refreshTimer.start();
         }
     }
 
-    Timer { id: refreshTimer; interval: 2000; onTriggered: refresh() }
-    Timer { id: pollingTimer; interval: 8000; repeat: true; running: true; onTriggered: refresh() }
+    Timer { id: refreshTimer; interval: 5000; onTriggered: refresh() }
+    Timer { id: pollingTimer; interval: 60000; repeat: true; running: true; onTriggered: refresh() }
 }

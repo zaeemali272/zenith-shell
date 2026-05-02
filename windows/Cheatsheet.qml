@@ -136,7 +136,7 @@ PanelWindow {
                         spacing: 30
 
                         Repeater {
-                            model: [0, 1, 2] // 3 columns
+                            model: [0, 1, 2, 3] // 4 columns
                             delegate: ColumnLayout {
                                 Layout.alignment: Qt.AlignTop
                                 Layout.fillWidth: true
@@ -146,7 +146,7 @@ PanelWindow {
                                     // Distribute sections into columns
                                     model: {
                                         let res = [];
-                                        for (let i = index; i < win.keybindsData.length; i += 3) {
+                                        for (let i = index; i < win.keybindsData.length; i += 4) {
                                             res.push(win.keybindsData[i]);
                                         }
                                         return res;
@@ -157,7 +157,7 @@ PanelWindow {
 
                                         Text {
                                             text: modelData.section
-                                            font.pixelSize: 22; font.bold: true
+                                            font.pixelSize: 26; font.bold: true
                                             color: Root.Theme.blue || "#89b4fa"
                                             Layout.alignment: Qt.AlignHCenter
                                             horizontalAlignment: Text.AlignHCenter
@@ -173,7 +173,7 @@ PanelWindow {
                                                     spacing: 2
                                                     Text {
                                                         text: modelData.combo
-                                                        font.family: "monospace"; font.pixelSize: 15; font.bold: true
+                                                        font.family: "monospace"; font.pixelSize: 17; font.bold: true
                                                         color: Root.Theme.peach || "#fab387"
                                                         Layout.alignment: Qt.AlignHCenter
                                                         horizontalAlignment: Text.AlignHCenter
@@ -212,7 +212,7 @@ PanelWindow {
                                 ColumnLayout {
                                     id: gestCol; anchors.fill: parent; anchors.margins: 20; spacing: 15
                                     Text {
-                                        text: modelData.type.toUpperCase(); font.pixelSize: 20; font.bold: true
+                                        text: modelData.type.toUpperCase(); font.pixelSize: 24; font.bold: true
                                         color: Root.Theme.green || "#a6e3a1"; Layout.alignment: Qt.AlignHCenter
                                     }
                                     Repeater {
@@ -220,11 +220,11 @@ PanelWindow {
                                         delegate: RowLayout {
                                             Layout.fillWidth: true; spacing: 20
                                             Text {
-                                                text: modelData.trigger; font.pixelSize: 16; font.bold: true
+                                                text: modelData.trigger; font.pixelSize: 20; font.bold: true
                                                 color: Root.Theme.mauve || "#cba6f7"; Layout.preferredWidth: 150
                                             }
                                             Text {
-                                                text: modelData.command; font.family: "monospace"; font.pixelSize: 14
+                                                text: modelData.command; font.family: "monospace"; font.pixelSize: 18
                                                 color: Root.Theme.subtext0 || "#a6adc8"; Layout.fillWidth: true
                                             }
                                         }
