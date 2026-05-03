@@ -105,16 +105,19 @@ Item {
             }
 
             // Duplicate Filtering
-            let currentKey = notif.summary + "|" + notif.body + "|" + notif.appName;
-            for (let i = 0; i < historyModel.count; i++) {
-                let item = historyModel.get(i);
-                if (item.summary === notif.summary && item.body === notif.body && item.appName === notif.appName) {
-                    notif.dismiss();
-                    return ;
+            let isBattery = (notif.appName === "Battery");
+            if (!isBattery) {
+                let currentKey = notif.summary + "|" + notif.body + "|" + notif.appName;
+                for (let i = 0; i < historyModel.count; i++) {
+                    let item = historyModel.get(i);
+                    if (item.summary === notif.summary && item.body === notif.body && item.appName === notif.appName) {
+                        notif.dismiss();
+                        return ;
+                    }
                 }
+                root.lastNotifKey = currentKey;
+                duplicateResetTimer.restart();
             }
-            root.lastNotifKey = currentKey;
-            duplicateResetTimer.restart();
 
             // Icon Resolution
             let finalIcon = "";
@@ -164,7 +167,9 @@ Item {
                 "desktopEntry": notif.desktopEntry || "",
                 "originalNotif": notif
             };
-            historyModel.insert(0, notifData);
+            if (!isBattery) {
+                historyModel.insert(0, notifData);
+            }
             root.notificationReceived(notifData);
         }
     }

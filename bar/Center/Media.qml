@@ -24,7 +24,7 @@ Rectangle {
         }
     }
 
-    property MprisPlayer trackedPlayer: null
+    property var trackedPlayer: null
     property var lastPlayer: null
     property var activeTrack: { "title": "Nothing playing", "artist": "", "artUrl": "" }
 
