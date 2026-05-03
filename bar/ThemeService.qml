@@ -24,16 +24,13 @@ Singleton {
     Process {
         command: ["gsettings", "get", "org.gnome.desktop.interface", "icon-theme"]
         running: true
-
         stdout: StdioCollector {
-            onData: {
-                var theme = data.toString().trim().replace(/'/g, "");
+            onStreamFinished: {
+                var theme = text.trim().replace(/'/g, "");
                 if (theme.length > 0)
                     root.activeTheme = theme;
-
             }
         }
-
     }
 
 }

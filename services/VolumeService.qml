@@ -16,11 +16,23 @@ Singleton {
     readonly property alias appsModel: appModel
 
     function update() {
+        updateTimer.restart();
+    }
+
+    function _performUpdate() {
+        volExec.running = false;
         volExec.running = true;
+        appVolExec.running = false;
         appVolExec.running = true;
     }
 
-    Component.onCompleted: update()
+    Timer {
+        id: updateTimer
+        interval: 200
+        onTriggered: _performUpdate()
+    }
+
+    Component.onCompleted: _performUpdate()
 
     ListModel {
         id: appModel
@@ -36,15 +48,12 @@ Singleton {
                     const data = JSON.parse(text);
                     if (!Array.isArray(data)) {
                         if (data && typeof data === "object") {
-                            // If it's a single object, wrap it in an array
                             processData([data]);
                         }
                         return;
                     }
                     processData(data);
-                } catch (e) {
-                    console.error("VolumeService: JSON Parse error: " + e.message);
-                }
+                } catch (e) {}
             }
         }
     }
@@ -104,14 +113,21 @@ Singleton {
 
     Process {
         id: volListener
-        command: ["sh", "-c", "pw-mon | grep --line-buffered -m 1 'node'"]
+        command: ["pactl", "subscribe"]
         running: true
+        stdout: SplitParser {
+            onRead: (data) => {
+                if (data.includes("change") && (data.includes("sink") || data.includes("source") || data.includes("sink-input"))) {
+                    service.update();
+                }
+            }
+        }
         onExited: restartDelay.start()
     }
 
     Timer {
         id: restartDelay
-        interval: 700
+        interval: 10000
         onTriggered: {
             service.update();
             volListener.running = true;

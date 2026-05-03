@@ -10,7 +10,7 @@ Item {
     property bool powered: false
     property bool connected: false
     property bool scanning: false
-    property bool busy: actionExec.running || powerExec.running || scanExec.running || statusCheck.running || deviceRefresh.running || rfkillCheck.running
+    property bool busy: actionExec.running || powerExec.running || scanExec.running || statusCheck.running || deviceRefresh.running || rfkillCheck.running || serviceCheck.running || serviceRestart.running
     property bool _actionInProgress: false
 
     function log(msg) {
@@ -19,14 +19,42 @@ Item {
 
     function refresh() {
         if (_actionInProgress) return;
+        
+        // Always check service and status
+        serviceCheck.running = false;
+        serviceCheck.running = true;
         rfkillCheck.running = false;
         rfkillCheck.running = true;
-        
         statusCheck.running = false;
         statusCheck.running = true;
         
-        deviceRefresh.running = false;
-        deviceRefresh.running = true;
+        // Only refresh device list if menu is open or it's a scheduled full refresh
+        if (QuickSettingsService.qsVisible && QuickSettingsService.activeTab === "bluetooth") {
+            deviceRefresh.running = false;
+            deviceRefresh.running = true;
+        }
+    }
+
+    Process {
+        id: serviceCheck
+        command: ["systemctl", "is-active", "bluetooth.service"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (text && text.trim() !== "active") {
+                    log("Service not active (" + text.trim() + "), attempting restart...");
+                    serviceRestart.running = true;
+                }
+            }
+        }
+    }
+
+    Process {
+        id: serviceRestart
+        command: ["systemctl", "restart", "bluetooth.service"]
+        onExited: (code) => {
+            log("Service restart attempted, exit code: " + code);
+            Qt.callLater(() => { refresh(); }, 2000);
+        }
     }
 
     Process {
@@ -134,15 +162,38 @@ Item {
     }
 
     function toggleScan() {
-        // bluetoothctl scan on is a blocking command that starts a discovery session.
-        // We trigger it and then refresh our status.
         let target = !scanning;
-        log("Toggling scan to: " + target);
         scanExec.command = ["bluetoothctl", "scan", target ? "on" : "off"];
         scanExec.running = true;
-        
-        // Discovery state can take a moment to reflect in 'show'
         Qt.callLater(() => { refresh(); }, 1500);
+    }
+
+    function startScan() {
+        if (!powered || scanning) return;
+        scanExec.command = ["bluetoothctl", "scan", "on"];
+        scanExec.running = true;
+        Qt.callLater(() => { refresh(); }, 1500);
+    }
+
+    function stopScan() {
+        if (!scanning) return;
+        scanExec.command = ["bluetoothctl", "scan", "off"];
+        scanExec.running = true;
+        Qt.callLater(() => { refresh(); }, 1500);
+    }
+
+    onPoweredChanged: {
+        if (powered) {
+            log("Bluetooth powered on, starting scan...");
+            startScan();
+        }
+    }
+
+    onConnectedChanged: {
+        if (!connected && powered) {
+            log("Device disconnected, restarting scan...");
+            startScan();
+        }
     }
 
     function action(mode, addr) {
@@ -156,21 +207,37 @@ Item {
     ListModel { id: deviceModel }
 
     Process { id: powerExec }
-    Process { 
-        id: scanExec 
-        // We don't wait for onExited because 'scan on' might not exit immediately
-    }
+    Process { id: scanExec }
     Process { id: actionExec }
 
     Process {
         id: btWatcher
         command: ["dbus-monitor", "--system", "sender='org.bluez',interface='org.freedesktop.DBus.Properties',member='PropertiesChanged'"]
         running: true
-        stdout: StdioCollector {
-            onTextChanged: if (!refreshTimer.running) refreshTimer.start();
+        stdout: SplitParser {
+            onRead: (line) => {
+                // Throttle reactive refreshes
+                if (line.includes("PropertiesChanged") && !refreshTimer.running) {
+                    refreshTimer.start();
+                }
+            }
         }
     }
 
-    Timer { id: refreshTimer; interval: 5000; onTriggered: refresh() }
-    Timer { id: pollingTimer; interval: 60000; repeat: true; running: true; onTriggered: refresh() }
+    Timer { id: refreshTimer; interval: 10000; onTriggered: refresh() }
+    Timer { id: pollingTimer; interval: 600000; repeat: true; running: true; onTriggered: refresh() }
+
+    Timer {
+        id: healthCheckTimer
+        interval: 30000
+        repeat: true
+        running: true
+        onTriggered: {
+            if (!btWatcher.running) {
+                log("btWatcher died, restarting...");
+                btWatcher.running = true;
+            }
+            serviceCheck.running = true;
+        }
+    }
 }

@@ -30,27 +30,49 @@ Item {
     implicitHeight: Theme.pillHeight
     implicitWidth: pill.implicitWidth
     Component.onCompleted: {
+        statusExec.running = true;
         netExec.running = true;
-        netWatcher.running = true;
     }
 
     // THE RULE: Watch for network or airplane mode changes
     Process {
         id: netWatcher
-
-        command: ["sh", "-c", "inotifywait -q -e modify /sys/class/net/*/operstate /dev/rfkill"]
-        running: false
-        onExited: {
-            netExec.running = true;
-            safetyTimer.start();
+        command: ["sh", "-c", "inotifywait -q -m -e modify /sys/class/net/*/operstate /dev/rfkill"]
+        running: true
+        stdout: SplitParser {
+            onRead: (line) => {
+                statusExec.running = true;
+            }
         }
     }
 
-    Timer {
-        id: safetyTimer
-
-        interval: 500
-        onTriggered: netWatcher.running = true
+    Process {
+        id: statusExec
+        command: ["sh", "-c",
+            `iwctl station $(ls /sys/class/net | grep ^wl | head -n1) show | grep 'Connected network' | awk '{$1=$2=""; print "SSID", $0}'; ` +
+            `rfkill list wifi | grep -q 'Soft blocked: yes' && echo 'AIRPLANE ON' || echo 'AIRPLANE OFF'`
+        ]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (!text) return;
+                const lines = text.trim().split("\n");
+                let foundSsid = false;
+                lines.forEach((line) => {
+                    const parts = line.trim().split(/\s+/);
+                    if (parts[0] === "SSID") {
+                        wifiSSID = parts.slice(1).join(" ").trim();
+                        wifiConnected = true;
+                        foundSsid = true;
+                    } else if (parts[0] === "AIRPLANE") {
+                        airplaneMode = (parts[1] === "ON");
+                    }
+                });
+                if (!foundSsid) {
+                    wifiConnected = false;
+                    wifiSSID = "";
+                }
+            }
+        }
     }
 
     Pill {
@@ -102,52 +124,32 @@ Item {
 
         command: ["sh", "-c",
             `IFACE=$(ip route | awk '/default/ {print $5; exit}'); ` +
-            `awk -v iface="$IFACE" '$1 ~ iface":" {print "SPEED", $2, $10}' /proc/net/dev; ` +
-            `iwctl station $(ls /sys/class/net | grep ^wl | head -n1) show | grep 'Connected network' | awk '{$1=$2=""; print "SSID", $0}'; ` +
-            `rfkill list wifi | grep -q 'Soft blocked: yes' && echo 'AIRPLANE ON' || echo 'AIRPLANE OFF'`
+            `awk -v iface="$IFACE" '$1 ~ iface":" {print "SPEED", $2, $10}' /proc/net/dev`
         ]
 
         stdout: StdioCollector {
             onStreamFinished: {
-                if (!text) {
-                    refreshTimer.start();
-                    return ;
-                }
-                const lines = text.trim().split("\n");
-                let foundSsid = false;
-                lines.forEach((line) => {
-                    const parts = line.trim().split(/\s+/);
-                    if (parts[0] === "SPEED") {
-                        const rx = parseFloat(parts[1]);
-                        const tx = parseFloat(parts[2]);
-                        if (rxPrev > 0) {
-                            downSpeed = Math.max(0, Math.floor(((rx - rxPrev) / 1024) / 3));
-                            upSpeed = Math.max(0, Math.floor(((tx - txPrev) / 1024) / 3));
-                        }
-                        rxPrev = rx;
-                        txPrev = tx;
-                    } else if (parts[0] === "SSID") {
-                        wifiSSID = parts.slice(1).join(" ").trim();
-                        wifiConnected = true;
-                        foundSsid = true;
-                    } else if (parts[0] === "AIRPLANE") {
-                        airplaneMode = (parts[1] === "ON");
+                if (!text) return;
+                const parts = text.trim().split(/\s+/);
+                if (parts[0] === "SPEED") {
+                    const rx = parseFloat(parts[1]);
+                    const tx = parseFloat(parts[2]);
+                    if (rxPrev > 0) {
+                        downSpeed = Math.max(0, Math.floor(((rx - rxPrev) / 1024) / 5));
+                        upSpeed = Math.max(0, Math.floor(((tx - txPrev) / 1024) / 5));
                     }
-                });
-                if (!foundSsid) {
-                    wifiConnected = false;
-                    wifiSSID = "";
+                    rxPrev = rx;
+                    txPrev = tx;
                 }
-                refreshTimer.start();
             }
         }
-
     }
 
     Timer {
         id: refreshTimer
-
-        interval: 3000 
+        interval: 5000 
+        running: true
+        repeat: true
         onTriggered: netExec.running = true
     }
 
