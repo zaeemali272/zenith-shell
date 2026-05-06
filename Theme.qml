@@ -69,7 +69,8 @@ QtObject {
     readonly property int pillRadius: scaled(14)
     readonly property int pillPadding: scaled(16)
     readonly property int extraPillPadding: scaled(5)
-    readonly property color pillColor: "#bd000000"
+    // readonly property color pillColor: "#bd000000"
+    readonly property color pillColor: Colors.background
     readonly property int pillSpacing: scaled(4)
     readonly property int pillGap: scaled(6)
     readonly property color pillBorderColor: Colors.outline
