@@ -104,7 +104,7 @@ PopupWindow {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             radius: 12
-                            color: QuickSettingsService.activeTab === modelData.id ? Theme.accentColor : (tabMouse.containsMouse ? "#1e1e2e" : "transparent")
+                            color: QuickSettingsService.activeTab === modelData.id ? Theme.accentColor : (tabMouse.containsMouse ? Theme.surface0 : "transparent")
                             
                             Behavior on color { ColorAnimation { duration: 200 } }
 
@@ -114,13 +114,13 @@ PopupWindow {
                                 Text {
                                     text: modelData.icon
                                     font.family: Theme.iconFont; font.pixelSize: 18
-                                    color: QuickSettingsService.activeTab === modelData.id ? "black" : (tabMouse.containsMouse ? "white" : Theme.subtext0)
+                                    color: QuickSettingsService.activeTab === modelData.id ? Theme.base : (tabMouse.containsMouse ? Theme.text : Theme.subtext0)
                                     Layout.alignment: Qt.AlignHCenter
                                 }
                                 Text {
                                     text: modelData.title
                                     font.pixelSize: 10; font.weight: Font.Black
-                                    color: QuickSettingsService.activeTab === modelData.id ? "black" : (tabMouse.containsMouse ? "white" : Theme.surface2)
+                                    color: QuickSettingsService.activeTab === modelData.id ? Theme.base : (tabMouse.containsMouse ? Theme.text : Theme.surface2)
                                     Layout.alignment: Qt.AlignHCenter
                                 }
                             }

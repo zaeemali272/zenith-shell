@@ -8,9 +8,9 @@ Rectangle {
     id: root
     implicitHeight: Theme.scaled(300)
     implicitWidth: Theme.scaled(320)
-    color: "#11111b"
+    color: Theme.menuBackground
     radius: Theme.scaled(16)
-    border.color: "#313244"
+    border.color: Theme.surface1
     border.width: 1
 
     property var weatherData: null
@@ -39,9 +39,9 @@ Rectangle {
         // Header - Always at the top
         RowLayout {
             Layout.fillWidth: true
-            Text { text: "Weather"; color: "#89b4fa"; font.weight: Font.Black; font.pixelSize: Theme.scaled(14); font.letterSpacing: 1 }
+            Text { text: "Weather"; color: Theme.blue; font.weight: Font.Black; font.pixelSize: Theme.scaled(14); font.letterSpacing: 1 }
             Item { Layout.fillWidth: true }
-            Text { text: (root.weatherData?.nearest_area?.[0]?.areaName?.[0]?.value || "Unknown"); color: "#585b70"; font.pixelSize: Theme.scaled(11) }
+            Text { text: (root.weatherData?.nearest_area?.[0]?.areaName?.[0]?.value || "Unknown"); color: Theme.surface2; font.pixelSize: Theme.scaled(11) }
         }
 
         // Main Content Row - Forced vertical centering
@@ -60,17 +60,19 @@ Rectangle {
                 
                 Text {
                     text: root.getIcon(root.weatherData?.current_condition?.[0]?.weatherCode)
-                    color: "#f9e2af"; font.pixelSize: Theme.scaled(56)
+                    color: Theme.powerYellow; font.pixelSize: Theme.scaled(56)
                     Layout.alignment: Qt.AlignHCenter
                 }
                 Text {
                     text: (root.weatherData?.current_condition?.[0]?.temp_C || "0") + "°C"
-                    color: "#cdd6f4"; font.pixelSize: Theme.scaled(32); font.bold: true
+                    color: Theme.text
+; font.pixelSize: Theme.scaled(32); font.bold: true
                     Layout.alignment: Qt.AlignHCenter
                 }
                 Text {
                     text: root.weatherData?.current_condition?.[0]?.weatherDesc?.[0]?.value || ""
-                    color: "#a6adc8"; font.pixelSize: Theme.scaled(12)
+                    color: Theme.subtext0
+; font.pixelSize: Theme.scaled(12)
                     Layout.fillWidth: true
                     horizontalAlignment: Text.AlignHCenter
                     wrapMode: Text.WordWrap
@@ -84,7 +86,7 @@ Rectangle {
                 width: 1
                 Layout.fillHeight: true
                 Layout.maximumHeight: Theme.scaled(120) // Prevents the line from being too long
-                color: "#313244"
+                color: Theme.surface1
                 Layout.alignment: Qt.AlignVCenter
             }
 
@@ -98,9 +100,9 @@ Rectangle {
                     model: (root.weatherData?.weather || []).slice(1, 4)
                     delegate: RowLayout {
                         spacing: Theme.scaled(12)
-                        Text { text: Qt.formatDate(new Date(modelData.date), "ddd"); color: "#585b70"; font.pixelSize: Theme.scaled(11); Layout.preferredWidth: Theme.scaled(35) }
-                        Text { text: root.getIcon(modelData.hourly[4].weatherCode); color: "#f9e2af"; font.pixelSize: Theme.scaled(18); Layout.preferredWidth: Theme.scaled(20) }
-                        Text { text: modelData.maxtempC + "°"; color: "#cdd6f4"; font.pixelSize: Theme.scaled(13); font.bold: true }
+                        Text { text: Qt.formatDate(new Date(modelData.date), "ddd"); color: Theme.surface2; font.pixelSize: Theme.scaled(11); Layout.preferredWidth: Theme.scaled(35) }
+                        Text { text: root.getIcon(modelData.hourly[4].weatherCode); color: Theme.powerYellow; font.pixelSize: Theme.scaled(18); Layout.preferredWidth: Theme.scaled(20) }
+                        Text { text: modelData.maxtempC + "°"; color: Theme.text; font.pixelSize: Theme.scaled(13); font.bold: true }
                     }
                 }
             }
@@ -112,7 +114,7 @@ Rectangle {
         // Loading/Error states
         Text { 
             visible: root.loading
-            text: "Loading..."; color: "#585b70"
+            text: "Loading..."; color: Theme.surface2
             Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter 
         }
     }

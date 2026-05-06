@@ -14,9 +14,9 @@ Rectangle {
 
     implicitHeight: Theme.scaled(290)
     implicitWidth: Theme.scaled(320)
-    color: "#11111b"
+    color: Theme.menuBackground
     radius: Theme.scaled(16)
-    border.color: "#313244"
+    border.color: Theme.surface1
     border.width: 1
 
     ColumnLayout {
@@ -28,7 +28,7 @@ Rectangle {
             Layout.fillWidth: true
             Label {
                 text: Qt.formatDateTime(root.viewDate, "MMMM yyyy")
-                color: "#cdd6f4"
+                color: Theme.text
                 font.pixelSize: Theme.scaled(18); font.weight: Font.Bold
             }
             Item { Layout.fillWidth: true }
@@ -37,14 +37,14 @@ Rectangle {
                 Button {
                     flat: true; implicitWidth: Theme.scaled(32); implicitHeight: Theme.scaled(32)
                     onClicked: root.prevMonth()
-                    background: Rectangle { color: parent.hovered ? "#313244" : "transparent"; radius: Theme.scaled(8) }
-                    contentItem: Text { text: "󰁍"; color: "#89b4fa"; font.pixelSize: Theme.scaled(16); horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                    background: Rectangle { color: parent.hovered ? Theme.surface1 : "transparent"; radius: Theme.scaled(8) }
+                    contentItem: Text { text: "󰁍"; color: Theme.blue; font.pixelSize: Theme.scaled(16); horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
                 }
                 Button {
                     flat: true; implicitWidth: Theme.scaled(32); implicitHeight: Theme.scaled(32)
                     onClicked: root.nextMonth()
-                    background: Rectangle { color: parent.hovered ? "#313244" : "transparent"; radius: Theme.scaled(8) }
-                    contentItem: Text { text: "󰁔"; color: "#89b4fa"; font.pixelSize: Theme.scaled(16); horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                    background: Rectangle { color: parent.hovered ? Theme.surface1 : "transparent"; radius: Theme.scaled(8) }
+                    contentItem: Text { text: "󰁔"; color: Theme.blue; font.pixelSize: Theme.scaled(16); horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
                 }
             }
         }
@@ -56,7 +56,7 @@ Rectangle {
                 delegate: Label {
                     text: modelData; Layout.fillWidth: true
                     horizontalAlignment: Text.AlignHCenter
-                    color: "#585b70"; font.pixelSize: Theme.scaled(11); font.weight: Font.Black
+                    color: Theme.subtext1; font.pixelSize: Theme.scaled(11); font.weight: Font.Black
                 }
             }
         }
@@ -90,15 +90,15 @@ Rectangle {
                     radius: Theme.scaled(8)
                     
                     // Style matching Zenith
-                    color: isSelected ? "#89b4fa" : (isToday ? "#313244" : "transparent")
-                    border.color: isToday && !isSelected ? "#89b4fa" : "transparent"
+                    color: isSelected ? Theme.blue : (isToday ? Theme.surface1 : "transparent")
+                    border.color: isToday && !isSelected ? Theme.blue : "transparent"
 
                     Label {
                         anchors.centerIn: parent
                         text: dayCell.dateValue.getDate()
                         font.pixelSize: Theme.scaled(12)
                         font.bold: dayCell.isToday || dayCell.isSelected
-                        color: !dayCell.isCurrentMonth ? "#45475a" : (dayCell.isSelected ? "#11111b" : (dayCell.isToday ? "#89b4fa" : "#cdd6f4"))
+                        color: !dayCell.isCurrentMonth ? Theme.surface2 : (dayCell.isSelected ? Theme.menuBackground : (dayCell.isToday ? Theme.blue : Theme.text))
                     }
 
                     MouseArea { 

@@ -1,4 +1,6 @@
+singleton Colors Colors.qml
 singleton Theme Theme.qml
+singleton AccentService services/AccentService.qml
 singleton IconsFetcher windows/IconsFetcher.qml
 singleton NotificationService services/NotificationService.qml
 singleton CenterState services/CenterState.qml

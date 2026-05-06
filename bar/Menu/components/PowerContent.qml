@@ -11,7 +11,7 @@ ColumnLayout {
 
     Text {
         text: "Power Options"
-        color: "white"
+        color: Theme.text
         font.bold: true
         font.pixelSize: Theme.scaled(22)
         Layout.leftMargin: Theme.scaled(5)
@@ -25,23 +25,23 @@ ColumnLayout {
 
         Repeater {
             model: [
-                { icon: "󰌾", label: "Lock",     cmd: "hyprlock --immediate-render --no-fade-in", color: "#b4befe" },
-                { icon: "󰒲", label: "BIOS",     cmd: "systemctl reboot --firmware-setup", color: "#cba6f7" },
-                { icon: "󰗼", label: "Logout",   cmd: "hyprctl dispatch exit", color: "#a6e3a1" },
-                { icon: "󰤄", label: "Suspend",  cmd: "systemctl suspend", color: "#fab387" },
-                { icon: "󰑐", label: "Reboot",   cmd: "reboot", color: "#89b4fa" },
-                { icon: "󰐥", label: "Power",    cmd: "shutdown now", color: "#f38ba8" }
+                { icon: "󰌾", label: "Lock",     cmd: "hyprlock --immediate-render --no-fade-in", color: Theme.lavender },
+                { icon: "󰒲", label: "BIOS",     cmd: "systemctl reboot --firmware-setup", color: Theme.mauve },
+                { icon: "󰗼", label: "Logout",   cmd: "hyprctl dispatch exit", color: Theme.powerGreen },
+                { icon: "󰤄", label: "Suspend",  cmd: "systemctl suspend", color: Theme.powerYellow },
+                { icon: "󰑐", label: "Reboot",   cmd: "reboot", color: Theme.blue },
+                { icon: "󰐥", label: "Power",    cmd: "shutdown now", color: Theme.powerRed }
             ]
 
             delegate: Rectangle {
                 id: powerBtn
                 Layout.fillWidth: true
                 height: Theme.scaled(120)
-                color: "#1e1e2e"
+                color: Theme.surface0
                 radius: Theme.scaled(24)
                 
                 // Border lights up on hover
-                border.color: m.containsMouse ? modelData.color : "#313244"
+                border.color: m.containsMouse ? modelData.color : Theme.surface1
                 border.width: m.containsMouse ? 2 : 1
                 
                 // Smooth scale effect for that "modern" feel
@@ -81,7 +81,7 @@ ColumnLayout {
                         text: modelData.label
                         font.pixelSize: Theme.scaled(14)
                         font.bold: true
-                        color: "white"
+                        color: Theme.text
                         Layout.alignment: Qt.AlignHCenter
                         opacity: m.containsMouse ? 1.0 : 0.7
                     }

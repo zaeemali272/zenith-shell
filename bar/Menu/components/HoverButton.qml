@@ -1,4 +1,5 @@
 import "../../../Settings"
+import "../../.."
 import QtQuick
 
 // A simple helper to add hover effect to Rectangles used as buttons
