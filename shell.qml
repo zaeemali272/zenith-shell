@@ -36,4 +36,9 @@ Scope {
     OsdPopup {
         id: osdPopup
     }
-}
+
+    Connections { target: AccentService; function onRequestColorPopup() { colorPopup.visible = true; } }
+    Windows.ColorPopup {
+        id: colorPopup
+    }
+    }

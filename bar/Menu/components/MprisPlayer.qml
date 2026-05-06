@@ -8,9 +8,9 @@ import "../../../"
 
 Rectangle {
     id: mprisPlayer
-    color: "#11111b"
+    color: Theme.menuBackground
     radius: Theme.scaled(16)
-    border.color: "#313244"
+    border.color: Theme.surface1
     border.width: 1
     Layout.fillWidth: true
     implicitHeight: Theme.scaled(110)
@@ -96,7 +96,7 @@ Rectangle {
 
         // Album Art (Curved Radius)
         Rectangle {
-            width: Theme.scaled(80); height: Theme.scaled(80); radius: Theme.scaled(12); color: "#181825"; clip: true
+            width: Theme.scaled(80); height: Theme.scaled(80); radius: Theme.scaled(12); color: Theme.mantle; clip: true
             Layout.alignment: Qt.AlignVCenter
             Image {
                 anchors.fill: parent
@@ -106,7 +106,7 @@ Rectangle {
                 Behavior on opacity { NumberAnimation { duration: 250 } }
             }
             Text { 
-                anchors.centerIn: parent; text: "󰎆"; color: "#313244"; font.pixelSize: Theme.scaled(28)
+                anchors.centerIn: parent; text: "󰎆"; color: Theme.surface1; font.pixelSize: Theme.scaled(28)
                 visible: !player || !player.trackArtUrl 
             }
         }
@@ -117,7 +117,7 @@ Rectangle {
             
             Label {
                 text: player ? formatMediaTitle(String(player.trackTitle || "Media"), player.identity) : "Idle"
-                color: "#cdd6f4"; font.bold: true; font.pixelSize: Theme.scaled(13); elide: Text.ElideRight; Layout.fillWidth: true
+                color: Theme.text; font.bold: true; font.pixelSize: Theme.scaled(13); elide: Text.ElideRight; Layout.fillWidth: true
             }
 
                 ColumnLayout {
@@ -140,24 +140,24 @@ Rectangle {
                     background: Rectangle {
                         x: posSlider.leftPadding + posSlider.handleWidth / 2
                         y: posSlider.topPadding + (posSlider.availableHeight - height) / 2
-                        height: Theme.scaled(6); width: posSlider.availableWidth - posSlider.handleWidth; radius: Theme.scaled(3); color: "#313244"
+                        height: Theme.scaled(6); width: posSlider.availableWidth - posSlider.handleWidth; radius: Theme.scaled(3); color: Theme.surface1
                         Rectangle { 
                             width: posSlider.visualPosition * parent.width; height: Theme.scaled(6); 
-                            color: "#89b4fa"; radius: Theme.scaled(3) 
+                            color: Theme.blue; radius: Theme.scaled(3) 
                         }
                     }
                     handle: Rectangle {
                         x: posSlider.leftPadding + posSlider.visualPosition * (posSlider.availableWidth - width)
                         y: posSlider.topPadding + (posSlider.availableHeight - height) / 2
-                        width: posSlider.handleWidth; height: Theme.scaled(12); radius: Theme.scaled(6); color: "#f5e0dc"
+                        width: posSlider.handleWidth; height: Theme.scaled(12); radius: Theme.scaled(6); color: Theme.lavender
                         visible: posSlider.hovered || posSlider.pressed
                     }
                 }
                 RowLayout {
                     Layout.fillWidth: true
-                    Label { text: formatTime(mprisPlayer.currentPos); color: "#585b70"; font.pixelSize: Theme.scaled(10) }
+                    Label { text: formatTime(mprisPlayer.currentPos); color: Theme.subtext1; font.pixelSize: Theme.scaled(10) }
                     Item { Layout.fillWidth: true }
-                    Label { text: formatTime(player ? player.length : 0); color: "#585b70"; font.pixelSize: Theme.scaled(10) }
+                    Label { text: formatTime(player ? player.length : 0); color: Theme.subtext1; font.pixelSize: Theme.scaled(10) }
                 }
             }
 
@@ -168,20 +168,20 @@ Rectangle {
                     Button { 
                         flat: true; implicitWidth: Theme.scaled(32); implicitHeight: Theme.scaled(32)
                         onClicked: { if(player) player.previous() }
-                        contentItem: Text { text: "󰒮"; color: "#cdd6f4"; font.pixelSize: Theme.scaled(16); horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter } 
+                        contentItem: Text { text: "󰒮"; color: Theme.text; font.pixelSize: Theme.scaled(16); horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter } 
                     }
                     Button { 
                         flat: true; implicitWidth: Theme.scaled(36); implicitHeight: Theme.scaled(36)
                         onClicked: { if(player) player.playbackState === MprisPlaybackState.Playing ? player.pause() : player.play() }
                         contentItem: Text { 
                             text: (player && player.playbackState === MprisPlaybackState.Playing) ? "󰏤" : "󰐊"
-                            color: "#89b4fa"; font.pixelSize: Theme.scaled(22); horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter 
+                            color: Theme.blue; font.pixelSize: Theme.scaled(22); horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter 
                         } 
                     }
                     Button { 
                         flat: true; implicitWidth: Theme.scaled(32); implicitHeight: Theme.scaled(32)
                         onClicked: { if(player) player.next() }
-                        contentItem: Text { text: "󰒭"; color: "#cdd6f4"; font.pixelSize: Theme.scaled(16); horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter } 
+                        contentItem: Text { text: "󰒭"; color: Theme.text; font.pixelSize: Theme.scaled(16); horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter } 
                     }
                 }
                 
@@ -199,7 +199,7 @@ Rectangle {
                             Text {
                                 anchors.centerIn: parent
                                 font.pixelSize: Theme.scaled(16)
-                                color: (mprisPlayer.player === modelData) ? "#f5c2e7" : "#45475a"
+                                color: (mprisPlayer.player === modelData) ? Theme.mauve : Theme.surface2
                                 text: {
                                     let id = modelData.identity.toLowerCase();
                                     if (id.includes("firefox")) return "󰈹";

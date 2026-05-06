@@ -11,7 +11,7 @@ ColumnLayout {
     property string icon: ""
     property int value: 0
     property var onChange: null
-    property color sliderColor: "#89b4fa" // Default to a nice blue
+    property color sliderColor: Theme.primary // Use dynamic Theme
 
     spacing: Theme.scaled(8)
     Layout.fillWidth: true
@@ -23,7 +23,7 @@ ColumnLayout {
 
         Rectangle {
             width: Theme.scaled(38); height: Theme.scaled(38); radius: Theme.scaled(12)
-            color: "#181825"; border.color: "#313244"
+            color: Theme.surface0; border.color: Theme.surface1
             Text {
                 anchors.centerIn: parent
                 text: root.icon; font.family: Theme.iconFont
@@ -35,12 +35,12 @@ ColumnLayout {
             spacing: 0; Layout.fillWidth: true
             Text { 
                 text: root.label.toUpperCase()
-                color: "#89b4fa"; font.weight: Font.Black
+                color: Theme.blue; font.weight: Font.Black
                 font.pixelSize: Theme.scaled(11); font.letterSpacing: 1.5 
             }
             Text { 
                 text: root.value + "%"
-                color: "white"; font.family: "JetBrains Mono"
+                color: Theme.text; font.family: "JetBrains Mono"
                 font.weight: Font.Bold; font.pixelSize: Theme.scaled(13) 
             }
         }
@@ -75,7 +75,7 @@ ColumnLayout {
             implicitWidth: control.handleWidth
             implicitHeight: control.handleWidth
             radius: width / 2
-            color: "white"
+            color: Theme.text
             border.color: root.sliderColor
             border.width: Theme.scaled(3)
             
@@ -100,8 +100,8 @@ ColumnLayout {
             width: control.availableWidth - control.handleWidth
             height: Theme.scaled(12) 
             radius: Theme.scaled(6)
-            color: "#181825"
-            border.color: "#313244"; border.width: 1
+            color: Theme.surface0
+            border.color: Theme.surface1; border.width: 1
 
             // The Progress Fill
             Rectangle {

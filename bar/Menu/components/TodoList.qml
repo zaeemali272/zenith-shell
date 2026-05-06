@@ -3,6 +3,8 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
+import "../.."
+import "../../../"
 
 Rectangle {
     id: todoRoot
@@ -78,7 +80,7 @@ Rectangle {
 
             Label {
                 text: "To-Do"
-                color: "#cdd6f4"
+                color: Theme.text
                 font.bold: true
                 font.pixelSize: 16
             }
@@ -89,7 +91,7 @@ Rectangle {
 
             Text {
                 text: "󰐕"
-                color: "#a6e3a1"
+                color: Theme.powerGreen
                 font.pixelSize: 20
 
                 MouseArea {
@@ -110,7 +112,7 @@ Rectangle {
             visible: false
             Layout.fillWidth: true
             placeholderText: "New task..."
-            color: "#cdd6f4"
+            color: Theme.text
             focus: true
             onAccepted: {
                 if (text !== "") {
@@ -125,9 +127,9 @@ Rectangle {
             }
 
             background: Rectangle {
-                color: "#111111"
+                color: Theme.menuBackground
                 radius: 4
-                border.color: "#313244"
+                border.color: Theme.surface1
                 border.width: 1
             }
 
@@ -155,7 +157,7 @@ Rectangle {
                 TextInput {
                     text: model.task
                     Layout.fillWidth: true
-                    color: model.completed ? "#585b70" : "#cdd6f4"
+                    color: model.completed ? Theme.surface2 : Theme.text
                     selectByMouse: true
                     onAccepted: {
                         model.task = text;
@@ -166,7 +168,7 @@ Rectangle {
 
                 Text {
                     text: "󰅖"
-                    color: "#f38ba8"
+                    color: Theme.powerRed
                     font.pixelSize: 16
 
                     MouseArea {

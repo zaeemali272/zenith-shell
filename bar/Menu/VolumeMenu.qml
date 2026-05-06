@@ -45,7 +45,7 @@ PopupWindow {
         anchors.fill: parent
         anchors.margins: 5
         radius: 12
-        color: Theme.backgroundColor || "#111111"
+        color: Theme.menuBackground
         border.color: hoverTracker.containsMouse ? Theme.menuHoverBorder : Theme.menuBorder
         border.width: 1
         clip: true
@@ -63,7 +63,7 @@ PopupWindow {
 
             Text {
                 text: "Audio Control"
-                color: Theme.fontColor
+                color: Theme.text
                 font.bold: true
                 font.pixelSize: 16
             }
@@ -73,7 +73,7 @@ PopupWindow {
                 label: "Output"
                 icon: VolumeService.btActive ? Theme.btIcon : ""
                 value: VolumeService.outputVolume
-                color: VolumeService.btActive ? Theme.bluetoothColor : Theme.fontColor
+                sliderColor: VolumeService.btActive ? Theme.bluetoothColor : Theme.blue
                 Layout.fillWidth: true
                 onChange: (v) => {
                     setOut.command = ["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", (v / 100).toFixed(2)];
@@ -86,7 +86,7 @@ PopupWindow {
                 label: "Microphone"
                 icon: ""
                 value: VolumeService.micVolume
-                color: Theme.fontColor
+                sliderColor: Theme.text
                 Layout.fillWidth: true
                 onChange: (v) => {
                     setMic.command = ["wpctl", "set-volume", "@DEFAULT_AUDIO_SOURCE@", (v / 100).toFixed(2)];
@@ -97,7 +97,7 @@ PopupWindow {
             Rectangle {
                 Layout.fillWidth: true
                 height: 1
-                color: "#333"
+                color: Theme.surface1
             }
 
             RowLayout {
@@ -109,14 +109,14 @@ PopupWindow {
                     height: 35
                     radius: 6
                     // Darker on hover
-                    color: VolumeService.muted ? Theme.accentColor : (muteMouse.containsMouse ? "#0a0a0a" : "#1a1a1a")
+                    color: VolumeService.muted ? Theme.accentColor : (muteMouse.containsMouse ? Theme.base : Theme.surface0)
                     
                     Behavior on color { ColorAnimation { duration: 200 } }
 
                     Text {
                         anchors.centerIn: parent
                         text: VolumeService.muted ? "Unmute Output" : "Mute Output"
-                        color: VolumeService.muted ? "black" : (muteMouse.containsMouse ? "white" : "#cdd6f4")
+                        color: VolumeService.muted ? Theme.base : (muteMouse.containsMouse ? Theme.text : Theme.text)
                         font.pixelSize: 11
                         font.bold: true
                     }

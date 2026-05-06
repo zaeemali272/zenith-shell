@@ -26,18 +26,18 @@ Flickable {
 
             Label {
                 text: "Notifications"
-                color: "#cdd6f4"
+                color: Theme.text
                 font.pixelSize: Theme.scaled(18)
                 font.bold: true
             }
 
             Rectangle {
                 width: Theme.scaled(22); height: Theme.scaled(22); radius: Theme.scaled(6)
-                color: "#313244"
+                color: Theme.surface1
                 Label {
                     anchors.centerIn: parent
                     text: NotificationService.notifications.count
-                    color: "#89b4fa"
+                    color: Theme.blue
                     font.pixelSize: Theme.scaled(11); font.bold: true
                 }
             }
@@ -50,12 +50,12 @@ Flickable {
                 padding: Theme.scaled(8)
                 contentItem: Text {
                     text: "Clear All"
-                    color: clearBtn.hovered ? "#f38ba8" : "#585b70"
+                    color: clearBtn.hovered ? Theme.powerRed : Theme.surface2
                     font.pixelSize: Theme.scaled(12); font.bold: true
                     horizontalAlignment: Text.AlignHCenter
                 }
                 background: Rectangle { 
-                    color: clearBtn.hovered ? "#313244" : "transparent"
+                    color: clearBtn.hovered ? Theme.surface1 : "transparent"
                     radius: Theme.scaled(8) 
                 }
                 onClicked: NotificationService.clearAll()
@@ -90,12 +90,12 @@ Flickable {
             Text {
                 text: "󰂚"
                 font.pixelSize: Theme.scaled(80)
-                color: "#313244"
+                color: Theme.surface1
                 Layout.alignment: Qt.AlignCenter
             }
             Text {
                 text: "All caught up"
-                color: "#585b70"
+                color: Theme.surface2
                 font.pixelSize: Theme.scaled(13)
                 Layout.alignment: Qt.AlignCenter
             }

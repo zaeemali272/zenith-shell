@@ -46,13 +46,13 @@ ColumnLayout {
         Layout.fillWidth: true
         Text {
             text: "SYSTEM MONITOR"
-            color: "#89b4fa"
+            color: Theme.blue
             font.pixelSize: Theme.scaled(14)
             font.letterSpacing: 2
             font.weight: Font.Black
             opacity: 0.8
         }
-        Rectangle { Layout.fillWidth: true; height: 1; color: "#313244"; opacity: 0.4; Layout.leftMargin: Theme.scaled(10) }
+        Rectangle { Layout.fillWidth: true; height: 1; color: Theme.surface1; opacity: 0.4; Layout.leftMargin: Theme.scaled(10) }
     }
 
     // --- Main Stats Grid ---
@@ -64,19 +64,19 @@ ColumnLayout {
 
         ResourceCard {
             Layout.fillWidth: true
-            title: "PROCESSOR"; value: root.cpu; icon: ""; accent: "#89b4fa"; suffix: "%"
+            title: "PROCESSOR"; value: root.cpu; icon: ""; accent: Theme.blue; suffix: "%"
         }
         ResourceCard {
             Layout.fillWidth: true
-            title: "MEMORY"; value: root.mem; icon: ""; accent: "#cba6f7"; suffix: "%"
+            title: "MEMORY"; value: root.mem; icon: ""; accent: Theme.mauve; suffix: "%"
         }
         ResourceCard {
             Layout.fillWidth: true
-            title: "THERMAL"; value: root.temp; icon: ""; accent: root.temp > 70 ? "#f38ba8" : "#94e2d5"; suffix: "°C"
+            title: "THERMAL"; value: root.temp; icon: ""; accent: root.temp > 70 ? Theme.powerRed : Theme.green; suffix: "°C"
         }
         ResourceCard {
             Layout.fillWidth: true
-            title: "STORAGE"; value: root.fs; icon: "󰋊"; accent: "#fab387"; suffix: "%"
+            title: "STORAGE"; value: root.fs; icon: "󰋊"; accent: Theme.powerYellow; suffix: "%"
         }
     }
 
@@ -87,7 +87,7 @@ ColumnLayout {
         
         Text {
             text: "LOGICAL CORES"
-            color: "#585b70"
+            color: Theme.surface2
             font.pixelSize: Theme.scaled(11)
             font.weight: Font.Bold
             font.letterSpacing: 1
@@ -105,23 +105,23 @@ ColumnLayout {
                     height: Theme.scaled(40)
                     radius: Theme.scaled(12)
                     border.width: 1
-                    border.color: modelData > 70 ? Qt.alpha("#f38ba8", 0.4) : "#313244"
+                    border.color: modelData > 70 ? Qt.alpha(Theme.powerRed, 0.4) : Theme.surface1
                     
                     gradient: Gradient {
-                        GradientStop { position: 0.0; color: "#181825" }
-                        GradientStop { position: 1.0 - (modelData / 100); color: "#181825" }
-                        GradientStop { position: 1.0 - (modelData / 100); color: Qt.alpha(modelData > 70 ? "#f38ba8" : "#89b4fa", 0.15) }
-                        GradientStop { position: 1.0; color: Qt.alpha(modelData > 70 ? "#f38ba8" : "#89b4fa", 0.15) }
+                        GradientStop { position: 0.0; color: Theme.mantle }
+                        GradientStop { position: 1.0 - (modelData / 100); color: Theme.mantle }
+                        GradientStop { position: 1.0 - (modelData / 100); color: Qt.alpha(modelData > 70 ? Theme.powerRed : Theme.blue, 0.15) }
+                        GradientStop { position: 1.0; color: Qt.alpha(modelData > 70 ? Theme.powerRed : Theme.blue, 0.15) }
                     }
 
                     Text {
                         anchors.centerIn: parent
                         text: modelData + "%"
-                        color: modelData > 70 ? "#f38ba8" : "#cdd6f4"
+                        color: modelData > 70 ? Theme.powerRed : Theme.text
                         font.pixelSize: Theme.scaled(12)
                         font.weight: Font.Black
                         style: Text.Outline
-                        styleColor: "#181825" 
+                        styleColor: Theme.mantle 
                     }
                 }
             }
@@ -140,9 +140,9 @@ ColumnLayout {
         property color accent
         
         height: Theme.scaled(120)
-        color: "#11111b"
+        color: Theme.menuBackground
         radius: Theme.scaled(28)
-        border.color: "#313244"
+        border.color: Theme.surface1
         border.width: 1
 
         Rectangle {
@@ -166,7 +166,7 @@ ColumnLayout {
                 Text { text: cardRoot.icon; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(24); color: cardRoot.accent }
                 Text {
                     text: cardRoot.title
-                    color: "#6c7086"
+                    color: Theme.subtext0
                     font.pixelSize: Theme.scaled(10)
                     font.weight: Font.Black
                     font.letterSpacing: 1.5
@@ -179,13 +179,13 @@ ColumnLayout {
             RowLayout {
                 Layout.fillWidth: true
                 spacing: Theme.scaled(4)
-                Text { text: cardRoot.value; color: "white"; font.pixelSize: Theme.scaled(32); font.weight: Font.Black }
+                Text { text: cardRoot.value; color: Theme.text; font.pixelSize: Theme.scaled(32); font.weight: Font.Black }
                 Text { text: cardRoot.suffix; color: cardRoot.accent; font.pixelSize: Theme.scaled(16); font.weight: Font.Bold; Layout.alignment: Qt.AlignBottom; Layout.bottomMargin: Theme.scaled(6) }
                 
                 Item { Layout.fillWidth: true }
                 
                 Rectangle {
-                    width: Theme.scaled(44); height: Theme.scaled(44); radius: Theme.scaled(22); color: "transparent"; border.color: "#313244"; border.width: 3
+                    width: Theme.scaled(44); height: Theme.scaled(44); radius: Theme.scaled(22); color: "transparent"; border.color: Theme.surface1; border.width: 3
                     Rectangle {
                         anchors.fill: parent; radius: Theme.scaled(22); color: Qt.alpha(cardRoot.accent, 0.1); border.color: cardRoot.accent; border.width: 3
                         opacity: Math.min(cardRoot.value / 100, 1.0)

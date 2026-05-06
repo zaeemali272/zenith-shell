@@ -14,13 +14,13 @@ ColumnLayout {
         Layout.fillWidth: true
         Text {
             text: "PERFORMANCE MODES"
-            color: "#cba6f7" // Mauve header to distinguish from system monitor
+            color: Theme.mauve // Mauve header to distinguish from system monitor
             font.pixelSize: Theme.scaled(14)
             font.letterSpacing: 2
             font.weight: Font.Black
             opacity: 0.8
         }
-        Rectangle { Layout.fillWidth: true; height: 1; color: "#313244"; opacity: 0.4; Layout.leftMargin: Theme.scaled(10) }
+        Rectangle { Layout.fillWidth: true; height: 1; color: Theme.surface1; opacity: 0.4; Layout.leftMargin: Theme.scaled(10) }
     }
 
     GridLayout {
@@ -31,21 +31,21 @@ ColumnLayout {
 
         Repeater {
             model: [
-                { id: "performance", icon: "󰀦", color: "#f38ba8", label: "Performance" },
-                { id: "balanced",    icon: "󰏤", color: "#89b4fa", label: "Balanced" },
-                { id: "powersave",   icon: "󰍛", color: "#a6e3a1", label: "Power Save" },
-                { id: "turbo",       icon: "󰞃", color: "#f9e2af", label: "Turbo" }
+                { id: "performance", icon: "󰀦", color: Theme.powerRed, label: "Performance" },
+                { id: "balanced",    icon: "󰏤", color: Theme.blue, label: "Balanced" },
+                { id: "powersave",   icon: "󰍛", color: Theme.powerGreen, label: "Power Save" },
+                { id: "turbo",       icon: "󰞃", color: Theme.powerYellow, label: "Turbo" }
             ]
 
             delegate: Rectangle {
                 id: profileCard
                 Layout.fillWidth: true
                 height: Theme.scaled(80)
-                color: "#11111b" // Deep navy base
+                color: Theme.menuBackground // Deep navy base
                 radius: Theme.scaled(20)
                 border.width: 1
                 // Border lights up when active
-                border.color: PowerProfileService.currentProfile === modelData.id ? modelData.color : "#313244"
+                border.color: PowerProfileService.currentProfile === modelData.id ? modelData.color : Theme.surface1
                 
                 clip: true // Critical for the liquid fill rounding
 
@@ -84,14 +84,14 @@ ColumnLayout {
                     // Icon Circle
                     Rectangle {
                         width: Theme.scaled(40); height: Theme.scaled(40); radius: Theme.scaled(20)
-                        color: PowerProfileService.currentProfile === modelData.id ? Qt.alpha(modelData.color, 0.2) : "#181825"
+                        color: PowerProfileService.currentProfile === modelData.id ? Qt.alpha(modelData.color, 0.2) : Theme.mantle
                         
                         Text {
                             anchors.centerIn: parent
                             text: modelData.icon
                             font.family: Theme.iconFont
                             font.pixelSize: Theme.scaled(20)
-                            color: PowerProfileService.currentProfile === modelData.id ? modelData.color : "#585b70"
+                            color: PowerProfileService.currentProfile === modelData.id ? modelData.color : Theme.surface2
                             
                             Behavior on color { ColorAnimation { duration: 200 } }
                         }
@@ -103,14 +103,14 @@ ColumnLayout {
                             text: modelData.label
                             font.pixelSize: Theme.scaled(14)
                             font.weight: Font.Black
-                            color: PowerProfileService.currentProfile === modelData.id ? "white" : "#cdd6f4"
+                            color: PowerProfileService.currentProfile === modelData.id ? Theme.text : Theme.text
                         }
                         Text {
                             text: PowerProfileService.currentProfile === modelData.id ? "ACTIVE" : "SELECT"
                             font.pixelSize: Theme.scaled(9)
                             font.weight: Font.Bold
                             font.letterSpacing: 1
-                            color: PowerProfileService.currentProfile === modelData.id ? modelData.color : "#585b70"
+                            color: PowerProfileService.currentProfile === modelData.id ? modelData.color : Theme.surface2
                         }
                     }
                     

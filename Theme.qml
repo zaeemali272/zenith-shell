@@ -20,33 +20,26 @@ QtObject {
     
     readonly property int appMenuCol: 6
 
-    // ===== Colors (Catppuccin Mocha inspired) =====
-    readonly property color base: "#1e1e2e"
-    readonly property color mantle: "#181825"
-    readonly property color crust: "#11111b"
-    readonly property color surface0: '#242532'
-    readonly property color surface1: "#45475a"
-    readonly property color surface2: "#585b70"
-    readonly property color overlay0: "#6c7086"
-    readonly property color overlay1: "#7f849c"
-    readonly property color overlay2: "#9399b2"
-    readonly property color subtext0: "#a6adc8"
-    readonly property color subtext1: "#bac2de"
-    readonly property color text: "#cdd6f4"
-    readonly property color lavender: "#b4befe"
-    readonly property color blue: "#89b4fa"
-    readonly property color sapphire: "#74c7ec"
-    readonly property color sky: "#89dceb"
-    readonly property color teal: "#94e2d5"
-    readonly property color green: "#a6e3a1"
-    readonly property color yellow: "#f9e2af"
-    readonly property color peach: "#fab387"
-    readonly property color maroon: "#eba0ac"
-    readonly property color red: "#f38ba8"
-    readonly property color mauve: "#cba6f7"
-    readonly property color pink: "#f5c2e7"
-    readonly property color flamingo: "#f2cdcd"
-    readonly property color rosewater: "#f5e0dc"
+    // ===== Colors (Dynamic from Matugen) =====
+    readonly property color base: Colors.background
+    readonly property color mantle: Colors.surface
+    readonly property color crust: Colors.surface_variant
+    readonly property color surface0: Colors.surface_variant
+    readonly property color surface1: Colors.surface_variant
+    readonly property color surface2: Colors.outline
+    readonly property color overlay0: Colors.outline
+    readonly property color overlay1: Colors.outline
+    readonly property color overlay2: Colors.outline
+    readonly property color subtext0: Colors.on_surface_variant
+    readonly property color subtext1: Colors.on_surface_variant
+    readonly property color text: Colors.on_background
+    readonly property color lavender: Colors.secondary
+    readonly property color blue: Colors.primary
+    readonly property color green: Colors.tertiary
+    readonly property color yellow: Colors.secondary_container
+    readonly property color red: Colors.error
+    readonly property color mauve: Colors.primary
+    readonly property color accentColor: Colors.primary
 
     // ===== Bar =====
     readonly property int barHeight: scaled(30)
@@ -56,9 +49,8 @@ QtObject {
     readonly property int barMarginTop: scaled(5)
     readonly property int barMarginBottom: 0
     readonly property color barColor: "#00000000"
-    readonly property color backgroundColor: mantle
-    readonly property color borderColor: surface0
-    readonly property color accentColor: mauve
+    readonly property color backgroundColor: Colors.surface_container
+    readonly property color borderColor: Colors.surface_variant
     readonly property real barOpacity: 0.92
 
     // ===== Workspaces =====
@@ -67,9 +59,9 @@ QtObject {
     readonly property int wsActiveWidth: scaled(28)
     readonly property int wsInactiveWidth: scaled(10)
     readonly property int wsSpacing: scaled(6)
-    readonly property color wsActiveColor: '#ff5757'
-    readonly property color wsActiveTextColor: '#111111'
-    readonly property color wsOccupiedColor: lavender
+    readonly property color wsActiveColor: Colors.primary
+    readonly property color wsActiveTextColor: Colors.on_primary
+    readonly property color wsOccupiedColor: Colors.secondary
     readonly property color wsEmptyColor: pillColor
 
     // ===== Pills =====
@@ -80,44 +72,44 @@ QtObject {
     readonly property color pillColor: "#bd000000"
     readonly property int pillSpacing: scaled(4)
     readonly property int pillGap: scaled(6)
-    readonly property color pillBorderColor: "#ffffff22"
+    readonly property color pillBorderColor: Colors.outline
     readonly property int pillBorderWidth: 1
     readonly property int pillHoverBorderWidth: 2
-    readonly property color pillHoverColor: surface0
+    readonly property color pillHoverColor: Colors.surface_variant
     
     // ===== Typography =====
     readonly property int fontSize: scaled(13)
     readonly property int iconSize: scaled(14)
     readonly property string iconFont: "MesloLGS NF"
-    readonly property color fontColor: text
+    readonly property color fontColor: Colors.on_background
     
     // ===== Menu / Popup Styling =====
-    readonly property color menuBackground: "#11111b"
-    readonly property color menuBorder: surface0
-    readonly property color menuHoverBorder: '#00b4befe'
+    readonly property color menuBackground: Colors.background
+    readonly property color menuBorder: Colors.surface_variant
+    readonly property color menuHoverBorder: Colors.primary
     readonly property int menuRadius: scaled(24)
     readonly property int menuPadding: scaled(20)
     readonly property int menuSpacing: scaled(15)
-    readonly property color menuActiveTab: blue
+    readonly property color menuActiveTab: Colors.primary
     readonly property color menuInactiveTab: "transparent"
     
     // ===== Widget Specific Colors =====
-    readonly property color cpuColor: red
-    readonly property color memColor: blue
-    readonly property color tempColor: green
-    readonly property color bluetoothColor: blue
-    readonly property color volumeColor: blue
-    readonly property color powerRed: red
-    readonly property color powerYellow: yellow
-    readonly property color powerGreen: green
-    readonly property color mediaPeach: peach
-    readonly property color mediaGray: surface2
+    readonly property color cpuColor: Colors.error
+    readonly property color memColor: Colors.primary
+    readonly property color tempColor: Colors.tertiary
+    readonly property color bluetoothColor: Colors.primary
+    readonly property color volumeColor: Colors.primary
+    readonly property color powerRed: Colors.error
+    readonly property color powerYellow: Colors.secondary_container
+    readonly property color powerGreen: Colors.tertiary
+    readonly property color mediaPeach: Colors.secondary
+    readonly property color mediaGray: Colors.outline
 
     // ===== Active States =====
-    readonly property color activePillColor: surface0
-    readonly property color activeBorderColor: '#130d21'
-    readonly property color activeTextColor: '#9c9c9c'
-    readonly property color inactiveTextColor: overlay1
+    readonly property color activePillColor: Colors.surface_variant
+    readonly property color activeBorderColor: Colors.primary
+    readonly property color activeTextColor: Colors.on_surface
+    readonly property color inactiveTextColor: Colors.outline
 
     // ===== Battery thresholds =====
     readonly property int high: 90
@@ -127,12 +119,12 @@ QtObject {
     readonly property int critical: 10
 
     // ===== Battery colors =====
-    readonly property color chargingColor: green
-    readonly property color conserveColor: green
-    readonly property color highColor: green
-    readonly property color midColor: yellow
-    readonly property color lowColor: peach
-    readonly property color criticalColor: red
+    readonly property color chargingColor: Colors.tertiary
+    readonly property color conserveColor: Colors.tertiary
+    readonly property color highColor: Colors.tertiary
+    readonly property color midColor: Colors.secondary_container
+    readonly property color lowColor: Colors.secondary
+    readonly property color criticalColor: Colors.error
 
     // ===== Icons (Nerd Font) =====
     readonly property string chargingIcon: "󰂄"
@@ -175,5 +167,9 @@ QtObject {
         if (percent <= low) return lowColor;
         if (percent <= mid) return midColor;
         return highColor;
+    }
+
+    function setAccent(index) {
+        AccentService.setAccent(index);
     }
 }

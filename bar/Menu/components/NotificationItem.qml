@@ -28,9 +28,9 @@ Rectangle {
     signal autoDismissed(real id)
 
     // --- ZENITH THEMEING ---
-    color: "#11111b"
+    color: Theme.menuBackground
     radius: Theme.scaled(14)
-    border.color: "#313244"
+    border.color: Theme.surface1
     border.width: 1
     clip: true
 
@@ -222,9 +222,9 @@ Rectangle {
             Layout.preferredHeight: Theme.scaled(50)
             Layout.alignment: Qt.AlignVCenter 
             
-            color: "#181825"
+            color: Theme.mantle
             radius: Theme.scaled(12)
-            border.color: "#313244"
+            border.color: Theme.surface1
             border.width: 1
 
             Image {
@@ -262,7 +262,7 @@ Rectangle {
 
             Label {
                 text: notification ? (notification.appName || "SYSTEM").toUpperCase() : ""
-                color: "#89b4fa"
+                color: Theme.blue
                 font.pixelSize: Theme.scaled(10)
                 font.weight: Font.Black
                 font.letterSpacing: 1.5
@@ -271,7 +271,7 @@ Rectangle {
 
             Label {
                 text: notification ? (notification.summary || "Notification") : ""
-                color: "white"
+                color: Theme.text
                 font.bold: true
                 font.pixelSize: Theme.scaled(13)
                 elide: root.realHovered ? Text.ElideNone : Text.ElideRight
@@ -281,7 +281,7 @@ Rectangle {
 
             Label {
                 text: notification ? (notification.body || "") : ""
-                color: "#a6adc8"
+                color: Theme.subtext0
                 font.pixelSize: Theme.scaled(11)
                 wrapMode: root.realHovered ? Text.Wrap : Text.NoWrap
                 elide: root.realHovered ? Text.ElideNone : Text.ElideRight
@@ -312,15 +312,15 @@ Rectangle {
             anchors.fill: parent
             radius: Theme.scaled(8)
             // Solid background highlight when hovering the button itself to obscure text
-            color: dismissMouse.containsMouse ? "#11111b" : "transparent"
-            border.color: dismissMouse.containsMouse ? "#313244" : "transparent"
+            color: dismissMouse.containsMouse ? Theme.surface0 : "transparent"
+            border.color: dismissMouse.containsMouse ? Theme.surface1 : "transparent"
             border.width: 1
             Behavior on color { ColorAnimation { duration: 150 } }
             
             Text {
                 anchors.centerIn: parent
                 text: "󰅖"
-                color: dismissMouse.containsMouse ? "#f38ba8" : "#585b70"
+                color: dismissMouse.containsMouse ? Theme.powerRed : Theme.surface2
                 font.pixelSize: Theme.scaled(16)
             }
         }
