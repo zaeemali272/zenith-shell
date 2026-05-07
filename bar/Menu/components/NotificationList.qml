@@ -45,6 +45,56 @@ Flickable {
             Item { Layout.fillWidth: true }
 
             Button {
+                id: fullscreenBtn
+                flat: true
+                padding: Theme.scaled(8)
+                contentItem: RowLayout {
+                    spacing: Theme.scaled(4)
+                    Text {
+                        text: GeneralSettings.fullscreenNotification ? "󰊓" : "󰊔"
+                        font.family: Theme.iconFont
+                        color: GeneralSettings.fullscreenNotification ? Theme.blue : Theme.surface2
+                        font.pixelSize: Theme.scaled(14)
+                    }
+                    Text {
+                        text: "Notify"
+                        color: fullscreenBtn.hovered ? Theme.text : Theme.surface2
+                        font.pixelSize: Theme.scaled(11); font.bold: true
+                    }
+                }
+                background: Rectangle { 
+                    color: fullscreenBtn.hovered ? Theme.surface1 : "transparent"
+                    radius: Theme.scaled(8) 
+                }
+                onClicked: GeneralSettings.fullscreenNotification = !GeneralSettings.fullscreenNotification
+            }
+
+            Button {
+                id: osdFullscreenBtn
+                flat: true
+                padding: Theme.scaled(8)
+                contentItem: RowLayout {
+                    spacing: Theme.scaled(4)
+                    Text {
+                        text: GeneralSettings.fullscreenOSD ? "󰊓" : "󰊔"
+                        font.family: Theme.iconFont
+                        color: GeneralSettings.fullscreenOSD ? Theme.blue : Theme.surface2
+                        font.pixelSize: Theme.scaled(14)
+                    }
+                    Text {
+                        text: "OSD"
+                        color: osdFullscreenBtn.hovered ? Theme.text : Theme.surface2
+                        font.pixelSize: Theme.scaled(11); font.bold: true
+                    }
+                }
+                background: Rectangle { 
+                    color: osdFullscreenBtn.hovered ? Theme.surface1 : "transparent"
+                    radius: Theme.scaled(8) 
+                }
+                onClicked: GeneralSettings.fullscreenOSD = !GeneralSettings.fullscreenOSD
+            }
+
+            Button {
                 id: clearBtn
                 flat: true
                 padding: Theme.scaled(8)

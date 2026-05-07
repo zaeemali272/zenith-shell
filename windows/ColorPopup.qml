@@ -12,8 +12,8 @@ PopupWindow {
         source: "../ThemeLoader.qml"
     }
 
-    implicitWidth: themeLoader.item ? themeLoader.item.scaled(300) : 300
-    implicitHeight: themeLoader.item ? themeLoader.item.scaled(150) : 150
+    implicitWidth: themeLoader.item ? themeLoader.item.theme.scaled(300) : 300
+    implicitHeight: themeLoader.item ? themeLoader.item.theme.scaled(150) : 150
     color: "transparent"
     
     // Position it at the bottom-right
@@ -22,27 +22,27 @@ PopupWindow {
     Rectangle {
         anchors.fill: parent
         color: Theme.menuBackground
-        radius: themeLoader.item ? themeLoader.item.scaled(16) : 16
+        radius: themeLoader.item ? themeLoader.item.theme.scaled(16) : 16
         border.color: Theme.surface1
         border.width: 1
         
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: themeLoader.item ? themeLoader.item.scaled(20) : 20
-            spacing: themeLoader.item ? themeLoader.item.scaled(10) : 10
+            anchors.margins: themeLoader.item ? themeLoader.item.theme.scaled(20) : 20
+            spacing: themeLoader.item ? themeLoader.item.theme.scaled(10) : 10
             
             Text {
                 text: "Theme Generated!"
                 color: Theme.text
                 font.bold: true
-                font.pixelSize: themeLoader.item ? themeLoader.item.scaled(16) : 16
+                font.pixelSize: themeLoader.item ? themeLoader.item.theme.scaled(16) : 16
                 Layout.alignment: Qt.AlignHCenter
             }
             
             Text {
                 text: "Pick an accent color (Defaults to first)"
                 color: Theme.subtext0
-                font.pixelSize: themeLoader.item ? themeLoader.item.scaled(12) : 12
+                font.pixelSize: themeLoader.item ? themeLoader.item.theme.scaled(12) : 12
                 wrapMode: Text.WordWrap
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignHCenter
@@ -50,17 +50,17 @@ PopupWindow {
             
             RowLayout {
                 Layout.alignment: Qt.AlignHCenter
-                spacing: themeLoader.item ? themeLoader.item.scaled(10) : 10
+                spacing: themeLoader.item ? themeLoader.item.theme.scaled(10) : 10
                 
                 Repeater {
                     model: [Theme.primary, Theme.secondary, Theme.tertiary]
                     delegate: Rectangle {
-                        width: themeLoader.item ? themeLoader.item.scaled(40) : 40; height: themeLoader.item ? themeLoader.item.scaled(40) : 40; radius: themeLoader.item ? themeLoader.item.scaled(20) : 20
+                        width: themeLoader.item ? themeLoader.item.theme.scaled(40) : 40; height: themeLoader.item ? themeLoader.item.theme.scaled(40) : 40; radius: themeLoader.item ? themeLoader.item.theme.scaled(20) : 20
                         color: modelData
                         MouseArea {
                             anchors.fill: parent
                             onClicked: {
-                                themeLoader.item.setAccent(index);
+                                themeLoader.item.theme.setAccent(index);
                                 root.visible = false;
                             }
                         }
@@ -74,9 +74,9 @@ PopupWindow {
     Component.onCompleted: {
         // Fallback for when loader is not yet ready
         if (themeLoader.item) {
-            themeLoader.item.setAccent(0);
+            themeLoader.item.theme.setAccent(0);
         } else {
-            themeLoader.loaded.connect(function() { themeLoader.item.setAccent(0); });
+            themeLoader.loaded.connect(function() { themeLoader.item.theme.setAccent(0); });
         }
         
         // Timer to close after 5s if no selection made

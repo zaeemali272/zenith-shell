@@ -3,21 +3,34 @@ import QtQuick
 import QtQuick.Controls 2.15
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Wayland
 import "../../.."
 
-PopupWindow {
+PanelWindow {
     id: osdWindow
+
+    readonly property bool useFullscreenLayout: GeneralSettings.fullscreenOSD && HyprlandService.isFullscreen
 
     property string osdType: ""
     property real osdValue: 0
 
-    anchor.window: bar
-    anchor.edges: Edges.Top | Edges.Right
-    anchor.rect.y: bar.height + Theme.scaled(11)
-    anchor.rect.x: bar.width - implicitWidth - Theme.scaled(7)
+    WlrLayershell.layer: WlrLayer.Overlay
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+
+    // Position (top-right)
+    anchors {
+        top: true
+        right: true
+    }
+
+    WlrLayershell.margins {
+        top: osdWindow.useFullscreenLayout ? - bar.height : Theme.scaled(10)
+        right: osdWindow.useFullscreenLayout ? Theme.scaled(5) : Theme.scaled(10)
+    }
 
     implicitWidth: Theme.scaled(370)
     implicitHeight: Theme.scaled(85)
+    
     // Window stays visible if timer is running OR if the mouse is hovering/pressing
     visible: osdTimer.running || content.opacity > 0 || mainMouseArea.containsMouse
     color: "transparent"
