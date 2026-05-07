@@ -3,19 +3,31 @@ import QtQuick
 import QtQuick.Controls 2.15
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Wayland
 import "../../.."
 
-PopupWindow {
+PanelWindow {
     id: popupStack
 
-    anchor.window: bar
-    anchor.edges: Edges.Top | Edges.Right
-    anchor.rect.y: bar.height + (osdPopup.visible ? Theme.scaled(105) : Theme.scaled(10))
-    anchor.rect.x: bar.width - implicitWidth - Theme.scaled(5)
+    readonly property bool useFullscreenLayout: GeneralSettings.fullscreenNotification && HyprlandService.isFullscreen
 
-    // Width and height logic
+    WlrLayershell.layer: WlrLayer.Overlay
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+
+    // Standard popup position (top-right)
+    anchors {
+        top: true
+        right: true
+    }
+
+    WlrLayershell.margins {
+        top: popupStack.useFullscreenLayout ? Theme.scaled(10) : (osdPopup.visible ? Theme.scaled(105) : Theme.scaled(10))
+        right: osdWindow.useFullscreenLayout ? Theme.scaled(5) : Theme.scaled(10)
+    }
+
     implicitWidth: Theme.scaled(370)
     implicitHeight: mainColumn.implicitHeight
+    
     visible: activeNotifications.count > 0
     color: "transparent"
 
@@ -23,31 +35,20 @@ PopupWindow {
         id: activeNotifications
     }
 
+    // The layout remains "the same"
     ColumnLayout {
         id: mainColumn
-
         width: Theme.scaled(370)
         spacing: Theme.scaled(10)
-        // FIX: Ensure notifications are centered horizontally in the popup window
-        anchors.horizontalCenter: parent.horizontalCenter
 
         Repeater {
-            // --- FALLBACK LOGIC ---
-            // Inside your NotificationItem.qml, the Image component should have:
-            // onStatusChanged: { if (status === Image.Error) source = model.fallbackIcon }
-
             model: activeNotifications
-
             delegate: NotificationItem {
-                id: delegateRoot
                 notification: activeNotifications.get(index)
                 Layout.fillWidth: true
-                
                 onAutoDismissed: (id) => NotificationService.dismissNotification(id)
             }
-
         }
-
     }
 
     Connections {
@@ -66,5 +67,4 @@ PopupWindow {
 
         target: NotificationService
     }
-
 }
