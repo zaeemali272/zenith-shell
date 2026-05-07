@@ -10,8 +10,8 @@ QtObject {
     property bool enableTodoList: true
     property bool enableResources: true
     property bool enablePowerProfiles: true
-    property bool fullscreenNotification: false
-    property bool fullscreenOSD: false
+    property bool fullscreenNotification: true
+    property bool fullscreenOSD: true
     
     // Bar settings
     property bool barEntryAnimation: true

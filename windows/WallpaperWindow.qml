@@ -282,7 +282,7 @@ FloatingWindow {
         property string wallPath: ""
         interval: 600 
         onTriggered: {
-            setWall.command = ["sh", "-c", "awww img '" + wallPath + "' --transition-type fade >> " + win.logPath + " 2>&1" + "&& ./Documents/Dots/zenith/scripts/zenith-theme.sh --autoselect"];
+            setWall.command = ["sh", "-c", "awww img '" + wallPath + "' --transition-type fade >> " + win.logPath + " 2>&1" + "&& ~/.config/quickshell/scripts/zenith-theme.sh --autoselect"];
             setWall.running = true;
         }
     }

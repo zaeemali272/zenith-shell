@@ -29,7 +29,7 @@ PanelWindow {
     }
 
     implicitWidth: Theme.scaled(370)
-    implicitHeight: Theme.scaled(85)
+    implicitHeight: osdWindow.useFullscreenLayout ? Theme.scaled(65) : Theme.scaled(85)
     
     // Window stays visible if timer is running OR if the mouse is hovering/pressing
     visible: osdTimer.running || content.opacity > 0 || mainMouseArea.containsMouse
@@ -56,19 +56,22 @@ PanelWindow {
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: Theme.scaled(18)
-            spacing: Theme.scaled(8)
+            anchors.margins: osdWindow.useFullscreenLayout ? Theme.scaled(9) : Theme.scaled(18)
+            spacing: osdWindow.useFullscreenLayout ? Theme.scaled(4) : Theme.scaled(8)
             z: 2 // Keep content above mouse area
 
             RowLayout {
                 Layout.fillWidth: true
-                spacing: Theme.scaled(12)
+                spacing: osdWindow.useFullscreenLayout ? Theme.scaled(8) : Theme.scaled(12)
 
                 Rectangle {
-                    width: Theme.scaled(32); height: Theme.scaled(32); radius: Theme.scaled(8); color: Theme.mantle
+                    width: osdWindow.useFullscreenLayout ? Theme.scaled(16) : Theme.scaled(32); 
+                    height: osdWindow.useFullscreenLayout ? Theme.scaled(16) : Theme.scaled(32); 
+                    radius: osdWindow.useFullscreenLayout ? Theme.scaled(4) : Theme.scaled(8); 
+                    color: Theme.mantle
                     Text {
                         anchors.centerIn: parent
-                        font.pixelSize: Theme.scaled(18)
+                        font.pixelSize: osdWindow.useFullscreenLayout ? Theme.scaled(14) : Theme.scaled(18)
                         color: (osdValue <= 0) ? Theme.powerRed : (osdType === "volume" && osdValue > 1.0 ? Theme.powerYellow : Theme.powerGreen)
                         text: {
                             if (osdType === "brightness") {
@@ -91,7 +94,7 @@ PanelWindow {
 
                 Text {
                     text: Math.round(osdValue * 100) + "%"
-                    color: Theme.text; font.family: "JetBrains Mono"; font.weight: Font.Bold; font.pixelSize: Theme.scaled(13)
+                    color: Theme.text; font.family: "JetBrains Mono"; font.weight: Font.Bold; font.pixelSize: osdWindow.useFullscreenLayout ? Theme.scaled(11) : Theme.scaled(13)
                 }
             }
 
@@ -109,7 +112,7 @@ PanelWindow {
                 topPadding: 0
                 bottomPadding: 0
 
-                readonly property real handleWidth: Theme.scaled(14)
+                readonly property real handleWidth: osdWindow.useFullscreenLayout ? Theme.scaled(12) : Theme.scaled(14)
                 
                 // --- Re-enabled functionality ---
                 onMoved: {
@@ -119,14 +122,14 @@ PanelWindow {
                 }
 
                 background: Rectangle {
-                    x: osdSlider.leftPadding + osdSlider.handleWidth / 2
-                    y: osdSlider.topPadding + (osdSlider.availableHeight - height) / 2
-                    implicitHeight: Theme.scaled(10)
+                    x: osdSlider.leftPadding + osdSlider.handleWidth /1
+                    y: osdWindow.useFullscreenLayout ? osdSlider.topPadding + (osdSlider.availableHeight - height) / 5 : osdSlider.topPadding + (osdSlider.availableHeight - height) / 2
+                    implicitHeight: osdWindow.useFullscreenLayout ? Theme.scaled(8) : Theme.scaled(10)
                     width: osdSlider.availableWidth - osdSlider.handleWidth
                     radius: Theme.scaled(3); color: Theme.mantle
                     Rectangle {
                         width: osdSlider.visualPosition * parent.width
-                        height: parent.height
+                        height: osdWindow.useFullscreenLayout ? Theme.scaled(12) : parent.height
                         color: osdValue > 1.0 ? Theme.powerYellow : Theme.powerGreen
                         radius: Theme.scaled(30)
                     }
@@ -135,7 +138,7 @@ PanelWindow {
                 handle: Rectangle {
                     x: osdSlider.leftPadding + osdSlider.visualPosition * (osdSlider.availableWidth - width)
                     y: osdSlider.topPadding + (osdSlider.availableHeight - height) / 2
-                    implicitWidth: osdSlider.handleWidth; implicitHeight: Theme.scaled(14); radius: width / 2
+                    implicitWidth: osdSlider.handleWidth; implicitHeight: osdWindow.useFullscreenLayout ? Theme.scaled(12) : Theme.scaled(14); radius: width / 2
                     color: Theme.text; border.color: Theme.surface1
 
                     scale: osdSlider.pressed ? 1.3 : (osdSlider.hovered ? 1.2 : 1.1)
