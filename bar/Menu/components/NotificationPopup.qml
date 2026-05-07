@@ -21,8 +21,8 @@ PanelWindow {
     }
 
     WlrLayershell.margins {
-        top: popupStack.useFullscreenLayout ? Theme.scaled(10) : (osdPopup.visible ? Theme.scaled(105) : Theme.scaled(10))
-        right: osdWindow.useFullscreenLayout ? Theme.scaled(5) : Theme.scaled(10)
+        top: popupStack.useFullscreenLayout ? (osdPopup.visible ? Theme.scaled(40) : - bar.height) : (osdPopup.visible ? Theme.scaled(105) : Theme.scaled(10))
+        right: popupStack.useFullscreenLayout ? Theme.scaled(5) : Theme.scaled(10)
     }
 
     implicitWidth: Theme.scaled(370)
