@@ -9,7 +9,9 @@ import "../../.."
 PanelWindow {
     id: popupStack
 
-    readonly property bool useFullscreenLayout: GeneralSettings.fullscreenNotification && HyprlandService.isFullscreen
+    readonly property bool useFullscreenLayout: GeneralSettings.fullscreenNotification
+    readonly property bool isFullscreen: HyprlandService.isFullscreen
+
 
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
@@ -21,14 +23,14 @@ PanelWindow {
     }
 
     WlrLayershell.margins {
-        top: popupStack.useFullscreenLayout ? (osdPopup.visible ? Theme.scaled(40) : - bar.height) : (osdPopup.visible ? Theme.scaled(105) : Theme.scaled(10))
-        right: popupStack.useFullscreenLayout ? Theme.scaled(5) : Theme.scaled(10)
+        top: popupStack.isFullscreen ? (osdPopup.visible ? Theme.scaled(40) : - bar.height) : (osdPopup.visible ? Theme.scaled(105) : Theme.scaled(10))
+        right: popupStack.isFullscreen ? Theme.scaled(5) : Theme.scaled(10)
     }
 
     implicitWidth: Theme.scaled(370)
     implicitHeight: mainColumn.implicitHeight
     
-    visible: activeNotifications.count > 0
+    visible: activeNotifications.count > 0 && (!popupStack.isFullscreen || popupStack.useFullscreenLayout)
     color: "transparent"
 
     ListModel {
