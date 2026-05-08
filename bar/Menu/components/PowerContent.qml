@@ -28,7 +28,7 @@ ColumnLayout {
                 { icon: "󰌾", label: "Lock",     cmd: "hyprlock --immediate-render --no-fade-in", color: Theme.lavender },
                 { icon: "󰒲", label: "BIOS",     cmd: "systemctl reboot --firmware-setup", color: Theme.mauve },
                 { icon: "󰗼", label: "Logout",   cmd: "hyprctl dispatch exit", color: Theme.powerGreen },
-                { icon: "󰤄", label: "Suspend",  cmd: "systemctl suspend", color: Theme.powerYellow },
+                { icon: "󰤄", label: "Suspend",  cmd: "systemctl suspend", color: Theme.lavender },
                 { icon: "󰑐", label: "Reboot",   cmd: "reboot", color: Theme.blue },
                 { icon: "󰐥", label: "Power",    cmd: "shutdown now", color: Theme.powerRed }
             ]
