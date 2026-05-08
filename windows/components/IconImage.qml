@@ -1,5 +1,5 @@
 import QtQuick
-import "../../" as Shell
+import "../../../" as Root
 
 Item {
     id: root
@@ -61,9 +61,9 @@ Item {
     Rectangle {
         anchors.fill: parent
         visible: root.showLetter
-        color: (Shell.Theme && Shell.Theme.surface0) ? Shell.Theme.surface0 : "#313244"
+        color: Root.Theme.surface0
         radius: width / 4
-        border.color: (Shell.Theme && Shell.Theme.surface1) ? Shell.Theme.surface1 : "#45475a"
+        border.color: Root.Theme.surface1
         border.width: 1
 
         Text {
@@ -74,7 +74,7 @@ Item {
             }
             font.pixelSize: parent.height * 0.6
             font.bold: true
-            color: (Shell.Theme && Shell.Theme.mauve) ? Shell.Theme.mauve : "#cba6f7"
+            color: Root.Theme.mauve
         }
     }
 }
