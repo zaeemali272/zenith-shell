@@ -80,7 +80,7 @@ Item {
 
         anchors.fill: parent
         implicitWidth: content.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
-        color: airplaneMode ? Theme.accentColor : Theme.pillColor
+        color: !wifiConnected ? Theme.accentColor : Theme.pillColor
 
         onClicked: (mouse) => {
             if (mouse.button === Qt.RightButton)
@@ -101,20 +101,22 @@ Item {
             spacing: 6
 
             Text {
-                text: airplaneMode ? "󰀝" : (showUpload ? Theme.netUpIcon : Theme.netDownIcon)
+                // Changed airplane icon to '󰀕' and disconnected icon to '󰤊'
+                text: airplaneMode ? "󰀞" : (!wifiConnected ? "󰤮" : (showUpload ? Theme.netUpIcon : Theme.netDownIcon))
                 font.family: Theme.iconFont
                 font.pixelSize: Theme.iconSize
-                color: airplaneMode ? Theme.backgroundColor : Theme.activeTextColor
+                color: airplaneMode ? Theme.activeTextColor : Theme.activeTextColor
             }
 
             Text {
-                text: airplaneMode ? "Airplane Mode" : (pill.containsMouse ? (wifiConnected ? wifiSSID : "Disconnected") : formatSpeed(showUpload ? upSpeed : downSpeed))
+                // Removed text for airplane mode and disconnected states, showing only icons
+                text: airplaneMode ? ":)" : (!wifiConnected ? ":(" : (pill.containsMouse ? wifiSSID : formatSpeed(showUpload ? upSpeed : downSpeed)))
                 horizontalAlignment: Text.AlignHCenter
-                Layout.preferredWidth: pill.containsMouse ? -1 : 55 
-                Layout.fillWidth: pill.containsMouse 
+                Layout.preferredWidth: (pill.containsMouse || !wifiConnected || airplaneMode) ? -1 : 55 
+                Layout.fillWidth: (pill.containsMouse || !wifiConnected || airplaneMode)
                 font.pixelSize: Theme.fontSize
-                color: airplaneMode ? Theme.backgroundColor : Theme.activeTextColor
-                font.bold: airplaneMode
+                color: airplaneMode ? Theme.activeTextColor : Theme.activeTextColor
+                font.bold: airplaneMode || !wifiConnected
             }
         }
     }
@@ -150,7 +152,12 @@ Item {
         interval: 5000 
         running: true
         repeat: true
-        onTriggered: netExec.running = true
+        onTriggered: {
+            netExec.running = false;
+            netExec.running = true;
+            statusExec.running = false;
+            statusExec.running = true;
+        }
     }
 
 }
