@@ -3,7 +3,6 @@ import ".."
 
 pragma Singleton
 QtObject {
-    signal requestColorPopup()
     
     property int activeColorIndex: 0
     property var colors: [Theme.primary, Theme.secondary, Theme.tertiary]

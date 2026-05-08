@@ -34,16 +34,8 @@ case "$1" in
         quickshell -p "$SHELL_DIR/windows/Cheatsheet.qml" >> "$LOG_FILE" 2>&1 &
         ;;
 
-    colorPicker)
-        if pgrep -f "quickshell.*windows/ColorPicker.qml" > /dev/null; then
-            pkill -f "quickshell.*windows/ColorPicker.qml"
-            exit 0
-        fi
-        quickshell -p "$SHELL_DIR/windows/ColorPicker.qml" >> "$LOG_FILE" 2>&1 &
-        ;;
-
     *)
-        echo "Usage: $0 {wallpaperSelector|overview|cheatsheet|colorPicker}"
+        echo "Usage: $0 {wallpaperSelector|overview|cheatsheet}"
         exit 1
         ;;
 esac
