@@ -28,10 +28,16 @@ PanelWindow {
     }
 
     implicitWidth: Theme.scaled(370)
-    implicitHeight: mainColumn.implicitHeight
+    // Use a stable height to avoid Wayland resize overhead during hover expansion
+    implicitHeight: activeNotifications.count > 0 ? Theme.scaled(800) : 0
     
     visible: activeNotifications.count > 0 && (!popupStack.isFullscreen || popupStack.useFullscreenLayout)
     color: "transparent"
+
+    // Only capture input where notifications actually are
+    mask: Region {
+        item: mainColumn
+    }
 
     ListModel {
         id: activeNotifications

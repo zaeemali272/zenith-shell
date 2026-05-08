@@ -11,12 +11,13 @@ Rectangle {
 
     property var notification: null
     property bool enableAutoDismiss: true
+    property bool animateHeight: true
     
     // Stability: Debounced hovered state
     property bool realHovered: false
     Timer {
         id: unhoverTimer
-        interval: 150
+        interval: 250 // Increased for better stability during expansion
         onTriggered: {
             if (!mainMouseArea.containsMouse && !dismissMouse.containsMouse) {
                 root.realHovered = false;
@@ -47,18 +48,20 @@ Rectangle {
     ParallelAnimation {
         id: appearAnim
         NumberAnimation { target: root; property: "opacity"; to: 1; duration: 300; easing.type: Easing.OutCubic }
-        NumberAnimation { target: root; property: "scale"; to: 1.0; duration: 400; easing.type: Easing.OutBack }
+        NumberAnimation { target: root; property: "scale"; to: 1.0; duration: 200; easing.type: Easing.OutBack }
         NumberAnimation { target: trans; property: "x"; to: 0; duration: 500; easing.type: Easing.OutExpo }
     }
 
+    // Behavior for smooth expansion
     Behavior on implicitHeight {
-        NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+        enabled: root.animateHeight
+        NumberAnimation { duration: 300; easing.type: Easing.OutExpo }
     }
 
     // --- AUTO DISMISS LOGIC ---
     Timer {
         id: autoDismissTimer
-        interval: 4000
+        interval: 3000
         running: !!notification && enableAutoDismiss
         repeat: false
         onTriggered: {
@@ -181,30 +184,6 @@ Rectangle {
 
     onNotificationChanged: updateCandidates()
 
-    MouseArea {
-        id: mainMouseArea
-        anchors.fill: parent
-        cursorShape: Qt.PointingHandCursor
-        hoverEnabled: true
-        z: 1
-        
-        onEntered: {
-            unhoverTimer.stop();
-            root.realHovered = true;
-            autoDismissTimer.stop();
-        }
-        
-        onExited: unhoverTimer.restart();
-
-        onClicked: {
-            if (notification?.originalNotif) {
-                notification.originalNotif.invokeAction("default");
-                notification.originalNotif.dismiss();
-                NotificationService.dismissNotification(notification.id);
-            }
-        }
-    }
-
 // --- Main layout ---
     RowLayout {
         id: layout
@@ -294,7 +273,32 @@ Rectangle {
         Item {
             Layout.preferredWidth: root.realHovered ? Theme.scaled(42) : Theme.scaled(10)
             Layout.minimumWidth: Layout.preferredWidth
-            Behavior on Layout.preferredWidth { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        }
+    }
+
+    // Main Hover & Click Area
+    // Positioned after the layout to be on top and more stable
+    MouseArea {
+        id: mainMouseArea
+        anchors.fill: parent
+        cursorShape: Qt.PointingHandCursor
+        hoverEnabled: true
+        z: 5
+        
+        onEntered: {
+            unhoverTimer.stop();
+            root.realHovered = true;
+            autoDismissTimer.stop();
+        }
+        
+        onExited: unhoverTimer.restart();
+
+        onClicked: {
+            if (notification?.originalNotif) {
+                notification.originalNotif.invokeAction("default");
+                notification.originalNotif.dismiss();
+                NotificationService.dismissNotification(notification.id);
+            }
         }
     }
 
@@ -315,7 +319,7 @@ Rectangle {
             color: dismissMouse.containsMouse ? Theme.surface0 : "transparent"
             border.color: dismissMouse.containsMouse ? Theme.surface1 : "transparent"
             border.width: 1
-            Behavior on color { ColorAnimation { duration: 150 } }
+            Behavior on color { ColorAnimation { duration: 100 } }
             
             Text {
                 anchors.centerIn: parent
