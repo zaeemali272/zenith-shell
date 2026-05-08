@@ -62,15 +62,16 @@ fi
 # Reloading components
 log_step "🔄 Reloading components..."
 hyprctl reload
-if pgrep -x qs &> /dev/null; then
-    killall qs
-    # Launching back the shell (ensure paths match your repo structure)
-    qs -d
+if pgrep -x quickshell &> /dev/null; then
+    killall quickshell
+    # Launching back the shell
+    quickshell --path "$HOME/.config/quickshell/shell.qml" &> /dev/null &
 fi
 
 killall -USR1 kitty 2>/dev/null
 gsettings set org.gnome.desktop.interface color-scheme 'prefer-light'
 sleep 0.1
 gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
+
 
 log_success "Zenith theme updated!"
