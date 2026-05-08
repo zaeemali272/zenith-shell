@@ -188,13 +188,13 @@ Item {
                                     visible: modelData.connected
                                     width: Theme.scaled(32); height: Theme.scaled(32); radius: Theme.scaled(8); color: Theme.surface0
                                     Text { anchors.centerIn: parent; text: "󰤄"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(14); color: Theme.powerRed }
-                                    MouseArea { anchors.fill: parent; onClicked: wifiSvc.disconnect() }
+                                    MouseArea { anchors.fill: parent; hoverEnabled: true; onClicked: wifiSvc.disconnect() }
                                 }
 
                                 // Forget Button
                                 Rectangle {
                                     visible: !!wifiSvc.knownNetworks[modelData.ssid]
-                                    width: Theme.scaled(32); height: Theme.scaled(32); radius: Theme.scaled(8); color: (forgetMouse.containsMouse ? Theme.base : Theme.surface0)
+                                    width: Theme.scaled(32); height: Theme.scaled(32); radius: Theme.scaled(8); color: (forgetMouse.containsMouse ? Theme.base : Theme.fontColor)
                                     Behavior on color { ColorAnimation { duration: 200 } }
                                     Text { anchors.centerIn: parent; text: "󱘖"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(14); color: Theme.powerYellow }
                                     MouseArea { id: forgetMouse; anchors.fill: parent; hoverEnabled: true; onClicked: wifiSvc.forgetNetwork(modelData.ssid) }
