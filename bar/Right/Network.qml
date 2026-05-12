@@ -86,13 +86,15 @@ Item {
             if (mouse.button === Qt.RightButton)
                 showUpload = !showUpload;
             else if (mouse.button === Qt.LeftButton)
-                QuickSettingsService.toggle("network", root.mapToItem(null, 0, 0, root.width, root.height)); 
+                QuickSettingsService.toggle("network"); 
         }
 
         onEntered: {
             if (QuickSettingsService.qsVisible || CenterState.qsVisible)
-                QuickSettingsService.hoverOpen("network", root.mapToItem(null, 0, 0, root.width, root.height));
+                QuickSettingsService.hoverOpen("network");
         }
+
+        Behavior on color { ColorAnimation { duration: 300 } }
 
         RowLayout {
             id: content
