@@ -4,31 +4,43 @@ import "./components"
 import "../.."
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
 
 PopupWindow {
-    id: menuRoot
+    id: root
 
     property var parentWindow: null
     visible: false
-    
+    color: "transparent"
     grabFocus: true
 
+    implicitWidth: Theme.scaled(900)
+    implicitHeight: Theme.scaled(650)
+
     HyprlandFocusGrab {
-        active: menuRoot.visible
-        windows: [menuRoot]
-        onCleared: menuRoot.visible = false
+        active: root.visible
+        windows: [root]
+        onCleared: root.visible = false
     }
     
     onVisibleChanged: {
         if (visible) {
             CenterState.qsVisible = true;
             mainContent.forceActiveFocus();
+            showAnim.restart();
         } else {
             CenterState.qsVisible = false;
         }
+    }
+
+    ParallelAnimation {
+        id: showAnim
+        NumberAnimation { target: mainContent; property: "opacity"; from: 0; to: 1; duration: 400; easing.type: Easing.OutQuint }
+        NumberAnimation { target: mainContent; property: "scale"; from: 0.98; to: 1.0; duration: 500; easing.type: Easing.OutBack }
+        NumberAnimation { target: mainTranslate; property: "y"; from: -20; to: 0; duration: 500; easing.type: Easing.OutBack }
     }
 
     anchor.window: parentWindow
@@ -37,81 +49,204 @@ PopupWindow {
     anchor.rect: {
         const barHeight = (parentWindow && parentWindow.height > 0) ? parentWindow.height : 45;
         const barWidth = (parentWindow && parentWindow.width > 0) ? parentWindow.width : 1920;
-        let targetX = (barWidth - implicitWidth) / 2;
-        return Qt.rect(Math.max(10, Math.min(barWidth - implicitWidth - 10, targetX)), barHeight + 8, 0, 0);
+        let targetX = (barWidth - root.implicitWidth) / 2;
+        return Qt.rect(Math.max(10, Math.min(barWidth - root.implicitWidth - 10, targetX)), barHeight + 8, 0, 0);
     }
-    
-    implicitWidth: Theme.scaled(850)
-    implicitHeight: Theme.scaled(550)
-    color: "transparent"
 
+    
     Rectangle {
         id: mainContent
-        anchors.fill: parent
+        width: root.width
+        height: root.height
         focus: true
-        color: Theme.menuBackground
-        radius: Theme.pillRadius
-        border.color: hoverTracker.containsMouse ? Theme.menuHoverBorder : Theme.menuBorder
+        color: Theme.glassBackground
+        radius: 32
+        border.color: Theme.glassBorder
         border.width: 1
+        opacity: 0
+        scale: 0.98
         
-        // Background area focus catch
-        MouseArea {
-            id: hoverTracker
+        transform: Translate { id: mainTranslate; y: -20 }
+
+        ColumnLayout {
             anchors.fill: parent
-            anchors.topMargin: -12
-            hoverEnabled: true
-            onEntered: CenterState.isHoveringMenu = true
-            onExited: CenterState.isHoveringMenu = false
-            onPressed: (mouse) => {
-                mouse.accepted = false; // Propagate click
-                mainContent.forceActiveFocus();
+            anchors.margins: 25
+            spacing: 20
+
+            // --- MINIMAL HEADER ---
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 15
+                Rectangle { width: 4; height: 20; color: Theme.blue; radius: 2 }
+                Text { 
+                    text: "SYSTEM DASHBOARD"
+                    color: Theme.text
+                    font.pixelSize: 12
+                    font.weight: Font.Black
+                    font.letterSpacing: 2
+                }
+                Item { Layout.fillWidth: true }
+                Text { 
+                    text: Qt.formatDateTime(new Date(), "ddd, MMM d")
+                    color: Theme.subtext1
+                    font.pixelSize: 10
+                    font.weight: Font.Bold
+                }
             }
-        }
 
-        Keys.onPressed: (event) => {
-            if (event.key === Qt.Key_Escape) {
-                CenterState.close("escape_key");
-            }
-        }
-
-        RowLayout {
-            anchors.fill: parent
-            anchors.margins: Theme.menuPadding
-            spacing: Theme.menuSpacing
-
-            // --- Left Column: Notifications & Media ---
-            ColumnLayout {
+            // --- 2-COLUMN RESPONSIVE GRID ---
+            GridLayout {
+                columns: 2
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                Layout.preferredWidth: 450
-                spacing: Theme.menuSpacing
+                columnSpacing: 20
+                rowSpacing: 20
 
-                NotificationList {
-                    visible: GeneralSettings.enableNotifications
+                // 1. Notifications
+                Rectangle {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
+                    Layout.rowSpan: 2
+                    color: Qt.rgba(0,0,0,0.2)
+                    radius: 24
+                    border.color: Theme.glassBorder
+                    clip: true
+                    
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: 15
+                        spacing: 10
+                        
+                        // Header with Counter and Buttons
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 8
+                            Text { text: "󰂚"; font.family: Theme.iconFont; color: Theme.blue; font.pixelSize: 14 }
+                            Text { text: "NOTIFICATIONS"; color: Theme.subtext1; font.pixelSize: 9; font.weight: Font.Black; font.letterSpacing: 1 }
+                                Rectangle {
+                                       width: Theme.scaled(22); height: Theme.scaled(22); radius: Theme.scaled(6)
+                                       color: Theme.surface1
+                                       Label {
+                                           anchors.centerIn: parent
+                                           text: NotificationService.notifications.count
+                                           color: Theme.blue
+                                           font.pixelSize: Theme.scaled(11); font.bold: true
+                                       }
+                                   }
+
+                            Item { Layout.fillWidth: true }
+                            
+                            Button {
+                                id: fullscreenBtn
+                                flat: true
+                                padding: Theme.scaled(4)
+                                contentItem: RowLayout {
+                                    spacing: 4
+                                    Text {
+                                        text: GeneralSettings.fullscreenNotification ? "󰊓" : "󰊔"
+                                        font.family: Theme.iconFont
+                                        color: GeneralSettings.fullscreenNotification ? Theme.blue : Theme.surface2
+                                        font.pixelSize: 12
+                                    }
+                                    Text { text: "NOTIFY"; font.pixelSize: 8; font.weight: Font.Black; color: Theme.subtext1 }
+                                }
+                                background: Rectangle { color: fullscreenBtn.hovered ? Theme.surface0 : "transparent"; radius: 6 }
+                                onClicked: GeneralSettings.fullscreenNotification = !GeneralSettings.fullscreenNotification
+                            }
+                            Button {
+                                id: osdFullscreenBtn
+                                flat: true
+                                padding: Theme.scaled(4)
+                                contentItem: RowLayout {
+                                    spacing: 4
+                                    Text {
+                                        text: GeneralSettings.fullscreenOSD ? "󰊓" : "󰊔"
+                                        font.family: Theme.iconFont
+                                        color: GeneralSettings.fullscreenOSD ? Theme.blue : Theme.surface2
+                                        font.pixelSize: 12
+                                    }
+                                    Text { text: "OSD"; font.pixelSize: 8; font.weight: Font.Black; color: Theme.subtext1 }
+                                }
+                                background: Rectangle { color: osdFullscreenBtn.hovered ? Theme.surface0 : "transparent"; radius: 6 }
+                                onClicked: GeneralSettings.fullscreenOSD = !GeneralSettings.fullscreenOSD
+                            }
+                            Button {
+                                id: clearBtn
+                                flat: true
+                                padding: Theme.scaled(4)
+                                contentItem: Text {
+                                    text: "󰃢" // Trash Bin Icon
+                                    font.family: Theme.iconFont
+                                    color: clearBtn.hovered ? Theme.powerRed : Theme.subtext1
+                                    font.pixelSize: 14
+                                }
+                                background: Rectangle { color: clearBtn.hovered ? Theme.surface0 : "transparent"; radius: 6 }
+                                onClicked: NotificationService.clearAll()
+                            }
+                        }
+
+                        // Scrollable List
+                        ScrollView {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            clip: true
+                            contentWidth: availableWidth
+                            
+                            NotificationList {
+                                visible: GeneralSettings.enableNotifications
+                                Layout.fillWidth: true
+                                // Explicitly set height to fill the ScrollView
+                                height: parent.height 
+                            }
+                        }
+                    }
                 }
 
-                MprisPlayer {
-                    visible: GeneralSettings.enableMedia
-                    Layout.fillWidth: true
-                }
-            }
-
-            // --- Right Column: Calendar & Todo ---
-            ColumnLayout {
-                Layout.preferredWidth: 320
-                Layout.fillHeight: true
-                spacing: Theme.menuSpacing
-
-                CalendarWidget {
-                    Layout.fillWidth: true
-                }
-
-                WeatherWidget {
-                    visible: GeneralSettings.enableWeather
+                // 2. Calendar
+                Rectangle {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
+                    color: Qt.rgba(0,0,0,0.2)
+                    radius: 24
+                    border.color: Theme.glassBorder
+                    
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: 15
+                        RowLayout {
+                            spacing: 8
+                            Text { text: "󰃭"; font.family: Theme.iconFont; color: Theme.blue; font.pixelSize: 14 }
+                            Text { text: "CALENDAR"; color: Theme.subtext1; font.pixelSize: 9; font.weight: Font.Black; font.letterSpacing: 1 }
+                        }
+                        CalendarWidget {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                        }
+                    }
+                }
+
+                // 3. Weather
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    color: Qt.rgba(0,0,0,0.2)
+                    radius: 24
+                    border.color: Theme.glassBorder
+                    
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: 15
+                        RowLayout {
+                            spacing: 8
+                            Text { text: "󰖐"; font.family: Theme.iconFont; color: Theme.blue; font.pixelSize: 14 }
+                            Text { text: "WEATHER"; color: Theme.subtext1; font.pixelSize: 9; font.weight: Font.Black; font.letterSpacing: 1 }
+                        }
+                        WeatherWidget {
+                            visible: GeneralSettings.enableWeather
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                        }
+                    }
                 }
             }
         }

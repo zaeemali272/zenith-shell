@@ -5,6 +5,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Services.Mpris
+import "../Menu" as Menu
 
 Rectangle {
     id: mediaWidget
@@ -200,15 +201,26 @@ Rectangle {
         }
     }
 
+    // --- MEDIA PLAYER POPUP ---
+    Menu.MediaPlayerPopup {
+        id: mediaPopup
+        parentWindow: bar
+    }
+
     MouseArea {
         anchors.fill: parent
         hoverEnabled: true
         onEntered: mediaWidget.color = Theme.pillHoverColor
         onExited: mediaWidget.color = Theme.pillColor
-        onClicked: {
-            if (trackedPlayer?.canTogglePlaying) {
-                if (trackedPlayer.isPlaying) trackedPlayer.pause()
-                else trackedPlayer.play()
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        onClicked: (mouse) => {
+            if (mouse.button === Qt.LeftButton) {
+                mediaPopup.visible = !mediaPopup.visible;
+            } else if (mouse.button === Qt.RightButton) {
+                if (trackedPlayer?.canTogglePlaying) {
+                    if (trackedPlayer.isPlaying) trackedPlayer.pause()
+                    else trackedPlayer.play()
+                }
             }
         }
     }

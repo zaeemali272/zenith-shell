@@ -8,6 +8,7 @@ import QtQuick.Controls
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
+import "./components" as Comp
 
 PopupWindow {
     id: root
@@ -17,6 +18,9 @@ PopupWindow {
     color: "transparent"
     
     grabFocus: true
+
+    implicitWidth: Theme.scaled(650) 
+    implicitHeight: Theme.scaled(600)
 
     HyprlandFocusGrab {
         active: root.visible
@@ -28,16 +32,20 @@ PopupWindow {
         if (visible) {
             QuickSettingsService.qsVisible = true;
             mainContent.forceActiveFocus();
-            showAnim.start();
+            showAnim.restart();
         } else {
             QuickSettingsService.qsVisible = false;
+            mainContent.opacity = 0;
+            mainContent.scale = 0.95;
+            mainTranslate.y = 30;
         }
     }
 
     ParallelAnimation {
         id: showAnim
-        NumberAnimation { target: mainContent; property: "opacity"; from: 0; to: 1; duration: 250; easing.type: Easing.OutCubic }
-        NumberAnimation { target: mainContent; property: "y"; from: 20; to: 0; duration: 300; easing.type: Easing.OutBack }
+        NumberAnimation { target: mainContent; property: "opacity"; from: 0; to: 1; duration: 400; easing.type: Easing.OutQuint }
+        NumberAnimation { target: mainContent; property: "scale"; from: 0.95; to: 1.0; duration: 500; easing.type: Easing.OutBack }
+        NumberAnimation { target: mainTranslate; property: "y"; from: 30; to: 0; duration: 500; easing.type: Easing.OutBack }
     }
 
     // Positioning
@@ -51,31 +59,27 @@ PopupWindow {
         return Qt.rect(barWidth - implicitWidth - 10, barHeight + 10, 0, 0);
     }
 
-    implicitWidth: Theme.scaled(650) 
-    implicitHeight: Theme.scaled(570)
-
     Rectangle {
         id: mainContent
         anchors.fill: parent
         focus: true
-        color: Theme.menuBackground
+        color: Theme.glassBackground
         radius: Theme.menuRadius
-        border.color: hoverTracker.containsMouse ? Theme.menuHoverBorder : Theme.menuBorder
+        border.color: Theme.glassBorder
         border.width: 1
-        opacity: 0 // Start hidden for animation
+        opacity: 0
+        scale: 0.95
+        
+        transform: Translate { id: mainTranslate; y: 30 }
 
-        // MouseArea for background handling - keeps focus and tracks hover
-        MouseArea {
-            id: hoverTracker
+        // Glow Layer
+        Rectangle {
             anchors.fill: parent
-            hoverEnabled: true
-            // acceptedButtons: Qt.NoButton is problematic for focus
-            acceptedButtons: Qt.LeftButton | Qt.RightButton
-            onContainsMouseChanged: QuickSettingsService.isHoveringMenu = containsMouse
-            onPressed: (mouse) => {
-                mouse.accepted = false; // Let events propagate to children
-                mainContent.forceActiveFocus();
-            }
+            radius: parent.radius
+            color: "transparent"
+            border.color: Qt.rgba(1, 1, 1, 0.05)
+            border.width: 2
+            anchors.margins: 1
         }
 
         ColumnLayout {
@@ -83,54 +87,54 @@ PopupWindow {
             anchors.margins: Theme.menuPadding
             spacing: Theme.menuSpacing
 
-            // --- MODERN TAB BAR ---
+            // --- MODERN TAB DASHBOARD ---
             Rectangle {
                 Layout.fillWidth: true
-                height: 60
-                color: Theme.mantle
-                radius: 16
-                border.color: Theme.menuBorder
+                height: 70
+                color: Qt.rgba(0,0,0,0.3)
+                radius: 20
+                border.color: Theme.glassBorder
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.margins: 6
-                    spacing: 4
+                    anchors.margins: 8
+                    spacing: 8
                     
                     Repeater {
                         model: [
-                            { id: "network", icon: "󰤨", title: "Wi-Fi" },
-                            { id: "bluetooth", icon: "󰂯", title: "BT" },
-                            { id: "volume", icon: "󰕾", title: "Audio" },
-                            { id: "powerprofile", icon: "󰍛", title: "Mode" },
-                            { id: "resources", icon: "󰘚", title: "Sys" },
-                            { id: "battery", icon: "󰁹", title: "Pwr" },
-                            { id: "power", icon: "󰐥", title: "Exit" }
+                            { id: "network", icon: "󰤨", title: "NETWORK" },
+                            { id: "bluetooth", icon: "󰂯", title: "BLUETOOTH" },
+                            { id: "volume", icon: "󰕾", title: "AUDIO" },
+                            { id: "powerprofile", icon: "󰍛", title: "PROFILE" },
+                            { id: "resources", icon: "󰘚", title: "SYSTEM" },
+                            { id: "battery", icon: "󰁹", title: "POWER" },
+                            { id: "power", icon: "󰐥", title: "SESSION" }
                         ]
 
                         delegate: Rectangle {
                             id: tabRect
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            radius: 12
-                            color: QuickSettingsService.activeTab === modelData.id ? Theme.accentColor : (tabMouse.containsMouse ? Theme.surface0 : "transparent")
+                            radius: 14
+                            color: QuickSettingsService.activeTab === modelData.id ? Theme.accentColor : (tabMouse.containsMouse ? Qt.rgba(1,1,1,0.05) : "transparent")
                             
-                            scale: tabMouse.pressed ? 0.95 : (tabMouse.containsMouse ? 1.02 : 1.0)
-
+                            scale: tabMouse.pressed ? 0.92 : (tabMouse.containsMouse ? 1.05 : 1.0)
+                            
                             Behavior on color { ColorAnimation { duration: 200 } }
-                            Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                            Behavior on scale { NumberAnimation { duration: 300; easing.type: Theme.elasticEasing } }
 
                             ColumnLayout {
                                 anchors.centerIn: parent
-                                spacing: 1
+                                spacing: 2
                                 Text {
                                     text: modelData.icon
-                                    font.family: Theme.iconFont; font.pixelSize: 18
-                                    color: QuickSettingsService.activeTab === modelData.id ? Theme.base : (tabMouse.containsMouse ? Theme.text : Theme.subtext0)
+                                    font.family: Theme.iconFont; font.pixelSize: 20
+                                    color: QuickSettingsService.activeTab === modelData.id ? Theme.base : (tabMouse.containsMouse ? Theme.text : Theme.subtext1)
                                     Layout.alignment: Qt.AlignHCenter
                                 }
                                 Text {
                                     text: modelData.title
-                                    font.pixelSize: 10; font.weight: Font.Black
+                                    font.pixelSize: 8; font.weight: Font.Black; font.letterSpacing: 1
                                     color: QuickSettingsService.activeTab === modelData.id ? Theme.base : (tabMouse.containsMouse ? Theme.text : Theme.surface2)
                                     Layout.alignment: Qt.AlignHCenter
                                 }
@@ -146,19 +150,14 @@ PopupWindow {
                 }
             }
 
-            // --- CONTENT AREA ---
+            // --- CONTENT AREA WITH SCROLLING ---
             ScrollView {
                 id: scrollArea
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 clip: true
                 
-                contentHeight: {
-                    if (contentStack.currentIndex < 0 || contentStack.currentIndex >= contentStack.children.length) 
-                        return scrollArea.height;
-                    let item = contentStack.children[contentStack.currentIndex];
-                    return Math.max(scrollArea.height, item ? item.implicitHeight : 0);
-                }
+                contentHeight: contentStack.height
 
                 ScrollBar.vertical: ScrollBar {
                     parent: scrollArea
@@ -166,32 +165,30 @@ PopupWindow {
                     anchors.bottom: scrollArea.bottom
                     anchors.right: scrollArea.right
                     policy: ScrollBar.AsNeeded
-                    width: Theme.scaled(4)
-                    
-                    background: Rectangle { color: "transparent" }
-                    contentItem: Rectangle {
-                        radius: width / 2
-                        color: Theme.surface2
-                        opacity: 0.5
-                    }
+                    width: 4
+                    contentItem: Rectangle { radius: 2; color: Theme.accentColor; opacity: 0.3 }
                 }
 
                 StackLayout {
                     id: contentStack
                     width: scrollArea.availableWidth
-                    height: scrollArea.contentHeight
+                    // Calculate height dynamically based on the current child
+                    height: children[currentIndex] ? children[currentIndex].implicitHeight : 500
                     currentIndex: ["network", "bluetooth", "volume", "powerprofile", "resources", "battery", "power"].indexOf(QuickSettingsService.activeTab)
+                    
+                    onCurrentIndexChanged: fadeAnim.restart()
+                    
+                    NumberAnimation { id: fadeAnim; target: contentStack; property: "opacity"; from: 0; to: 1; duration: 300 }
 
-                    WifiContent { }
-                    BluetoothContent { }
-                    VolumeContent { }
-                    PowerProfileContent { }
-                    ResourcesContent { }
-                    BatteryContent { }
-                    PowerContent { }
+                    Comp.WifiContent { }
+                    Comp.BluetoothContent { }
+                    Comp.VolumeContent { }
+                    Comp.PowerProfileContent { }
+                    Comp.ResourcesContent { }
+                    Comp.BatteryContent { }
+                    Comp.PowerContent { }
                 }
             }
         }
     }
 }
-

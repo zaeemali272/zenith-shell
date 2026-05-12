@@ -1,89 +1,76 @@
-import "../../.."
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
+import "../../.."
 
 ColumnLayout {
     id: root
-    spacing: Theme.scaled(20)
+    spacing: Theme.scaled(25)
     Layout.fillWidth: true
+    
+    // Explicit sizing for ScrollView integration
+    implicitHeight: mainLayout.implicitHeight
 
-    Text {
-        text: "Power Options"
-        color: Theme.text
-        font.bold: true
-        font.pixelSize: Theme.scaled(22)
-        Layout.leftMargin: Theme.scaled(5)
-    }
-
-    GridLayout {
-        columns: 2
+    ColumnLayout {
+        id: mainLayout
         Layout.fillWidth: true
-        rowSpacing: Theme.scaled(15)
-        columnSpacing: Theme.scaled(15)
+        spacing: Theme.scaled(25)
 
-        Repeater {
-            model: [
-                { icon: "󰌾", label: "Lock",     cmd: "hyprlock --immediate-render --no-fade-in", color: Theme.lavender },
-                { icon: "󰒲", label: "BIOS",     cmd: "systemctl reboot --firmware-setup", color: Theme.mauve },
-                { icon: "󰗼", label: "Logout",   cmd: "hyprctl dispatch exit", color: Theme.powerGreen },
-                { icon: "󰤄", label: "Suspend",  cmd: "systemctl suspend", color: Theme.lavender },
-                { icon: "󰑐", label: "Reboot",   cmd: "reboot", color: Theme.blue },
-                { icon: "󰐥", label: "Power",    cmd: "shutdown now", color: Theme.powerRed }
-            ]
+        Text {
+            text: "SYSTEM SESSION"
+            color: Theme.blue
+            font.pixelSize: 10
+            font.weight: Font.Black
+            font.letterSpacing: 2
+            Layout.leftMargin: Theme.scaled(5)
+        }
 
-            delegate: Rectangle {
-                id: powerBtn
-                Layout.fillWidth: true
-                height: Theme.scaled(120)
-                color: Theme.surface0
-                radius: Theme.scaled(24)
-                
-                // Border lights up on hover
-                border.color: m.containsMouse ? modelData.color : Theme.surface1
-                border.width: m.containsMouse ? 2 : 1
-                
-                // Smooth scale effect for that "modern" feel
-                scale: m.pressed ? 0.95 : 1.0
-                
-                Behavior on border.color { ColorAnimation { duration: 200 } }
-                Behavior on scale { NumberAnimation { duration: 100 } }
+        GridLayout {
+            columns: 2
+            Layout.fillWidth: true
+            rowSpacing: Theme.scaled(12)
+            columnSpacing: Theme.scaled(12)
 
-                MouseArea {
-                    id: m
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    onClicked: {
-                        powerProc.command = ["sh", "-c", modelData.cmd];
-                        powerProc.running = true;
+            Repeater {
+                model: [
+                    { icon: "󰌾", label: "LOCK",     cmd: "hyprlock --immediate-render --no-fade-in", color: Theme.lavender },
+                    { icon: "󰒲", label: "BIOS",     cmd: "systemctl reboot --firmware-setup", color: Theme.mauve },
+                    { icon: "󰗼", label: "LOGOUT",   cmd: "hyprctl dispatch exit", color: Theme.powerGreen },
+                    { icon: "󰤄", label: "SUSPEND",  cmd: "systemctl suspend", color: Theme.lavender },
+                    { icon: "󰑐", label: "REBOOT",   cmd: "reboot", color: Theme.blue },
+                    { icon: "󰐥", label: "SHUTDOWN", cmd: "shutdown now", color: Theme.powerRed }
+                ]
+
+                delegate: Rectangle {
+                    id: powerBtn
+                    Layout.fillWidth: true
+                    height: Theme.scaled(100)
+                    // Add margins to prevent border clipping
+                    anchors.margins: 2 
+                    color: m.containsMouse ? Qt.rgba(1,1,1,0.05) : Qt.rgba(0,0,0,0.2)
+                    radius: Theme.scaled(20)
+                    border.color: m.containsMouse ? modelData.color : Theme.glassBorder
+                    border.width: 1
+                    scale: m.pressed ? 0.92 : (m.containsMouse ? 1.00 : 0.95)
+                    Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                    Behavior on color { ColorAnimation { duration: 200 } }
+                    Behavior on border.color { ColorAnimation { duration: 200 } }
+
+                    MouseArea {
+                        id: m
+                        anchors.fill: parent; hoverEnabled: true
+                        onClicked: { powerProc.command = ["sh", "-c", modelData.cmd]; powerProc.running = true; }
                     }
-                }
 
-                ColumnLayout {
-                    anchors.centerIn: parent
-                    spacing: Theme.scaled(8)
-                    
-                    // Large Clean Icon (No Background)
-                    Text {
-                        text: modelData.icon
-                        font.family: Theme.iconFont
-                        font.pixelSize: Theme.scaled(42) // Big icons as requested
-                        color: modelData.color
-                        Layout.alignment: Qt.AlignHCenter
-                        
-                        // Subtle opacity shift when not hovering
-                        opacity: m.containsMouse ? 1.0 : 0.8
-                        Behavior on opacity { NumberAnimation { duration: 200 } }
-                    }
-                    
-                    Text {
-                        text: modelData.label
-                        font.pixelSize: Theme.scaled(14)
-                        font.bold: true
-                        color: Theme.text
-                        Layout.alignment: Qt.AlignHCenter
-                        opacity: m.containsMouse ? 1.0 : 0.7
+                    RowLayout {
+                        anchors.centerIn: parent; spacing: 15
+                        Rectangle {
+                            width: 44; height: 44; radius: 12; color: Qt.rgba(modelData.color.r, modelData.color.g, modelData.color.b, 0.1)
+                            Text { anchors.centerIn: parent; text: modelData.icon; font.family: Theme.iconFont; font.pixelSize: 22; color: modelData.color }
+                        }
+                        Text { text: modelData.label; font.pixelSize: 11; font.weight: Font.Black; color: Theme.text; opacity: 0.8 }
                     }
                 }
             }

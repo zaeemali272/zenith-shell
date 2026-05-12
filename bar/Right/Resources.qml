@@ -52,9 +52,9 @@ Item {
             anchors.centerIn: parent
             spacing: Theme.pillSpacing
 
-            ResourceItem { icon: ""; value: root.cpu; color: Theme.cpuColor }
-            ResourceItem { icon: "|  "; value: root.mem; showAbove: 60; color: Theme.memColor }
-            ResourceItem { icon: "|  "; value: root.temp; suffix: "°C"; showAbove: 85; color: Theme.tempColor }
+            ResourceItem { icon: ""; value: root.cpu; iconColor: Theme.red }
+            ResourceItem { icon: "|  "; value: root.mem; showAbove: 60; iconColor: Theme.green }
+            ResourceItem { icon: "|  "; value: root.temp; suffix: "°C"; showAbove: 85; iconColor: Theme.yellow }
         }
 
         Behavior on width {
@@ -64,7 +64,7 @@ Item {
 
     Process {
         id: resourceExec
-        command: ["bash", "-c", "./scripts/resources.sh"]
+        command: ["bash", "-c", "$HOME/.config/quickshell/scripts/resources.sh"]
         stdout: StdioCollector {
             onStreamFinished: {
                 try {
@@ -88,15 +88,15 @@ Item {
     }
 
     Timer {
-        interval: 4000; repeat: true; running: true; triggeredOnStart: true
-        onTriggered: { resourceExec.running = false; resourceExec.running = true; }
+        interval: 2000; repeat: true; running: true; triggeredOnStart: true
+        onTriggered: { resourceExec.running = true; }
     }
 
     component ResourceItem: RowLayout {
         property string icon
         property int value
         property string suffix: "%"
-        property color color
+        property color iconColor
         property int showAbove: -1
         readonly property bool active: showAbove < 0 || value > showAbove
 
@@ -105,8 +105,8 @@ Item {
         Layout.preferredWidth: active ? -1 : 0
         opacity: active ? 1 : 0
 
-        Text { text: icon; color: parent.color; font.family: Theme.iconFont; font.pixelSize: Theme.iconSize; Layout.alignment: Qt.AlignVCenter }
-        Text { text: value.toString().padStart(2, '0') + suffix; color: parent.color; font.pixelSize: Theme.fontSize; Layout.alignment: Qt.AlignVCenter }
+        Text { text: icon; color: iconColor; font.family: Theme.iconFont; font.pixelSize: Theme.iconSize; Layout.alignment: Qt.AlignVCenter }
+        Text { text: value.toString().padStart(2, '0') + suffix; color: Theme.fontColor; font.pixelSize: Theme.fontSize; Layout.alignment: Qt.AlignVCenter }
 
         Behavior on opacity { NumberAnimation { duration: 300 } }
     }
