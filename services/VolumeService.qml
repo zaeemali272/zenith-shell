@@ -60,16 +60,23 @@ Singleton {
 
     function processData(data) {
         let currentIds = new Set();
+        if (!data || !Array.isArray(data)) return;
+        
         for (let i = 0; i < data.length; i++) {
             let app = data[i];
             if (!app || typeof app !== "object" || !app.volume) continue;
             
             let vol = 0;
-            for (let channel in app.volume) {
-                if (app.volume[channel].value_percent) {
-                    vol = parseInt(app.volume[channel].value_percent);
-                    break;
+            try {
+                for (let channel in app.volume) {
+                    let chObj = app.volume[channel];
+                    if (chObj && chObj.value_percent) {
+                        vol = parseInt(chObj.value_percent);
+                        break;
+                    }
                 }
+            } catch (err) {
+                console.log("[VolumeService] Error parsing app volume: " + err);
             }
             
             let name = "Unknown";

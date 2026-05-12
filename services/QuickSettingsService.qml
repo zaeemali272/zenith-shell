@@ -44,8 +44,8 @@ Item {
     }
     
     function open(tab, rect) {
-        activeTab = tab;
-        anchorRect = rect;
+        if (tab) activeTab = tab;
+        if (rect !== undefined) anchorRect = rect;
         isSticky = true;
         if (menuRef) menuRef.visible = true;
     }
