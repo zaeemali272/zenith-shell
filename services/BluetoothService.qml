@@ -10,7 +10,7 @@ Item {
     property bool powered: false
     property bool connected: false
     property bool scanning: false
-    property bool busy: actionExec.running || powerExec.running || scanExec.running || statusCheck.running || deviceRefresh.running || rfkillCheck.running || serviceCheck.running || serviceRestart.running
+    property bool busy: actionExec.running || powerExec.running || scanExec.running || statusCheck.running || deviceRefresh.running || rfkillCheck.running || serviceCheck.running
     property bool _actionInProgress: false
 
     function log(msg) {
@@ -41,19 +41,9 @@ Item {
         stdout: StdioCollector {
             onStreamFinished: {
                 if (text && text.trim() !== "active") {
-                    log("Service not active (" + text.trim() + "), attempting restart...");
-                    serviceRestart.running = true;
+                    log("Service not active: " + text.trim());
                 }
             }
-        }
-    }
-
-    Process {
-        id: serviceRestart
-        command: ["systemctl", "restart", "bluetooth.service"]
-        onExited: (code) => {
-            log("Service restart attempted, exit code: " + code);
-            Qt.callLater(() => { refresh(); }, 2000);
         }
     }
 

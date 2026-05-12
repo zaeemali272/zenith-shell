@@ -32,19 +32,19 @@ Item {
     }
 
     implicitHeight: Theme.pillHeight
-    implicitWidth: pill.implicitWidth
+    implicitWidth: pill.width
 
     Pill {
         id: pill
 
-        anchors.fill: parent
-        implicitWidth: volumeContent.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
+        height: parent.height
+        width: volumeContent.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
         
         onClicked: (mouse) => {
             if (mouse.button === Qt.RightButton) {
                 muteExec.running = true;
             } else if (mouse.button === Qt.LeftButton) {
-                QuickSettingsService.toggle("volume", root.mapToItem(null, 0, 0, root.width, root.height));
+                QuickSettingsService.toggle("volume");
             }
         }
 
