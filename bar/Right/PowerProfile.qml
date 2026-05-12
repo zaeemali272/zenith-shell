@@ -23,8 +23,10 @@ Item {
         implicitWidth: content.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
         onClicked: (mouse) => {
             if (mouse.button === Qt.LeftButton)
-                QuickSettingsService.toggle("powerprofile", root.mapToItem(null, 0, 0, root.width, root.height));
+                QuickSettingsService.toggle("powerprofile");
         }
+        
+        Behavior on color { ColorAnimation { duration: 300 } }
 
         RowLayout {
             id: content

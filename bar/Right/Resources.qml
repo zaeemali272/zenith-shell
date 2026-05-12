@@ -39,6 +39,13 @@ Item {
         implicitHeight: Theme.pillHeight
         width: content.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
         clip: true
+        
+        onClicked: (mouse) => {
+            if (mouse.button === Qt.LeftButton)
+                QuickSettingsService.toggle("resources");
+        }
+
+        Behavior on color { ColorAnimation { duration: 300 } }
 
         RowLayout {
             id: content
@@ -55,19 +62,9 @@ Item {
         }
     }
 
-    MouseArea {
-        anchors.fill: parent
-        hoverEnabled: true
-        onEntered: pill.color = pill.hoverColor
-        onExited: pill.color = pill.normalColor
-        onClicked: {
-            QuickSettingsService.toggle("resources", root.mapToItem(null, 0, 0, root.width, root.height));
-        }
-    }
-
     Process {
         id: resourceExec
-        command: ["bash", "-c", "$HOME/.config/quickshell/scripts/resources.sh"]
+        command: ["bash", "-c", "./scripts/resources.sh"]
         stdout: StdioCollector {
             onStreamFinished: {
                 try {

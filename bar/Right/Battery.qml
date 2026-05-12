@@ -56,8 +56,10 @@ Item {
         clip: true
         onClicked: (mouse) => {
             if (mouse.button === Qt.LeftButton)
-                QuickSettingsService.toggle("battery", root.mapToItem(null, 0, 0, root.width, root.height));
+                QuickSettingsService.toggle("battery");
         }
+        
+        Behavior on color { ColorAnimation { duration: 300 } }
 
         RowLayout {
             id: content

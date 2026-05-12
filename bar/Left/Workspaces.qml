@@ -53,6 +53,7 @@ Item {
             model: activeWorkspaces.length
 
             delegate: Rectangle {
+                id: wsDelegate
                 width: Theme.scaled(25)
                 implicitHeight: Theme.workspaceBackgroundStyle === "full" ? Theme.scaled(Theme.pillHeight - Theme.scaled(8)) : Theme.scaled(Theme.pillHeight)
                 radius: Theme.pillRadius
@@ -65,8 +66,13 @@ Item {
                 color: Theme.workspaceBackgroundStyle === "full" ? "transparent" : (workspace.active ? Theme.wsActiveColor : (isOccupied ? Theme.wsOccupiedColor : Theme.wsEmptyColor))
                 border.color: Theme.workspaceBackgroundStyle === "full" ? "transparent" : (workspace.active ? Theme.wsActiveColor : "transparent")
                 border.width: Theme.scaled(1)
+                
+                scale: wsMouse.containsMouse ? 1.1 : 1.0
+                Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                Behavior on color { ColorAnimation { duration: 300 } }
 
                 MouseArea {
+                    id: wsMouse
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor

@@ -1,29 +1,26 @@
 // bar/Right/Tray.qml
+import ".."
 import "../.."
 import QtQuick
 import QtQuick.Layouts
 import Quickshell.Services.SystemTray
 
-Rectangle {
+Pill {
     id: trayContainer
 
     property var menuRef
 
     implicitHeight: Theme.pillHeight
-    implicitWidth: trayRow.implicitWidth + (Theme.pillPadding * 2)
-    color: Theme.pillColor
-    radius: Theme.pillRadius
+    width: trayRow.implicitWidth + (Theme.pillPadding * 2)
     Layout.alignment: Qt.AlignVCenter
 
     RowLayout {
         id: trayRow
-
         anchors.centerIn: parent
         spacing: 8
-
+        
         Repeater {
             model: SystemTray.items
-
             delegate: TrayItem {
                 item: modelData
                 menuRef: trayContainer.menuRef

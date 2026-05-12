@@ -67,9 +67,17 @@ PanelWindow {
 
         Component.onCompleted: {
             if (GeneralSettings.barEntryAnimation) {
-                console.log("[Bar] Starting barEntryAnim.");
                 barEntryAnim.start();
+                contentFadeAnim.start();
             }
+        }
+        
+        NumberAnimation {
+            id: contentFadeAnim
+            targets: [leftSide, centerSide, rightLayout]
+            property: "opacity"
+            from: 0; to: 1
+            duration: GeneralSettings.barAnimationDuration * 1.5
         }
 
         // --- LEFT SIDE ---
@@ -78,27 +86,23 @@ PanelWindow {
             anchors.left: parent.left
             anchors.leftMargin: Theme.barMarginLeft
             anchors.verticalCenter: parent.verticalCenter
+            opacity: GeneralSettings.barEntryAnimation ? 0 : 1
         }
 
         // --- PERFECT CENTER ---
         Center {
             id: centerSide
+            anchors.horizontalCenter: parent.horizontalCenter
             anchors.verticalCenter: parent.verticalCenter
-            width: {
-                let availableSpace = rightLayout.x - (leftSide.x + leftSide.width) - (Theme.pillGap * 2);
-                return Math.max(100, Math.min(implicitWidth, availableSpace));
-            }
-            clip: true
-            x: {
-                let preferredX = (parent.width - width) / 2;
-                let leftBound = leftSide.x + leftSide.width + Theme.pillGap;
-                let rightBound = rightLayout.x - width - Theme.pillGap;
-                if (rightLayout.x <= 0) {
-                    return preferredX;
-                }
-                return Math.max(leftBound, Math.min(preferredX, rightBound));
-            }
             controlCenterMenuRef: bar.controlCenterMenuRef
+            opacity: GeneralSettings.barEntryAnimation ? 0 : 1
+            
+            // Optional: Hide if overlapping with side widgets
+            visible: {
+                let leftBound = leftSide.x + leftSide.width + Theme.pillGap;
+                let rightBound = rightLayout.x - Theme.pillGap;
+                return (x >= leftBound) && (x + width <= rightBound);
+            }
         }
 
         // --- RIGHT SIDE ---
@@ -108,12 +112,13 @@ PanelWindow {
             anchors.rightMargin: Theme.barMarginRight
             anchors.verticalCenter: parent.verticalCenter
             spacing: Theme.pillSpacing
+            opacity: GeneralSettings.barEntryAnimation ? 0 : 1
 
             Tray { menuRef: trayPopup }
             
             Network { 
                 id: wifiWidget 
-                visible: GeneralSettings.enableResources // Actually should have its own toggle but for now using resources or just true
+                visible: GeneralSettings.enableResources 
             }
             
             PowerProfile { 

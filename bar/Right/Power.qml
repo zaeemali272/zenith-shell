@@ -18,10 +18,12 @@ Item {
         text: ""
         onClicked: (mouse) => {
             if (mouse.button === Qt.LeftButton)
-                QuickSettingsService.toggle("power", root.mapToItem(null, 0, 0, root.width, root.height));
+                QuickSettingsService.toggle("power");
             else if (mouse.button === Qt.RightButton)
                 powerExec.running = true;
         }
+
+        Behavior on color { ColorAnimation { duration: 300 } }
 
         Item {
             width: Theme.implicitWidth

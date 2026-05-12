@@ -28,9 +28,16 @@ PopupWindow {
         if (visible) {
             QuickSettingsService.qsVisible = true;
             mainContent.forceActiveFocus();
+            showAnim.start();
         } else {
             QuickSettingsService.qsVisible = false;
         }
+    }
+
+    ParallelAnimation {
+        id: showAnim
+        NumberAnimation { target: mainContent; property: "opacity"; from: 0; to: 1; duration: 250; easing.type: Easing.OutCubic }
+        NumberAnimation { target: mainContent; property: "y"; from: 20; to: 0; duration: 300; easing.type: Easing.OutBack }
     }
 
     // Positioning
@@ -55,6 +62,7 @@ PopupWindow {
         radius: Theme.menuRadius
         border.color: hoverTracker.containsMouse ? Theme.menuHoverBorder : Theme.menuBorder
         border.width: 1
+        opacity: 0 // Start hidden for animation
 
         // MouseArea for background handling - keeps focus and tracks hover
         MouseArea {
@@ -106,7 +114,10 @@ PopupWindow {
                             radius: 12
                             color: QuickSettingsService.activeTab === modelData.id ? Theme.accentColor : (tabMouse.containsMouse ? Theme.surface0 : "transparent")
                             
+                            scale: tabMouse.pressed ? 0.95 : (tabMouse.containsMouse ? 1.02 : 1.0)
+
                             Behavior on color { ColorAnimation { duration: 200 } }
+                            Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
 
                             ColumnLayout {
                                 anchors.centerIn: parent
