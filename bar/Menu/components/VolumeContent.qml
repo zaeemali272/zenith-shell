@@ -11,6 +11,17 @@ ColumnLayout {
     spacing: Theme.scaled(25)
     Layout.fillWidth: true
 
+    opacity: 0
+    scale: 0.98
+    Component.onCompleted: {
+        entryAnim.start();
+    }
+    ParallelAnimation {
+        id: entryAnim
+        NumberAnimation { target: root; property: "opacity"; to: 1; duration: 400; easing.type: Easing.OutCubic }
+        NumberAnimation { target: root; property: "scale"; to: 1; duration: 500; easing.type: Theme.elasticEasing }
+    }
+
     // --- Header ---
     RowLayout {
         Layout.fillWidth: true

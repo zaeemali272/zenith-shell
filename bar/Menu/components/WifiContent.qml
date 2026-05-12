@@ -1,19 +1,19 @@
-import "../.."
-import "../../../"
-import "../../../services"
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
+import "../../.."
+import "../../../services"
 
-Item {
+ColumnLayout {
     id: root
+    spacing: Theme.scaled(20)
+    
+    // Explicit sizing for ScrollView integration
     Layout.fillWidth: true
     Layout.fillHeight: true
-    
-    // Focus capture for the whole content area
-    focus: true
-    
+
     Component.onCompleted: {
         WifiService.refresh();
     }
@@ -39,17 +39,9 @@ Item {
         }
     }
 
-    Connections {
-        target: QuickSettingsService
-        function onQsVisibleChanged() {
-            if (!QuickSettingsService.qsVisible) {
-                selectedSsid = "";
-            }
-        }
-    }
-
     ColumnLayout {
-        anchors.fill: parent
+        id: mainContentCol
+        Layout.fillWidth: true
         spacing: Theme.scaled(20)
 
         // --- Header & Status ---
@@ -66,9 +58,24 @@ Item {
                     }
                 }
 
+                // Speed Test
+                Rectangle {
+                    width: Theme.scaled(110); height: Theme.scaled(44); radius: Theme.scaled(22); color: (speedMouse.containsMouse ? Qt.rgba(1,1,1,0.05) : "transparent"); border.color: wifiSvc.isTesting ? Theme.powerYellow : Theme.glassBorder; clip: true
+                    Behavior on color { ColorAnimation { duration: 200 } }
+                    RowLayout {
+                        anchors.centerIn: parent; spacing: 5
+                        Text { text: wifiSvc.isTesting ? "󱐋" : "󰓅"; font.family: Theme.iconFont; color: wifiSvc.isTesting ? Theme.powerYellow : Theme.blue; font.pixelSize: Theme.scaled(16) }
+                        Text { 
+                            text: wifiSvc.isTesting ? "TESTING" : (wifiSvc.currentSpeed === "0.0 Mbps" ? "SPEED" : wifiSvc.currentSpeed.replace(" Mbps", " MB/s").toUpperCase())
+                            color: Theme.text; font.pixelSize: Theme.scaled(9); font.weight: Font.Black 
+                        }
+                    }
+                    MouseArea { id: speedMouse; anchors.fill: parent; hoverEnabled: true; onClicked: wifiSvc.runMaxSpeedTest() }
+                }
+
                 // Refresh Button
                 Rectangle {
-                    width: Theme.scaled(44); height: Theme.scaled(44); radius: Theme.scaled(22); color: (refreshMouse.containsMouse ? Theme.base : Theme.backgroundColor); border.color: wifiSvc.isTesting ? Theme.powerYellow : Theme.surface1; clip: true
+                    width: Theme.scaled(44); height: Theme.scaled(44); radius: Theme.scaled(22); color: (refreshMouse.containsMouse ? Qt.rgba(1,1,1,0.05) : "transparent"); border.color: wifiSvc.isTesting ? Theme.powerYellow : Theme.glassBorder; clip: true
                     Behavior on color { ColorAnimation { duration: 200 } }
                     Text {
                         id: refreshIcon
@@ -81,7 +88,7 @@ Item {
 
                 // Airplane Mode
                 Rectangle {
-                    width: Theme.scaled(44); height: Theme.scaled(44); radius: Theme.scaled(22); color: (airplaneMouse.containsMouse ? Theme.base : Theme.backgroundColor); border.color: root.isAirplane ? Theme.powerRed : Theme.surface1; clip: true
+                    width: Theme.scaled(44); height: Theme.scaled(44); radius: Theme.scaled(22); color: (airplaneMouse.containsMouse ? Qt.rgba(1,1,1,0.05) : "transparent"); border.color: root.isAirplane ? Theme.powerRed : Theme.glassBorder; clip: true
                     Behavior on color { ColorAnimation { duration: 200 } }
                     Text { anchors.centerIn: parent; text: "󰀝"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(20); color: root.isAirplane ? Theme.powerRed : Theme.text }
                     MouseArea {
@@ -97,10 +104,11 @@ Item {
             
             // Current Connection Detailed Info
             Rectangle {
-                Layout.fillWidth: true; height: Theme.scaled(60); color: Theme.backgroundColor; radius: Theme.scaled(16); visible: wifiSvc.currentSsid !== ""
+                Layout.fillWidth: true; height: Theme.scaled(60); color: Qt.rgba(0,0,0,0.2); radius: Theme.scaled(16); visible: wifiSvc.currentSsid !== ""
+                border.color: Theme.glassBorder
                 RowLayout {
                     anchors.fill: parent; anchors.margins: Theme.scaled(12); spacing: Theme.scaled(15)
-                    Rectangle { width: Theme.scaled(36); height: Theme.scaled(36); radius: Theme.scaled(10); color: Theme.surface0
+                    Rectangle { width: Theme.scaled(36); height: Theme.scaled(36); radius: Theme.scaled(10); color: Qt.rgba(1,1,1,0.05)
                         Text { anchors.centerIn: parent; text: "󰤨"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(18); color: Theme.powerGreen }
                     }
                     ColumnLayout { spacing: 0; Layout.fillWidth: true
@@ -120,7 +128,13 @@ Item {
 
         // --- Network List ---
         ListView {
-            id: list; Layout.fillWidth: true; Layout.fillHeight: true; model: wifiSvc.networks; spacing: Theme.scaled(10); clip: true
+            id: list
+            Layout.fillWidth: true
+            // Calculate total height: count * (delegate height + spacing)
+            Layout.preferredHeight: wifiSvc.networks.length * Theme.scaled(75)
+            model: wifiSvc.networks; spacing: Theme.scaled(10); clip: true
+            interactive: false
+
             
             delegate: FocusScope {
                 id: delegateRoot
@@ -129,23 +143,20 @@ Item {
                 Rectangle {
                     id: backgroundRect
                     anchors.fill: parent
-                    // Darker on hover: Theme.base instead of Theme.menuBackground
-                    color: modelData.connected ? Theme.surface0 : (delegateMouse.containsMouse ? Theme.base : Theme.menuBackground)
+                    color: modelData.connected ? Qt.rgba(Theme.blue.r, Theme.blue.g, Theme.blue.b, 0.1) : (delegateMouse.containsMouse ? Qt.rgba(1,1,1,0.05) : Qt.rgba(0,0,0,0.15))
                     radius: Theme.scaled(18)
-                    border.color: modelData.connected ? Theme.powerGreen : (selectedSsid === modelData.ssid ? Theme.blue : (delegateMouse.containsMouse ? Theme.surface1 : Theme.surface1))
-                    border.width: modelData.connected ? 1.5 : 1
+                    border.color: modelData.connected ? Theme.powerGreen : (selectedSsid === modelData.ssid ? Theme.blue : Theme.glassBorder)
+                    border.width: 1
                     clip: true
                     
                     Behavior on color { ColorAnimation { duration: 200 } }
                     Behavior on border.color { ColorAnimation { duration: 200 } }
-                    Behavior on height { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
                     
                     MouseArea {
                         id: delegateMouse
                         anchors.fill: parent
                         hoverEnabled: true
                         onClicked: {
-                            QuickSettingsService.isSticky = true;
                             if(wifiSvc.knownNetworks[modelData.ssid]) {
                                 wifiSvc.connect(modelData.ssid, "");
                             } else {
@@ -158,18 +169,10 @@ Item {
                         anchors.fill: parent; anchors.margins: Theme.scaled(12); spacing: Theme.scaled(12)
                         RowLayout {
                             Layout.fillWidth: true; spacing: Theme.scaled(12)
-                            // Signal Icon
-                            Rectangle { width: Theme.scaled(36); height: Theme.scaled(36); radius: Theme.scaled(10); color: Theme.backgroundColor
+                            Rectangle { width: Theme.scaled(36); height: Theme.scaled(36); radius: Theme.scaled(10); color: Qt.rgba(1,1,1,0.05)
                                 Text { 
                                     anchors.centerIn: parent
-                                    text: {
-                                        if (modelData.connected) return "󰤨";
-                                        if (modelData.signal >= 4) return "󰤨";
-                                        if (modelData.signal >= 3) return "󰤥";
-                                        if (modelData.signal >= 2) return "󰤢";
-                                        if (modelData.signal >= 1) return "󰤟";
-                                        return "󰤯";
-                                    }
+                                    text: modelData.connected ? "󰤨" : (modelData.signal >= 4 ? "󰤨" : (modelData.signal >= 3 ? "󰤥" : (modelData.signal >= 2 ? "󰤢" : (modelData.signal >= 1 ? "󰤟" : "󰤯"))))
                                     font.family: Theme.iconFont; font.pixelSize: Theme.scaled(18)
                                     color: modelData.connected ? Theme.powerGreen : Theme.text 
                                 }
@@ -183,108 +186,47 @@ Item {
                                 }
                             }
                             RowLayout { spacing: Theme.scaled(6)
-                                // Disconnect Button (only for connected network)
                                 Rectangle {
                                     visible: modelData.connected
-                                    width: Theme.scaled(32); height: Theme.scaled(32); radius: Theme.scaled(8); color: Theme.surface0
+                                    width: Theme.scaled(32); height: Theme.scaled(32); radius: Theme.scaled(8); color: Qt.rgba(1,0,0,0.1)
                                     Text { anchors.centerIn: parent; text: "󰤄"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(14); color: Theme.powerRed }
-                                    MouseArea { anchors.fill: parent; hoverEnabled: true; onClicked: wifiSvc.disconnect() }
+                                    MouseArea { anchors.fill: parent; onClicked: wifiSvc.disconnect() }
                                 }
-
-                                // Forget Button
-                                Rectangle {
-                                    visible: !!wifiSvc.knownNetworks[modelData.ssid]
-                                    width: Theme.scaled(32); height: Theme.scaled(32); radius: Theme.scaled(8); color: (forgetMouse.containsMouse ? Theme.base : Theme.fontColor)
-                                    Behavior on color { ColorAnimation { duration: 200 } }
-                                    Text { anchors.centerIn: parent; text: "󱘖"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(14); color: Theme.powerYellow }
-                                    MouseArea { id: forgetMouse; anchors.fill: parent; hoverEnabled: true; onClicked: wifiSvc.forgetNetwork(modelData.ssid) }
-                                }
-                                
-                                // Action Button
                                 Rectangle {
                                     visible: !modelData.connected
                                     width: wifiSvc.knownNetworks[modelData.ssid] ? Theme.scaled(75) : Theme.scaled(32); height: Theme.scaled(32); radius: Theme.scaled(8)
-                                    color: wifiSvc.knownNetworks[modelData.ssid] ? (actionMouse.containsMouse ? Theme.blue : Theme.blue) : (actionMouse.containsMouse ? Theme.base : Theme.surface0)
-                                    Behavior on color { ColorAnimation { duration: 200 } }
+                                    color: wifiSvc.knownNetworks[modelData.ssid] ? Theme.blue : Qt.rgba(1,1,1,0.05)
                                     Text { 
                                         anchors.centerIn: parent; font.pixelSize: Theme.scaled(10); font.weight: Font.Black
                                         text: wifiSvc.knownNetworks[modelData.ssid] ? "CONNECT" : "󰅂"
                                         color: wifiSvc.knownNetworks[modelData.ssid] ? "black" : Theme.text
                                     }
-                                    MouseArea { 
-                                        id: actionMouse
-                                        anchors.fill: parent; 
-                                        hoverEnabled: true
-                                        onClicked: {
-                                            QuickSettingsService.isSticky = true;
-                                            if(wifiSvc.knownNetworks[modelData.ssid]) wifiSvc.connect(modelData.ssid, "");
-                                            else selectedSsid = (selectedSsid === modelData.ssid) ? "" : modelData.ssid;
-                                        }
-                                    }
+                                    MouseArea { anchors.fill: parent; onClicked: { if(wifiSvc.knownNetworks[modelData.ssid]) wifiSvc.connect(modelData.ssid, ""); else selectedSsid = (selectedSsid === modelData.ssid) ? "" : modelData.ssid; } }
                                 }
                             }
                         }
                         
-                        // --- Password Input Section ---
                         ColumnLayout {
                             Layout.fillWidth: true; visible: selectedSsid === modelData.ssid && !wifiSvc.knownNetworks[modelData.ssid]; spacing: Theme.scaled(10)
                             Rectangle { 
-                                Layout.fillWidth: true; height: Theme.scaled(38); color: Theme.surface0; radius: Theme.scaled(10); 
-                                border.color: lastFailedSsid === modelData.ssid ? Theme.powerRed : Theme.surface1
-                                border.width: 1
-                                
+                                Layout.fillWidth: true; height: Theme.scaled(38); color: Qt.rgba(0,0,0,0.2); radius: Theme.scaled(10); 
+                                border.color: lastFailedSsid === modelData.ssid ? Theme.powerRed : Theme.glassBorder
                                 TextInput { 
                                     id: passInput; anchors.fill: parent; anchors.margins: Theme.scaled(10); color: Theme.text; echoMode: TextInput.Password; font.pixelSize: Theme.scaled(13)
-                                    focus: true 
-                                    onVisibleChanged: if (visible && selectedSsid === modelData.ssid) passFocusTimer.start();
-                                    Timer { id: passFocusTimer; interval: 50; onTriggered: passInput.forceActiveFocus() }
-                                    Text { text: "Password..."; color: Theme.surface1; visible: !passInput.text && !passInput.activeFocus }
+                                    Text { text: "Password..."; color: Theme.surface2; visible: !passInput.text && !passInput.activeFocus }
                                     onAccepted: { wifiSvc.connect(modelData.ssid, passInput.text); passInput.text = ""; }
                                 }
                             }
                             Rectangle { 
-                                Layout.fillWidth: true; height: Theme.scaled(38); color: (joinMouse.containsMouse ? Theme.blue : Theme.blue); radius: Theme.scaled(10)
-                                Behavior on color { ColorAnimation { duration: 200 } }
+                                Layout.fillWidth: true; height: Theme.scaled(38); color: Theme.blue; radius: Theme.scaled(10)
                                 Text { anchors.centerIn: parent; text: "JOIN NETWORK"; color: "black"; font.weight: Font.Black; font.pixelSize: Theme.scaled(10) }
-                                MouseArea { 
-                                    id: joinMouse
-                                    anchors.fill: parent; 
-                                    hoverEnabled: true
-                                    onClicked: { 
-                                        QuickSettingsService.isSticky = true;
-                                        wifiSvc.connect(modelData.ssid, passInput.text); 
-                                        passInput.text = ""; 
-                                    } 
-                                }
+                                MouseArea { anchors.fill: parent; onClicked: { wifiSvc.connect(modelData.ssid, passInput.text); passInput.text = ""; } }
                             }
                         }
                     }
                 }
             }
         }
-
-        // --- Footer (Speed Test) ---
-        Rectangle {
-            Layout.fillWidth: true; height: Theme.scaled(50); color: (speedMouse.containsMouse ? Theme.base : Theme.backgroundColor); radius: Theme.scaled(16); border.color: wifiSvc.isTesting ? Theme.powerYellow : Theme.surface1
-            Behavior on color { ColorAnimation { duration: 200 } }
-            RowLayout {
-                anchors.centerIn: parent; spacing: Theme.scaled(15)
-                Text { text: wifiSvc.isTesting ? "󱑔" : "󰓅"; font.family: Theme.iconFont; color: wifiSvc.isTesting ? Theme.powerYellow : Theme.blue; font.pixelSize: Theme.scaled(20) }
-                ColumnLayout { spacing: 0
-                    Text { text: wifiSvc.isTesting ? "TESTING MAX SPEED..." : "DOWNLOAD SPEED"; color: Theme.surface2; font.pixelSize: Theme.scaled(7); font.weight: Font.Black }
-                    Text { 
-                        text: {
-                            if (wifiSvc.isTesting) return "TESTING...";
-                            if (wifiSvc.currentSpeed === "0.0 Mbps") return speedMouse.containsMouse ? "CLICK TO RUN" : "0.0 MBPS";
-                            return wifiSvc.currentSpeed.toUpperCase();
-                        }
-                        color: Theme.text; font.pixelSize: Theme.scaled(14); font.weight: Font.Black 
-                    }
-                }
-            }
-            MouseArea { id: speedMouse; anchors.fill: parent; hoverEnabled: true; onClicked: wifiSvc.runMaxSpeedTest() }
-        }
     }
-
     Process { id: rfkillProc }
 }

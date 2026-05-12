@@ -7,8 +7,19 @@ import Quickshell
 
 ColumnLayout {
     id: root
-    spacing: Theme.scaled(15)
+    spacing: Theme.scaled(25)
     Layout.fillWidth: true
+
+    opacity: 0
+    scale: 0.98
+    Component.onCompleted: {
+        entryAnim.start();
+    }
+    ParallelAnimation {
+        id: entryAnim
+        NumberAnimation { target: root; property: "opacity"; to: 1; duration: 400; easing.type: Easing.OutCubic }
+        NumberAnimation { target: root; property: "scale"; to: 1; duration: 500; easing.type: Theme.elasticEasing }
+    }
 
     // Matches the .toLowerCase() and .trim() in your new Service
     readonly property bool isLimitActive: (BatteryService.status === "not charging" || BatteryService.status === "full") && BatteryService.acOnline
@@ -18,84 +29,58 @@ ColumnLayout {
     readonly property real displayWatts: BatteryService.energyRate > 1000 ? BatteryService.energyRate / 1000000 : BatteryService.energyRate
 
     Text {
-        text: "Battery"
-        color: Theme.text
-        font.bold: true
-        font.pixelSize: Theme.scaled(22)
+        text: "ENERGY STATION"
+        color: Theme.blue
+        font.pixelSize: 10
+        font.weight: Font.Black
+        font.letterSpacing: 2
+        Layout.leftMargin: Theme.scaled(5)
     }
 
     // Main Card
     Rectangle {
         Layout.fillWidth: true
-        height: Theme.scaled(160)
-        color: Theme.surface0
+        height: Theme.scaled(140)
+        color: Qt.rgba(0,0,0,0.2)
         radius: Theme.scaled(24)
-        border.color: Theme.surface1
+        border.color: Theme.glassBorder
         border.width: 1
 
         RowLayout {
             anchors.fill: parent
-            anchors.margins: Theme.scaled(25)
-            spacing: Theme.scaled(30)
+            anchors.margins: Theme.scaled(20)
+            spacing: Theme.scaled(25)
 
-            Item {
-                width: Theme.scaled(100); height: Theme.scaled(100)
-                Rectangle {
-                    anchors.fill: parent
-                    radius: Theme.scaled(50)
-                    color: Theme.mantle
-                    Text {
-                        anchors.centerIn: parent
-                        text: BatteryService.acOnline ? "󱐋" : (BatteryService.percentage > 90 ? "󰁹" : (BatteryService.percentage > 50 ? "󰂀" : (BatteryService.percentage > 20 ? "󰁽" : "󰂃")))
-                        font.family: Theme.iconFont
-                        font.pixelSize: Theme.scaled(48)
-                        color: BatteryService.acOnline ? Theme.powerGreen : (BatteryService.percentage > 20 ? Theme.accentColor : Theme.powerRed)
-                    }
+            Rectangle {
+                width: Theme.scaled(80); height: Theme.scaled(80); radius: 40
+                color: Qt.rgba(1,1,1,0.05)
+                Text {
+                    anchors.centerIn: parent
+                    text: BatteryService.acOnline ? "󱐋" : "󰁹"
+                    font.family: Theme.iconFont
+                    font.pixelSize: Theme.scaled(32)
+                    color: BatteryService.acOnline ? Theme.powerGreen : Theme.blue
                 }
             }
 
             ColumnLayout {
-                spacing: Theme.scaled(5)
-                Layout.fillWidth: true
-                
+                spacing: 5; Layout.fillWidth: true
                 RowLayout {
-                    spacing: Theme.scaled(10)
-                    Text {
-                        text: BatteryService.percentage + "%"
-                        font.pixelSize: Theme.scaled(42)
-                        font.bold: true
-                        color: Theme.text
-                    }
-                    
+                    spacing: 15
+                    Text { text: BatteryService.percentage + "%"; font.pixelSize: Theme.scaled(38); font.weight: Font.Black; color: Theme.text }
                     Rectangle {
-                        height: Theme.scaled(26); width: pillText.implicitWidth + Theme.scaled(50); radius: Theme.scaled(13)
-                        color: root.isLimitActive ? Theme.powerYellow : (BatteryService.acOnline ? Theme.powerGreen : Theme.surface1)
-                        
-                        Text { 
-                            id: pillText
-                            anchors.centerIn: parent; 
-                            text: root.isLimitActive ? "Conservative Mode" : (BatteryService.acOnline ? "Plugged In" : "Plugged Out"); 
-                            color: Colors.background; 
-                            font.bold: true; 
-                            font.pixelSize: Theme.scaled(11) 
-                        }
+                        height: 22; width: pillText.implicitWidth + 30; radius: 11
+                        color: BatteryService.acOnline ? Theme.powerGreen : Theme.surface1
+                        Text { id: pillText; anchors.centerIn: parent; text: BatteryService.acOnline ? "PLUGGED" : "DISCHARGING"; color: Colors.background; font.weight: Font.Black; font.pixelSize: 9 }
                     }
                 }
-                
-                Text {
-                    text: (root.isLimitActive ? "Conservative" : BatteryService.status) + (BatteryService.acOnline ? " • Power Source: AC" : " • On Battery")
-                    font.pixelSize: Theme.scaled(14)
-                    color: Theme.subtext0
-                }
+                Text { text: (root.isLimitActive ? "Conservative" : BatteryService.status).toUpperCase(); font.pixelSize: 10; font.weight: Font.Black; color: Theme.subtext1 }
                 
                 Rectangle {
-                    Layout.fillWidth: true
-                    Layout.topMargin: Theme.scaled(10)
-                    height: Theme.scaled(12); radius: Theme.scaled(6); color: Theme.surface1
+                    Layout.fillWidth: true; Layout.topMargin: 10; height: 8; radius: 4; color: Qt.rgba(1,1,1,0.1)
                     Rectangle {
-                        width: parent.width * (BatteryService.percentage / 100)
-                        height: parent.height; radius: Theme.scaled(6)
-                        color: BatteryService.acOnline ? Theme.powerGreen : (BatteryService.percentage > 20 ? Theme.accentColor : Theme.powerRed)
+                        width: parent.width * (BatteryService.percentage / 100); height: parent.height; radius: 4
+                        color: BatteryService.acOnline ? Theme.powerGreen : Theme.blue
                         Behavior on width { NumberAnimation { duration: 1000; easing.type: Easing.OutCubic } }
                     }
                 }
@@ -103,35 +88,21 @@ ColumnLayout {
         }
     }
 
-    // Cycles & Time
+    // Info Grid
     RowLayout {
-        Layout.fillWidth: true
-        spacing: Theme.scaled(15)
+        Layout.fillWidth: true; spacing: 15
+        StatCard { label: "CYCLES"; value: BatteryService.cycleCount; icon: "󱂇"; accent: Theme.mauve }
+        StatCard { label: "REMAINING"; value: root.isLimitActive ? "N/A" : (BatteryService.timeRemaining || "..."); icon: "󰥔"; accent: Theme.blue }
+    }
 
-        Rectangle {
-            Layout.fillWidth: true; height: Theme.scaled(145); color: Theme.surface0; radius: Theme.scaled(18); border.color: Theme.surface1
-            ColumnLayout {
-                anchors.centerIn: parent; spacing: Theme.scaled(4)
-                Text { text: "󱂇"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(40); color: Theme.mauve; Layout.alignment: Qt.AlignHCenter }
-                Text { 
-                    // Now using the real cycleCount property from the service
-                    text: "Cycles: " + BatteryService.cycleCount
-                    color: Theme.text; font.bold: true; font.pixelSize: Theme.scaled(15); Layout.alignment: Qt.AlignHCenter 
-                }
-            }
-        }
-
-        Rectangle {
-            Layout.fillWidth: true; height: Theme.scaled(145); color: Theme.surface0; radius: Theme.scaled(18); border.color: Theme.surface1
-            ColumnLayout {
-                anchors.centerIn: parent; spacing: Theme.scaled(4)
-                Text { text: "󰥔"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(40); color: Theme.blue; Layout.alignment: Qt.AlignHCenter }
-                Text { 
-                    // Forces N/A when limit is active or battery is full
-                    text: "Left: " + (root.isLimitActive ? "N/A" : (BatteryService.timeRemaining || "Calculating..."))
-                    color: Theme.text; font.bold: true; font.pixelSize: Theme.scaled(15); Layout.alignment: Qt.AlignHCenter 
-                }
-            }
+    component StatCard: Rectangle {
+        property string label; property var value; property string icon; property color accent
+        Layout.fillWidth: true; height: 90; color: Qt.rgba(1,1,1,0.03); radius: 20; border.color: Theme.glassBorder
+        ColumnLayout {
+            anchors.centerIn: parent; spacing: 5
+            Text { text: icon; font.family: Theme.iconFont; font.pixelSize: 24; color: accent; Layout.alignment: Qt.AlignHCenter }
+            Text { text: value; color: Theme.text; font.weight: Font.Black; font.pixelSize: 14; Layout.alignment: Qt.AlignHCenter }
+            Text { text: label; color: Theme.subtext1; font.pixelSize: 8; font.weight: Font.Black; Layout.alignment: Qt.AlignHCenter }
         }
     }
 // Bottom Detailed Grid (Horizontally Aligned & Justified)

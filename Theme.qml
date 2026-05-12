@@ -17,8 +17,20 @@ QtObject {
     // Helper to scale values manually if needed
     function scaled(val) { return Math.round(val * scale); }
     
-    
     readonly property int appMenuCol: 6
+
+    // ===== Glassmorphism & Effects =====
+    readonly property real menuOpacity: 0.7
+    readonly property color glassBackground: Qt.alpha(Colors.background, menuOpacity)
+    readonly property color glassBorder: Qt.rgba(1, 1, 1, 0.15)
+    readonly property real glassBlur: 200
+    
+    // ===== Animation Defaults =====
+    readonly property int animFast: 150
+    readonly property int animNormal: 300
+    readonly property int animSlow: 500
+    readonly property int animEasing: Easing.OutQuint
+    readonly property int elasticEasing: Easing.OutBack
 
     // ===== Colors (Dynamic from Matugen) =====
     readonly property color base: Colors.background
@@ -40,6 +52,14 @@ QtObject {
     readonly property color red: Colors.error
     readonly property color mauve: Colors.primary
     readonly property color accentColor: Colors.primary
+    readonly property color accentGlow: {
+        try {
+            return Qt.rgba(Colors.primary.r, Colors.primary.g, Colors.primary.b, 0.3);
+        } catch(e) {
+            return "#4dffb3b3";
+        }
+    }
+    readonly property color shadowColor: Qt.rgba(0, 0, 0, 0.5)
 
     // ===== Bar =====
     readonly property int barHeight: scaled(30)
@@ -69,7 +89,6 @@ QtObject {
     readonly property int pillRadius: scaled(14)
     readonly property int pillPadding: scaled(16)
     readonly property int extraPillPadding: scaled(5)
-    // readonly property color pillColor: "#bd000000"
     readonly property color pillColor: Colors.background
     readonly property int pillSpacing: scaled(4)
     readonly property int pillGap: scaled(6)

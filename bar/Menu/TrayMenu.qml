@@ -1,4 +1,4 @@
-import "../../"
+import "../.."
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -55,8 +55,8 @@ PopupWindow {
     Rectangle {
         id: menuSurface
         y: Theme.scaled(8)
-        color: Theme.menuBackground
-        border.color: Theme.menuBorder
+        color: Theme.glassBackground
+        border.color: Theme.glassBorder
         border.width: 1
         radius: Theme.scaled(12)
         focus: true
@@ -91,7 +91,7 @@ PopupWindow {
                     implicitHeight: modelData.isSeparator ? Theme.scaled(13) : Theme.scaled(38)
                     radius: Theme.scaled(8)
 
-                    color: (itemMouse.containsMouse || (subMenuLoader.active && subMenuLoader.item.currentItem === modelData)) ? Theme.surface1 : "transparent"
+                    color: (modelData.isSeparator) ? "transparent" : ((itemMouse.containsMouse || (subMenuLoader.active && subMenuLoader.item.currentItem === modelData)) ? Theme.surface1 : "transparent")
 
                     Rectangle {
                         anchors.centerIn: parent
