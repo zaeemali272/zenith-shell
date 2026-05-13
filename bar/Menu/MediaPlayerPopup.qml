@@ -68,6 +68,7 @@ PopupWindow {
             MprisPlayer {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                active: root.visible
             }
         }
     }

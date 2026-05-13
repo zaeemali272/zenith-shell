@@ -15,160 +15,49 @@ Rectangle {
     anchors.verticalCenter: parent.verticalCenter
     clip: true
 
-    // --- THE ANIMATION ---
-    width: contentLayout.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
-    
-    Behavior on width {
-        NumberAnimation {
-            duration: 400
-            easing.type: Easing.OutExpo
-        }
+    // --- State ---
+    property var trackedPlayer: {
+        let active = Mpris.players.values.find((p) => p.playbackState === MprisPlaybackState.Playing);
+        return active ? active : (Mpris.players.values.length > 0 ? Mpris.players.values[0] : null);
     }
-
-    property var trackedPlayer: null
     property var lastPlayer: null
-    property var activeTrack: { "title": "Nothing playing", "artist": "", "artUrl": "" }
+    property bool pausedByMic: false
 
-    // implicitWidth must follow the animated width for the parent layout to respect it
-    implicitWidth: width
-
-    signal trackChanged()
-
+    // --- Formatting Logic ---
     function formatMediaTitle(title, identity) {
         if (!title) return "";
         let id = identity ? identity.toLowerCase() : "";
         if (id.includes("mpv") || id.includes("vlc")) {
-            // Remove common media extensions
             title = title.replace(/\.(mp3|mp4|mkv|avi|flac|wav|ogg|webm|mov|m4a|wmv|mpg|mpeg)$/i, "");
-            // Remove everything in parentheses and brackets
             title = title.replace(/\s*[\(\[].*?[\)\]]/g, "");
         }
         return title.trim();
     }
 
-    function updateTrack() {
-        if (!trackedPlayer || !trackedPlayer.isPlaying) {
-            activeTrack = { "title": "Nothing playing", "artist": "", "artUrl": "" }
-        } else {
-            let rawTitle = String(trackedPlayer.trackTitle || trackedPlayer.identity || "Unknown Player");
-            activeTrack = {
-                title: formatMediaTitle(rawTitle, trackedPlayer.identity),
-                artist: String(trackedPlayer.trackArtist || ""),
-                artUrl: String(trackedPlayer.trackArtUrl || "")
-            }
-        }
-
-        let titleStr = String(activeTrack.title);
-        let artistStr = String(activeTrack.artist);
-
-        let displayTrack = (artistStr && artistStr !== "" && artistStr !== "undefined")
-            ? titleStr + " | " + artistStr
-            : titleStr
-
-        if (displayTrack.length > 85) {
-            let truncated = displayTrack.substring(0, 82);
-            let lastSpace = truncated.lastIndexOf(" ");
-            if (lastSpace > 50) {
-                displayTrack = truncated.substring(0, lastSpace) + "...";
-            } else {
-                displayTrack = truncated + "...";
-            }
-        }
-
-        mediaText.text = displayTrack || "Nothing playing"
-        mediaText.color = trackedPlayer?.isPlaying ? "#fab387" : "#7c6f64"
-        playPauseIcon.text = trackedPlayer?.isPlaying ? "" : ""
-        playPauseIcon.color = trackedPlayer?.isPlaying ? "#fab387" : "#7c6f64"
-        trackChanged()
-    }
-
-    Instantiator {
-        model: Mpris.players
+    readonly property bool isPlaying: trackedPlayer && trackedPlayer.playbackState === MprisPlaybackState.Playing
+    
+    readonly property string displayTrack: {
+        if (!trackedPlayer || !isPlaying) return "Nothing playing";
         
-        onObjectAdded: (key, player) => {
-            if (mediaWidget.trackedPlayer === null || player.playbackState === MprisPlaybackState.Playing) {
-                mediaWidget.trackedPlayer = player
-                mediaWidget.updateTrack()
-            }
+        let rawTitle = String(trackedPlayer.trackTitle || trackedPlayer.identity || "Unknown Player");
+        let title = formatMediaTitle(rawTitle, trackedPlayer.identity);
+        let artist = String(trackedPlayer.trackArtist || "");
+        
+        let full = (artist && artist !== "" && artist !== "undefined") ? title + " | " + artist : title;
+        
+        if (full.length > 85) {
+            let truncated = full.substring(0, 82);
+            let lastSpace = truncated.lastIndexOf(" ");
+            return (lastSpace > 50 ? truncated.substring(0, lastSpace) : truncated) + "...";
         }
-
-        Connections {
-            required property var modelData
-            target: modelData
-            function onPlaybackStateChanged() {
-                if (modelData.playbackState === MprisPlaybackState.Playing) {
-                    // --- MEDIA FOCUS LOGIC ---
-                    console.log("[MediaFocus] " + modelData.identity + " started. Pausing others.");
-                    let all = Mpris.players.values;
-                    for (let i = 0; i < all.length; i++) {
-                        let other = all[i];
-                        if (other && other.dbusName !== modelData.dbusName && other.playbackState === MprisPlaybackState.Playing) {
-                            mediaWidget.lastPlayer = other;
-                            other.pause();
-                        }
-                    }
-                    mediaWidget.trackedPlayer = modelData
-                    mediaWidget.updateTrack()
-                } else if (modelData.playbackState === MprisPlaybackState.Paused || modelData.playbackState === MprisPlaybackState.Stopped) {
-                    // Resume last player if no one else is playing
-                    if (mediaWidget.trackedPlayer === modelData) {
-                        if (mediaWidget.lastPlayer && mediaWidget.lastPlayer.playbackState !== MprisPlaybackState.Playing) {
-                            console.log("[MediaFocus] Focus returned. Resuming " + mediaWidget.lastPlayer.identity);
-                            mediaWidget.lastPlayer.play();
-                            mediaWidget.lastPlayer = null;
-                        } else {
-                            // Look for another playing one
-                            let values = Mpris.players.values;
-                            for (let i = 0; i < values.length; i++) {
-                                if (values[i].playbackState === MprisPlaybackState.Playing) {
-                                    mediaWidget.trackedPlayer = values[i];
-                                    break;
-                                }
-                            }
-                        }
-                        mediaWidget.updateTrack()
-                    }
-                }
-            }
-            function onMetadataChanged() { 
-                if (mediaWidget.trackedPlayer === modelData) mediaWidget.updateTrack() 
-            }
-            Component.onDestruction: {
-                if (mediaWidget.trackedPlayer === modelData) {
-                    mediaWidget.trackedPlayer = null;
-                    let values = Mpris.players.values;
-                    for (let i = 0; i < values.length; i++) {
-                        if (values[i].playbackState === MprisPlaybackState.Playing) {
-                            mediaWidget.trackedPlayer = values[i];
-                            break;
-                        }
-                    }
-                    mediaWidget.updateTrack()
-                }
-            }
-        }
+        return full;
     }
 
-    property bool pausedByMic: false
-
-    Connections {
-        target: VolumeService
-        function onMicActiveChanged() {
-            if (VolumeService.micActive) {
-                if (trackedPlayer && trackedPlayer.isPlaying) {
-                    console.log("[MediaFocus] Mic active. Pausing media.");
-                    mediaWidget.pausedByMic = true;
-                    trackedPlayer.pause();
-                }
-            } else {
-                if (mediaWidget.pausedByMic) {
-                    console.log("[MediaFocus] Mic inactive. Resuming media.");
-                    if (trackedPlayer) trackedPlayer.play();
-                    mediaWidget.pausedByMic = false;
-                }
-            }
-        }
-    }
+    // --- UI Layout ---
+    width: contentLayout.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
+    implicitWidth: width
+    
+    Behavior on width { NumberAnimation { duration: 400; easing.type: Easing.OutExpo } }
 
     RowLayout {
         id: contentLayout
@@ -177,31 +66,73 @@ Rectangle {
 
         Text {
             id: playPauseIcon
+            font.family: Theme.iconFont
+            font.pixelSize: Theme.iconSize
+            text: mediaWidget.isPlaying ? "" : ""
+            color: mediaWidget.isPlaying ? "#fab387" : "#7c6f64"
             Layout.alignment: Qt.AlignVCenter
             Layout.preferredHeight: Theme.iconSize
             verticalAlignment: Text.AlignVCenter
-            font.family: Theme.iconFont
-            font.pixelSize: Theme.iconSize
-            text: ""
-            color: "#fab387"
         }
 
         Text {
             id: mediaText
+            text: mediaWidget.displayTrack
+            color: mediaWidget.isPlaying ? "#fab387" : "#7c6f64"
+            font.pixelSize: Theme.fontSize
+            elide: Text.ElideRight
             Layout.alignment: Qt.AlignVCenter
             verticalAlignment: Text.AlignVCenter
             horizontalAlignment: Text.AlignHCenter
-            font.pixelSize: Theme.fontSize
-            elide: Text.ElideRight
-            text: "Nothing playing"
-            color: "#7c6f64"
-            
-            // Fixed height ensures the text doesn't jitter vertically
             Layout.preferredHeight: Theme.iconSize
         }
     }
 
-    // --- MEDIA PLAYER POPUP ---
+    // --- Event Handling ---
+    Instantiator {
+        model: Mpris.players.values
+        onObjectAdded: (index, obj) => {
+            obj.playbackStateChanged.connect(() => {
+                if (obj.playbackState === MprisPlaybackState.Playing) {
+                    if (mediaWidget.trackedPlayer !== obj) {
+                        // Media Focus Logic
+                        let all = Mpris.players.values;
+                        for (let i = 0; i < all.length; i++) {
+                            let other = all[i];
+                            if (other && other.dbusName !== obj.dbusName && other.playbackState === MprisPlaybackState.Playing) {
+                                mediaWidget.lastPlayer = other;
+                                other.pause();
+                            }
+                        }
+                        mediaWidget.trackedPlayer = obj;
+                    }
+                } else if (mediaWidget.trackedPlayer === obj) {
+                    // If current player stops, find another playing one
+                    let active = Mpris.players.values.find((p) => p.playbackState === MprisPlaybackState.Playing);
+                    if (active) mediaWidget.trackedPlayer = active;
+                }
+            });
+            
+            // Ensure metadata changes trigger a re-eval of the displayTrack binding
+            obj.metadataChanged.connect(() => { if (mediaWidget.trackedPlayer === obj) mediaWidget.trackedPlayerChanged(); });
+        }
+    }
+
+    Connections {
+        target: VolumeService
+        function onMicActiveChanged() {
+            if (VolumeService.micActive) {
+                if (mediaWidget.trackedPlayer && mediaWidget.isPlaying) {
+                    mediaWidget.pausedByMic = true;
+                    mediaWidget.trackedPlayer.pause();
+                }
+            } else if (mediaWidget.pausedByMic) {
+                if (mediaWidget.trackedPlayer) mediaWidget.trackedPlayer.play();
+                mediaWidget.pausedByMic = false;
+            }
+        }
+    }
+
     Menu.MediaPlayerPopup {
         id: mediaPopup
         parentWindow: bar
@@ -214,13 +145,10 @@ Rectangle {
         onExited: mediaWidget.color = Theme.pillColor
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         onClicked: (mouse) => {
-            if (mouse.button === Qt.LeftButton) {
-                mediaPopup.visible = !mediaPopup.visible;
-            } else if (mouse.button === Qt.RightButton) {
-                if (trackedPlayer?.canTogglePlaying) {
-                    if (trackedPlayer.isPlaying) trackedPlayer.pause()
-                    else trackedPlayer.play()
-                }
+            if (mouse.button === Qt.LeftButton) mediaPopup.visible = !mediaPopup.visible;
+            else if (mouse.button === Qt.RightButton && trackedPlayer) {
+                if (mediaWidget.isPlaying) trackedPlayer.pause();
+                else trackedPlayer.play();
             }
         }
     }
