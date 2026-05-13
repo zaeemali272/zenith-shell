@@ -7,3 +7,4 @@ Resources Resources.qml
 Tray Tray.qml
 TrayItem TrayItem.qml
 Volume Volume.qml
+Update Update.qml

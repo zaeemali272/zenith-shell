@@ -115,6 +115,8 @@ PanelWindow {
             opacity: GeneralSettings.barEntryAnimation ? 0 : 1
 
             Tray { menuRef: trayPopup }
+
+            Update { }
             
             Network { 
                 id: wifiWidget 
