@@ -1,26 +1,38 @@
+pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
-pragma Singleton
 
 Item {
     id: root
 
-    property alias devices: deviceModel
+    // --- State Variables ---
+    property var devices: []
+    property int deviceCount: devices.length
     property bool powered: false
     property bool connected: false
     property bool scanning: false
-    property bool busy: actionExec.running || powerExec.running || scanExec.running || statusCheck.running || deviceRefresh.running || rfkillCheck.running || serviceCheck.running
+    property bool serviceActive: true
+    property string state: "Idle" // Idle, Scanning, Connecting, Disconnecting, Powering
+    
+    property bool busy: actionExec.running || powerExec.running || scanExec.running || 
+                       statusCheck.running || deviceRefresh.running || rfkillCheck.running || 
+                       serviceCheck.running || infoExec.running || oneShotScan.running
+    
     property bool _actionInProgress: false
+
+    // Primary connected device info
+    property string connectedName: ""
+    property string connectedAddress: ""
+    property int connectedBattery: -1
+    property string connectedIcon: "bluetooth"
 
     function log(msg) {
         console.log("[Bluetooth] " + msg);
     }
 
     function refresh() {
-        if (_actionInProgress) return;
-        
-        // Always check service and status
+        log("Manual refresh triggered");
         serviceCheck.running = false;
         serviceCheck.running = true;
         rfkillCheck.running = false;
@@ -28,10 +40,11 @@ Item {
         statusCheck.running = false;
         statusCheck.running = true;
         
-        // Only refresh device list if menu is open or it's a scheduled full refresh
-        if (QuickSettingsService.qsVisible && QuickSettingsService.activeTab === "bluetooth") {
-            deviceRefresh.running = false;
-            deviceRefresh.running = true;
+        deviceRefresh.running = false;
+        deviceRefresh.running = true;
+
+        if (powered) {
+            startScan();
         }
     }
 
@@ -40,11 +53,19 @@ Item {
         command: ["systemctl", "is-active", "bluetooth.service"]
         stdout: StdioCollector {
             onStreamFinished: {
-                if (text && text.trim() !== "active") {
-                    log("Service not active: " + text.trim());
+                root.serviceActive = (text && text.trim() === "active");
+                if (!root.serviceActive) {
+                    root.state = "Service Error";
                 }
             }
         }
+    }
+
+    function restartService() {
+        log("Restarting service...");
+        root.state = "Restarting Service";
+        actionExec.command = ["pkexec", "systemctl", "restart", "bluetooth"];
+        actionExec.running = true;
     }
 
     Process {
@@ -78,156 +99,205 @@ Item {
                 root.powered = isPowered;
                 root.scanning = isScanning;
                 root.connected = hasConnected;
+                
+                if (root.state === "Idle" || root.state === "Scanning") {
+                    root.state = isScanning ? "Scanning" : "Idle";
+                }
             }
         }
     }
 
     Process {
         id: deviceRefresh
-        command: ["sh", "-c", "bluetoothctl devices | cut -d ' ' -f 2 | xargs -I {} bluetoothctl info {}"]
+        command: ["sh", "-c", "bluetoothctl devices; echo '---'; bluetoothctl paired-devices; echo '---'; bluetoothctl devices Connected"]
         stdout: StdioCollector {
             onStreamFinished: {
                 if (!text) return;
                 
-                let devicesRaw = text.split("Device ");
+                let parts = text.split("---");
+                let allDevicesRaw = parts[0].trim().split("\n");
+                let pairedDevicesRaw = parts.length > 1 ? parts[1].trim().split("\n") : [];
+                let connectedDevicesRaw = parts.length > 2 ? parts[2].trim().split("\n") : [];
+
+                let pairedAddresses = pairedDevicesRaw.map(l => {
+                    let parts = l.trim().split(" ");
+                    return parts.length > 1 ? parts[1] : "";
+                }).filter(a => a);
+
+                let connectedAddresses = connectedDevicesRaw.map(l => {
+                    let parts = l.trim().split(" ");
+                    return parts.length > 1 ? parts[1] : "";
+                }).filter(a => a);
+
                 let newDevices = [];
+                let seen = {};
 
-                for (let raw of devicesRaw) {
-                    if (!raw || raw.trim() === "") continue;
+                for (let line of allDevicesRaw) {
+                    let p = line.trim().split(" ");
+                    if (p.length < 2) continue;
+                    let addr = p[1];
+                    if (!addr || seen[addr]) continue;
                     
-                    let lines = raw.split("\n");
-                    let address = lines[0].split(" ")[0].trim();
-                    let name = "Unknown Device";
-                    let paired = false;
-                    let connected = false;
-                    let icon = "bluetooth";
-
-                    for (let line of lines) {
-                        let l = line.trim();
-                        if (l.startsWith("Name: ")) name = l.substring(6);
-                        else if (l.startsWith("Alias: ") && name === "Unknown Device") name = l.substring(7);
-                        else if (l.startsWith("Paired: yes")) paired = true;
-                        else if (l.startsWith("Connected: yes")) connected = true;
-                        else if (l.startsWith("Icon: ")) icon = l.substring(6);
-                    }
-
-                    if (address && address.length > 10) {
-                        newDevices.push({
-                            "address": address,
-                            "name": name,
-                            "paired": paired,
-                            "connected": connected,
-                            "icon": icon
-                        });
-                    }
+                    let rawName = p.length > 2 ? p.slice(2).join(" ") : addr;
+                    let isAddressFormat = rawName.match(/^[0-9A-Fa-f]{2}([:-][0-9A-Fa-f]{2}){5}$/);
+                    let hasRealName = p.length > 2 && !isAddressFormat;
+                    
+                    let isPaired = pairedAddresses.indexOf(addr) !== -1;
+                    let isConnected = connectedAddresses.indexOf(addr) !== -1;
+                    
+                    seen[addr] = true;
+                    newDevices.push({
+                        "address": addr,
+                        "name": rawName,
+                        "hasName": hasRealName,
+                        "paired": isPaired,
+                        "connected": isConnected,
+                        "icon": "bluetooth",
+                        "battery": -1
+                    });
                 }
 
-                newDevices.sort((a, b) => {
-                    if (a.connected !== b.connected) return b.connected ? -1 : 1;
-                    if (a.paired !== b.paired) return b.paired ? -1 : 1;
-                    return a.name.localeCompare(b.name);
-                });
-
-                for (let i = 0; i < newDevices.length; i++) {
-                    if (i < deviceModel.count) deviceModel.set(i, newDevices[i]);
-                    else deviceModel.append(newDevices[i]);
+                updateModel(newDevices);
+                
+                if (connectedAddresses.length > 0) {
+                    fetchDetailedInfo(connectedAddresses[0]);
+                } else {
+                    root.connectedName = "";
+                    root.connectedAddress = "";
+                    root.connectedBattery = -1;
                 }
-                while (deviceModel.count > newDevices.length) deviceModel.remove(deviceModel.count - 1);
             }
         }
+    }
+
+    function fetchDetailedInfo(addr) {
+        infoExec.command = ["bluetoothctl", "info", addr];
+        infoExec.running = true;
+    }
+
+    Process {
+        id: infoExec
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (!text) return;
+                let lines = text.split("\n");
+                let name = "";
+                let addr = "";
+                let battery = -1;
+                let icon = "bluetooth";
+                let connected = false;
+
+                for (let line of lines) {
+                    let l = line.trim();
+                    if (l.startsWith("Device ")) addr = l.split(" ")[1];
+                    else if (l.startsWith("Name: ")) name = l.substring(6);
+                    else if (l.startsWith("Icon: ")) icon = l.substring(6);
+                    else if (l.startsWith("Connected: yes")) connected = true;
+                    else if (l.includes("Battery Percentage:")) {
+                        let bMatch = l.match(/\((\d+)\)/) || l.match(/:\s+(\d+)/);
+                        if (bMatch) battery = parseInt(bMatch[1]);
+                    }
+                }
+
+                if (connected) {
+                    root.connectedName = name;
+                    root.connectedAddress = addr;
+                    root.connectedBattery = battery;
+                    root.connectedIcon = icon;
+                    
+                    // Update the array element
+                    let updated = root.devices.map(d => {
+                        if (d.address === addr) {
+                            return Object.assign({}, d, { battery: battery, icon: icon, connected: true });
+                        }
+                        return d;
+                    });
+                    root.devices = updated;
+                }
+            }
+        }
+    }
+
+    function updateModel(newDevices) {
+        newDevices.sort((a, b) => {
+            if (a.connected !== b.connected) return a.connected ? -1 : 1;
+            if (a.paired !== b.paired) return a.paired ? -1 : 1;
+            return a.name.localeCompare(b.name);
+        });
+        root.devices = newDevices;
     }
 
     function togglePower() {
         let newState = !powered;
+        root.state = newState ? "Powering On" : "Powering Off";
         _actionInProgress = true;
-        powered = newState;
-        
-        if (newState) {
-            powerExec.command = ["sh", "-c", "rfkill unblock bluetooth && bluetoothctl power on"];
-        } else {
-            powerExec.command = ["bluetoothctl", "power", "off"];
-        }
+        powerExec.command = ["sh", "-c", `echo -e "power ${newState ? "on" : "off"}\\nquit" | bluetoothctl`];
         powerExec.running = true;
-        Qt.callLater(() => { _actionInProgress = false; refresh(); }, 1500);
     }
 
     function toggleScan() {
         let target = !scanning;
-        scanExec.command = ["bluetoothctl", "scan", target ? "on" : "off"];
+        root.state = target ? "Starting Scan" : "Stopping Scan";
+        scanExec.command = ["sh", "-c", `echo -e "scan ${target ? "on" : "off"}\\nquit" | bluetoothctl`];
         scanExec.running = true;
-        Qt.callLater(() => { refresh(); }, 1500);
     }
 
     function startScan() {
         if (!powered || scanning) return;
-        scanExec.command = ["bluetoothctl", "scan", "on"];
+        root.state = "Starting Scan";
+        scanExec.command = ["sh", "-c", "echo -e 'scan on\\nquit' | bluetoothctl"];
         scanExec.running = true;
-        Qt.callLater(() => { refresh(); }, 1500);
     }
 
     function stopScan() {
         if (!scanning) return;
-        scanExec.command = ["bluetoothctl", "scan", "off"];
+        root.state = "Stopping Scan";
+        scanExec.command = ["sh", "-c", "echo -e 'scan off\\nquit' | bluetoothctl"];
         scanExec.running = true;
-        Qt.callLater(() => { refresh(); }, 1500);
-    }
-
-    onPoweredChanged: {
-        if (powered) {
-            log("Bluetooth powered on, starting scan...");
-            startScan();
-        }
-    }
-
-    onConnectedChanged: {
-        if (!connected && powered) {
-            log("Device disconnected, restarting scan...");
-            startScan();
-        }
     }
 
     function action(mode, addr) {
-        actionExec.command = ["sh", "-c", `echo -e "agent on\\ndefault-agent\\n${mode} ${addr}\\nquit" | bluetoothctl`];
+        root.state = mode.charAt(0).toUpperCase() + mode.slice(1) + "ing...";
+
+        let cmd = "";
+        if (mode === "connect") {
+             cmd = `(bluetoothctl trust ${addr} && (bluetoothctl pair ${addr} || true) && bluetoothctl connect ${addr}) || bluetoothctl connect ${addr}`;
+        } else if (mode === "pair") {
+             cmd = `bluetoothctl trust ${addr} && (bluetoothctl pair ${addr} || true)`;
+        } else if (mode === "disconnect") {
+             cmd = `bluetoothctl disconnect ${addr}`;
+        } else if (mode === "remove") {
+             cmd = `bluetoothctl remove ${addr}`;
+        }
+
+        actionExec.command = ["sh", "-c", cmd];
         actionExec.running = true;
-        Qt.callLater(() => { refresh(); }, 2000);
     }
 
-    Component.onCompleted: refresh()
 
-    ListModel { id: deviceModel }
+    Process { id: oneShotScan; command: ["sh", "-c", "bluetoothctl --timeout 10 scan on & bluetoothctl --timeout 10 discoverable on; wait"] }
+    Process { id: powerExec; onExited: { _actionInProgress = false; root.state = "Idle"; refresh(); } }
+    Process { id: scanExec; onExited: { root.state = "Idle"; refresh(); } }
+    Process { id: actionExec; onExited: { root.state = "Idle"; refresh(); } }
 
-    Process { id: powerExec }
-    Process { id: scanExec }
-    Process { id: actionExec }
-
-    Process {
-        id: btWatcher
-        command: ["dbus-monitor", "--system", "sender='org.bluez',interface='org.freedesktop.DBus.Properties',member='PropertiesChanged'"]
-        running: true
-        stdout: SplitParser {
-            onRead: (line) => {
-                // Throttle reactive refreshes
-                if (line.includes("PropertiesChanged") && !refreshTimer.running) {
-                    refreshTimer.start();
-                }
-            }
+    Timer {
+        id: scanUpdateTimer
+        interval: 2000
+        repeat: true
+        running: oneShotScan.running || scanExec.running
+        onTriggered: {
+            deviceRefresh.running = false;
+            deviceRefresh.running = true;
         }
     }
-
-    Timer { id: refreshTimer; interval: 10000; onTriggered: refresh() }
-    Timer { id: pollingTimer; interval: 600000; repeat: true; running: true; onTriggered: refresh() }
 
     Timer {
         id: healthCheckTimer
         interval: 30000
         repeat: true
         running: true
-        onTriggered: {
-            if (!btWatcher.running) {
-                log("btWatcher died, restarting...");
-                btWatcher.running = true;
-            }
-            serviceCheck.running = true;
-        }
+        onTriggered: serviceCheck.running = true
     }
+
+    Component.onCompleted: refresh()
 }
