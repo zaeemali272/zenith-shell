@@ -16,6 +16,7 @@ Rectangle {
     implicitHeight: Theme.scaled(110)
 
     // --- State & Logic ---
+    property bool active: false
     property var player: {
         let active = Mpris.players.values.find((p) => p.playbackState === MprisPlaybackState.Playing);
         return active ? active : (Mpris.players.values.length > 0 ? Mpris.players.values[0] : null);
@@ -67,7 +68,7 @@ Rectangle {
 
     Timer {
         interval: 1000
-        running: CenterState.qsVisible && player && player.playbackState === MprisPlaybackState.Playing && !isResetting
+        running: (active || CenterState.qsVisible) && player && player.playbackState === MprisPlaybackState.Playing && !isResetting
         repeat: true
         onTriggered: {
             if (player && Mpris.players.values.indexOf(player) !== -1) {
