@@ -20,8 +20,10 @@ Item {
         width: content.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
         
         onClicked: (mouse) => {
-            if (mouse.button === Qt.LeftButton)
+            if (mouse.button === Qt.LeftButton) {
+                BluetoothService.refresh();
                 QuickSettingsService.toggle("bluetooth");
+            }
         }
         
         Behavior on color { ColorAnimation { duration: 300 } }
