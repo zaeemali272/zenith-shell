@@ -19,6 +19,26 @@ Rectangle {
     property bool active: false
     property var player: null
     property var lastPlayer: null
+    property bool _initialized: false
+
+    // Heartbeat
+    property real _lastHeartbeatPos: -1
+    property bool _posAdvancing: true
+
+    Timer {
+        id: startupTimer
+        interval: 2000
+        running: true
+        repeat: false
+        onTriggered: _initialized = true
+    }
+
+    function isActuallyPlaying(p) {
+        if (!p || p.playbackState !== MprisPlaybackState.Playing) return false;
+        let id = p.identity.toLowerCase();
+        if (id.includes("zen") || id.includes("chrom") || id.includes("fox")) return _posAdvancing;
+        return true;
+    }
     
     Component.onCompleted: {
         let activePlayer = Mpris.players.values.find((p) => p.playbackState === MprisPlaybackState.Playing);
@@ -28,20 +48,6 @@ Rectangle {
     property real currentPos: 0
     property string currentTrackId: ""
     property bool isResetting: false
-    
-    // --- Heartbeat Logic ---
-    property real _lastHeartbeatPos: -1
-    property bool _posAdvancing: true
-
-    readonly property bool isActuallyPlaying: {
-        if (!player) return false;
-        if (player.playbackState !== MprisPlaybackState.Playing) return false;
-        let id = player.identity.toLowerCase();
-        if (id.includes("zen") || id.includes("chrom") || id.includes("fox")) {
-            return _posAdvancing;
-        }
-        return true;
-    }
 
     function triggerReset() {
         isResetting = true;
@@ -67,30 +73,31 @@ Rectangle {
             if (mprisPlayer.player === null || obj.playbackState === MprisPlaybackState.Playing)
                 mprisPlayer.player = obj;
         }
-
         onObjectRemoved: (key, obj) => {
             if (mprisPlayer.player === obj) {
-                mprisPlayer.player = null;
                 let activePlayer = Mpris.players.values.find((p) => p.playbackState === MprisPlaybackState.Playing);
                 mprisPlayer.player = activePlayer ? activePlayer : (Mpris.players.values.length > 0 ? Mpris.players.values[0] : null);
             }
         }
-
         delegate: Connections {
             target: modelData
             function onPlaybackStateChanged() {
                 if (modelData.playbackState === MprisPlaybackState.Playing) {
+                    mprisPlayer._posAdvancing = true;
+                    mprisPlayer._lastHeartbeatPos = modelData.position;
+
                     if (mprisPlayer.player !== modelData) {
-                        // Media Focus Logic
-                        let all = Mpris.players.values;
-                        for (let i = 0; i < all.length; i++) {
-                            let other = all[i];
-                            if (other && other.dbusName !== modelData.dbusName && other.playbackState === MprisPlaybackState.Playing) {
-                                mprisPlayer.lastPlayer = other;
-                                other.pause();
+                        mprisPlayer.player = modelData;
+                        if (mprisPlayer._initialized && GeneralSettings.autoManageMediaFocus) {
+                            let all = Mpris.players.values;
+                            for (let i = 0; i < all.length; i++) {
+                                let other = all[i];
+                                if (other && other !== modelData && other.playbackState === MprisPlaybackState.Playing) {
+                                    mprisPlayer.lastPlayer = other;
+                                    other.pause();
+                                }
                             }
                         }
-                        mprisPlayer.player = modelData;
                     }
                 } else if (mprisPlayer.player === modelData) {
                     if (modelData.playbackState === MprisPlaybackState.Paused || modelData.playbackState === MprisPlaybackState.Stopped) {
@@ -103,12 +110,7 @@ Rectangle {
                         }
                     }
                 }
-                mprisPlayer.playerChanged(); // Force re-eval of isPlaying bindings
-            }
-            function onMetadataChanged() {
-                if (mprisPlayer.player === modelData) {
-                    mprisPlayer.playerChanged();
-                }
+                mprisPlayer.playerChanged();
             }
         }
     }
@@ -130,7 +132,7 @@ Rectangle {
         running: (active || CenterState.qsVisible) && player && player.playbackState === MprisPlaybackState.Playing && !isResetting
         repeat: true
         onTriggered: {
-            if (player && Mpris.players.values.indexOf(player) !== -1) {
+            if (player) {
                 _posAdvancing = (player.position !== _lastHeartbeatPos);
                 _lastHeartbeatPos = player.position;
                 currentPos = player.position
@@ -142,9 +144,7 @@ Rectangle {
         if (!title) return "";
         let id = identity ? identity.toLowerCase() : "";
         if (id.includes("mpv") || id.includes("vlc")) {
-            // Remove common media extensions
             title = title.replace(/\.(mp3|mp4|mkv|avi|flac|wav|ogg|webm|mov|m4a|wmv|mpg|mpeg)$/i, "");
-            // Remove everything in parentheses and brackets
             title = title.replace(/\s*[\(\[].*?[\)\]]/g, "");
         }
         return title.trim();
@@ -156,7 +156,6 @@ Rectangle {
         width: parent.width - Theme.scaled(24)
         spacing: Theme.scaled(15)
 
-        // Album Art (Curved Radius)
         Rectangle {
             width: Theme.scaled(80); height: Theme.scaled(80); radius: Theme.scaled(12); color: Theme.mantle; clip: true
             Layout.alignment: Qt.AlignVCenter
@@ -175,43 +174,31 @@ Rectangle {
 
         ColumnLayout {
             Layout.fillWidth: true; spacing: Theme.scaled(2)
-            Layout.alignment: Qt.AlignVCenter // Ensures text/slider are centered with the image
+            Layout.alignment: Qt.AlignVCenter
             
             Label {
-                text: player ? formatMediaTitle(String(player.trackTitle || "Media"), player.identity) : (mprisPlayer.isActuallyPlaying ? "Playing" : "Idle")
+                text: player ? formatMediaTitle(String(player.trackTitle || "Media"), player.identity) : (mprisPlayer.isActuallyPlaying(player) ? "Playing" : "Idle")
                 color: Theme.text; font.bold: true; font.pixelSize: Theme.scaled(13); elide: Text.ElideRight; Layout.fillWidth: true
             }
 
-                ColumnLayout {
+            ColumnLayout {
                 Layout.fillWidth: true; spacing: 0
                 Slider {
                     id: posSlider; Layout.fillWidth: true; 
-                    Layout.preferredHeight: Theme.scaled(18) // Slightly bigger height
+                    Layout.preferredHeight: Theme.scaled(18)
                     from: 0; to: (player && player.length > 0) ? player.length : 100
                     value: mprisPlayer.currentPos
                     onMoved: { if(player) player.position = value }
-
-                    padding: 0
-                    leftPadding: 0
-                    rightPadding: 0
-                    topPadding: 0
-                    bottomPadding: 0
-
-                    readonly property real handleWidth: Theme.scaled(12)
-                    
+                    padding: 0; leftPadding: 0; rightPadding: 0; topPadding: 0; bottomPadding: 0
                     background: Rectangle {
-                        x: posSlider.leftPadding + posSlider.handleWidth / 2
-                        y: posSlider.topPadding + (posSlider.availableHeight - height) / 2
-                        height: Theme.scaled(6); width: posSlider.availableWidth - posSlider.handleWidth; radius: Theme.scaled(3); color: Theme.surface1
-                        Rectangle { 
-                            width: posSlider.visualPosition * parent.width; height: Theme.scaled(6); 
-                            color: Theme.blue; radius: Theme.scaled(3) 
-                        }
+                        x: posSlider.leftPadding + Theme.scaled(6); y: posSlider.topPadding + (posSlider.availableHeight - height) / 2
+                        height: Theme.scaled(6); width: posSlider.availableWidth - Theme.scaled(12); radius: Theme.scaled(3); color: Theme.surface1
+                        Rectangle { width: posSlider.visualPosition * parent.width; height: Theme.scaled(6); color: Theme.blue; radius: Theme.scaled(3) }
                     }
                     handle: Rectangle {
                         x: posSlider.leftPadding + posSlider.visualPosition * (posSlider.availableWidth - width)
                         y: posSlider.topPadding + (posSlider.availableHeight - height) / 2
-                        width: posSlider.handleWidth; height: Theme.scaled(12); radius: Theme.scaled(6); color: Theme.lavender
+                        width: Theme.scaled(12); height: Theme.scaled(12); radius: Theme.scaled(6); color: Theme.lavender
                         visible: posSlider.hovered || posSlider.pressed
                     }
                 }
@@ -236,19 +223,13 @@ Rectangle {
                         flat: true; implicitWidth: Theme.scaled(36); implicitHeight: Theme.scaled(36)
                         onClicked: { 
                             if(player) {
-                                // Optimistic update for browsers
-                                let id = player.identity.toLowerCase();
-                                if (id.includes("zen") || id.includes("chrom") || id.includes("fox")) {
-                                    mprisPlayer._posAdvancing = !mprisPlayer.isActuallyPlaying;
-                                }
-                                
                                 if (player.playPause) player.playPause();
-                                else if (player.playbackState === MprisPlaybackState.Playing) player.pause();
+                                else if (mprisPlayer.isActuallyPlaying(player)) player.pause();
                                 else player.play();
                             }
                         }
                         contentItem: Text { 
-                            text: mprisPlayer.isActuallyPlaying ? "󰏤" : "󰐊"
+                            text: mprisPlayer.isActuallyPlaying(player) ? "󰏤" : "󰐊"
                             color: Theme.blue; font.pixelSize: Theme.scaled(22); horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter 
                         } 
                     }
@@ -268,16 +249,11 @@ Rectangle {
                         delegate: MouseArea {
                             width: Theme.scaled(20); height: Theme.scaled(20)
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: mprisPlayer.player = modelData // Icon Click Switch
-                            
+                            onClicked: mprisPlayer.player = modelData
                             Text {
                                 anchors.centerIn: parent
                                 font.pixelSize: Theme.scaled(16)
-                                color: {
-                                    if (mprisPlayer.player === modelData) return Theme.mauve;
-                                    if (modelData.playbackState === MprisPlaybackState.Playing) return Theme.green;
-                                    return Theme.surface2;
-                                }
+                                color: (mprisPlayer.player === modelData) ? Theme.mauve : (modelData.playbackState === MprisPlaybackState.Playing ? Theme.green : Theme.surface2)
                                 text: {
                                     let id = modelData.identity.toLowerCase();
                                     if (id.includes("firefox")) return "󰈹";
