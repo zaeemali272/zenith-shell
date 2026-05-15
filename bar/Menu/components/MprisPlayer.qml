@@ -17,75 +17,11 @@ Rectangle {
 
     // --- State & Logic ---
     property bool active: false
-    property var player: MediaPlayerService.trackedPlayer
+    readonly property var player: MediaPlayerService.trackedPlayer
     
-    // Heartbeat for browser media
-    property real _lastHeartbeatPos: -1
-    property bool _posAdvancing: true
-
-    function isActuallyPlaying(p) {
-        if (!p || p.playbackState !== MprisPlaybackState.Playing) return false;
-        let id = p.identity.toLowerCase();
-        if (id.includes("zen") || id.includes("chrom") || id.includes("fox")) return _posAdvancing;
-        return true;
-    }
-    
-    property real currentPos: 0
-    property string currentTrackId: ""
-    property bool isResetting: false
-
-    function triggerReset() {
-        isResetting = true;
-        currentPos = 0;
-        let id = player ? player.identity.toLowerCase() : "";
-        let isBrowser = id.includes("zen") || id.includes("chrom") || id.includes("fox");
-        lockTimer.interval = isBrowser ? 2000 : 1000;
-        lockTimer.restart();
-    }
-
-    Timer {
-        id: lockTimer
-        repeat: false
-        onTriggered: {
-            if (player && Mpris.players.values.indexOf(player) !== -1) currentPos = player.position;
-            isResetting = false;
-        }
-    }
-
-    Connections {
-        target: player
-        ignoreUnknownSignals: true
-        function onMetadataChanged() {
-            let newId = String(player.trackTitle + player.trackArtist);
-            if (newId !== currentTrackId) {
-                currentTrackId = newId;
-                triggerReset();
-            }
-        }
-    }
-
-    Timer {
-        interval: 1000
-        running: (active || CenterState.qsVisible) && player && player.playbackState === MprisPlaybackState.Playing && !isResetting
-        repeat: true
-        onTriggered: {
-            if (player) {
-                _posAdvancing = (player.position !== _lastHeartbeatPos);
-                _lastHeartbeatPos = player.position;
-                currentPos = player.position
-            }
-        }
-    }
-
-    function formatMediaTitle(title, identity) {
-        if (!title) return "";
-        let id = identity ? identity.toLowerCase() : "";
-        if (id.includes("mpv") || id.includes("vlc")) {
-            title = title.replace(/\.(mp3|mp4|mkv|avi|flac|wav|ogg|webm|mov|m4a|wmv|mpg|mpeg)$/i, "");
-            title = title.replace(/\s*[\(\[].*?[\)\]]/g, "");
-        }
-        return title.trim();
-    }
+    // Bindings to unified service state
+    readonly property real currentPos: MediaPlayerService.currentPos
+    readonly property bool isActuallyPlaying: MediaPlayerService.isActuallyPlaying
 
     function formatTime(s) {
         if (s < 0 || isNaN(s)) return "0:00"
@@ -120,7 +56,7 @@ Rectangle {
             Layout.alignment: Qt.AlignVCenter
             
             Label {
-                text: player ? formatMediaTitle(String(player.trackTitle || "Media"), player.identity) : (mprisPlayer.isActuallyPlaying(player) ? "Playing" : "Idle")
+                text: player ? MediaPlayerService.formatMediaTitle(String(player.trackTitle || "Media"), player.identity) : "Idle"
                 color: Theme.text; font.bold: true; font.pixelSize: Theme.scaled(13); elide: Text.ElideRight; Layout.fillWidth: true
             }
 
@@ -147,9 +83,9 @@ Rectangle {
                 }
                 RowLayout {
                     Layout.fillWidth: true
-                    Label { text: formatTime(mprisPlayer.currentPos); color: Theme.subtext1; font.pixelSize: Theme.scaled(10) }
+                    Label { text: mprisPlayer.formatTime(mprisPlayer.currentPos); color: Theme.subtext1; font.pixelSize: Theme.scaled(10) }
                     Item { Layout.fillWidth: true }
-                    Label { text: formatTime(player ? player.length : 0); color: Theme.subtext1; font.pixelSize: Theme.scaled(10) }
+                    Label { text: mprisPlayer.formatTime(player ? player.length : 0); color: Theme.subtext1; font.pixelSize: Theme.scaled(10) }
                 }
             }
 
@@ -167,12 +103,12 @@ Rectangle {
                         onClicked: { 
                             if(player) {
                                 if (player.playPause) player.playPause();
-                                else if (mprisPlayer.isActuallyPlaying(player)) player.pause();
+                                else if (mprisPlayer.isActuallyPlaying) player.pause();
                                 else player.play();
                             }
                         }
                         contentItem: Text { 
-                            text: mprisPlayer.isActuallyPlaying(player) ? "󰏤" : "󰐊"
+                            text: mprisPlayer.isActuallyPlaying ? "󰏤" : "󰐊"
                             color: Theme.blue; font.pixelSize: Theme.scaled(22); horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter 
                         } 
                     }
