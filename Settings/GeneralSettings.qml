@@ -30,4 +30,5 @@ QtObject {
     // Media settings
     property bool truncateTrackTitle: true
     property int maxTrackTitleLength: 85
+    property bool autoManageMediaFocus: true
 }
