@@ -17,32 +17,17 @@ Rectangle {
 
     // --- State & Logic ---
     property bool active: false
-    property var player: null
-    property var lastPlayer: null
-    property bool _initialized: false
-
-    // Heartbeat
+    property var player: MediaPlayerService.trackedPlayer
+    
+    // Heartbeat for browser media
     property real _lastHeartbeatPos: -1
     property bool _posAdvancing: true
-
-    Timer {
-        id: startupTimer
-        interval: 2000
-        running: true
-        repeat: false
-        onTriggered: _initialized = true
-    }
 
     function isActuallyPlaying(p) {
         if (!p || p.playbackState !== MprisPlaybackState.Playing) return false;
         let id = p.identity.toLowerCase();
         if (id.includes("zen") || id.includes("chrom") || id.includes("fox")) return _posAdvancing;
         return true;
-    }
-    
-    Component.onCompleted: {
-        let activePlayer = Mpris.players.values.find((p) => p.playbackState === MprisPlaybackState.Playing);
-        player = activePlayer ? activePlayer : (Mpris.players.values.length > 0 ? Mpris.players.values[0] : null);
     }
     
     property real currentPos: 0
@@ -64,54 +49,6 @@ Rectangle {
         onTriggered: {
             if (player && Mpris.players.values.indexOf(player) !== -1) currentPos = player.position;
             isResetting = false;
-        }
-    }
-
-    Instantiator {
-        model: Mpris.players
-        onObjectAdded: (key, obj) => {
-            if (mprisPlayer.player === null || obj.playbackState === MprisPlaybackState.Playing)
-                mprisPlayer.player = obj;
-        }
-        onObjectRemoved: (key, obj) => {
-            if (mprisPlayer.player === obj) {
-                let activePlayer = Mpris.players.values.find((p) => p.playbackState === MprisPlaybackState.Playing);
-                mprisPlayer.player = activePlayer ? activePlayer : (Mpris.players.values.length > 0 ? Mpris.players.values[0] : null);
-            }
-        }
-        delegate: Connections {
-            target: modelData
-            function onPlaybackStateChanged() {
-                if (modelData.playbackState === MprisPlaybackState.Playing) {
-                    mprisPlayer._posAdvancing = true;
-                    mprisPlayer._lastHeartbeatPos = modelData.position;
-
-                    if (mprisPlayer.player !== modelData) {
-                        mprisPlayer.player = modelData;
-                        if (mprisPlayer._initialized && GeneralSettings.autoManageMediaFocus) {
-                            let all = Mpris.players.values;
-                            for (let i = 0; i < all.length; i++) {
-                                let other = all[i];
-                                if (other && other !== modelData && other.playbackState === MprisPlaybackState.Playing) {
-                                    mprisPlayer.lastPlayer = other;
-                                    other.pause();
-                                }
-                            }
-                        }
-                    }
-                } else if (mprisPlayer.player === modelData) {
-                    if (modelData.playbackState === MprisPlaybackState.Paused || modelData.playbackState === MprisPlaybackState.Stopped) {
-                        if (mprisPlayer.lastPlayer && mprisPlayer.lastPlayer.playbackState !== MprisPlaybackState.Playing) {
-                            mprisPlayer.lastPlayer.play();
-                            mprisPlayer.lastPlayer = null;
-                        } else {
-                            let active = Mpris.players.values.find((p) => p.playbackState === MprisPlaybackState.Playing);
-                            if (active) mprisPlayer.player = active;
-                        }
-                    }
-                }
-                mprisPlayer.playerChanged();
-            }
         }
     }
 
@@ -150,6 +87,12 @@ Rectangle {
         return title.trim();
     }
 
+    function formatTime(s) {
+        if (s < 0 || isNaN(s)) return "0:00"
+        let mins = Math.floor(s / 60); let secs = Math.floor(s % 60)
+        return mins + ":" + (secs < 10 ? "0" : "") + secs
+    }
+
     // --- UI Layout ---
     RowLayout {
         anchors.centerIn: parent
@@ -163,7 +106,7 @@ Rectangle {
                 anchors.fill: parent
                 source: player ? String(player.trackArtUrl || "") : ""
                 fillMode: Image.PreserveAspectCrop
-                opacity: status === Image.Ready ? 1 : 0
+                opacity: (player && player.trackArtUrl && status === Image.Ready) ? 1 : 0
                 Behavior on opacity { NumberAnimation { duration: 250 } }
             }
             Text { 
@@ -249,7 +192,7 @@ Rectangle {
                         delegate: MouseArea {
                             width: Theme.scaled(20); height: Theme.scaled(20)
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: mprisPlayer.player = modelData
+                            onClicked: MediaPlayerService.updateTrackedPlayer(modelData)
                             Text {
                                 anchors.centerIn: parent
                                 font.pixelSize: Theme.scaled(16)
@@ -268,11 +211,5 @@ Rectangle {
                 }
             }
         }
-    }
-
-    function formatTime(s) {
-        if (s < 0 || isNaN(s)) return "0:00"
-        let mins = Math.floor(s / 60); let secs = Math.floor(s % 60)
-        return mins + ":" + (secs < 10 ? "0" : "") + secs
     }
 }

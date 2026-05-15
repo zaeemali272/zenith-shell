@@ -5,6 +5,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Services.Mpris
+import "../../services"
 import "../Menu" as Menu
 
 Rectangle {
@@ -16,7 +17,7 @@ Rectangle {
     clip: true
 
     // --- State ---
-    property var trackedPlayer: null
+    readonly property var trackedPlayer: MediaPlayerService.trackedPlayer
     
     // UI Bindings
     readonly property bool isPlaying: trackedPlayer && trackedPlayer.playbackState === MprisPlaybackState.Playing
@@ -46,43 +47,6 @@ Rectangle {
     width: contentLayout.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
     implicitWidth: width
     Behavior on width { NumberAnimation { duration: 400; easing.type: Easing.OutExpo } }
-
-    // --- Media Management ---
-    Instantiator {
-        model: Mpris.players
-        onObjectAdded: (key, obj) => {
-            if (!mediaWidget.trackedPlayer || obj.playbackState === MprisPlaybackState.Playing)
-                mediaWidget.trackedPlayer = obj;
-        }
-        onObjectRemoved: (key, obj) => {
-            if (mediaWidget.trackedPlayer === obj) {
-                let active = Mpris.players.values.find(p => p.playbackState === MprisPlaybackState.Playing);
-                mediaWidget.trackedPlayer = active ? active : (Mpris.players.values.length > 0 ? Mpris.players.values[0] : null);
-            }
-        }
-        delegate: Connections {
-            target: modelData
-            function onPlaybackStateChanged() {
-                if (modelData.playbackState === MprisPlaybackState.Playing) {
-                    if (mediaWidget.trackedPlayer !== modelData) {
-                        mediaWidget.trackedPlayer = modelData;
-                        // Android-like focus: Pause others only when a new one starts Playing
-                        if (GeneralSettings.autoManageMediaFocus) {
-                            Mpris.players.values.forEach(other => {
-                                if (other !== modelData && other.playbackState === MprisPlaybackState.Playing) {
-                                    other.pause();
-                                }
-                            });
-                        }
-                    }
-                } else if (mediaWidget.trackedPlayer === modelData) {
-                    // If current player stops, check if another one is playing to switch UI focus
-                    let active = Mpris.players.values.find(p => p.playbackState === MprisPlaybackState.Playing);
-                    if (active) mediaWidget.trackedPlayer = active;
-                }
-            }
-        }
-    }
 
     // --- UI Layout ---
     RowLayout {

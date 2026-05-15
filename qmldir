@@ -11,6 +11,8 @@ singleton BluetoothService services/BluetoothService.qml
 singleton PowerProfileService services/PowerProfileService.qml
 singleton QuickSettingsService services/QuickSettingsService.qml
 singleton HyprlandService services/HyprlandService.qml
+singleton MediaPlayerService services/MediaPlayerService.qml
+singleton WallpaperService services/WallpaperService.qml
 singleton GeneralSettings Settings/GeneralSettings.qml
 singleton ClockSettings Settings/ClockSettings.qml
 Overview windows/Overview.qml
