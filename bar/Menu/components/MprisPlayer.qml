@@ -17,14 +17,31 @@ Rectangle {
 
     // --- State & Logic ---
     property bool active: false
-    property var player: {
-        let active = Mpris.players.values.find((p) => p.playbackState === MprisPlaybackState.Playing);
-        return active ? active : (Mpris.players.values.length > 0 ? Mpris.players.values[0] : null);
+    property var player: null
+    property var lastPlayer: null
+    
+    Component.onCompleted: {
+        let activePlayer = Mpris.players.values.find((p) => p.playbackState === MprisPlaybackState.Playing);
+        player = activePlayer ? activePlayer : (Mpris.players.values.length > 0 ? Mpris.players.values[0] : null);
     }
     
     property real currentPos: 0
     property string currentTrackId: ""
     property bool isResetting: false
+    
+    // --- Heartbeat Logic ---
+    property real _lastHeartbeatPos: -1
+    property bool _posAdvancing: true
+
+    readonly property bool isActuallyPlaying: {
+        if (!player) return false;
+        if (player.playbackState !== MprisPlaybackState.Playing) return false;
+        let id = player.identity.toLowerCase();
+        if (id.includes("zen") || id.includes("chrom") || id.includes("fox")) {
+            return _posAdvancing;
+        }
+        return true;
+    }
 
     function triggerReset() {
         isResetting = true;
@@ -45,12 +62,54 @@ Rectangle {
     }
 
     Instantiator {
-        model: Mpris.players.values
-        onObjectAdded: (index, obj) => {
-            obj.playbackStateChanged.connect(() => {
-                if (obj.playbackState === MprisPlaybackState.Playing)
-                    mprisPlayer.player = obj;
-            });
+        model: Mpris.players
+        onObjectAdded: (key, obj) => {
+            if (mprisPlayer.player === null || obj.playbackState === MprisPlaybackState.Playing)
+                mprisPlayer.player = obj;
+        }
+
+        onObjectRemoved: (key, obj) => {
+            if (mprisPlayer.player === obj) {
+                mprisPlayer.player = null;
+                let activePlayer = Mpris.players.values.find((p) => p.playbackState === MprisPlaybackState.Playing);
+                mprisPlayer.player = activePlayer ? activePlayer : (Mpris.players.values.length > 0 ? Mpris.players.values[0] : null);
+            }
+        }
+
+        delegate: Connections {
+            target: modelData
+            function onPlaybackStateChanged() {
+                if (modelData.playbackState === MprisPlaybackState.Playing) {
+                    if (mprisPlayer.player !== modelData) {
+                        // Media Focus Logic
+                        let all = Mpris.players.values;
+                        for (let i = 0; i < all.length; i++) {
+                            let other = all[i];
+                            if (other && other.dbusName !== modelData.dbusName && other.playbackState === MprisPlaybackState.Playing) {
+                                mprisPlayer.lastPlayer = other;
+                                other.pause();
+                            }
+                        }
+                        mprisPlayer.player = modelData;
+                    }
+                } else if (mprisPlayer.player === modelData) {
+                    if (modelData.playbackState === MprisPlaybackState.Paused || modelData.playbackState === MprisPlaybackState.Stopped) {
+                        if (mprisPlayer.lastPlayer && mprisPlayer.lastPlayer.playbackState !== MprisPlaybackState.Playing) {
+                            mprisPlayer.lastPlayer.play();
+                            mprisPlayer.lastPlayer = null;
+                        } else {
+                            let active = Mpris.players.values.find((p) => p.playbackState === MprisPlaybackState.Playing);
+                            if (active) mprisPlayer.player = active;
+                        }
+                    }
+                }
+                mprisPlayer.playerChanged(); // Force re-eval of isPlaying bindings
+            }
+            function onMetadataChanged() {
+                if (mprisPlayer.player === modelData) {
+                    mprisPlayer.playerChanged();
+                }
+            }
         }
     }
 
@@ -72,6 +131,8 @@ Rectangle {
         repeat: true
         onTriggered: {
             if (player && Mpris.players.values.indexOf(player) !== -1) {
+                _posAdvancing = (player.position !== _lastHeartbeatPos);
+                _lastHeartbeatPos = player.position;
                 currentPos = player.position
             }
         }
@@ -117,7 +178,7 @@ Rectangle {
             Layout.alignment: Qt.AlignVCenter // Ensures text/slider are centered with the image
             
             Label {
-                text: player ? formatMediaTitle(String(player.trackTitle || "Media"), player.identity) : "Idle"
+                text: player ? formatMediaTitle(String(player.trackTitle || "Media"), player.identity) : (mprisPlayer.isActuallyPlaying ? "Playing" : "Idle")
                 color: Theme.text; font.bold: true; font.pixelSize: Theme.scaled(13); elide: Text.ElideRight; Layout.fillWidth: true
             }
 
@@ -173,9 +234,21 @@ Rectangle {
                     }
                     Button { 
                         flat: true; implicitWidth: Theme.scaled(36); implicitHeight: Theme.scaled(36)
-                        onClicked: { if(player) player.playbackState === MprisPlaybackState.Playing ? player.pause() : player.play() }
+                        onClicked: { 
+                            if(player) {
+                                // Optimistic update for browsers
+                                let id = player.identity.toLowerCase();
+                                if (id.includes("zen") || id.includes("chrom") || id.includes("fox")) {
+                                    mprisPlayer._posAdvancing = !mprisPlayer.isActuallyPlaying;
+                                }
+                                
+                                if (player.playPause) player.playPause();
+                                else if (player.playbackState === MprisPlaybackState.Playing) player.pause();
+                                else player.play();
+                            }
+                        }
                         contentItem: Text { 
-                            text: (player && player.playbackState === MprisPlaybackState.Playing) ? "󰏤" : "󰐊"
+                            text: mprisPlayer.isActuallyPlaying ? "󰏤" : "󰐊"
                             color: Theme.blue; font.pixelSize: Theme.scaled(22); horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter 
                         } 
                     }
@@ -200,7 +273,11 @@ Rectangle {
                             Text {
                                 anchors.centerIn: parent
                                 font.pixelSize: Theme.scaled(16)
-                                color: (mprisPlayer.player === modelData) ? Theme.mauve : Theme.surface2
+                                color: {
+                                    if (mprisPlayer.player === modelData) return Theme.mauve;
+                                    if (modelData.playbackState === MprisPlaybackState.Playing) return Theme.green;
+                                    return Theme.surface2;
+                                }
                                 text: {
                                     let id = modelData.identity.toLowerCase();
                                     if (id.includes("firefox")) return "󰈹";
