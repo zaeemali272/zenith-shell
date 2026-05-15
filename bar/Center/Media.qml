@@ -16,12 +16,14 @@ Rectangle {
     clip: true
 
     // --- State ---
-    property var trackedPlayer: {
-        let active = Mpris.players.values.find((p) => p.playbackState === MprisPlaybackState.Playing);
-        return active ? active : (Mpris.players.values.length > 0 ? Mpris.players.values[0] : null);
-    }
+    property var trackedPlayer: null
     property var lastPlayer: null
     property bool pausedByMic: false
+
+    Component.onCompleted: {
+        let active = Mpris.players.values.find((p) => p.playbackState === MprisPlaybackState.Playing);
+        trackedPlayer = active ? active : (Mpris.players.values.length > 0 ? Mpris.players.values[0] : null);
+    }
 
     // --- Formatting Logic ---
     function formatMediaTitle(title, identity) {
@@ -34,7 +36,34 @@ Rectangle {
         return title.trim();
     }
 
-    readonly property bool isPlaying: trackedPlayer && trackedPlayer.playbackState === MprisPlaybackState.Playing
+    // --- Heartbeat Logic (for browsers that lie about playback state) ---
+    property real _lastPos: -1
+    property bool _posAdvancing: true
+    
+    Timer {
+        id: heartbeatTimer
+        interval: 2000
+        running: trackedPlayer && trackedPlayer.playbackState === MprisPlaybackState.Playing
+        repeat: true
+        onTriggered: {
+            if (trackedPlayer) {
+                // If position hasn't changed, it's likely paused on the website
+                _posAdvancing = (trackedPlayer.position !== _lastPos);
+                _lastPos = trackedPlayer.position;
+            }
+        }
+    }
+
+    readonly property bool isPlaying: {
+        if (!trackedPlayer) return false;
+        if (trackedPlayer.playbackState !== MprisPlaybackState.Playing) return false;
+        
+        let id = trackedPlayer.identity.toLowerCase();
+        if (id.includes("zen") || id.includes("chrom") || id.includes("fox")) {
+            return _posAdvancing;
+        }
+        return true;
+    }
     
     readonly property string displayTrack: {
         if (!trackedPlayer || !isPlaying) return "Nothing playing";
@@ -90,31 +119,56 @@ Rectangle {
 
     // --- Event Handling ---
     Instantiator {
-        model: Mpris.players.values
-        onObjectAdded: (index, obj) => {
-            obj.playbackStateChanged.connect(() => {
-                if (obj.playbackState === MprisPlaybackState.Playing) {
-                    if (mediaWidget.trackedPlayer !== obj) {
+        model: Mpris.players
+        onObjectAdded: (key, obj) => {
+            if (mediaWidget.trackedPlayer === null || obj.playbackState === MprisPlaybackState.Playing) {
+                mediaWidget.trackedPlayer = obj
+            }
+        }
+        
+        onObjectRemoved: (key, obj) => {
+            if (mediaWidget.trackedPlayer === obj) {
+                mediaWidget.trackedPlayer = null;
+                let active = Mpris.players.values.find((p) => p.playbackState === MprisPlaybackState.Playing);
+                mediaWidget.trackedPlayer = active ? active : (Mpris.players.values.length > 0 ? Mpris.players.values[0] : null);
+            }
+        }
+
+        delegate: Connections {
+            target: modelData
+            function onPlaybackStateChanged() {
+                if (modelData.playbackState === MprisPlaybackState.Playing) {
+                    if (mediaWidget.trackedPlayer !== modelData) {
                         // Media Focus Logic
                         let all = Mpris.players.values;
                         for (let i = 0; i < all.length; i++) {
                             let other = all[i];
-                            if (other && other.dbusName !== obj.dbusName && other.playbackState === MprisPlaybackState.Playing) {
+                            if (other && other.dbusName !== modelData.dbusName && other.playbackState === MprisPlaybackState.Playing) {
                                 mediaWidget.lastPlayer = other;
                                 other.pause();
                             }
                         }
-                        mediaWidget.trackedPlayer = obj;
+                        mediaWidget.trackedPlayer = modelData;
                     }
-                } else if (mediaWidget.trackedPlayer === obj) {
-                    // If current player stops, find another playing one
-                    let active = Mpris.players.values.find((p) => p.playbackState === MprisPlaybackState.Playing);
-                    if (active) mediaWidget.trackedPlayer = active;
+                } else if (mediaWidget.trackedPlayer === modelData) {
+                    if (modelData.playbackState === MprisPlaybackState.Paused || modelData.playbackState === MprisPlaybackState.Stopped) {
+                        // Resume last player if no one else is playing
+                        if (mediaWidget.lastPlayer && mediaWidget.lastPlayer.playbackState !== MprisPlaybackState.Playing) {
+                            mediaWidget.lastPlayer.play();
+                            mediaWidget.lastPlayer = null;
+                        } else {
+                            // Look for another playing one
+                            let active = Mpris.players.values.find((p) => p.playbackState === MprisPlaybackState.Playing);
+                            if (active) mediaWidget.trackedPlayer = active;
+                        }
+                    }
                 }
-            });
+                mediaWidget.trackedPlayerChanged();
+            }
             
-            // Ensure metadata changes trigger a re-eval of the displayTrack binding
-            obj.metadataChanged.connect(() => { if (mediaWidget.trackedPlayer === obj) mediaWidget.trackedPlayerChanged(); });
+            function onMetadataChanged() { 
+                if (mediaWidget.trackedPlayer === modelData) mediaWidget.trackedPlayerChanged(); 
+            }
         }
     }
 
@@ -147,7 +201,14 @@ Rectangle {
         onClicked: (mouse) => {
             if (mouse.button === Qt.LeftButton) mediaPopup.visible = !mediaPopup.visible;
             else if (mouse.button === Qt.RightButton && trackedPlayer) {
-                if (mediaWidget.isPlaying) trackedPlayer.pause();
+                // Optimistic update for browsers
+                let id = trackedPlayer.identity.toLowerCase();
+                if (id.includes("zen") || id.includes("chrom") || id.includes("fox")) {
+                    mediaWidget._posAdvancing = !mediaWidget.isPlaying;
+                }
+
+                if (trackedPlayer.playPause) trackedPlayer.playPause();
+                else if (mediaWidget.isPlaying) trackedPlayer.pause();
                 else trackedPlayer.play();
             }
         }
