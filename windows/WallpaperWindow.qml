@@ -18,7 +18,7 @@ FloatingWindow {
     Rectangle {
         id: root
         anchors.fill: parent
-        color: "#11111b"; radius: 12; border.color: "#313244"; border.width: 1
+        color: "#010101"; radius: 12; border.color: '#1e1e1e'; border.width: 1
         focus: true
         Keys.onPressed: (event) => { if (event.key === Qt.Key_Escape) safeQuit(); }
 
@@ -37,10 +37,10 @@ FloatingWindow {
                     delegate: Text {
                         text: modelData
                         font.pixelSize: 20; font.bold: true
-                        color: tabRow.activeIndex === index ? "#89b4fa" : "#585b70"
+                        color: tabRow.activeIndex === index ? '#f7f7f7' : '#696a6b'
                         Rectangle {
                             anchors.top: parent.bottom; anchors.topMargin: 4
-                            width: parent.width; height: 2; color: "#89b4fa"
+                            width: parent.width; height: 2; color: '#efefef'
                             visible: tabRow.activeIndex === index
                         }
                         MouseArea { anchors.fill: parent; onClicked: tabRow.activeIndex = index }
@@ -66,7 +66,7 @@ FloatingWindow {
                                 nameFilters: ["*.jpg", "*.png", "*.jpeg", "*.webp"]
                             }
                             delegate: Rectangle {
-                                width: 248; height: 152; radius: 8; color: "#1e1e2e"
+                                width: 248; height: 152; radius: 8; color: '#2b2b2c'
                                 property bool isSelected: win.selectedWalls.indexOf(filePath) !== -1
                                 border.color: isSelected && tabRow.activeIndex === 1 ? "#a6e3a1" : "transparent"
                                 border.width: 3
@@ -160,7 +160,7 @@ FloatingWindow {
                 text: "\uf110"
                 font.family: "MesloLGS NF"
                 font.pixelSize: 48
-                color: "#89b4fa"
+                color: '#cfcfcf'
 
                 RotationAnimator on rotation {
                     from: 0
