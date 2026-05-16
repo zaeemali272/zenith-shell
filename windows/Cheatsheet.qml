@@ -56,7 +56,7 @@ PanelWindow {
         id: root
         anchors.fill: parent
         radius: 20
-        color: Root.Theme.crust ? Qt.rgba(Root.Theme.crust.r, Root.Theme.crust.g, Root.Theme.crust.b, 0.96) : "#f511111b"
+        color: Root.Theme.crust ? Qt.rgba(Root.Theme.crust.r, Root.Theme.crust.g, Root.Theme.crust.b, 0.96) : '#c1010101'
         border.color: Root.Theme.surface0 || "#313244"
         border.width: 1
         
@@ -83,7 +83,7 @@ PanelWindow {
                     text: "Cheatsheet"
                     font.pixelSize: 28
                     font.bold: true
-                    color: Root.Theme.mauve || "#cba6f7"
+                    color: Root.Theme.mauve || '#b5b5b5'
                 }
 
                 Item { Layout.fillWidth: true } // Spacer
@@ -95,13 +95,13 @@ PanelWindow {
                         model: ["Keybinds", "Gestures", "Features"]
                         delegate: Rectangle {
                             width: 100; height: 32; radius: 16
-                            color: win.activeTab === modelData ? (Root.Theme.mauve || "#cba6f7") : (Root.Theme.surface0 || "#313244")
+                            color: win.activeTab === modelData ? (Root.Theme.mauve || '#cacaca') : (Root.Theme.surface0 || '#363637')
                             
                             Text {
                                 anchors.centerIn: parent
                                 text: modelData
                                 font.pixelSize: 13; font.bold: true
-                                color: win.activeTab === modelData ? (Root.Theme.crust || "#11111b") : (Root.Theme.text || "#cdd6f4")
+                                color: win.activeTab === modelData ? (Root.Theme.crust || '#1c1c1c') : (Root.Theme.text || '#f1f1f1')
                             }
 
                             MouseArea {
@@ -158,7 +158,7 @@ PanelWindow {
                                         Text {
                                             text: modelData.section
                                             font.pixelSize: 26; font.bold: true
-                                            color: Root.Theme.blue || "#89b4fa"
+                                            color: Root.Theme.blue || '#db712e'
                                             Layout.alignment: Qt.AlignHCenter
                                             horizontalAlignment: Text.AlignHCenter
                                         }
@@ -180,7 +180,7 @@ PanelWindow {
                                                     }
                                                     Text {
                                                         text: modelData.desc
-                                                        font.pixelSize: 14; color: Root.Theme.text || "#cdd6f4"
+                                                        font.pixelSize: 14; color: Root.Theme.text || '#f5f5f5'
                                                         Layout.alignment: Qt.AlignHCenter
                                                         horizontalAlignment: Text.AlignHCenter
                                                         wrapMode: Text.WordWrap
@@ -208,7 +208,7 @@ PanelWindow {
                             model: win.gesturesData
                             delegate: Rectangle {
                                 Layout.fillWidth: true; implicitHeight: gestCol.implicitHeight + 40
-                                color: Root.Theme.surface0 || "#313244"; radius: 16
+                                color: Root.Theme.surface0 || '#494949'; radius: 16
                                 ColumnLayout {
                                     id: gestCol; anchors.fill: parent; anchors.margins: 20; spacing: 15
                                     Text {
@@ -221,11 +221,11 @@ PanelWindow {
                                             Layout.fillWidth: true; spacing: 20
                                             Text {
                                                 text: modelData.trigger; font.pixelSize: 20; font.bold: true
-                                                color: Root.Theme.mauve || "#cba6f7"; Layout.preferredWidth: 150
+                                                color: Root.Theme.mauve || '#f3f3f3'; Layout.preferredWidth: 150
                                             }
                                             Text {
                                                 text: modelData.command; font.family: "monospace"; font.pixelSize: 18
-                                                color: Root.Theme.subtext0 || "#a6adc8"; Layout.fillWidth: true
+                                                color: Root.Theme.subtext0 || '#c5c6c9'; Layout.fillWidth: true
                                             }
                                         }
                                     }
@@ -253,14 +253,14 @@ PanelWindow {
                             ]
                             delegate: Rectangle {
                                 Layout.fillWidth: true; implicitHeight: 100
-                                color: Root.Theme.surface0 || "#313244"; radius: 16
+                                color: Root.Theme.surface0 || '#434343'; radius: 16
                                 RowLayout {
                                     anchors.fill: parent; anchors.margins: 20; spacing: 20
-                                    Text { text: modelData.icon; font.pixelSize: 40; color: Root.Theme.mauve || "#cba6f7"; Layout.preferredWidth: 60; horizontalAlignment: Text.AlignHCenter }
+                                    Text { text: modelData.icon; font.pixelSize: 40; color: Root.Theme.mauve || '#f7a6b2'; Layout.preferredWidth: 60; horizontalAlignment: Text.AlignHCenter }
                                     ColumnLayout {
                                         spacing: 5
-                                        Text { text: modelData.title; font.pixelSize: 18; font.bold: true; color: Root.Theme.text || "#cdd6f4" }
-                                        Text { text: modelData.desc; font.pixelSize: 14; color: Root.Theme.subtext1 || "#bac2de"; Layout.fillWidth: true; wrapMode: Text.WordWrap }
+                                        Text { text: modelData.title; font.pixelSize: 18; font.bold: true; color: Root.Theme.text || '#f4cdda' }
+                                        Text { text: modelData.desc; font.pixelSize: 14; color: Root.Theme.subtext1 || '#debaba'; Layout.fillWidth: true; wrapMode: Text.WordWrap }
                                     }
                                 }
                             }

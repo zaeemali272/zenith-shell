@@ -71,7 +71,7 @@ Item {
             Rectangle {
                 anchors.fill: layout
                 anchors.margins: -5
-                color: (index === root.currentIndex) ? (Shell.Theme.surface1 || "#45475a") : "transparent"
+                color: (index === root.currentIndex) ? (Shell.Theme.surface1 || '#a1232323') : "transparent"
                 radius: 12
                 z: -1
             }
@@ -86,7 +86,7 @@ Item {
                     width: Shell.Theme.scaled ? Shell.Theme.scaled(56) : 56
                     height: width
                     radius: 14
-                    color: (index === root.currentIndex) ? (Shell.Theme.surface2 || "#585b70") : (Shell.Theme.surface0 || "#242532")
+                    color: (index === root.currentIndex) ? (Shell.Theme.surface2 || '#a6010101') : (Shell.Theme.surface0 || '#a1232323')
                     Layout.alignment: Qt.AlignHCenter
                     
                     IconImage {
@@ -100,8 +100,8 @@ Item {
 
                 Text {
                     text: model.displayName
-                    color: (index === root.currentIndex) ? (Shell.Theme.mauve || "#cba6f7") : (Shell.Theme.text || "#cdd6f4")
-                    font.pixelSize: 11
+                    color: (index === root.currentIndex) ? (Shell.Theme.mauve || '#b5b5b5') : (Shell.Theme.text || "#cdd6f4")
+                    font.pixelSize: 12
                     font.bold: index === root.currentIndex
                     Layout.alignment: Qt.AlignHCenter
                     horizontalAlignment: Text.AlignHCenter

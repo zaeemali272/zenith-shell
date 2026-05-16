@@ -61,9 +61,9 @@ Item {
     Rectangle {
         anchors.fill: parent
         visible: root.showLetter
-        color: Root.Theme.surface0
+        color: Theme.surface0
         radius: width / 4
-        border.color: Root.Theme.surface1
+        border.color: Theme.surface1
         border.width: 1
 
         Text {
@@ -74,7 +74,7 @@ Item {
             }
             font.pixelSize: parent.height * 0.6
             font.bold: true
-            color: Root.Theme.mauve
+            color: Theme.mauve
         }
     }
 }

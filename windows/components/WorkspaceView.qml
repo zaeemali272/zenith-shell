@@ -64,8 +64,8 @@ Item {
                 Layout.preferredWidth: 280
                 Layout.preferredHeight: 160
                 radius: 16
-                color: (Shell.Theme && Shell.Theme.mantle) ? Shell.Theme.mantle : "#181825"
-                border.color: modelData.active ? ((Shell.Theme && Shell.Theme.mauve) ? Shell.Theme.mauve : "#cba6f7") : "transparent"
+                color: (Shell.Theme && Shell.Theme.mantle) ? Shell.Theme.mantle : "#a1232323"
+                border.color: modelData.active ? ((Shell.Theme && Shell.Theme.mauve) ? Shell.Theme.mauve : '#a65e5e5e') : "transparent"
                 border.width: 2
                 
                 readonly property var workspace: modelData
@@ -93,7 +93,7 @@ Item {
                         id: previewArea
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        color: (Shell.Theme && Shell.Theme.crust) ? Shell.Theme.crust : "#11111b"
+                        color: (Shell.Theme && Shell.Theme.crust) ? Shell.Theme.crust : '#a1000000'
                         radius: 12
                         clip: true
 
@@ -123,9 +123,9 @@ Item {
                                 width: Math.max(40, (rawW / mon.width) * previewArea.width)
                                 height: Math.max(40, (rawH / (mon.height - barHeight)) * previewArea.height)
                                 
-                                color: (Shell.Theme && Shell.Theme.surface0) ? Shell.Theme.surface0 : "#313244"
+                                color: (Shell.Theme && Shell.Theme.surface0) ? Shell.Theme.surface0 : '#41010101'
                                 radius: 8
-                                border.color: (win && win.active) ? ((Shell.Theme && Shell.Theme.mauve) ? Shell.Theme.mauve : "#cba6f7") : ((Shell.Theme && Shell.Theme.surface1) ? Shell.Theme.surface1 : "#45475a")
+                                border.color: (win && win.active) ? ((Shell.Theme && Shell.Theme.mauve) ? Shell.Theme.mauve : '#00282828') : ((Shell.Theme && Shell.Theme.surface1) ? Shell.Theme.surface1 : '#94000000')
                                 border.width: 1
                                 opacity: 0.95
 
@@ -171,7 +171,7 @@ Item {
                                             return name.charAt(0).toUpperCase() + name.slice(1);
                                         }
                                         font.pixelSize: 10
-                                        color: (Shell.Theme && Shell.Theme.text) ? Shell.Theme.text : "#cdd6f4"
+                                        color: (Shell.Theme && Shell.Theme.text) ? Shell.Theme.text : '#9d9d9d'
                                         elide: Text.ElideRight
                                         horizontalAlignment: Text.AlignHCenter
                                         verticalAlignment: Text.AlignVCenter
@@ -194,7 +194,7 @@ Item {
                             text: "WS " + workspace.id
                             font.bold: true
                             font.pixelSize: 12
-                            color: workspace.active ? ((Shell.Theme && Shell.Theme.mauve) ? Shell.Theme.mauve : "#cba6f7") : ((Shell.Theme && Shell.Theme.subtext0) ? Shell.Theme.subtext0 : "gray")
+                            color: workspace.active ? ((Shell.Theme && Shell.Theme.mauve) ? Shell.Theme.mauve : '#ffffff') : ((Shell.Theme && Shell.Theme.subtext0) ? Shell.Theme.subtext0 : "gray")
                         }
 
                         Item { Layout.fillWidth: true }

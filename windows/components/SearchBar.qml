@@ -12,8 +12,8 @@ Rectangle {
     width: Root.Theme.scaled ? Root.Theme.scaled(500) : 500
     height: Root.Theme.scaled ? Root.Theme.scaled(50) : 50
     radius: height / 2
-    color: Root.Theme.mantle || "#181825"
-    border.color: input.activeFocus ? (Root.Theme.mauve || "#cba6f7") : (Root.Theme.surface0 || "#313244")
+    color: Root.Theme.mantle || "#a1232323"
+    border.color: input.activeFocus ? (Root.Theme.mauve || '#a1585858') : (Root.Theme.surface0 || "#a6010101")
     border.width: 1
 
     Behavior on border.color { ColorAnimation { duration: 200 } }

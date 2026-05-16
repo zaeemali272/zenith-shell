@@ -60,7 +60,7 @@ PanelWindow {
         id: root
         anchors.fill: parent
         radius: 15
-        color: Root.Theme.crust ? Qt.rgba(Root.Theme.crust.r, Root.Theme.crust.g, Root.Theme.crust.b, 0.85) : "#d911111b"
+        color: Root.Theme.crust ? Qt.rgba(Root.Theme.crust.r, Root.Theme.crust.g, Root.Theme.crust.b, 0.85) : '#a6010101'
         
         focus: true
         Keys.onPressed: (event) => {
