@@ -1,6 +1,7 @@
 import "../.."
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls 2.15
 import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
@@ -34,6 +35,16 @@ PopupWindow {
         root.visible = true;
     }
 
+    function runUpdate(args) {
+        logText.text = "Starting update for: " + args + "
+";
+        console.log("Starting update with args:", args);
+        
+        // Directly call the script, capturing output to the log viewer
+        updateRunner.command = ["bash", Quickshell.env("HOME") + "/.config/quickshell/scripts/run_update.sh", ...args.split(" ")];
+        updateRunner.running = true;
+    }
+
     Rectangle {
         id: menuSurface
         y: Theme.scaled(8)
@@ -42,7 +53,7 @@ PopupWindow {
         border.width: 1
         radius: Theme.scaled(16)
         
-        implicitWidth: Theme.scaled(350)
+        implicitWidth: Theme.scaled(450)
         implicitHeight: content.implicitHeight + Theme.scaled(32)
 
         ColumnLayout {
@@ -56,7 +67,7 @@ PopupWindow {
                 Layout.fillWidth: true
                 Text {
                     text: "Updates Available"
-                    color: Theme.blue
+                    color: Theme.accentColor
                     font.pixelSize: Theme.scaled(16)
                     font.weight: Font.Bold
                 }
@@ -72,23 +83,26 @@ PopupWindow {
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: Theme.scaled(12)
+                RepoSection { title: "Zenith (Configs)"; repoData: zenithData; icon: "󱂵" }
+                Rectangle { Layout.fillWidth: true; height: 1; color: Theme.glassBorder }
+                RepoSection { title: "Zenith Shell"; repoData: shellData; icon: "󰚰" }
+            }
 
-                RepoSection {
-                    title: "Zenith (Configs)"
-                    repoData: zenithData
-                    icon: "󱂵"
-                }
-
-                Rectangle {
-                    Layout.fillWidth: true
-                    height: 1
-                    color: Theme.glassBorder
-                }
-
-                RepoSection {
-                    title: "Zenith Shell"
-                    repoData: shellData
-                    icon: "󱓞"
+            // --- Log Viewer ---
+            ScrollView {
+                Layout.fillWidth: true
+                Layout.preferredHeight: Theme.scaled(200)
+                clip: true
+                background: Rectangle { color: Qt.rgba(0,0,0,0.3); radius: Theme.scaled(8) }
+                
+                Text {
+                    id: logText
+                    text: "Ready to update..."
+                    color: Theme.text
+                    font.family: "monospace"
+                    font.pixelSize: Theme.scaled(11)
+                    wrapMode: Text.WordWrap
+                    width: parent.width
                 }
             }
 
@@ -104,21 +118,21 @@ PopupWindow {
                     icon: "󰚰"
                     Layout.columnSpan: 2
                     color: Theme.blue
-                    onClicked: runUpdate("--quickshell --configs --new-pkgs")
+                    onClicked: root.runUpdate("--quickshell --configs --new-pkgs")
                 }
 
                 ActionButton {
                     text: "Zenith"
                     icon: "󱂵"
                     color: Theme.surface1
-                    onClicked: runUpdate("--configs")
+                    onClicked: root.runUpdate("--configs")
                 }
 
                 ActionButton {
                     text: "Shell"
-                    icon: "󱓞"
+                    icon: "󰓞"
                     color: Theme.surface1
-                    onClicked: runUpdate("--quickshell")
+                    onClicked: root.runUpdate("--quickshell")
                 }
 
                 ActionButton {
@@ -126,20 +140,32 @@ PopupWindow {
                     icon: "󰏖"
                     Layout.columnSpan: 2
                     color: Theme.surface1
-                    onClicked: runUpdate("--new-pkgs")
+                    onClicked: root.runUpdate("--new-pkgs")
                 }
             }
         }
     }
 
-    function runUpdate(args) {
-        updateRunner.command = ["bash", Quickshell.env("HOME") + "/.config/quickshell/scripts/run_update.sh", ...args.split(" ")];
-        updateRunner.running = true;
-        root.visible = false;
-    }
-
+    // Capture process output
     Process {
         id: updateRunner
+        stdout: StdioCollector {
+            onRead: (text) => {
+                logText.text += text;
+                console.log("Update output:", text);
+            }
+        }
+        stderr: StdioCollector {
+            onRead: (text) => {
+                logText.text += "ERR: " + text;
+                console.log("Update error:", text);
+            }
+        }
+        onExited: (code) => {
+            logText.text += "
+Update finished with code: " + code;
+            console.log("Update finished with code:", code);
+        }
     }
 
     component RepoSection: ColumnLayout {
@@ -156,7 +182,7 @@ PopupWindow {
                 text: icon
                 font.family: Theme.iconFont
                 font.pixelSize: Theme.scaled(14)
-                color: Theme.blue
+                color: Theme.accentColor
             }
             Text {
                 text: title
@@ -166,30 +192,10 @@ PopupWindow {
             }
             Item { Layout.fillWidth: true }
             Text {
-                text: repoData.updates + " updates"
-                color: repoData.updates > 0 ? Theme.yellow : Theme.subtext1
+                text: (repoData.updates || 0) + " updates"
+                color: (repoData.updates || 0) > 0 ? Theme.accentColor : Theme.subtext1
                 font.pixelSize: Theme.scaled(11)
             }
-        }
-
-        Repeater {
-            model: repoData.commits
-            delegate: Text {
-                text: "• " + modelData.title
-                color: Theme.subtext1
-                font.pixelSize: Theme.scaled(11)
-                elide: Text.ElideRight
-                Layout.fillWidth: true
-                Layout.leftMargin: Theme.scaled(18)
-            }
-        }
-        
-        Text {
-            visible: repoData.commits.length === 0
-            text: "Up to date"
-            color: Theme.overlay1
-            font.pixelSize: Theme.scaled(11)
-            Layout.leftMargin: Theme.scaled(18)
         }
     }
 
@@ -228,6 +234,33 @@ PopupWindow {
             anchors.fill: parent
             hoverEnabled: true
             onClicked: parent.clicked()
+        }
+    }
+
+    Process {
+        id: updateProc
+        command: ["bash", Quickshell.env("HOME") + "/.config/quickshell/scripts/check_updates.sh"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const data = JSON.parse(text);
+                    zenithData = data.zenith || {exists: false, updates: 0, commits: []};
+                    shellData = data.zenith_shell || {exists: false, updates: 0, commits: []};
+                } catch (e) {
+                    console.log("Update check failed:", e);
+                }
+            }
+        }
+    }
+
+    Timer {
+        interval: 3600000 // Check every hour
+        running: true
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: {
+            updateProc.running = false;
+            updateProc.running = true;
         }
     }
 }
