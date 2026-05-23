@@ -118,14 +118,14 @@ PopupWindow {
                     icon: "󰚰"
                     Layout.columnSpan: 2
                     color: Theme.blue
-                    onClicked: root.runUpdate("--quickshell --configs --new-pkgs")
+                    onClicked: root.runUpdate("--quickshell --configs --new-pkgs --skip-xdg")
                 }
 
                 ActionButton {
                     text: "Zenith"
                     icon: "󱂵"
                     color: Theme.surface1
-                    onClicked: root.runUpdate("--configs")
+                    onClicked: root.runUpdate("--configs --skip-xdg")
                 }
 
                 ActionButton {
