@@ -2,7 +2,7 @@
 
 # Define paths relative to HOME
 ZENITH_DIR="$HOME/zenith"
-ZENITH_SHELL_DIR="$HOME/zenith-shell"
+ZENITH_SHELL_DIR="$HOME/.config/quickshell"
 
 check_repo() {
     local dir=$1
