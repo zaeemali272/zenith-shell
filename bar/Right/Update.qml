@@ -4,6 +4,7 @@ import "../.."
 import "../../services"
 import "../Menu"
 import QtQuick
+import QtQuick.Controls 2.15
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
@@ -19,6 +20,15 @@ Item {
     visible: totalUpdates > 0
     implicitHeight: Theme.pillHeight
     implicitWidth: pill.width
+
+    function runUpdate(args) {
+        updateMenu.logText.text = "Starting update for: " + args + "
+";
+        console.log("Starting update with args:", args);
+        
+        updateRunner.command = ["bash", Quickshell.env("HOME") + "/.config/quickshell/scripts/run_update.sh", ...args.split(" ")];
+        updateRunner.running = true;
+    }
 
     Pill {
         id: pill
@@ -64,6 +74,7 @@ Item {
 
     PopupWindow {
         id: updateMenu
+        property alias logText: logText
         visible: false
         color: "transparent"
         
@@ -136,7 +147,25 @@ Item {
                     RepoSection {
                         title: "Zenith Shell"
                         repoData: root.zenithShell
-                        icon: "󱓞"
+                        icon: "󰓞"
+                    }
+                }
+
+                // --- Log Viewer ---
+                ScrollView {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: Theme.scaled(200)
+                    clip: true
+                    background: Rectangle { color: Qt.rgba(0,0,0,0.3); radius: Theme.scaled(8) }
+                    
+                    Text {
+                        id: logText
+                        text: "Ready to update..."
+                        color: Theme.text
+                        font.family: "monospace"
+                        font.pixelSize: Theme.scaled(11)
+                        wrapMode: Text.WordWrap
+                        width: parent.width
                     }
                 }
 
@@ -152,21 +181,21 @@ Item {
                         icon: "󰚰"
                         Layout.columnSpan: 2
                         btnColor: Theme.accentGlow
-                        onClicked: runUpdate("--quickshell --configs --new-pkgs")
+                        onClicked: root.runUpdate("--quickshell --configs --new-pkgs")
                     }
 
                     ActionButton {
                         text: "Zenith"
                         icon: "󱂵"
                         btnColor: Theme.surface1
-                        onClicked: runUpdate("--configs")
+                        onClicked: root.runUpdate("--configs")
                     }
 
                     ActionButton {
                         text: "Shell"
-                        icon: "󱓞"
+                        icon: "󰓞"
                         btnColor: Theme.surface1
-                        onClicked: runUpdate("--quickshell")
+                        onClicked: root.runUpdate("--quickshell")
                     }
 
                     ActionButton {
@@ -174,109 +203,120 @@ Item {
                         icon: "󰏖"
                         Layout.columnSpan: 2
                         btnColor: Theme.surface1
-                        onClicked: runUpdate("--new-pkgs")
+                        onClicked: root.runUpdate("--new-pkgs")
                     }
                 }
             }
         }
+    }
 
-        function runUpdate(args) {
-            updateRunner.command = ["bash", Quickshell.env("HOME") + "/.config/quickshell/scripts/run_update.sh", ...args.split(" ")];
-            updateRunner.running = true;
-            updateMenu.visible = false;
+    Process {
+        id: updateRunner
+        stdout: StdioCollector {
+            onRead: (text) => {
+                updateMenu.logText.text += text;
+                console.log("Update output:", text);
+            }
         }
-
-        Process {
-            id: updateRunner
+        stderr: StdioCollector {
+            onRead: (text) => {
+                updateMenu.logText.text += "ERR: " + text;
+                console.log("Update error:", text);
+            }
         }
+        onExited: (code) => {
+            updateMenu.logText.text += "
+Update finished with code: " + code;
+            console.log("Update finished with code:", code);
+        }
+    }
 
-        component RepoSection: ColumnLayout {
-            property string title
-            property string icon
-            property var repoData
-            
+    component RepoSection: ColumnLayout {
+        property string title
+        property string icon
+        property var repoData
+        
+        Layout.fillWidth: true
+        spacing: Theme.scaled(4)
+
+        RowLayout {
             Layout.fillWidth: true
-            spacing: Theme.scaled(4)
-
-            RowLayout {
-                Layout.fillWidth: true
-                Text {
-                    text: icon
-                    font.family: Theme.iconFont
-                    font.pixelSize: Theme.scaled(14)
-                    color: Theme.accentColor
-                }
-                Text {
-                    text: title
-                    color: Theme.text
-                    font.weight: Font.Medium
-                    font.pixelSize: Theme.scaled(13)
-                }
-                Item { Layout.fillWidth: true }
-                Text {
-                    text: (repoData.updates || 0) + " updates"
-                    color: (repoData.updates || 0) > 0 ? Theme.accentColor : Theme.subtext1
-                    font.pixelSize: Theme.scaled(11)
-                }
-            }
-
-            Repeater {
-                model: repoData.commits || []
-                delegate: Text {
-                    text: "• " + modelData.title
-                    color: Theme.subtext1
-                    font.pixelSize: Theme.scaled(11)
-                    elide: Text.ElideRight
-                    Layout.fillWidth: true
-                    Layout.leftMargin: Theme.scaled(18)
-                }
-            }
-            
             Text {
-                visible: !repoData.commits || repoData.commits.length === 0
-                text: "Up to date"
-                color: Theme.overlay1
+                text: icon
+                font.family: Theme.iconFont
+                font.pixelSize: Theme.scaled(14)
+                color: Theme.accentColor
+            }
+            Text {
+                text: title
+                color: Theme.text
+                font.weight: Font.Medium
+                font.pixelSize: Theme.scaled(13)
+            }
+            Item { Layout.fillWidth: true }
+            Text {
+                text: (repoData.updates || 0) + " updates"
+                color: (repoData.updates || 0) > 0 ? Theme.accentColor : Theme.subtext1
                 font.pixelSize: Theme.scaled(11)
+            }
+        }
+
+        Repeater {
+            model: repoData.commits || []
+            delegate: Text {
+                text: "• " + modelData.title
+                color: Theme.subtext1
+                font.pixelSize: Theme.scaled(11)
+                elide: Text.ElideRight
+                Layout.fillWidth: true
                 Layout.leftMargin: Theme.scaled(18)
             }
         }
+        
+        Text {
+            visible: !repoData.commits || repoData.commits.length === 0
+            text: "Up to date"
+            color: Theme.overlay1
+            font.pixelSize: Theme.scaled(11)
+            Layout.leftMargin: Theme.scaled(18)
+        }
+    }
 
-        component ActionButton: Rectangle {
-            property string text
-            property string icon
-            property color btnColor: Theme.surface1
-            signal clicked()
+    component ActionButton: Rectangle {
+        property string text
+        property string icon
+        property color btnColor: Theme.surface1
+        signal clicked()
 
-            Layout.fillWidth: true
-            implicitHeight: Theme.scaled(36)
-            radius: Theme.scaled(8)
-            color: mouse.containsMouse ? Qt.lighter(btnColor, 1.1) : btnColor
-            border.color: Theme.glassBorder
-            border.width: 1
+        Layout.fillWidth: true
+        implicitHeight: Theme.scaled(36)
+        radius: Theme.scaled(8)
+        color: mouse.containsMouse ? Qt.lighter(btnColor, 1.1) : btnColor
+        border.color: Theme.glassBorder
+        border.width: 1
 
-            RowLayout {
-                anchors.centerIn: parent
-                spacing: Theme.scaled(8)
-                Text {
-                    text: icon
-                    font.family: Theme.iconFont
-                    font.pixelSize: Theme.scaled(14)
-                    color: Theme.text
-                }
-                Text {
-                    text: parent.parent.text
-                    color: Theme.text
-                    font.pixelSize: Theme.scaled(12)
-                    font.weight: Font.Medium
-                }
+        RowLayout {
+            anchors.centerIn: parent
+            spacing: Theme.scaled(8)
+            Text {
+                text: icon
+                font.family: Theme.iconFont
+                font.pixelSize: Theme.scaled(14)
+                color: Theme.text
             }
-
-            MouseArea {
-                id: mouse
-                anchors.fill: parent
-                hoverEnabled: true
-                onClicked: parent.clicked()
+            Text {
+                text: parent.parent.text
+                color: Theme.text
+                font.pixelSize: Theme.scaled(12)
+                font.weight: Font.Medium
             }
+        }
+
+        MouseArea {
+            id: mouse
+            anchors.fill: parent
+            hoverEnabled: true
+            onClicked: parent.clicked()
         }
     }
 
