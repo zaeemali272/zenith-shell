@@ -34,28 +34,33 @@ Item {
             anchors.centerIn: parent
             spacing: Theme.pillGap
 
-            Text {
-                text: {
-                    switch (currentProfile) {
-                    case "performance":
-                        return "󰀦";
-                    case "powersave":
-                        return "󰍛";
-                    case "balanced":
-                        return "󰏤";
-                    case "turbo":
-                        return "󰞃";
-                    default:
-                        return "󰀄";
-                    }
-                }
-                font.family: Theme.iconFont
-                font.pixelSize: Theme.iconSize
-                color: Theme.activeTextColor
+            Image {
+                id: animatedIcon
+                source: "../../assets/cat_f" + Math.floor(frameTimer.frameCount % 4) + ".png"
+                width: Theme.iconSize
+                height: Theme.iconSize
+                Layout.preferredWidth: Theme.iconSize + 35
+                Layout.preferredHeight: Theme.iconSize + 35
+                fillMode: Image.PreserveAspectFit
             }
 
+            Timer {
+                id: frameTimer
+                property int frameCount: 0
+                interval: {
+                    switch (currentProfile) {
+                        case "performance": return 1000 / 12; // 12 frames/sec
+                        case "powersave": return 1000 / 4;   // 4 frames/sec
+                        case "balanced": return 1000 / 8;    // 8 frames/sec
+                        case "turbo": return 1000 / 16;      // 16 frames/sec
+                        default: return 250;
+                    }
+                }
+                running: true
+                repeat: true
+                onTriggered: frameCount++
+            }
         }
-
     }
 
 }

@@ -18,12 +18,12 @@ PopupWindow {
         id: menuSurface
 
         // We use childrenRect to make the box fit the content automatically
-        width: 220
-        height: menuContent.height + 16
+        width: Theme.scaled(220)
+        height: menuContent.height + Theme.scaled(16)
         color: Theme.backgroundColor
         border.color: Theme.borderColor
         border.width: 1
-        radius: Theme.pillRadius ? Theme.pillRadius : 8
+        radius: Theme.pillRadius ? Theme.pillRadius : Theme.scaled(8)
 
         QsMenuOpener {
             id: menuOpener

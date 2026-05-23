@@ -7,12 +7,14 @@ QtObject {
     // ================= DYNAMIC SCALING ===================
     // =====================================================
     
-    // We use 1080 as our reference height (1080p)
+    // We use 1080 as our reference height and 1920 as reference width (1080p)
     readonly property real referenceHeight: 1080
+    readonly property real referenceWidth: 1920
     readonly property real screenHeight: Quickshell.screens.length > 0 ? Quickshell.screens[0].height : 1080
+    readonly property real screenWidth: Quickshell.screens.length > 0 ? Quickshell.screens[0].width : 1920
     
-    // Scale factor: e.g., 0.66 for 720p, 1.0 for 1080p, 2.0 for 4K
-    readonly property real scale: screenHeight / referenceHeight
+    // Scale factor: geometric mean of height and width scaling to ensure balanced scaling
+    readonly property real scale: Math.sqrt((screenWidth / referenceWidth) * (screenHeight / referenceHeight))
 
     // Helper to scale values manually if needed
     function scaled(val) { return Math.round(val * scale); }
