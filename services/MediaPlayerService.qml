@@ -143,7 +143,7 @@ Singleton {
             }
 
             if (!_isResetting) {
-                currentPos = trackedPlayer.position;
+                currentPos = (trackedPlayer && trackedPlayer.position !== undefined) ? Number(trackedPlayer.position) : 0.0;
             }
 
             if (trackedPlayer.playbackState !== MprisPlaybackState.Playing || (isFickle(trackedPlayer) && !isActuallyPlaying)) {

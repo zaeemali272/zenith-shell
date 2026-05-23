@@ -20,5 +20,5 @@ fi
 cd "$ZENITH_DIR" || exit 1
 
 log "Running: ./install.sh $*"
-# Run in kitty for visibility
-kitty -e bash -c "./install.sh $*; echo 'Done. Press enter to close.'; read"
+# Automatically select option 2
+echo "2" | bash "./install.sh" "$@"
