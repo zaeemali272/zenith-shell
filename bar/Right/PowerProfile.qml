@@ -39,8 +39,8 @@ Item {
                 source: "../../assets/cat_f" + Math.floor(frameTimer.frameCount % 4) + ".png"
                 width: Theme.iconSize
                 height: Theme.iconSize
-                Layout.preferredWidth: Theme.iconSize + 35
-                Layout.preferredHeight: Theme.iconSize + 35
+                Layout.preferredWidth: Theme.iconSize + 30
+                Layout.preferredHeight: Theme.iconSize + 30
                 fillMode: Image.PreserveAspectFit
             }
 
