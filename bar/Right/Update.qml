@@ -25,7 +25,7 @@ Item {
         anchors.fill: parent
         icon: "󰚰"
         text: root.totalUpdates.toString()
-        textColor: Theme.blue
+        textColor: Theme.accentColor
         
         implicitWidth: pillRow.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
 
@@ -104,7 +104,7 @@ Item {
                     Layout.fillWidth: true
                     Text {
                         text: "Updates Available"
-                        color: Theme.blue
+                        color: Theme.accentColor
                         font.pixelSize: Theme.scaled(16)
                         font.weight: Font.Bold
                     }
@@ -151,7 +151,7 @@ Item {
                         text: "Update All"
                         icon: "󰚰"
                         Layout.columnSpan: 2
-                        btnColor: Theme.blue
+                        btnColor: Theme.accentGlow
                         onClicked: runUpdate("--quickshell --configs --new-pkgs")
                     }
 
@@ -204,7 +204,7 @@ Item {
                     text: icon
                     font.family: Theme.iconFont
                     font.pixelSize: Theme.scaled(14)
-                    color: Theme.blue
+                    color: Theme.accentColor
                 }
                 Text {
                     text: title
@@ -215,7 +215,7 @@ Item {
                 Item { Layout.fillWidth: true }
                 Text {
                     text: (repoData.updates || 0) + " updates"
-                    color: (repoData.updates || 0) > 0 ? Theme.yellow : Theme.subtext1
+                    color: (repoData.updates || 0) > 0 ? Theme.accentColor : Theme.subtext1
                     font.pixelSize: Theme.scaled(11)
                 }
             }

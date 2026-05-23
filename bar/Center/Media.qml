@@ -78,12 +78,12 @@ Rectangle {
                 font.family: Theme.iconFont
                 font.pixelSize: Theme.iconSize
                 text: ""
-                color: "#fab387"
+                color: Theme.accentColor
                 Layout.alignment: Qt.AlignVCenter
             }
             Text {
                 text: mediaWidget.displayTrack
-                color: "#fab387"
+                color: Theme.accentColor
                 font.pixelSize: Theme.fontSize
                 elide: Text.ElideRight
                 Layout.alignment: Qt.AlignVCenter
@@ -98,12 +98,12 @@ Rectangle {
                 font.family: Theme.iconFont
                 font.pixelSize: Theme.scaled(16)
                 text: mediaWidget.getWeatherIcon(mediaWidget.weatherData?.current_condition?.[0]?.weatherCode)
-                color: Theme.powerYellow
+                color: Theme.overlay0
                 Layout.alignment: Qt.AlignVCenter
             }
             Text {
                 text: (mediaWidget.weatherData?.current_condition?.[0]?.temp_C || "0") + "°C"
-                color: Theme.text
+                color: Theme.overlay0
                 font.pixelSize: Theme.fontSize
                 Layout.alignment: Qt.AlignVCenter
             }
