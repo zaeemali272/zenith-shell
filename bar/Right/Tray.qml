@@ -19,7 +19,7 @@ Rectangle {
         id: trayRow
 
         anchors.centerIn: parent
-        spacing: 8
+        spacing: Theme.scaled(8)
 
         Repeater {
             model: SystemTray.items
