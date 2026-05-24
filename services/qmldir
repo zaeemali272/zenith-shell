@@ -5,7 +5,10 @@ BatteryService BatteryService.qml
 VolumeService VolumeService.qml
 WifiService WifiService.qml
 BluetoothService BluetoothService.qml
+PowerProfileServiceProvider PowerProfileService.qml
 PowerProfileService PowerProfileService.qml
 QuickSettingsService QuickSettingsService.qml
 MediaPlayerService MediaPlayerService.qml
 WallpaperService WallpaperService.qml
+singleton MenuService MenuService.qml
+

@@ -38,4 +38,7 @@ Scope {
         id: osdPopup
     }
 
+    DismissOverlay {
+        id: dismissOverlay
     }
+}

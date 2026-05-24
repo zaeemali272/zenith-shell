@@ -8,30 +8,31 @@ import QtQuick.Controls
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
+import "../../services"
 
 PopupWindow {
     id: root
+    
+    Keys.onPressed: (event) => {
+        if (event.key === Qt.Key_Escape) root.visible = false
+    }
 
     property var parentWindow: null
     visible: false
     color: "transparent"
-    grabFocus: true
+    grabFocus: false
 
     implicitWidth: Theme.scaled(900)
     implicitHeight: Theme.scaled(650)
 
-    HyprlandFocusGrab {
-        active: root.visible
-        windows: [root]
-        onCleared: root.visible = false
-    }
-    
     onVisibleChanged: {
         if (visible) {
+            MenuService.register(root);
             CenterState.qsVisible = true;
             mainContent.forceActiveFocus();
             showAnim.restart();
         } else {
+            MenuService.unregister(root);
             CenterState.qsVisible = false;
         }
     }

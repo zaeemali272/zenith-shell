@@ -29,7 +29,7 @@ PanelWindow {
         right: osdWindow.isFullscreen ? Theme.scaled(5) : Theme.scaled(10)
     }
 
-    implicitWidth: Theme.scaled(370)
+    implicitWidth: Theme.scaled(400)
     implicitHeight: osdWindow.isFullscreen ? Theme.scaled(65) : Theme.scaled(85)
     
     // Window stays visible if timer is running OR if the mouse is hovering/pressing

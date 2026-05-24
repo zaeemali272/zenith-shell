@@ -6,9 +6,15 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
+import "../../services"
 
 PopupWindow {
     id: menuRoot
+    
+    onVisibleChanged: {
+        if (visible) MenuService.register(menuRoot)
+        else MenuService.unregister(menuRoot)
+    }
 
     property var anchorItem: null
 
@@ -21,10 +27,7 @@ PopupWindow {
     anchor.edges: Edges.Bottom
     anchor.gravity: Edges.Bottom
 
-    HyprlandFocusGrab {
-        active: menuRoot.visible
-        onCleared: menuRoot.visible = false
-    }
+    grabFocus: false
 
     Rectangle {
         id: mainContent

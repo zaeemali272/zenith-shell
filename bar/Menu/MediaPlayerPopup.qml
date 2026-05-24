@@ -13,18 +13,19 @@ PopupWindow {
     visible: false
     color: "transparent"
     
-    grabFocus: true
+    grabFocus: false
 
-    HyprlandFocusGrab {
-        active: root.visible
-        windows: [root]
-        onCleared: root.visible = false
+    Keys.onPressed: (event) => {
+        if (event.key === Qt.Key_Escape) root.visible = false
     }
 
     onVisibleChanged: {
         if (visible) {
+            MenuService.register(root);
             mainContent.forceActiveFocus();
             showAnim.restart();
+        } else {
+            MenuService.unregister(root);
         }
     }
 

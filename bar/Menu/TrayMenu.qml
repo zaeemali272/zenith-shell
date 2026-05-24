@@ -4,9 +4,15 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Services.SystemTray
 import Quickshell.Hyprland
+import "../../services"
 
 PopupWindow {
     id: root
+    
+    onVisibleChanged: {
+        if (visible) MenuService.register(root)
+        else MenuService.unregister(root)
+    }
 
     property var menuHandle: null
     property var currentItem: null
@@ -19,16 +25,20 @@ PopupWindow {
     implicitWidth: menuSurface.implicitWidth
     implicitHeight: menuSurface.implicitHeight + Theme.scaled(10)
 
-    grabFocus: true 
+    grabFocus: false 
 
     HyprlandFocusGrab {
         id: grab
         active: root.visible && !subMenuLoader.active
-        windows: [root, subMenuLoader.item]
+        windows: [root, subMenuLoader.item, notificationPopup, osdPopup]
         onCleared: {
             root.visible = false;
             if (parentMenu) parentMenu.visible = false;
         }
+    }
+
+    Keys.onPressed: (event) => {
+        if (event.key === Qt.Key_Escape) root.closeAll()
     }
 
     function openFor(item, visualParent, edges) {
