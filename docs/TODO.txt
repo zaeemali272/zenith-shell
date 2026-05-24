@@ -1,7 +1,11 @@
-setup matugen to get color scheme/pallete
 add a login prompt on boot (optional)
 improve boot time(systemd-analyze critical-chain)
 menu  config editor
 emoji selector
-cheatsheet
-
+new email detector + notification client
+settings app
+induvisual menus with keybinds
+todolist
+add a MediaFocus toggle to media widget
+maybe add a fade when any audio resumes
+maybe 

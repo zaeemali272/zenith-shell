@@ -27,7 +27,7 @@ PanelWindow {
         right: popupStack.isFullscreen ? Theme.scaled(5) : Theme.scaled(10)
     }
 
-    implicitWidth: Theme.scaled(370)
+    implicitWidth: Theme.scaled(400)
     // Use a stable height to avoid Wayland resize overhead during hover expansion
     implicitHeight: activeNotifications.count > 0 ? Theme.scaled(800) : 0
     
@@ -46,7 +46,7 @@ PanelWindow {
     // The layout remains "the same"
     ColumnLayout {
         id: mainColumn
-        width: Theme.scaled(370)
+        width: Theme.scaled(400)
         spacing: Theme.scaled(10)
 
         Repeater {

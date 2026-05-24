@@ -9,6 +9,11 @@ import Quickshell.Hyprland
 PopupWindow {
     id: root
 
+    onVisibleChanged: {
+        if (visible) MenuService.register(root)
+        else MenuService.unregister(root)
+    }
+
     property var zenithData: ({exists: false, updates: 0, commits: []})
     property var shellData: ({exists: false, updates: 0, commits: []})
 
@@ -18,13 +23,17 @@ PopupWindow {
     implicitWidth: menuSurface.implicitWidth
     implicitHeight: menuSurface.implicitHeight + Theme.scaled(20)
 
-    grabFocus: true 
+    grabFocus: false 
 
     HyprlandFocusGrab {
         id: grab
         active: root.visible
-        windows: [root]
+        windows: [root, notificationPopup, osdPopup]
         onCleared: root.visible = false
+    }
+
+    Keys.onPressed: (event) => {
+        if (event.key === Qt.Key_Escape) root.visible = false
     }
 
     function openAt(visualParent) {

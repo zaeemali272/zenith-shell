@@ -9,31 +9,26 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
 import "./components" as Comp
-
 PopupWindow {
     id: root
 
     property var parentWindow: null
     visible: false
     color: "transparent"
-    
-    grabFocus: true
+
+    grabFocus: false
 
     implicitWidth: Theme.scaled(650) 
     implicitHeight: Theme.scaled(600)
 
-    HyprlandFocusGrab {
-        active: root.visible
-        windows: [root]
-        onCleared: root.visible = false
-    }
-    
     onVisibleChanged: {
         if (visible) {
+            MenuService.register(root);
             QuickSettingsService.qsVisible = true;
             mainContent.forceActiveFocus();
             showAnim.restart();
         } else {
+            MenuService.unregister(root);
             QuickSettingsService.qsVisible = false;
             mainContent.opacity = 0;
             mainContent.scale = 0.95;
