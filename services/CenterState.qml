@@ -8,6 +8,7 @@ Item {
     id: root
 
     property var menuRef: null
+    property var mediaPopupRef: null
     property bool qsVisible: false
     property bool isSticky: false
     property bool isHoveringMenu: false
@@ -43,6 +44,10 @@ Item {
 
     function open() {
         isSticky = true;
+        
+        // Ensure others are closed
+        if (typeof QuickSettingsService !== "undefined") QuickSettingsService.close();
+        
         if (menuRef) menuRef.visible = true;
     }
 
@@ -76,6 +81,7 @@ Item {
 
     function close() {
         if (menuRef) menuRef.visible = false;
+        if (mediaPopupRef) mediaPopupRef.visible = false;
         isSticky = false;
         hideTimer.stop();
     }

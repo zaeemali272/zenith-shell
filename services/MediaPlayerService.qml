@@ -12,6 +12,7 @@ Singleton {
     property bool isActuallyPlaying: false
     property real currentPos: 0
     property string currentTrackId: ""
+    property bool mediaFocus: true
     
     // --- "Unbreakable" Variables ---
     property var _playerStack: ([])        
@@ -68,7 +69,7 @@ Singleton {
     }
 
     function manageFocus(newPlayer) {
-        if (!newPlayer || !_initialized || !GeneralSettings.autoManageMediaFocus) return;
+        if (!newPlayer || !_initialized || !GeneralSettings.autoManageMediaFocus || !service.mediaFocus) return;
         if (newPlayer.playbackState !== MprisPlaybackState.Playing) return;
         if (isBlacklisted(newPlayer)) return;
 
@@ -176,7 +177,7 @@ Singleton {
     Instantiator {
         model: Mpris.players
         onObjectAdded: (key, obj) => {
-            if (!service.trackedPlayer || obj.playbackState === MprisPlaybackState.Playing)
+            if (service.mediaFocus && (!service.trackedPlayer || obj.playbackState === MprisPlaybackState.Playing))
                 updateTrackedPlayer(obj);
         }
         onObjectRemoved: (key, obj) => {
@@ -202,7 +203,7 @@ Singleton {
             function onPlaybackStateChanged() {
                 if (modelData.playbackState === MprisPlaybackState.Playing) {
                     updateTrackedPlayer(modelData);
-                } else if (service.trackedPlayer === modelData) {
+                } else if (service.trackedPlayer === modelData && service.mediaFocus) {
                     let players = Mpris.players.values;
                     let active = players.find(p => p !== modelData && p.playbackState === MprisPlaybackState.Playing && !isBlacklisted(p));
                     
@@ -245,6 +246,7 @@ Singleton {
     }
 
     Component.onCompleted: {
+        if (!service.mediaFocus) return;
         let players = Mpris.players.values;
         let active = players.find(p => p.playbackState === MprisPlaybackState.Playing && !isBlacklisted(p));
         if (active) {

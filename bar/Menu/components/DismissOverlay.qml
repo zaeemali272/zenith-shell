@@ -14,6 +14,13 @@ PanelWindow {
     WlrLayershell.exclusiveZone: 0
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
+    anchors {
+        top: true
+        bottom: true
+        left: true
+        right: true
+    }
+
     color: "transparent"
     visible: MenuService.openMenus.length > 0
 

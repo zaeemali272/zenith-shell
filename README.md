@@ -9,6 +9,30 @@ A dynamic, aesthetically pleasing shell built with [Quickshell](https://github.c
 - **Media Player**: MPRIS support.
 - **System Stats**: CPU, RAM, Temperature monitoring.
 
+---
+
+## 📸 Showcase
+
+See Zenith Shell in action:
+
+[![Zenith Showcase](https://img.youtube.com/vi/09G4APMCORQ/0.jpg)](https://www.youtube.com/watch?v=09G4APMCORQ)
+
+### Gallery
+
+| ![Desktop](assets/screenshots/2026-05-25-113908_hyprshot.png) | ![Dashboard](assets/screenshots/2026-05-25-113837_hyprshot.png) |
+|:---:|:---:|
+| **Clean Desktop & Bar** | **System Dashboard** |
+
+| ![Media Player](assets/screenshots/2026-05-25-113807_hyprshot.png) | ![Overview](assets/screenshots/2026-05-25-113549_hyprshot.png) |
+|:---:|:---:|
+| **Media Player Widget** | **Workspace Overview** |
+
+| ![Cheatsheet](assets/screenshots/2026-05-25-113535_hyprshot.png) | ![Terminal](assets/screenshots/2026-05-25-113646_hyprshot.png) |
+|:---:|:---:|
+| **Keybinds Cheatsheet** | **Kitty Terminal** |
+
+---
+
 ## Dependencies
 
 Ensure you have the following installed on your system:
@@ -65,5 +89,5 @@ This script will automatically detect the installation path.
 
 ## Configuration
 
-The shell uses `swww` for wallpapers. Ensure `swww-daemon` is running or let the shell start it.
+The shell uses `awww` for wallpapers. Ensure `awww-daemon` is running or let the shell start it.
 Wifi configuration uses `iwctl`. You might need sudo privileges or be in the `network` group.

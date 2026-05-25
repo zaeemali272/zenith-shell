@@ -1,4 +1,5 @@
 add a login prompt on boot (optional)
+create our own keyring prompt
 improve boot time(systemd-analyze critical-chain)
 menu  config editor
 emoji selector
@@ -6,6 +7,7 @@ new email detector + notification client
 settings app
 induvisual menus with keybinds
 todolist
-add a MediaFocus toggle to media widget
 maybe add a fade when any audio resumes
-maybe 
+single app notification collapse
+maybe show focused app icon instead of the workspace number when opened
+combine mic + screen media

@@ -65,6 +65,13 @@ PanelWindow {
             }
         }
 
+        // --- DISMISS ON BAR CLICK ---
+        MouseArea {
+            anchors.fill: parent
+            z: -1 // Bottom of stack, handles clicks on empty space
+            onClicked: MenuService.closeAll()
+        }
+
         Component.onCompleted: {
             if (GeneralSettings.barEntryAnimation) {
                 barEntryAnim.start();
@@ -92,16 +99,25 @@ PanelWindow {
         // --- PERFECT CENTER ---
         Center {
             id: centerSide
-            anchors.horizontalCenter: parent.horizontalCenter
             anchors.verticalCenter: parent.verticalCenter
             controlCenterMenuRef: bar.controlCenterMenuRef
             opacity: GeneralSettings.barEntryAnimation ? 0 : 1
             
-            // Optional: Hide if overlapping with side widgets
-            visible: {
+            x: {
+                let preferredX = (parent.width - width) / 2;
                 let leftBound = leftSide.x + leftSide.width + Theme.pillGap;
-                let rightBound = rightLayout.x - Theme.pillGap;
-                return (x >= leftBound) && (x + width <= rightBound);
+                let rightBound = rightLayout.x - width - Theme.pillGap;
+                
+                // If it can fit in the center, put it there.
+                // If the right side is pushing it, move it left.
+                // But don't let it overlap the left side.
+                return Math.max(leftBound, Math.min(preferredX, rightBound));
+            }
+
+            // Hide only if the available space is smaller than the widget itself
+            visible: {
+                let availableSpace = rightLayout.x - (leftSide.x + leftSide.width) - (Theme.pillGap * 2);
+                return width <= availableSpace;
             }
         }
 

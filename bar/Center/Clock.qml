@@ -45,6 +45,13 @@ Rectangle {
     MouseArea {
         anchors.fill: parent
         hoverEnabled: true
+        z: 10 // Ensure MouseArea is on top for hover/click
+        onEntered: {
+            clock.color = Theme.pillHoverColor;
+        }
+        onExited: {
+            clock.color = Theme.pillColor;
+        }
         onClicked: {
             CenterState.toggle();
         }
