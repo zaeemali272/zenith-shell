@@ -10,17 +10,27 @@ import Quickshell.Hyprland
 import Quickshell.Wayland
 import "./components"
 
-PopupWindow {
+PanelWindow {
     id: root
 
     property var parentWindow: null
     visible: false
     color: "transparent"
 
-    grabFocus: false
+    WlrLayershell.layer: WlrLayer.Overlay
+    WlrLayershell.exclusiveZone: 0
+    WlrLayershell.keyboardFocus: (wifiContent.isInputActive) ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    WlrLayershell.namespace: "quicksettings"
 
-    implicitWidth: Theme.scaled(650) 
-    implicitHeight: Theme.scaled(600)
+    // Positioning using anchors and margins
+    anchors.top: true
+    anchors.right: true
+    WlrLayershell.margins.top: Theme.barMarginTop + 4
+    WlrLayershell.margins.right: 10
+
+    Keys.onPressed: (event) => {
+        if (event.key === Qt.Key_Escape) QuickSettingsService.close()
+    }
 
     onVisibleChanged: {
         if (visible) {
@@ -44,16 +54,8 @@ PopupWindow {
         NumberAnimation { target: mainTranslate; property: "y"; from: 30; to: 0; duration: 500; easing.type: Easing.OutBack }
     }
 
-    // Positioning
-    anchor.window: parentWindow
-    anchor.edges: Edges.Bottom | Edges.Right 
-    anchor.gravity: Edges.Bottom | Edges.Right
-    
-    anchor.rect: {
-        const barHeight = (parentWindow && parentWindow.height > 0) ? parentWindow.height : 45;
-        const barWidth = (parentWindow && parentWindow.width > 0) ? parentWindow.width : 1920;
-        return Qt.rect(barWidth - implicitWidth - 10, barHeight + 10, 0, 0);
-    }
+    implicitWidth: Theme.scaled(650) 
+    implicitHeight: Theme.scaled(600)
 
     Rectangle {
         id: mainContent
@@ -176,7 +178,7 @@ PopupWindow {
 
                     NumberAnimation { id: fadeAnim; target: contentStack; property: "opacity"; from: 0; to: 1; duration: 300 }
 
-                    WifiContent { }
+                    WifiContent { id: wifiContent }
                     BluetoothContent { }
                     VolumeContent { }
                     PowerProfileContent { }

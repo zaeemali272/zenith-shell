@@ -84,7 +84,7 @@ Item {
         implicitWidth: menuSurface.implicitWidth
         implicitHeight: menuSurface.implicitHeight + Theme.scaled(20)
 
-        grabFocus: true 
+        grabFocus: false 
 
         HyprlandFocusGrab {
             id: grab

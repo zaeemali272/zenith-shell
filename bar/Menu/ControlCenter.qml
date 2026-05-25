@@ -10,7 +10,7 @@ import Quickshell.Hyprland
 import Quickshell.Wayland
 import "../../services"
 
-PopupWindow {
+PanelWindow {
     id: root
     
     Keys.onPressed: (event) => {
@@ -20,10 +20,18 @@ PopupWindow {
     property var parentWindow: null
     visible: false
     color: "transparent"
-    grabFocus: false
+    
+    WlrLayershell.layer: WlrLayer.Overlay
+    WlrLayershell.exclusiveZone: 0
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+    WlrLayershell.namespace: "controlcenter"
 
     implicitWidth: Theme.scaled(900)
     implicitHeight: Theme.scaled(650)
+
+    // Centered positioning: top anchor, no left/right anchors
+    anchors.top: true
+    WlrLayershell.margins.top: Theme.barMarginTop + 4
 
     onVisibleChanged: {
         if (visible) {
@@ -44,17 +52,6 @@ PopupWindow {
         NumberAnimation { target: mainTranslate; property: "y"; from: -20; to: 0; duration: 500; easing.type: Easing.OutBack }
     }
 
-    anchor.window: parentWindow
-    anchor.edges: Edges.Top
-    
-    anchor.rect: {
-        const barHeight = (parentWindow && parentWindow.height > 0) ? parentWindow.height : 45;
-        const barWidth = (parentWindow && parentWindow.width > 0) ? parentWindow.width : 1920;
-        let targetX = (barWidth - root.implicitWidth) / 2;
-        return Qt.rect(Math.max(10, Math.min(barWidth - root.implicitWidth - 10, targetX)), barHeight + 8, 0, 0);
-    }
-
-    
     Rectangle {
         id: mainContent
         width: root.width
