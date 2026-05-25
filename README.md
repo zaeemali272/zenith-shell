@@ -11,25 +11,36 @@ A dynamic, aesthetically pleasing shell built with [Quickshell](https://github.c
 
 ---
 
-## 📸 Showcase
+## 🎥 Quick Overview
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=09G4APMCORQ">▶️ Watch Zenith Shell Showcase</a>
+</p>
 
-See Zenith Shell in action:
+### 📸 Screenshots
 
-[![Zenith Showcase](https://img.youtube.com/vi/09G4APMCORQ/0.jpg)](https://www.youtube.com/watch?v=09G4APMCORQ)
+<details>
+<summary>✨ Desktop & UI</summary>
+<p align="center">
+  <img src="assets/screenshots/2026-05-25-113908_hyprshot.png" width="800"><br>
+  <img src="assets/screenshots/2026-05-25-113646_hyprshot.png" width="800">
+</p>
+</details>
 
-### Gallery
+<details>
+<summary>📊 System Dashboard & Media</summary>
+<p align="center">
+  <img src="assets/screenshots/2026-05-25-113837_hyprshot.png" width="800"><br>
+  <img src="assets/screenshots/2026-05-25-113807_hyprshot.png" width="800">
+</p>
+</details>
 
-| ![Desktop](assets/screenshots/2026-05-25-113908_hyprshot.png) | ![Dashboard](assets/screenshots/2026-05-25-113837_hyprshot.png) |
-|:---:|:---:|
-| **Clean Desktop & Bar** | **System Dashboard** |
-
-| ![Media Player](assets/screenshots/2026-05-25-113807_hyprshot.png) | ![Overview](assets/screenshots/2026-05-25-113549_hyprshot.png) |
-|:---:|:---:|
-| **Media Player Widget** | **Workspace Overview** |
-
-| ![Cheatsheet](assets/screenshots/2026-05-25-113535_hyprshot.png) | ![Terminal](assets/screenshots/2026-05-25-113646_hyprshot.png) |
-|:---:|:---:|
-| **Keybinds Cheatsheet** | **Kitty Terminal** |
+<details>
+<summary>⌨️ Overview & Keybinds</summary>
+<p align="center">
+  <img src="assets/screenshots/2026-05-25-113549_hyprshot.png" width="800"><br>
+  <img src="assets/screenshots/2026-05-25-113535_hyprshot.png" width="800">
+</p>
+</details>
 
 ---
 
