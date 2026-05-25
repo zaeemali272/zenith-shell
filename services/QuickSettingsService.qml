@@ -47,6 +47,10 @@ Item {
         if (tab) activeTab = tab;
         if (rect !== undefined) anchorRect = rect;
         isSticky = true;
+        
+        // Ensure others are closed
+        if (typeof CenterState !== "undefined") CenterState.close();
+        
         if (menuRef) menuRef.visible = true;
     }
 
@@ -80,6 +84,7 @@ Item {
 
     function close() {
         if (menuRef) menuRef.visible = false;
+        if (typeof CenterState !== "undefined" && CenterState.mediaPopupRef) CenterState.mediaPopupRef.visible = false;
         isSticky = false;
         hideTimer.stop();
     }

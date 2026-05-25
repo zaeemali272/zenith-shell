@@ -8,7 +8,8 @@ import QtQuick.Controls
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
-import "./components" as Comp
+import "./components"
+
 PopupWindow {
     id: root
 
@@ -170,20 +171,19 @@ PopupWindow {
                     // Calculate height dynamically based on the current child
                     height: children[currentIndex] ? children[currentIndex].implicitHeight : 500
                     currentIndex: ["network", "bluetooth", "volume", "powerprofile", "resources", "battery", "power"].indexOf(QuickSettingsService.activeTab)
-                    
+
                     onCurrentIndexChanged: fadeAnim.restart()
-                    
+
                     NumberAnimation { id: fadeAnim; target: contentStack; property: "opacity"; from: 0; to: 1; duration: 300 }
 
-                    Comp.WifiContent { }
-                    Comp.BluetoothContent { }
-                    Comp.VolumeContent { }
-                    Comp.PowerProfileContent { }
-                    Comp.ResourcesContent { }
-                    Comp.BatteryContent { }
-                    Comp.PowerContent { }
-                }
-            }
+                    WifiContent { }
+                    BluetoothContent { }
+                    VolumeContent { }
+                    PowerProfileContent { }
+                    ResourcesContent { }
+                    BatteryContent { }
+                    PowerContent { }
+                }            }
         }
     }
 }

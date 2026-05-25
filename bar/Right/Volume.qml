@@ -56,41 +56,40 @@ Item {
             // Tell the service to refresh immediately for a snappy UI
             VolumeService.update();
         }
-    }
 
-    RowLayout {
-        id: volumeContent
-        parent: pill
-        anchors.centerIn: parent
-        spacing: Theme.pillGap
+        RowLayout {
+            id: volumeContent
+            anchors.centerIn: parent
+            spacing: Theme.pillGap
 
-        Text {
-            visible: root.micActive
-            text: VolumeService.micMuted ? "\uf131" : "\uf130"
-            font.family: Theme.iconFont
-            font.pixelSize: Theme.iconSize
-            color: Theme.accentColor // Make it stand out (e.g., Red or Green)
-        }
+            Text {
+                visible: root.micActive
+                text: VolumeService.micMuted ? "\uf131" : "\uf130"
+                font.family: Theme.iconFont
+                font.pixelSize: Theme.iconSize
+                color: Theme.accentColor // Make it stand out (e.g., Red or Green)
+            }
 
-        Text {
-            visible: root.btActive
-            text: Theme.btIcon
-            font.family: Theme.iconFont
-            font.pixelSize: Theme.iconSize
-            color: root.activeColor
-        }
+            Text {
+                visible: root.btActive
+                text: Theme.btIcon
+                font.family: Theme.iconFont
+                font.pixelSize: Theme.iconSize
+                color: root.activeColor
+            }
 
-        Text {
-            text: volumeIcon(root.volume, root.muted)
-            font.family: Theme.iconFont
-            font.pixelSize: Theme.iconSize
-            color: root.activeColor
-        }
+            Text {
+                text: volumeIcon(root.volume, root.muted)
+                font.family: Theme.iconFont
+                font.pixelSize: Theme.iconSize
+                color: root.activeColor
+            }
 
-        Text {
-            text: root.muted ? "Muted" : root.volume + "%"
-            font.pixelSize: Theme.fontSize
-            color: root.activeColor
+            Text {
+                text: root.muted ? "Muted" : root.volume + "%"
+                font.pixelSize: Theme.fontSize
+                color: root.activeColor
+            }
         }
     }
 

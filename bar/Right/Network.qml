@@ -89,11 +89,6 @@ Item {
                 QuickSettingsService.toggle("network"); 
         }
 
-        onEntered: {
-            if (QuickSettingsService.qsVisible || CenterState.qsVisible)
-                QuickSettingsService.hoverOpen("network");
-        }
-
         Behavior on color { ColorAnimation { duration: 300 } }
 
         RowLayout {

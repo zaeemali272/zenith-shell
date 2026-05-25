@@ -66,6 +66,37 @@ PopupWindow {
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: 20
+            spacing: 10
+
+            // Header
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 8
+                Text { text: "󰎆"; font.family: Theme.iconFont; color: Theme.blue; font.pixelSize: 14 }
+                Text { text: "MEDIA PLAYER"; color: Theme.subtext1; font.pixelSize: 9; font.weight: Font.Black; font.letterSpacing: 1 }
+                
+                Item { Layout.fillWidth: true }
+                
+                // Toggle Button
+                Rectangle {
+                    width: Theme.scaled(40); height: Theme.scaled(20); radius: Theme.scaled(10)
+                    color: MediaPlayerService.mediaFocus ? Theme.blue : Theme.surface1
+                    
+                    Text {
+                        anchors.centerIn: parent
+                        text: MediaPlayerService.mediaFocus ? "󰖳" : "󰖲"
+                        font.family: Theme.iconFont
+                        color: MediaPlayerService.mediaFocus ? Theme.base : Theme.text
+                        font.pixelSize: 12
+                    }
+                    
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: MediaPlayerService.mediaFocus = !MediaPlayerService.mediaFocus
+                    }
+                }
+            }
+
             MprisPlayer {
                 Layout.fillWidth: true
                 Layout.fillHeight: true

@@ -13,6 +13,10 @@ Scope {
     readonly property var _battery: BatteryService
     readonly property var _media: MediaPlayerService
 
+    DismissOverlay {
+        id: dismissOverlay
+    }
+
     Bar {
         id: bar
         controlCenterMenuRef: controlCenter
@@ -36,9 +40,5 @@ Scope {
 
     OsdPopup {
         id: osdPopup
-    }
-
-    DismissOverlay {
-        id: dismissOverlay
     }
 }

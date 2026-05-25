@@ -32,6 +32,7 @@ Rectangle {
         id: contentItem
 
         anchors.centerIn: parent
+        // Mouse-transparency not strictly needed if MouseArea is on top with high Z
 
         RowLayout {
             id: fallback
@@ -64,6 +65,7 @@ Rectangle {
         id: mouseArea
         anchors.fill: parent
         hoverEnabled: true
+        z: 10 // Highest Z-index to ensure it captures events over everything inside
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         onEntered: {
             pill.color = hoverColor;

@@ -124,17 +124,29 @@ Rectangle {
         }
     }
 
-    Menu.MediaPlayerPopup { id: mediaPopup; parentWindow: bar }
+    Menu.MediaPlayerPopup { 
+        id: mediaPopup; 
+        parentWindow: bar 
+        Component.onCompleted: CenterState.mediaPopupRef = mediaPopup
+    }
 
     MouseArea {
         anchors.fill: parent
         hoverEnabled: true
-        onEntered: mediaWidget.color = Theme.pillHoverColor
+        z: 10
+        onEntered: {
+            mediaWidget.color = Theme.pillHoverColor;
+        }
         onExited: mediaWidget.color = Theme.pillColor
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         onClicked: (mouse) => {
-            if (mouse.button === Qt.LeftButton) mediaPopup.visible = !mediaPopup.visible;
-            else if (mouse.button === Qt.RightButton && trackedPlayer) {
+            if (mouse.button === Qt.LeftButton) {
+                if (!mediaPopup.visible) {
+                    QuickSettingsService.close();
+                    CenterState.close();
+                }
+                mediaPopup.visible = !mediaPopup.visible;
+            } else if (mouse.button === Qt.RightButton && trackedPlayer) {
                 if (trackedPlayer.playPause) trackedPlayer.playPause();
                 else if (mediaWidget.isActuallyPlaying) trackedPlayer.pause();
                 else trackedPlayer.play();
