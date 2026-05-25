@@ -12,10 +12,7 @@ A dynamic, aesthetically pleasing shell built with [Quickshell](https://github.c
 ---
 
 ## 🎥 Quick Overview
-<p align="center">
   <[![Zenith Showcase](https://img.youtube.com/vi/09G4APMCORQ/0.jpg)](https://www.youtube.com/watch?v=09G4APMCORQ)
-</p>
-
 ### 📸 Screenshots
 
 <details>
