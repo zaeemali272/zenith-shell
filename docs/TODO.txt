@@ -11,3 +11,5 @@ maybe add a fade when any audio resumes
 single app notification collapse
 maybe show focused app icon instead of the workspace number when opened
 combine mic + screen media
+Add events in calender
+Add custom location in weather, and even fix the automatic location to be precise

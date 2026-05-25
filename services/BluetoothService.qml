@@ -15,9 +15,9 @@ Item {
     property bool serviceActive: true
     property string state: "Idle" // Idle, Scanning, Connecting, Disconnecting, Powering
     
-    property bool busy: actionExec.running || powerExec.running || scanExec.running || 
-                       statusCheck.running || deviceRefresh.running || rfkillCheck.running || 
-                       serviceCheck.running || infoExec.running || oneShotScan.running
+    readonly property bool isPerformingAction: actionExec.running || powerExec.running || scanExec.running || oneShotScan.running || _actionInProgress
+    readonly property bool isRefreshing: statusCheck.running || deviceRefresh.running || rfkillCheck.running || serviceCheck.running || infoExec.running
+    property bool busy: isPerformingAction || isRefreshing
     
     property bool _actionInProgress: false
 
@@ -32,6 +32,7 @@ Item {
     }
 
     function refresh() {
+        if (isRefreshing) return;
         log("Manual refresh triggered");
         serviceCheck.running = false;
         serviceCheck.running = true;
@@ -228,35 +229,48 @@ Item {
     }
 
     function togglePower() {
+        if (isPerformingAction) return;
         let newState = !powered;
         root.state = newState ? "Powering On" : "Powering Off";
         _actionInProgress = true;
-        powerExec.command = ["sh", "-c", `echo -e "power ${newState ? "on" : "off"}\\nquit" | bluetoothctl`];
+        
+        // Optimistic update for instant feedback
+        root.powered = newState;
+        
+        powerExec.command = ["bluetoothctl", "power", newState ? "on" : "off"];
         powerExec.running = true;
     }
 
     function toggleScan() {
+        if (isPerformingAction) return;
         let target = !scanning;
         root.state = target ? "Starting Scan" : "Stopping Scan";
-        scanExec.command = ["sh", "-c", `echo -e "scan ${target ? "on" : "off"}\\nquit" | bluetoothctl`];
+        
+        // Optimistic update
+        root.scanning = target;
+        
+        scanExec.command = ["bluetoothctl", "scan", target ? "on" : "off"];
         scanExec.running = true;
     }
 
     function startScan() {
-        if (!powered || scanning) return;
+        if (!powered || scanning || isPerformingAction) return;
         root.state = "Starting Scan";
-        scanExec.command = ["sh", "-c", "echo -e 'scan on\\nquit' | bluetoothctl"];
+        root.scanning = true;
+        scanExec.command = ["bluetoothctl", "scan", "on"];
         scanExec.running = true;
     }
 
     function stopScan() {
-        if (!scanning) return;
+        if (!scanning || isPerformingAction) return;
         root.state = "Stopping Scan";
-        scanExec.command = ["sh", "-c", "echo -e 'scan off\\nquit' | bluetoothctl"];
+        root.scanning = false;
+        scanExec.command = ["bluetoothctl", "scan", "off"];
         scanExec.running = true;
     }
 
     function action(mode, addr) {
+        if (isPerformingAction) return;
         root.state = mode.charAt(0).toUpperCase() + mode.slice(1) + "ing...";
 
         let cmd = "";
@@ -276,9 +290,27 @@ Item {
 
 
     Process { id: oneShotScan; command: ["sh", "-c", "bluetoothctl --timeout 10 scan on & bluetoothctl --timeout 10 discoverable on; wait"] }
-    Process { id: powerExec; onExited: { _actionInProgress = false; root.state = "Idle"; refresh(); } }
-    Process { id: scanExec; onExited: { root.state = "Idle"; refresh(); } }
-    Process { id: actionExec; onExited: { root.state = "Idle"; refresh(); } }
+    
+    // Post-action polling to ensure state is eventually correct
+    Timer {
+        id: postActionPoll
+        interval: 1000
+        repeat: true
+        property int count: 0
+        onTriggered: {
+            refresh();
+            count++;
+            if (count >= 3) stop();
+        }
+        function trigger() {
+            count = 0;
+            restart();
+        }
+    }
+
+    Process { id: powerExec; onExited: { _actionInProgress = false; root.state = "Idle"; postActionPoll.trigger(); } }
+    Process { id: scanExec; onExited: { root.state = "Idle"; postActionPoll.trigger(); } }
+    Process { id: actionExec; onExited: { root.state = "Idle"; postActionPoll.trigger(); } }
 
     Timer {
         id: scanUpdateTimer

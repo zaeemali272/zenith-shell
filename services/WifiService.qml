@@ -17,6 +17,8 @@ Item {
     property string txBitrate: ""
     property string frequency: ""
 
+    property var savedSecrets: ({})
+
     signal connectionFailed(string ssid)
     signal connectionSuccess(string ssid)
 
@@ -27,6 +29,38 @@ Item {
         startHardwareScan();
         updateKnownNetworks();
         updateStationInfo();
+        loadSecrets();
+    }
+
+    function loadSecrets() {
+        secretsLoader.running = false;
+        secretsLoader.running = true;
+    }
+
+    function saveSecret(ssid, password) {
+        if (!ssid || !password) return;
+        let temp = {};
+        for (let key in savedSecrets) {
+            temp[key] = savedSecrets[key];
+        }
+        temp[ssid] = password;
+        savedSecrets = temp;
+        
+        secretsSaver.command = ["sh", "-c", "echo '" + JSON.stringify(savedSecrets).replace(/'/g, "'\\''") + "' > wifi_secrets.json"];
+        secretsSaver.running = true;
+    }
+
+    function removeSecret(ssid) {
+        if (!ssid) return;
+        let temp = {};
+        for (let key in savedSecrets) {
+            if (key !== ssid) {
+                temp[key] = savedSecrets[key];
+            }
+        }
+        savedSecrets = temp;
+        secretsSaver.command = ["sh", "-c", "echo '" + JSON.stringify(savedSecrets).replace(/'/g, "'\\''") + "' > wifi_secrets.json"];
+        secretsSaver.running = true;
     }
 
     function startHardwareScan() {
@@ -58,9 +92,15 @@ Item {
 
     function connect(ssid, password) {
         _pendingConnectSsid = ssid;
+        if (password && password !== "") {
+            saveSecret(ssid, password);
+        }
+        
         executor.running = false;
         if (password && password !== "") {
             executor.command = ["sh", "-c", 'iwctl station $(ls /sys/class/net | grep ^wl | head -n1) connect "$1" --passphrase "$2"', "sh", ssid, password];
+        } else if (savedSecrets[ssid]) {
+            executor.command = ["sh", "-c", 'iwctl station $(ls /sys/class/net | grep ^wl | head -n1) connect "$1" --passphrase "$2"', "sh", ssid, savedSecrets[ssid]];
         } else {
             executor.command = ["sh", "-c", 'iwctl station $(ls /sys/class/net | grep ^wl | head -n1) connect "$1"', "sh", ssid];
         }
@@ -75,12 +115,31 @@ Item {
 
     function forgetNetwork(ssid) {
         if (!ssid) return;
+        removeSecret(ssid);
         executor.running = false;
         executor.command = ["sh", "-c", 'iwctl known-networks "$1" forget; iwctl station $(ls /sys/class/net | grep ^wl | head -n1) disconnect', "sh", ssid];
         executor.running = true;
     }
 
     // --- Processes ---
+
+    Process {
+        id: secretsLoader
+        command: ["sh", "-c", "cat wifi_secrets.json 2>/dev/null || echo '{}'"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    service.savedSecrets = JSON.parse(text);
+                } catch(e) {
+                    service.savedSecrets = {};
+                }
+            }
+        }
+    }
+
+    Process {
+        id: secretsSaver
+    }
 
     Process {
         id: scanProcess
@@ -143,17 +202,16 @@ Item {
                     let trimmed = line.trim();
                     if (!trimmed || trimmed.startsWith('Network name') || trimmed.startsWith('---') || trimmed.includes('Available networks')) continue;
                     
-                    // Column 1 is indicators (starts at 0, usually 4-6 chars wide)
-                    let indicatorPart = rawLine.substring(0, 6);
-                    let isConnected = indicatorPart.includes('>');
+                    // The indicator part usually contains '>' for the connected network
+                    let isConnected = rawLine.trim().startsWith('>');
                     
-                    let contentPart = rawLine.substring(6).trim();
+                    let contentPart = isConnected ? rawLine.trim().substring(1).trim() : rawLine.trim();
                     let parts = contentPart.split(/\s{2,}/);
                     
                     if (parts.length >= 2) {
                         let ssid = parts[0].trim();
                         let security = parts[1].trim().toLowerCase();
-                        let signalStr = parts[parts.length - 1]; // Last part is usually signal like ****
+                        let signalStr = parts[parts.length - 1]; 
                         let signal = 0;
                         if (signalStr.includes('****')) signal = 4;
                         else if (signalStr.includes('***')) signal = 3;
@@ -163,14 +221,17 @@ Item {
                         temp.push({
                             "ssid": ssid,
                             "security": security,
-                            "connected": isConnected || (service.currentSsid === ssid && service.currentState === "connected"),
+                            "connected": isConnected, 
                             "signal": signal
                         });
                     }
                 }
-                // Sort: Connected first, then by signal strength, then alphabetically
+                // Sort: Connected first, then known networks, then by signal strength
                 temp.sort((a, b) => {
-                    if (a.connected !== b.connected) return b.connected ? 1 : -1;
+                    if (a.connected !== b.connected) return a.connected ? -1 : 1;
+                    let aKnown = service.knownNetworks[a.ssid] ? 1 : 0;
+                    let bKnown = service.knownNetworks[b.ssid] ? 1 : 0;
+                    if (aKnown !== bKnown) return bKnown - aKnown;
                     if (a.signal !== b.signal) return b.signal - a.signal;
                     return a.ssid.localeCompare(b.ssid);
                 });
@@ -216,4 +277,18 @@ Item {
     }
     
     Component.onCompleted: service.refresh()
+
+    Timer {
+        id: statusPollTimer
+        interval: (service.currentState === "associating" || service.currentState === "authenticating") ? 1000 : 5000
+        running: true
+        repeat: true
+        onTriggered: {
+            service.updateStationInfo();
+            // If we just got an IP, refresh the full list to show the '>' indicator
+            if (service.currentState === "connected" && service.ipv4Address !== "") {
+                service.updateNetworkList();
+            }
+        }
+    }
 }

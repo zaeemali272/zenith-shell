@@ -10,7 +10,7 @@ PanelWindow {
     implicitWidth: screen ? screen.width : 1920
     implicitHeight: screen ? screen.height : 1080
 
-    WlrLayershell.layer: WlrLayer.Overlay
+    WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.exclusiveZone: 0
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
@@ -27,6 +27,7 @@ PanelWindow {
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton | Qt.RightButton
+        hoverEnabled: false // Ensure hover events pass through
         
         onClicked: (mouse) => {
             MenuService.closeAll();
