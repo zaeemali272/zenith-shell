@@ -33,6 +33,7 @@ Item {
     Pill {
         id: pill
         anchors.fill: parent
+        z: 999
         icon: "󰚰"
         text: root.totalUpdates.toString()
         textColor: Theme.accentColor
@@ -42,6 +43,7 @@ Item {
         onClicked: (mouse) => {
             if (mouse.button === Qt.LeftButton) {
                 updateMenu.visible = !updateMenu.visible;
+                console.log("Update menu visible set to: " + updateMenu.visible);
             } else if (mouse.button === Qt.RightButton) {
                 updateProc.running = false;
                 updateProc.running = true;
