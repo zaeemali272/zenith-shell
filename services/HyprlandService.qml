@@ -7,8 +7,23 @@ pragma Singleton
 Item {
     id: root
 
+    property int _trigger: 0
+    function trigger() { _trigger++; }
+
+    Connections {
+        target: Hyprland
+        function onFocusedWorkspaceChanged() { root.trigger(); }
+        function onRawEvent(event) {
+            if (event.name === "activewindow" || event.name === "fullscreen") {
+                root.trigger();
+            }
+        }
+    }
+
     // Robust fullscreen detection
     readonly property bool isFullscreen: {
+        _trigger; // Force re-evaluation on compositor events
+        
         // 1. Track active window's direct fullscreen state
         const win = Hyprland.activeWindow;
         if (win && win.fullscreen) return true;

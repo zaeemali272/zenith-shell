@@ -50,6 +50,13 @@ PanelWindow {
         NumberAnimation { target: mainTranslate; property: "y"; from: 30; to: 0; duration: 500; easing.type: Easing.OutBack }
     }
 
+    // --- DISMISS ON OUTER CLICK ---
+    MouseArea {
+        anchors.fill: parent
+        z: -1
+        onClicked: QuickSettingsService.close()
+    }
+
     implicitWidth: Math.min(Theme.scaled(650), (screen ? screen.width : Theme.screenWidth) - 20)
     implicitHeight: Math.min(Theme.scaled(600), (screen ? screen.height : Theme.screenHeight) - Theme.barHeight - 20)
 

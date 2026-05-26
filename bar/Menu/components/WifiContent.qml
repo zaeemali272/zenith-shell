@@ -9,6 +9,9 @@ import "../../../services"
 Item {
     id: root
     
+    // Ensure FirewallService is available via singleton/import
+    property var firewallSvc: FirewallService
+    
     // Explicit sizing for ScrollView integration
     Layout.fillWidth: true
     Layout.fillHeight: true
@@ -67,6 +70,29 @@ Item {
                         color: Theme.surface2; font.pixelSize: Theme.scaled(10); font.weight: Font.Bold; font.letterSpacing: 1
                     }
                 }
+
+                // Firewall Toggle
+                Rectangle {
+                    width: Theme.scaled(120); height: Theme.scaled(44); radius: Theme.scaled(22)
+                    color: FirewallService.enabled ? Theme.green : Theme.surface1
+                    border.color: FirewallService.enabled ? Theme.green : Theme.glassBorder
+                    
+                    RowLayout {
+                        anchors.centerIn: parent; spacing: Theme.scaled(6)
+                        Text { 
+                            text: FirewallService.enabled ? "󰦝" : "󰦞"
+                            font.family: Theme.iconFont; font.pixelSize: Theme.scaled(16)
+                            color: FirewallService.enabled ? Theme.base : Theme.text
+                        }
+                        Text { 
+                            text: FirewallService.enabled ? "ON" : "OFF"
+                            color: FirewallService.enabled ? Theme.base : Theme.text
+                            font.pixelSize: Theme.scaled(10); font.weight: Font.Black; font.letterSpacing: 1
+                        }
+                    }
+                    MouseArea { anchors.fill: parent; onClicked: FirewallService.toggle(!FirewallService.enabled) }
+                }
+
 
                 // Speed Test
                 Rectangle {

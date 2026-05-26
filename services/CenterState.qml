@@ -51,6 +51,7 @@ Item {
         if (typeof QuickSettingsService !== "undefined") QuickSettingsService.close();
         
         if (menuRef) menuRef.visible = true;
+        qsVisible = true;
     }
 
     function hoverOpen() {
@@ -85,6 +86,7 @@ Item {
         if (menuRef) menuRef.visible = false;
         if (mediaPopupRef) mediaPopupRef.visible = false;
         isSticky = false;
+        qsVisible = false;
         hideTimer.stop();
     }
 }
