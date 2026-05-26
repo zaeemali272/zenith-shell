@@ -13,10 +13,6 @@ import "../../services"
 PanelWindow {
     id: root
     
-    Keys.onPressed: (event) => {
-        if (event.key === Qt.Key_Escape) root.visible = false
-    }
-
     property var parentWindow: null
     visible: false
     color: "transparent"
@@ -64,6 +60,10 @@ PanelWindow {
 
     Rectangle {
         id: mainContent
+        focus: true
+        Keys.onPressed: (event) => {
+            if (event.key === Qt.Key_Escape) root.visible = false
+        }
         
         // Centered relative to the screen width
         anchors.horizontalCenter: parent.horizontalCenter
@@ -73,7 +73,6 @@ PanelWindow {
         width: Math.min(Theme.scaled(900), (screen ? screen.width : Theme.screenWidth) - Theme.scaled(20))
         height: Math.min(Theme.scaled(650), (screen ? screen.height : Theme.screenHeight) - Theme.barHeight - Theme.scaled(20))
         
-        focus: true
         color: Theme.glassBackground
         radius: Theme.scaled(32)
         border.color: Theme.glassBorder

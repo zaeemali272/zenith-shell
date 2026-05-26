@@ -8,9 +8,6 @@ Row {
     id: root
     property var controlCenterMenuRef: null
 
-    Component.onCompleted: {
-        console.log("Center.qml controlCenterMenuRef on creation:", controlCenterMenuRef);
-    }
     spacing: Theme.pillSpacing
 
     // Timer Widget

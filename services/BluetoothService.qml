@@ -34,7 +34,6 @@ Item {
 
     function refresh() {
         if (isRefreshing) return;
-        log("Manual refresh triggered");
         serviceCheck.running = false;
         serviceCheck.running = true;
         enabledCheck.running = false;

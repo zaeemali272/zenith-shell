@@ -9,6 +9,8 @@ Item {
     id: root
 
     property var menuRef
+    
+    visible: BluetoothService.powered
 
     implicitHeight: Theme.pillHeight
     implicitWidth: pill.width

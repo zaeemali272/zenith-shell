@@ -37,10 +37,6 @@ PopupWindow {
         }
     }
 
-    Keys.onPressed: (event) => {
-        if (event.key === Qt.Key_Escape) root.closeAll()
-    }
-
     function openFor(item, visualParent, edges) {
         if (!item) return;
         let handle = item.menu !== undefined ? item.menu : item;
@@ -70,6 +66,9 @@ PopupWindow {
         border.width: 1
         radius: Theme.scaled(12)
         focus: true
+        Keys.onPressed: (event) => {
+            if (event.key === Qt.Key_Escape) root.closeAll()
+        }
 
         // --- WIDTH FIX ---
         // Increased min-width to 220 for better readability
