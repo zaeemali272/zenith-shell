@@ -15,15 +15,42 @@ Row {
 
     // Timer Widget
     Rectangle {
-        visible: ProductivityService.activeTimer !== null
-        width: timerText.implicitWidth + 20; height: Theme.pillHeight; radius: Theme.pillRadius
-        color: Theme.blue
+        visible: ProductivityService.running || ProductivityService.isBeeping
+        width: timerText.implicitWidth + Theme.scaled(20); height: Theme.pillHeight; radius: Theme.pillRadius
+        color: ProductivityService.isBeeping ? Theme.powerRed : (ProductivityService.running ? Theme.blue : Theme.surface1)
         anchors.verticalCenter: parent.verticalCenter
+        
+        // Add a simple pulse animation for when it's beeping
+        SequentialAnimation on opacity {
+            running: ProductivityService.isBeeping
+            loops: Animation.Infinite
+            NumberAnimation { from: 1.0; to: 0.5; duration: 500 }
+            NumberAnimation { from: 0.5; to: 1.0; duration: 500 }
+        }
+
         Text {
             id: timerText
             anchors.centerIn: parent
-            text: ProductivityService.activeTimer ? Math.floor(ProductivityService.activeTimer.remaining / 60) + ":" + (ProductivityService.activeTimer.remaining % 60).toString().padStart(2, '0') : ""
-            font.weight: Font.Black; font.pixelSize: 10; color: Theme.base
+            text: {
+                if (ProductivityService.isBeeping) return "󰂚 DONE";
+                let m = Math.floor(ProductivityService.remaining / 60);
+                let s = ProductivityService.remaining % 60;
+                return m + ":" + s.toString().padStart(2, '0');
+            }
+            font.weight: Font.Black; font.pixelSize: Theme.scaled(11); 
+            color: (ProductivityService.running || ProductivityService.isBeeping) ? Theme.base : Theme.text
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            onClicked: {
+                if (ProductivityService.isBeeping) {
+                    ProductivityService.dismissAlarm();
+                } else {
+                    CenterState.activeTab = "Pomodoro";
+                    CenterState.toggle();
+                }
+            }
         }
     }
 

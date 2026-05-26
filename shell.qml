@@ -12,6 +12,7 @@ Scope {
     readonly property var _notifications: NotificationService
     readonly property var _battery: BatteryService
     readonly property var _media: MediaPlayerService
+    readonly property var _productivity: ProductivityService
 
     DismissOverlay {
         id: dismissOverlay

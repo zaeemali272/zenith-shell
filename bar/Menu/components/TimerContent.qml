@@ -3,67 +3,164 @@ import QtQuick.Layouts
 import QtQuick.Controls
 import "../.."
 import "../../../"
+import "../../../services"
 
 Item {
     id: root
     
-    // Timer Slots Configuration
-    GridLayout {
-        anchors.fill: parent
-        columns: Theme.isSmallScreen ? (Theme.isPortrait ? 2 : 3) : 4
-        columnSpacing: Theme.scaled(20)
-        rowSpacing: Theme.scaled(20)
-        Repeater {
-            model: [3, 5, 8, 10, 15, 30, 45, 60, 90, 120, 150, 180]
-            delegate: Rectangle {
-                id: timerSlot
-                Layout.fillWidth: true
-                height: Theme.scaled(155)
-                radius: Theme.scaled(24)
-                color: timerSlot.running ? Theme.blue : Theme.glassBackground
-                border.color: timerSlot.running ? Theme.blue : Theme.glassBorder
-                border.width: 2
-                
-                property int initialDuration: modelData * 60
-                property int remaining: initialDuration
-                property bool running: false
-                
-                Timer {
-                    id: timerObj
-                    interval: 1000; running: timerSlot.running; repeat: true
-                    onTriggered: {
-                        if (timerSlot.remaining > 0) {
-                            timerSlot.remaining--;
-                        } else {
-                            timerSlot.running = false;
-                            timerSlot.remaining = timerSlot.initialDuration;
-                            // Notification is handled by background service or logic here if needed
-                        }
-                    }
-                }
+    Layout.fillWidth: true
+    Layout.fillHeight: true
 
-                ColumnLayout {
-                    anchors.centerIn: parent
-                    spacing: Theme.scaled(20)
-                    Text { 
-                        text: Math.floor(timerSlot.remaining / 60) + ":" + (timerSlot.remaining % 60).toString().padStart(2, '0')
-                        font.pixelSize: Theme.scaled(34); font.weight: Font.Black; color: timerSlot.running ? Theme.base : Theme.text 
+    ColumnLayout {
+        anchors.centerIn: parent
+        spacing: Theme.scaled(30)
+        width: parent.width * 0.9
+
+        // --- MAIN TIMER DISPLAY ---
+        ColumnLayout {
+            Layout.alignment: Qt.AlignHCenter
+            spacing: Theme.scaled(10)
+
+            Text {
+                text: {
+                    let m = Math.floor(ProductivityService.remaining / 60);
+                    let s = ProductivityService.remaining % 60;
+                    return m + ":" + s.toString().padStart(2, '0');
+                }
+                font.pixelSize: Theme.scaled(84)
+                font.weight: Font.Black
+                color: ProductivityService.running ? Theme.blue : Theme.text
+                Layout.alignment: Qt.AlignHCenter
+                
+                Behavior on color { ColorAnimation { duration: 300 } }
+            }
+
+            // --- ADJUSTMENT CONTROLS ---
+            RowLayout {
+                Layout.alignment: Qt.AlignHCenter
+                spacing: Theme.scaled(20)
+                visible: !ProductivityService.running
+
+                ControlBtn { 
+                    text: "-1m"; icon: "󰐊"; 
+                    onClicked: ProductivityService.adjustDuration(-60) 
+                }
+                ControlBtn { 
+                    text: "+1m"; icon: "󰐊"; 
+                    onClicked: ProductivityService.adjustDuration(60) 
+                }
+                ControlBtn { 
+                    text: "+5m"; icon: "󰐊"; 
+                    onClicked: ProductivityService.adjustDuration(300) 
+                }
+            }
+        }
+
+        // --- QUICK PRESETS ---
+        Flow {
+            Layout.fillWidth: true
+            spacing: Theme.scaled(10)
+            Layout.alignment: Qt.AlignHCenter
+            
+            Repeater {
+                model: [
+                    { label: "5m",  secs: 300 },
+                    { label: "10m", secs: 600 },
+                    { label: "15m", secs: 900 },
+                    { label: "25m", secs: 1500 },
+                    { label: "30m", secs: 1800 },
+                    { label: "1h",  secs: 3600 }
+                ]
+
+                delegate: Rectangle {
+                    width: (parent.width - Theme.scaled(50)) / (Theme.isSmallScreen ? 3 : 6)
+                    height: Theme.scaled(45)
+                    radius: Theme.scaled(12)
+                    color: ProductivityService.duration === modelData.secs ? Theme.blue : Theme.surface1
+                    
+                    Text {
+                        anchors.centerIn: parent
+                        text: modelData.label
+                        font.pixelSize: Theme.scaled(12)
+                        font.weight: Font.Bold
+                        color: ProductivityService.duration === modelData.secs ? Theme.base : Theme.text
                     }
-                    RowLayout {
-                        spacing: Theme.scaled(12)
-                        Rectangle {
-                            width: Theme.scaled(60); height: Theme.scaled(50); radius: Theme.scaled(14); color: timerSlot.running ? Theme.base : Theme.surface1
-                            Text { anchors.centerIn: parent; text: timerSlot.running ? "⏸" : "▶"; color: timerSlot.running ? Theme.blue : Theme.text; font.pixelSize: Theme.scaled(22) }
-                            MouseArea { anchors.fill: parent; onClicked: timerSlot.running = !timerSlot.running }
-                        }
-                        Rectangle {
-                            width: Theme.scaled(60); height: Theme.scaled(50); radius: Theme.scaled(14); color: Theme.surface1
-                            Text { anchors.centerIn: parent; text: "↺"; color: Theme.text; font.pixelSize: Theme.scaled(22) }
-                            MouseArea { anchors.fill: parent; onClicked: { timerSlot.running = false; timerSlot.remaining = timerSlot.initialDuration } }
-                        }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: ProductivityService.setDuration(modelData.secs)
                     }
                 }
             }
+        }
+
+        // --- PLAYBACK CONTROLS ---
+        RowLayout {
+            Layout.alignment: Qt.AlignHCenter
+            spacing: Theme.scaled(25)
+
+            // Start / Pause
+            Rectangle {
+                width: Theme.scaled(70); height: Theme.scaled(70); radius: width/2
+                color: ProductivityService.running ? Theme.powerRed : Theme.blue
+                
+                Text {
+                    anchors.centerIn: parent
+                    text: ProductivityService.running ? "󰏤" : "󰐊"
+                    font.family: Theme.iconFont
+                    font.pixelSize: Theme.scaled(32)
+                    color: Theme.base
+                    // Manual offset for better visual centering of the play icon
+                    anchors.horizontalCenterOffset: ProductivityService.running ? 0 : 3
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: ProductivityService.toggleTimer()
+                }
+            }
+
+            // Reset
+            Rectangle {
+                width: Theme.scaled(55); height: Theme.scaled(55); radius: width/2
+                color: Theme.surface1
+                
+                Text {
+                    anchors.centerIn: parent
+                    text: "󰜉"
+                    font.family: Theme.iconFont
+                    font.pixelSize: Theme.scaled(24)
+                    color: Theme.text
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: ProductivityService.resetTimer()
+                }
+            }
+        }
+    }
+
+    // --- Helper Component ---
+    component ControlBtn: Rectangle {
+        property string text
+        property string icon
+        signal clicked()
+
+        width: Theme.scaled(60); height: Theme.scaled(35); radius: Theme.scaled(10)
+        color: Theme.surface1
+        
+        Text {
+            anchors.centerIn: parent
+            text: parent.text
+            font.pixelSize: Theme.scaled(11)
+            font.weight: Font.Black
+            color: Theme.subtext1
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            onClicked: parent.clicked()
         }
     }
 }
