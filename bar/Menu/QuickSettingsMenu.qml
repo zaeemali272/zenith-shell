@@ -28,10 +28,6 @@ PanelWindow {
     WlrLayershell.margins.top: Theme.barMarginTop + 4
     WlrLayershell.margins.right: Theme.isSmallScreen ? 5 : 10
 
-    Keys.onPressed: (event) => {
-        if (event.key === Qt.Key_Escape) QuickSettingsService.close()
-    }
-
     onVisibleChanged: {
         if (visible) {
             MenuService.register(root);
@@ -61,6 +57,9 @@ PanelWindow {
         id: mainContent
         anchors.fill: parent
         focus: true
+        Keys.onPressed: (event) => {
+            if (event.key === Qt.Key_Escape) QuickSettingsService.close()
+        }
         color: Theme.glassBackground
         radius: Theme.menuRadius
         border.color: Theme.glassBorder

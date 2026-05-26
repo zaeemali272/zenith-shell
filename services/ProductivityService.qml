@@ -64,7 +64,6 @@ Item {
     function adjustDuration(delta) {
         if (running || isBeeping) return;
         
-        // Prevent accidental double-increments
         let next = Math.max(0, duration + delta);
         if (next === duration) return;
         
@@ -103,9 +102,10 @@ Item {
 
     function stopBeeping() {
         isBeeping = false;
-        // Kill the specific beep process and any global paplay instances instantly
         beepProcess.running = false;
-        Quickshell.exec(["pkill", "paplay"]);
+        // Kill paplay using a shell command if necessary, but try to use process control first
+        shellExec.command = ["pkill", "paplay"];
+        shellExec.running = true;
     }
 
     // --- Task Management ---
@@ -131,7 +131,6 @@ Item {
                 } else {
                     service.running = false;
                     service.isBeeping = true;
-                    Quickshell.exec(["notify-send", "Timer Expired", "Your timer has finished!", "-i", "alarm-clock", "-a", "Zenith Timer"]);
                 }
                 
                 if (service.remaining % 10 === 0 || service.remaining === 0) {
@@ -141,24 +140,21 @@ Item {
         }
     }
 
-    // --- Sound Loop (QML Driven for better control) ---
+    // --- Sound Loop ---
     Timer {
         id: alarmLoop
-        interval: 2000 // Repeat every 2 seconds
+        interval: 2000
         running: service.isBeeping
         repeat: true
         triggeredOnStart: true
         onTriggered: {
-            // Restart the beep process
             beepProcess.running = false;
             beepProcess.running = true;
         }
     }
 
-    Process {
-        id: beepProcess
-        command: ["paplay", "/usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga"]
-    }
+    Process { id: beepProcess; command: ["paplay", "/usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga"] }
+    Process { id: shellExec }
 
     Process { 
         id: loadProcess; 

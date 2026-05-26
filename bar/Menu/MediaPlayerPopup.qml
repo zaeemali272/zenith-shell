@@ -15,10 +15,6 @@ PopupWindow {
     
     grabFocus: false
 
-    Keys.onPressed: (event) => {
-        if (event.key === Qt.Key_Escape) root.visible = false
-    }
-
     onVisibleChanged: {
         if (visible) {
             MenuService.register(root);
@@ -54,7 +50,9 @@ PopupWindow {
         clip: true
         focus: true
 
-        opacity: 0
+        Keys.onPressed: (event) => {
+            if (event.key === Qt.Key_Escape) root.visible = false
+        }
         scale: 0.95
         transform: Translate { id: mainTranslate; y: -20 }
         

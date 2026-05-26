@@ -138,7 +138,10 @@ PanelWindow {
 
             Tray { menuRef: trayPopup }
 
-            Update { visible: !Theme.isSmallScreen }
+            Update { 
+                id: updateWidget
+                visible: !Theme.isSmallScreen && totalUpdates > 0 
+            }
             
             Network { 
                 id: wifiWidget 

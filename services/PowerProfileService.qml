@@ -28,7 +28,6 @@ Item {
     }
 
     Component.onCompleted: {
-        console.log("DEBUG: PowerProfileService daemonPath =", daemonPath);
         checkAvailability.running = true;
     }
 

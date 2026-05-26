@@ -41,8 +41,6 @@ Item {
 
         onClicked: (mouse) => {
             if (mouse.button === Qt.LeftButton) {
-                updateMenu.anchor.window = pill.QsWindow.window;
-                updateMenu.anchor.rect = pill.mapToItem(null, 0, 0, pill.width, pill.height);
                 updateMenu.visible = !updateMenu.visible;
             } else if (mouse.button === Qt.RightButton) {
                 updateProc.running = false;
@@ -78,30 +76,31 @@ Item {
         visible: false
         color: "transparent"
         
-        anchor.edges: Edges.Bottom
-        anchor.gravity: Edges.Bottom
+        // Full screen capture for click-outside dismissal
+        implicitWidth: screen ? screen.width : Theme.screenWidth
+        implicitHeight: screen ? screen.height : Theme.screenHeight
         
-        implicitWidth: menuSurface.implicitWidth
-        implicitHeight: menuSurface.implicitHeight + Theme.scaled(20)
-
         grabFocus: false 
 
-        HyprlandFocusGrab {
-            id: grab
-            active: updateMenu.visible
-            windows: [updateMenu]
-            onCleared: updateMenu.visible = false
+        // --- DISMISS ON OUTER CLICK ---
+        MouseArea {
+            anchors.fill: parent
+            z: -1
+            onClicked: updateMenu.visible = false
         }
 
         Rectangle {
             id: menuSurface
-            y: Theme.scaled(8)
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: parent.top
+            anchors.topMargin: Theme.barMarginTop + 4
+            
             color: Theme.glassBackground
             border.color: Theme.glassBorder
             border.width: 1
             radius: Theme.scaled(16)
             
-            implicitWidth: Theme.scaled(350)
+            implicitWidth: Theme.scaled(450)
             implicitHeight: updateMenuContent.implicitHeight + Theme.scaled(32)
 
             ColumnLayout {
