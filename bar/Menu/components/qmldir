@@ -8,6 +8,9 @@ NotificationItem NotificationItem.qml
 NotificationList NotificationList.qml
 NotificationPopup NotificationPopup.qml
 OsdPopup OsdPopup.qml
+PomodoroContent PomodoroContent.qml
+TimerContent TimerContent.qml
+TodoContent TodoContent.qml
 PowerContent PowerContent.qml
 PowerProfileContent PowerProfileContent.qml
 ResourcesContent ResourcesContent.qml

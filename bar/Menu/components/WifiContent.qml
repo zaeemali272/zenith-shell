@@ -150,7 +150,7 @@ Item {
                 id: delegateRoot
                 width: list.width
                 
-                property bool isKnown: wifiSvc.knownNetworks[modelData.ssid]
+                property bool isKnown: !!(modelData && wifiSvc.knownNetworks[modelData.ssid])
                 property bool showSecrets: false
                 
                 // Height expands if selected AND (!known OR user wants to see secrets)
@@ -202,7 +202,7 @@ Item {
                             RowLayout { spacing: Theme.scaled(6)
                                 // Disconnect Button (Only if connected)
                                 Rectangle {
-                                    visible: modelData.connected
+                                    visible: !!(modelData && modelData.connected)
                                     width: Theme.scaled(32); height: Theme.scaled(32); radius: Theme.scaled(8); color: Qt.rgba(1,0.5,0,0.1)
                                     Text { anchors.centerIn: parent; text: "󰤄"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(14); color: Theme.powerYellow }
                                     MouseArea { id: disconnectMouse; anchors.fill: parent; onClicked: wifiSvc.disconnect() }
@@ -226,7 +226,7 @@ Item {
 
                                 // Connect Button (If not connected but known)
                                 Rectangle {
-                                    visible: isKnown && !modelData.connected
+                                    visible: isKnown && !(modelData && modelData.connected)
                                     width: Theme.scaled(65); height: Theme.scaled(32); radius: Theme.scaled(8); color: Theme.blue
                                     Text { anchors.centerIn: parent; text: "CONNECT"; font.pixelSize: Theme.scaled(9); font.weight: Font.Black; color: "black" }
                                     MouseArea { anchors.fill: parent; onClicked: wifiSvc.connect(modelData.ssid, "") }
@@ -234,7 +234,7 @@ Item {
 
                                 // Selection Arrow (If not connected and not known)
                                 Rectangle {
-                                    visible: !isKnown && !modelData.connected
+                                    visible: !isKnown && !(modelData && modelData.connected)
                                     width: Theme.scaled(32); height: Theme.scaled(32); radius: Theme.scaled(8); color: Qt.rgba(1,1,1,0.05)
                                     Text { anchors.centerIn: parent; text: "󰅂"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(14); color: Theme.text }
                                     MouseArea { anchors.fill: parent; onClicked: selectedSsid = (selectedSsid === modelData.ssid) ? "" : modelData.ssid }

@@ -12,6 +12,7 @@ Item {
     property bool qsVisible: false
     property bool isSticky: false
     property bool isHoveringMenu: false
+    property string activeTab: "Default"
     
     property bool _toggleLocked: false
 

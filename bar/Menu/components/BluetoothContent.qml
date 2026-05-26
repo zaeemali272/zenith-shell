@@ -90,16 +90,46 @@ ColumnLayout {
                 }
             }
 
-            // Show Unnamed Toggle
-            Rectangle {
-                Layout.fillWidth: true; height: Theme.scaled(40); radius: Theme.scaled(12); color: (unnamedMouse.containsMouse ? Qt.rgba(1,1,1,0.05) : "transparent"); border.color: root.showUnnamed ? Theme.blue : Theme.glassBorder; clip: true
+            // --- Settings Toggles ---
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Theme.scaled(10)
                 visible: BluetoothService.powered
-                RowLayout {
-                    anchors.centerIn: parent; spacing: 10
-                    Text { text: root.showUnnamed ? "󰈈" : "󰈉"; font.family: Theme.iconFont; color: root.showUnnamed ? Theme.blue : Theme.text; font.pixelSize: Theme.scaled(16) }
-                    Text { text: root.showUnnamed ? "HIDE UNNAMED DEVICES" : "SHOW UNNAMED DEVICES"; color: Theme.text; font.pixelSize: Theme.scaled(9); font.weight: Font.Black; font.letterSpacing: 1 }
+
+                // Show Unnamed Toggle
+                Rectangle {
+                    Layout.fillWidth: true; height: Theme.scaled(40); radius: Theme.scaled(12); color: (unnamedMouse.containsMouse ? Qt.rgba(1,1,1,0.05) : "transparent"); border.color: root.showUnnamed ? Theme.blue : Theme.glassBorder; clip: true
+                    RowLayout {
+                        anchors.centerIn: parent; spacing: 8
+                        Text { text: root.showUnnamed ? "󰈈" : "󰈉"; font.family: Theme.iconFont; color: root.showUnnamed ? Theme.blue : Theme.text; font.pixelSize: Theme.scaled(14) }
+                        Text { text: "UNNAMED"; color: Theme.text; font.pixelSize: Theme.scaled(8); font.weight: Font.Black; font.letterSpacing: 1 }
+                    }
+                    MouseArea { id: unnamedMouse; anchors.fill: parent; hoverEnabled: true; onClicked: root.showUnnamed = !root.showUnnamed }
                 }
-                MouseArea { id: unnamedMouse; anchors.fill: parent; hoverEnabled: true; onClicked: root.showUnnamed = !root.showUnnamed }
+
+                // Startup Status Toggle
+                Rectangle {
+                    Layout.fillWidth: true; height: Theme.scaled(40); radius: Theme.scaled(12); 
+                    color: (startupMouse.containsMouse ? Qt.rgba(1,1,1,0.05) : "transparent"); 
+                    border.color: BluetoothService.isServiceEnabled ? Theme.powerGreen : Theme.powerRed; clip: true
+                    RowLayout {
+                        anchors.centerIn: parent; spacing: 8
+                        Text { 
+                            text: BluetoothService.isServiceEnabled ? "󰄬" : "󰅖"; 
+                            font.family: Theme.iconFont; 
+                            color: BluetoothService.isServiceEnabled ? Theme.powerGreen : Theme.powerRed; 
+                            font.pixelSize: Theme.scaled(14) 
+                        }
+                        Text { 
+                            text: "STARTUP"; 
+                            color: Theme.text; font.pixelSize: Theme.scaled(8); font.weight: Font.Black; font.letterSpacing: 1 
+                        }
+                    }
+                    MouseArea { 
+                        id: startupMouse; anchors.fill: parent; hoverEnabled: true; 
+                        onClicked: BluetoothService.toggleStartup() 
+                    }
+                }
             }
 
             // Current Connection Status Bar

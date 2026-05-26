@@ -32,6 +32,8 @@ Item {
         loadSecrets();
     }
 
+    readonly property string secretsPath: Quickshell.env("HOME") + "/.local/share/zenith/wifi_secrets.json"
+
     function loadSecrets() {
         secretsLoader.running = false;
         secretsLoader.running = true;
@@ -46,7 +48,8 @@ Item {
         temp[ssid] = password;
         savedSecrets = temp;
         
-        secretsSaver.command = ["sh", "-c", "echo '" + JSON.stringify(savedSecrets).replace(/'/g, "'\\''") + "' > wifi_secrets.json"];
+        let cmd = "mkdir -p " + Quickshell.env("HOME") + "/.local/share/zenith && echo '" + JSON.stringify(savedSecrets).replace(/'/g, "'\\''") + "' > " + secretsPath + " && chmod 600 " + secretsPath;
+        secretsSaver.command = ["sh", "-c", cmd];
         secretsSaver.running = true;
     }
 
@@ -59,7 +62,8 @@ Item {
             }
         }
         savedSecrets = temp;
-        secretsSaver.command = ["sh", "-c", "echo '" + JSON.stringify(savedSecrets).replace(/'/g, "'\\''") + "' > wifi_secrets.json"];
+        let cmd = "mkdir -p " + Quickshell.env("HOME") + "/.local/share/zenith && echo '" + JSON.stringify(savedSecrets).replace(/'/g, "'\\''") + "' > " + secretsPath + " && chmod 600 " + secretsPath;
+        secretsSaver.command = ["sh", "-c", cmd];
         secretsSaver.running = true;
     }
 
@@ -125,7 +129,7 @@ Item {
 
     Process {
         id: secretsLoader
-        command: ["sh", "-c", "cat wifi_secrets.json 2>/dev/null || echo '{}'"]
+        command: ["sh", "-c", "cat " + secretsPath + " 2>/dev/null || echo '{}'"]
         stdout: StdioCollector {
             onStreamFinished: {
                 try {

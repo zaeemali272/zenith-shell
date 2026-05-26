@@ -8,8 +8,8 @@ import "../../../"
 
 Rectangle {
     id: todoRoot
+    color: "transparent"
 
-    // --- Persistence Logic ---
     readonly property string todoPath: Quickshell.env("HOME") + "/.config/quickshell/todo.txt"
 
     function saveTasks() {
@@ -22,169 +22,91 @@ Rectangle {
         saveProcess.running = true;
     }
 
-    implicitHeight: 250
-    color: "transparent"
-
-    Process {
-        id: saveProcess
-    }
-
+    ListModel { id: todoModel }
+    Process { id: saveProcess }
     Process {
         id: loadProcess
-
         command: ["cat", todoRoot.todoPath]
         running: true
         onStdoutChanged: {
             let content = stdout.toString();
             todoModel.clear();
-            if (!content)
-                return ;
-
+            if (!content) return;
             let lines = content.split("\n");
             for (let line of lines) {
-                if (line.trim() === "")
-                    continue;
-
+                if (line.trim() === "") continue;
                 let completed = line.startsWith("[x]");
                 let task = line.substring(4).trim();
-                todoModel.append({
-                    "task": task,
-                    "completed": completed
-                });
+                todoModel.append({ "task": task, "completed": completed });
             }
         }
-    }
-
-    // --- FIX 4: The Focus Timer (From WifiMenu) ---
-    Timer {
-        id: focusTimer
-
-        interval: 50
-        onTriggered: {
-            if (inputField.visible)
-                inputField.forceActiveFocus();
-
-        }
-    }
-
-    ListModel {
-        id: todoModel
     }
 
     ColumnLayout {
-        anchors.fill: parent
-        spacing: 10
+        anchors.fill: parent; spacing: 10
 
+        // Header
         RowLayout {
             Layout.fillWidth: true
-
-            Label {
-                text: "To-Do"
-                color: Theme.text
-                font.bold: true
-                font.pixelSize: 16
-            }
-
-            Item {
-                Layout.fillWidth: true
-            }
-
-            Text {
-                text: "󰐕"
-                color: Theme.powerGreen
-                font.pixelSize: 20
-
-                MouseArea {
+            Text { text: "Tasks"; color: Theme.text; font.weight: Font.Bold; font.pixelSize: 14 }
+            Item { Layout.fillWidth: true }
+            Rectangle {
+                width: 28; height: 28; radius: 6; color: Theme.surface1
+                Text { anchors.centerIn: parent; text: "󰐕"; font.family: Theme.iconFont; color: Theme.blue }
+                MouseArea { 
                     anchors.fill: parent
-                    onClicked: {
+                    onClicked: { 
+                        inputFieldContainer.visible = true;
                         inputField.visible = true;
-                        focusTimer.start(); // Trigger the grab
+                        inputField.forceActiveFocus();
+                    } 
+                }
+            }
+
+        }
+
+        // Add Input
+        Rectangle {
+            id: inputFieldContainer
+            visible: inputField.visible
+            Layout.fillWidth: true; height: 40; radius: 8; color: Theme.glassBackground; border.color: Theme.blue
+            TextInput {
+                id: inputField
+                anchors.fill: parent; anchors.margins: 10
+                color: Theme.text; verticalAlignment: TextInput.AlignVCenter
+                onAccepted: {
+                    if (text !== "") {
+                        todoModel.append({ "task": text, "completed": false });
+                        text = ""; visible = false; saveTasks();
                     }
                 }
-
+                Keys.onEscapePressed: visible = false
             }
-
         }
 
-        TextField {
-            id: inputField
-
-            visible: false
-            Layout.fillWidth: true
-            placeholderText: "New task..."
-            color: Theme.text
-            focus: true
-            onAccepted: {
-                if (text !== "") {
-                    todoModel.append({
-                        "task": text,
-                        "completed": false
-                    });
-                    text = "";
-                    visible = false;
-                    saveTasks();
-                }
-            }
-
-            background: Rectangle {
-                color: Theme.menuBackground
-                radius: 4
-                border.color: Theme.surface1
-                border.width: 1
-            }
-
-        }
-
+        // List
         ListView {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            clip: true
-            model: todoModel
-            spacing: 8
-
-            delegate: RowLayout {
-                width: parent.width
-                spacing: 10
-
-                CheckBox {
-                    checked: model.completed
-                    onToggled: {
-                        model.completed = checked;
-                        saveTasks();
+            Layout.fillWidth: true; Layout.fillHeight: true
+            model: todoModel; clip: true; spacing: 8
+            delegate: Rectangle {
+                width: ListView.view.width; height: 45
+                radius: 8; color: Theme.glassBackground
+                RowLayout {
+                    anchors.fill: parent; anchors.margins: 8
+                    Rectangle {
+                        width: 20; height: 20; radius: 4; color: model.completed ? Theme.blue : Theme.surface1
+                        MouseArea { anchors.fill: parent; onClicked: { model.completed = !model.completed; saveTasks(); } }
+                    }
+                    TextInput {
+                        text: model.task; Layout.fillWidth: true; color: model.completed ? Theme.surface2 : Theme.text
+                        onAccepted: { model.task = text; saveTasks(); }
+                    }
+                    Text { 
+                        text: "󰆴"; font.family: Theme.iconFont; color: Theme.powerRed
+                        MouseArea { anchors.fill: parent; onClicked: { todoModel.remove(index); saveTasks(); } }
                     }
                 }
-
-                TextInput {
-                    text: model.task
-                    Layout.fillWidth: true
-                    color: model.completed ? Theme.surface2 : Theme.text
-                    selectByMouse: true
-                    onAccepted: {
-                        model.task = text;
-                        focus = false;
-                        saveTasks();
-                    }
-                }
-
-                Text {
-                    text: "󰅖"
-                    color: Theme.powerRed
-                    font.pixelSize: 16
-
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: {
-                            todoModel.remove(index);
-                            saveTasks();
-                        }
-                    }
-
-                }
-
             }
-
         }
-
     }
-
 }

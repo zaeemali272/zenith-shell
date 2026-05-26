@@ -23,13 +23,13 @@ PanelWindow {
     
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.exclusiveZone: 0
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
     WlrLayershell.namespace: "controlcenter"
 
     implicitWidth: Theme.scaled(900)
     implicitHeight: Theme.scaled(650)
 
-    // Centered positioning: top anchor, no left/right anchors
+    // Centered positioning: top anchor
     anchors.top: true
     WlrLayershell.margins.top: Theme.barMarginTop + 4
 
@@ -71,56 +71,96 @@ PanelWindow {
             anchors.margins: 25
             spacing: 20
 
-            // --- MINIMAL HEADER ---
+            // --- HEADER ---
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 15
+                
                 Rectangle { width: 4; height: 20; color: Theme.blue; radius: 2 }
                 Text { 
-                    text: "SYSTEM DASHBOARD"
+                    text: "DASHBOARD"
                     color: Theme.text
                     font.pixelSize: 12
                     font.weight: Font.Black
                     font.letterSpacing: 2
                 }
+
+                // Tab Switcher
+                RowLayout {
+                    spacing: 5
+                    Repeater {
+                        model: ["Default", "Pomodoro"]
+                        delegate: Rectangle {
+                            width: 80; height: 30
+                            radius: 8
+                            color: CenterState.activeTab === modelData ? Theme.blue : "transparent"
+                            border.color: Theme.glassBorder
+                            Text {
+                                anchors.centerIn: parent
+                                text: modelData
+                                font.pixelSize: 9
+                                color: CenterState.activeTab === modelData ? Theme.base : Theme.text
+                            }
+                            MouseArea { anchors.fill: parent; onClicked: CenterState.activeTab = modelData }
+                        }
+                    }
+                }
+                
                 Item { Layout.fillWidth: true }
-                Text { 
-                    text: Qt.formatDateTime(new Date(), "ddd, MMM d")
-                    color: Theme.subtext1
-                    font.pixelSize: 10
-                    font.weight: Font.Bold
+                
+                // Caffeine Toggle
+                Rectangle {
+                    id: caffeineRect
+                    width: 32; height: 32
+                    radius: 8
+                    color: CaffeineService.active ? Theme.blue : (caffeineMouse.containsMouse ? Qt.rgba(1,1,1,0.05) : "transparent")
+                    border.color: CaffeineService.active ? Theme.blue : Theme.glassBorder
+                    scale: caffeineMouse.pressed ? 0.9 : 1.0
+                    
+                    Behavior on color { ColorAnimation { duration: 200 } }
+                    Behavior on scale { NumberAnimation { duration: 100 } }
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "󱄅"
+                        font.family: "Font Awesome 6 Free"
+                        font.weight: Font.Black
+                        font.pixelSize: 16
+                        color: CaffeineService.active ? Theme.base : (caffeineMouse.containsMouse ? Theme.text : Theme.subtext1)
+                    }
+                    MouseArea { 
+                        id: caffeineMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: CaffeineService.toggle() 
+                    }
                 }
             }
 
-            // --- 2-COLUMN RESPONSIVE GRID ---
-            GridLayout {
-                columns: 2
+            // --- CONTENT AREA ---
+            StackLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                columnSpacing: 20
-                rowSpacing: 20
+                currentIndex: CenterState.activeTab === "Pomodoro" ? 1 : 0
 
-                // 1. Notifications
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    Layout.rowSpan: 2
-                    color: Qt.rgba(0,0,0,0.2)
-                    radius: 24
-                    border.color: Theme.glassBorder
-                    clip: true
-                    
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 15
-                        spacing: 10
+                // Default Tab
+                GridLayout {
+                    columns: 2
+                    columnSpacing: 20
+                    rowSpacing: 20
+
+                    // 1. Notifications
+                    Rectangle {
+                        Layout.fillWidth: true; Layout.fillHeight: true; Layout.rowSpan: 2
+                        color: Qt.rgba(0,0,0,0.2); radius: 24; border.color: Theme.glassBorder; clip: true
                         
-                        // Header with Counter and Buttons
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 8
-                            Text { text: "󰂚"; font.family: Theme.iconFont; color: Theme.blue; font.pixelSize: 14 }
-                            Text { text: "NOTIFICATIONS"; color: Theme.subtext1; font.pixelSize: 9; font.weight: Font.Black; font.letterSpacing: 1 }
+                        ColumnLayout {
+                            anchors.fill: parent; anchors.margins: 15; spacing: 10
+                            
+                            RowLayout {
+                                Layout.fillWidth: true; spacing: 8
+                                Text { text: "󰂚"; font.family: Theme.iconFont; color: Theme.blue; font.pixelSize: 14 }
+                                Text { text: "NOTIFICATIONS"; color: Theme.subtext1; font.pixelSize: 9; font.weight: Font.Black; font.letterSpacing: 1 }
                                 Rectangle {
                                        width: Theme.scaled(22); height: Theme.scaled(22); radius: Theme.scaled(6)
                                        color: Theme.surface1
@@ -132,8 +172,8 @@ PanelWindow {
                                        }
                                    }
 
-                            Item { Layout.fillWidth: true }
-                            
+                                Item { Layout.fillWidth: true }
+                                
                             Button {
                                 id: fullscreenBtn
                                 flat: true
@@ -168,83 +208,62 @@ PanelWindow {
                                 background: Rectangle { color: osdFullscreenBtn.hovered ? Theme.surface0 : "transparent"; radius: 6 }
                                 onClicked: GeneralSettings.fullscreenOSD = !GeneralSettings.fullscreenOSD
                             }
-                            Button {
-                                id: clearBtn
-                                flat: true
-                                padding: Theme.scaled(4)
-                                contentItem: Text {
-                                    text: "󰃢" // Trash Bin Icon
-                                    font.family: Theme.iconFont
-                                    color: clearBtn.hovered ? Theme.powerRed : Theme.subtext1
-                                    font.pixelSize: 14
+                                Button {
+                                    id: clearBtn
+                                    flat: true
+                                    padding: Theme.scaled(4)
+                                    contentItem: Text { text: "󰃢"; font.family: Theme.iconFont; color: Theme.subtext1; font.pixelSize: 14 }
+                                    background: Rectangle { color: clearBtn.hovered ? Theme.surface0 : "transparent"; radius: 6 }
+                                    onClicked: NotificationService.clearAll()
                                 }
-                                background: Rectangle { color: clearBtn.hovered ? Theme.surface0 : "transparent"; radius: 6 }
-                                onClicked: NotificationService.clearAll()
+                            }
+                            ScrollView {
+                                Layout.fillWidth: true; Layout.fillHeight: true; clip: true
+                                NotificationList {
+                                    visible: GeneralSettings.enableNotifications
+                                    Layout.fillWidth: true; height: parent.height 
+                                }
                             }
                         }
+                    }
 
-                        // Scrollable List
-                        ScrollView {
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            clip: true
-                            contentWidth: availableWidth
-                            
-                            NotificationList {
-                                visible: GeneralSettings.enableNotifications
-                                Layout.fillWidth: true
-                                // Explicitly set height to fill the ScrollView
-                                height: parent.height 
+                    // 2. Calendar
+                    Rectangle {
+                        Layout.fillWidth: true; Layout.fillHeight: true
+                        color: Qt.rgba(0,0,0,0.2); radius: 24; border.color: Theme.glassBorder
+                        ColumnLayout {
+                            anchors.fill: parent; anchors.margins: 15
+                            RowLayout {
+                                spacing: 8
+                                Text { text: "󰃭"; font.family: Theme.iconFont; color: Theme.blue; font.pixelSize: 14 }
+                                Text { text: "CALENDAR"; color: Theme.subtext1; font.pixelSize: 9; font.weight: Font.Black; font.letterSpacing: 1 }
+                            }
+                            CalendarWidget { Layout.fillWidth: true; Layout.fillHeight: true }
+                        }
+                    }
+
+                    // 3. Weather
+                    Rectangle {
+                        Layout.fillWidth: true; Layout.fillHeight: true
+                        color: Qt.rgba(0,0,0,0.2); radius: 24; border.color: Theme.glassBorder
+                        ColumnLayout {
+                            anchors.fill: parent; anchors.margins: 15
+                            RowLayout {
+                                spacing: 8
+                                Text { text: "󰖐"; font.family: Theme.iconFont; color: Theme.blue; font.pixelSize: 14 }
+                                Text { text: "WEATHER"; color: Theme.subtext1; font.pixelSize: 9; font.weight: Font.Black; font.letterSpacing: 1 }
+                            }
+                            WeatherWidget {
+                                visible: GeneralSettings.enableWeather
+                                Layout.fillWidth: true; Layout.fillHeight: true
                             }
                         }
                     }
                 }
 
-                // 2. Calendar
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    color: Qt.rgba(0,0,0,0.2)
-                    radius: 24
-                    border.color: Theme.glassBorder
-                    
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 15
-                        RowLayout {
-                            spacing: 8
-                            Text { text: "󰃭"; font.family: Theme.iconFont; color: Theme.blue; font.pixelSize: 14 }
-                            Text { text: "CALENDAR"; color: Theme.subtext1; font.pixelSize: 9; font.weight: Font.Black; font.letterSpacing: 1 }
-                        }
-                        CalendarWidget {
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                        }
-                    }
-                }
-
-                // 3. Weather
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    color: Qt.rgba(0,0,0,0.2)
-                    radius: 24
-                    border.color: Theme.glassBorder
-                    
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 15
-                        RowLayout {
-                            spacing: 8
-                            Text { text: "󰖐"; font.family: Theme.iconFont; color: Theme.blue; font.pixelSize: 14 }
-                            Text { text: "WEATHER"; color: Theme.subtext1; font.pixelSize: 9; font.weight: Font.Black; font.letterSpacing: 1 }
-                        }
-                        WeatherWidget {
-                            visible: GeneralSettings.enableWeather
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                        }
-                    }
+                // Pomodoro Tab
+                PomodoroContent {
+                    Layout.fillWidth: true; Layout.fillHeight: true
                 }
             }
         }

@@ -9,6 +9,15 @@ import Quickshell.Io
 Item {
     id: root
 
+    readonly property bool isFullyCharged: BatteryService.isFullyCharged
+    readonly property bool isConservative: BatteryService.isConservative
+    
+    visible: !isFullyCharged && !isConservative
+    
+    // Smooth visibility transition
+    opacity: visible ? 1.0 : 0.0
+    Behavior on opacity { NumberAnimation { duration: 400 } }
+
     readonly property int batPercent: BatteryService.percentage
     readonly property string batState: BatteryService.status
     readonly property bool acOnline: BatteryService.acOnline

@@ -106,7 +106,8 @@ Item {
 
             // Duplicate Filtering
             let isBattery = (notif.appName === "Battery");
-            if (!isBattery) {
+            let isCaffeine = (notif.appName === "Caffeine");
+            if (!isBattery && !isCaffeine) {
                 let currentKey = notif.summary + "|" + notif.body + "|" + notif.appName;
                 for (let i = 0; i < historyModel.count; i++) {
                     let item = historyModel.get(i);
@@ -167,7 +168,7 @@ Item {
                 "desktopEntry": notif.desktopEntry || "",
                 "originalNotif": notif
             };
-            if (!isBattery) {
+            if (!isBattery && !isCaffeine) {
                 historyModel.insert(0, notifData);
             }
             root.notificationReceived(notifData);

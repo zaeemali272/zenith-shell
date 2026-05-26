@@ -13,10 +13,11 @@ Item {
     property bool connected: false
     property bool scanning: false
     property bool serviceActive: true
+    property bool isServiceEnabled: false
     property string state: "Idle" // Idle, Scanning, Connecting, Disconnecting, Powering
     
-    readonly property bool isPerformingAction: actionExec.running || powerExec.running || scanExec.running || oneShotScan.running || _actionInProgress
-    readonly property bool isRefreshing: statusCheck.running || deviceRefresh.running || rfkillCheck.running || serviceCheck.running || infoExec.running
+    readonly property bool isPerformingAction: actionExec.running || powerExec.running || scanExec.running || oneShotScan.running || _actionInProgress || startupToggleExec.running
+    readonly property bool isRefreshing: statusCheck.running || deviceRefresh.running || rfkillCheck.running || serviceCheck.running || infoExec.running || enabledCheck.running
     property bool busy: isPerformingAction || isRefreshing
     
     property bool _actionInProgress: false
@@ -36,6 +37,8 @@ Item {
         log("Manual refresh triggered");
         serviceCheck.running = false;
         serviceCheck.running = true;
+        enabledCheck.running = false;
+        enabledCheck.running = true;
         rfkillCheck.running = false;
         rfkillCheck.running = true;
         statusCheck.running = false;
@@ -58,6 +61,32 @@ Item {
                 if (!root.serviceActive) {
                     root.state = "Service Error";
                 }
+            }
+        }
+    }
+
+    Process {
+        id: enabledCheck
+        command: ["systemctl", "is-enabled", "bluetooth.service"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                root.isServiceEnabled = (text && text.trim() === "enabled");
+            }
+        }
+    }
+
+    function toggleStartup() {
+        log("Toggling startup status...");
+        let target = !isServiceEnabled;
+        startupToggleExec.command = ["pkexec", "systemctl", target ? "enable" : "disable", "bluetooth.service"];
+        startupToggleExec.running = true;
+    }
+
+    Process {
+        id: startupToggleExec
+        onExited: (exitCode) => {
+            if (exitCode === 0) {
+                enabledCheck.running = true;
             }
         }
     }
@@ -209,7 +238,12 @@ Item {
                     // Update the array element
                     let updated = root.devices.map(d => {
                         if (d.address === addr) {
-                            return Object.assign({}, d, { battery: battery, icon: icon, connected: true });
+                            let newD = {};
+                            for (let key in d) newD[key] = d[key];
+                            newD.battery = battery;
+                            newD.icon = icon;
+                            newD.connected = true;
+                            return newD;
                         }
                         return d;
                     });
