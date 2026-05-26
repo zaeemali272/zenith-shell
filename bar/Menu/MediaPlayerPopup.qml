@@ -41,14 +41,14 @@ PopupWindow {
     // Position x offset to center on the center of the bar (roughly)
     anchor.rect: Qt.rect(parentWindow.width * 0.45 - implicitWidth/3, parentWindow.height + 10, 0, 0)
     
-    implicitWidth: Theme.scaled(500)
-    implicitHeight: Theme.scaled(180)
+    implicitWidth: Math.min(Theme.scaled(500), (screen ? screen.width : Theme.screenWidth) - 20)
+    implicitHeight: Math.min(Theme.scaled(180), (screen ? screen.height : Theme.screenHeight) - Theme.barHeight - 20)
 
     Rectangle {
         id: mainContent
         anchors.fill: parent
         color: Theme.glassBackground
-        radius: 24
+        radius: Theme.scaled(24)
         border.color: Theme.glassBorder
         border.width: 1
         clip: true
@@ -65,15 +65,15 @@ PopupWindow {
         
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 20
-            spacing: 10
+            anchors.margins: Theme.scaled(20)
+            spacing: Theme.scaled(10)
 
             // Header
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 8
-                Text { text: "󰎆"; font.family: Theme.iconFont; color: Theme.blue; font.pixelSize: 14 }
-                Text { text: "MEDIA PLAYER"; color: Theme.subtext1; font.pixelSize: 9; font.weight: Font.Black; font.letterSpacing: 1 }
+                spacing: Theme.scaled(8)
+                Text { text: "󰎆"; font.family: Theme.iconFont; color: Theme.blue; font.pixelSize: Theme.scaled(14) }
+                Text { text: "MEDIA PLAYER"; color: Theme.subtext1; font.pixelSize: Theme.scaled(9); font.weight: Font.Black; font.letterSpacing: 1 }
                 
                 Item { Layout.fillWidth: true }
                 

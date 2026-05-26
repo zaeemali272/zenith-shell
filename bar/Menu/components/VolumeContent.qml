@@ -33,8 +33,9 @@ ColumnLayout {
     }
 
     // Main Controls Row
-    RowLayout {
-        Layout.fillWidth: true; spacing: Theme.scaled(15)
+    GridLayout {
+        columns: (Theme.isSmallScreen && Theme.isPortrait) ? 1 : 2
+        Layout.fillWidth: true; columnSpacing: Theme.scaled(15); rowSpacing: Theme.scaled(15)
 
         // Speaker Card
         Rectangle {
