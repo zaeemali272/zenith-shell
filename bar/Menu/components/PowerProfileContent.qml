@@ -23,14 +23,14 @@ ColumnLayout {
     Text {
         text: "POWER PROFILES"
         color: Theme.mauve
-        font.pixelSize: 10
+        font.pixelSize: Theme.scaled(10)
         font.weight: Font.Black
         font.letterSpacing: 2
         Layout.leftMargin: Theme.scaled(5)
     }
 
     GridLayout {
-        columns: 2
+        columns: (Theme.isSmallScreen && Theme.isPortrait) ? 1 : 2
         Layout.fillWidth: true
         rowSpacing: Theme.scaled(15)
         columnSpacing: Theme.scaled(15)
@@ -48,7 +48,7 @@ ColumnLayout {
                 Layout.fillWidth: true
                 height: Theme.scaled(90)
                 // Add margins to prevent border clipping
-                anchors.margins: 2
+                anchors.margins: Theme.scaled(2)
                 color: PowerProfileService.currentProfile === modelData.id ? Qt.rgba(modelData.color.r, modelData.color.g, modelData.color.b, 0.15) : Qt.rgba(0,0,0,0.2)
                 radius: Theme.scaled(20)
                 border.width: 1
@@ -65,23 +65,23 @@ ColumnLayout {
                 }
 
                 RowLayout {
-                    anchors.fill: parent; anchors.margins: 15; spacing: 15
+                    anchors.fill: parent; anchors.margins: Theme.scaled(15); spacing: Theme.scaled(15)
                     
                     Rectangle {
-                        width: 45; height: 45; radius: 12
+                        width: Theme.scaled(45); height: Theme.scaled(45); radius: Theme.scaled(12)
                         color: PowerProfileService.currentProfile === modelData.id ? modelData.color : Qt.rgba(1,1,1,0.05)
                         Text { 
-                            anchors.centerIn: parent; text: modelData.icon; font.family: Theme.iconFont; font.pixelSize: 20
+                            anchors.centerIn: parent; text: modelData.icon; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(20)
                             color: PowerProfileService.currentProfile === modelData.id ? Theme.base : modelData.color 
                         }
                     }
 
                     ColumnLayout {
-                        spacing: 2
-                        Text { text: modelData.label; font.pixelSize: 12; font.weight: Font.Black; color: Theme.text }
+                        spacing: Theme.scaled(2)
+                        Text { text: modelData.label; font.pixelSize: Theme.scaled(12); font.weight: Font.Black; color: Theme.text }
                         Text { 
                             text: PowerProfileService.currentProfile === modelData.id ? "ACTIVE" : "STDBY"
-                            font.pixelSize: 8; font.weight: Font.Black; color: PowerProfileService.currentProfile === modelData.id ? modelData.color : Theme.surface2 
+                            font.pixelSize: Theme.scaled(8); font.weight: Font.Black; color: PowerProfileService.currentProfile === modelData.id ? modelData.color : Theme.surface2 
                         }
                     }
                 }

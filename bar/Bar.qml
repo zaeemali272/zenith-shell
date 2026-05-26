@@ -104,11 +104,17 @@ PanelWindow {
             opacity: GeneralSettings.barEntryAnimation ? 0 : 1
             
             x: {
-                let preferredX = (parent.width - width) / 2;
+                let screenW = (screen ? screen.width : Theme.screenWidth);
+                let absoluteCenter = screenW / 2;
+                let marginLeft = Theme.barMarginLeft;
+                
+                // Calculate position relative to the bar window
+                let preferredX = (absoluteCenter - marginLeft) - (width / 2);
+                
                 let leftBound = leftSide.x + leftSide.width + Theme.pillGap;
                 let rightBound = rightLayout.x - width - Theme.pillGap;
                 
-                // If it can fit in the center, put it there.
+                // If it can fit in the absolute center, put it there.
                 // If the right side is pushing it, move it left.
                 // But don't let it overlap the left side.
                 return Math.max(leftBound, Math.min(preferredX, rightBound));
@@ -117,7 +123,7 @@ PanelWindow {
             // Hide only if the available space is smaller than the widget itself
             visible: {
                 let availableSpace = rightLayout.x - (leftSide.x + leftSide.width) - (Theme.pillGap * 2);
-                return width <= availableSpace || !Theme.isSmallScreen;
+                return width <= availableSpace;
             }
         }
 

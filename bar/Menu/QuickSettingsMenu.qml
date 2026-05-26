@@ -26,7 +26,7 @@ PanelWindow {
     anchors.top: true
     anchors.right: true
     WlrLayershell.margins.top: Theme.barMarginTop + 4
-    WlrLayershell.margins.right: 10
+    WlrLayershell.margins.right: Theme.isSmallScreen ? 5 : 10
 
     Keys.onPressed: (event) => {
         if (event.key === Qt.Key_Escape) QuickSettingsService.close()
@@ -96,7 +96,7 @@ PanelWindow {
                 RowLayout {
                     anchors.fill: parent
                     anchors.margins: Theme.scaled(8)
-                    spacing: Theme.scaled(8)
+                    spacing: Theme.isSmallScreen ? Theme.scaled(4) : Theme.scaled(8)
                     
                     Repeater {
                         model: [

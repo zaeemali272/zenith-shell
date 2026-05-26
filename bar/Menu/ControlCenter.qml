@@ -26,12 +26,15 @@ PanelWindow {
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
     WlrLayershell.namespace: "controlcenter"
 
-    implicitWidth: Math.min(Theme.scaled(900), (screen ? screen.width : Theme.screenWidth) - 20)
-    implicitHeight: Math.min(Theme.scaled(650), (screen ? screen.height : Theme.screenHeight) - Theme.barHeight - 20)
-
-    // Centered positioning: top anchor
-    anchors.top: true
-    WlrLayershell.margins.top: Theme.barMarginTop + 4
+    // Fill screen width to enable perfect centering of mainContent
+    anchors {
+        top: true
+        left: true
+        right: true
+    }
+    
+    // Total height of the window container
+    implicitHeight: Math.min(Theme.scaled(700), (screen ? screen.height : Theme.screenHeight))
 
     onVisibleChanged: {
         if (visible) {
@@ -52,10 +55,24 @@ PanelWindow {
         NumberAnimation { target: mainTranslate; property: "y"; from: -20; to: 0; duration: 500; easing.type: Easing.OutBack }
     }
 
+    // --- DISMISS ON OUTER CLICK ---
+    MouseArea {
+        anchors.fill: parent
+        z: -1
+        onClicked: root.visible = false
+    }
+
     Rectangle {
         id: mainContent
-        width: root.width
-        height: root.height
+        
+        // Centered relative to the screen width
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+        anchors.topMargin: Theme.barMarginTop + 4
+
+        width: Math.min(Theme.scaled(900), (screen ? screen.width : Theme.screenWidth) - Theme.scaled(20))
+        height: Math.min(Theme.scaled(650), (screen ? screen.height : Theme.screenHeight) - Theme.barHeight - Theme.scaled(20))
+        
         focus: true
         color: Theme.glassBackground
         radius: Theme.scaled(32)

@@ -95,13 +95,17 @@ ColumnLayout {
         }
 
         Flow {
+            id: coreFlow
             Layout.fillWidth: true
             spacing: Theme.scaled(10)
 
             Repeater {
                 model: root.coreUsages
                 delegate: Rectangle {
-                    width: (root.width - Theme.scaled(70)) / 4
+                    width: {
+                        let cols = Theme.isSmallScreen ? (Theme.isPortrait ? 2 : 3) : 4;
+                        return (coreFlow.width - (Theme.scaled(10) * (cols - 1))) / cols;
+                    }
                     height: Theme.scaled(40)
                     radius: Theme.scaled(12)
                     border.width: 1

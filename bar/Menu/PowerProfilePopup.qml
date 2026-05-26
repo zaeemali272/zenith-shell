@@ -20,8 +20,8 @@ PopupWindow {
 
     visible: false
     color: "transparent"
-    implicitWidth: 220
-    implicitHeight: content.implicitHeight + 40
+    implicitWidth: Theme.scaled(220)
+    implicitHeight: content.implicitHeight + Theme.scaled(40)
     anchor.window: (anchorItem && anchorItem.QsWindow) ? anchorItem.QsWindow.window : null
     anchor.rect: anchorItem ? anchorItem.mapToItem(null, 0, 0, anchorItem.width, anchorItem.height) : Qt.rect(0, 0, 0, 0)
     anchor.edges: Edges.Bottom
@@ -33,8 +33,8 @@ PopupWindow {
         id: mainContent
 
         anchors.fill: parent
-        anchors.margins: 5
-        radius: 12
+        anchors.margins: Theme.scaled(5)
+        radius: Theme.scaled(12)
         color: Theme.backgroundColor || "#111111"
         border.color: hoverTracker.containsMouse ? Theme.menuHoverBorder : Theme.menuBorder
         border.width: 1
@@ -57,12 +57,12 @@ PopupWindow {
             id: content
 
             anchors.fill: parent
-            anchors.margins: 15
-            spacing: 12
+            anchors.margins: Theme.scaled(15)
+            spacing: Theme.scaled(12)
 
             Text {
                 text: "Power Profiles"
-                font.pixelSize: 16
+                font.pixelSize: Theme.scaled(16)
                 font.bold: true
                 color: Theme.fontColor
             }
@@ -71,8 +71,8 @@ PopupWindow {
                 model: ["performance", "balanced", "powersave", "turbo"]
 
                 delegate: Rectangle {
-                    height: 38
-                    radius: 8
+                    height: Theme.scaled(38)
+                    radius: Theme.scaled(8)
                     // Darker on hover: #0a0a0a instead of #1a1a1a
                     color: PowerProfileService.currentProfile === modelData ? Theme.accentColor : (delegateMouse.containsMouse ? "#0a0a0a" : "#1a1a1a")
                     Layout.fillWidth: true
@@ -81,7 +81,7 @@ PopupWindow {
 
                     RowLayout {
                         anchors.centerIn: parent
-                        spacing: 10
+                        spacing: Theme.scaled(10)
 
                         Text {
                             text: {
@@ -99,13 +99,13 @@ PopupWindow {
                                 }
                             }
                             font.family: Theme.iconFont
-                            font.pixelSize: 14
+                            font.pixelSize: Theme.scaled(14)
                             color: PowerProfileService.currentProfile === modelData ? "black" : (delegateMouse.containsMouse ? "white" : "#cdd6f4")
                         }
 
                         Text {
                             text: modelData.charAt(0).toUpperCase() + modelData.slice(1)
-                            font.pixelSize: 12
+                            font.pixelSize: Theme.scaled(12)
                             font.bold: PowerProfileService.currentProfile === modelData
                             color: PowerProfileService.currentProfile === modelData ? "black" : (delegateMouse.containsMouse ? "white" : "#cdd6f4")
                         }

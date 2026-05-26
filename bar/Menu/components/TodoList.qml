@@ -43,15 +43,15 @@ Rectangle {
     }
 
     ColumnLayout {
-        anchors.fill: parent; spacing: 10
+        anchors.fill: parent; spacing: Theme.scaled(10)
 
         // Header
         RowLayout {
             Layout.fillWidth: true
-            Text { text: "Tasks"; color: Theme.text; font.weight: Font.Bold; font.pixelSize: 14 }
+            Text { text: "Tasks"; color: Theme.text; font.weight: Font.Bold; font.pixelSize: Theme.scaled(14) }
             Item { Layout.fillWidth: true }
             Rectangle {
-                width: 28; height: 28; radius: 6; color: Theme.surface1
+                width: Theme.scaled(28); height: Theme.scaled(28); radius: Theme.scaled(6); color: Theme.surface1
                 Text { anchors.centerIn: parent; text: "󰐕"; font.family: Theme.iconFont; color: Theme.blue }
                 MouseArea { 
                     anchors.fill: parent
@@ -69,11 +69,11 @@ Rectangle {
         Rectangle {
             id: inputFieldContainer
             visible: inputField.visible
-            Layout.fillWidth: true; height: 40; radius: 8; color: Theme.glassBackground; border.color: Theme.blue
+            Layout.fillWidth: true; height: Theme.scaled(40); radius: Theme.scaled(8); color: Theme.glassBackground; border.color: Theme.blue
             TextInput {
                 id: inputField
-                anchors.fill: parent; anchors.margins: 10
-                color: Theme.text; verticalAlignment: TextInput.AlignVCenter
+                anchors.fill: parent; anchors.margins: Theme.scaled(10)
+                color: Theme.text; verticalAlignment: TextInput.AlignVCenter; font.pixelSize: Theme.scaled(13)
                 onAccepted: {
                     if (text !== "") {
                         todoModel.append({ "task": text, "completed": false });
@@ -87,22 +87,22 @@ Rectangle {
         // List
         ListView {
             Layout.fillWidth: true; Layout.fillHeight: true
-            model: todoModel; clip: true; spacing: 8
+            model: todoModel; clip: true; spacing: Theme.scaled(8)
             delegate: Rectangle {
-                width: ListView.view.width; height: 45
-                radius: 8; color: Theme.glassBackground
+                width: ListView.view.width; height: Theme.scaled(45)
+                radius: Theme.scaled(8); color: Theme.glassBackground
                 RowLayout {
-                    anchors.fill: parent; anchors.margins: 8
+                    anchors.fill: parent; anchors.margins: Theme.scaled(8)
                     Rectangle {
-                        width: 20; height: 20; radius: 4; color: model.completed ? Theme.blue : Theme.surface1
+                        width: Theme.scaled(20); height: Theme.scaled(20); radius: Theme.scaled(4); color: model.completed ? Theme.blue : Theme.surface1
                         MouseArea { anchors.fill: parent; onClicked: { model.completed = !model.completed; saveTasks(); } }
                     }
                     TextInput {
-                        text: model.task; Layout.fillWidth: true; color: model.completed ? Theme.surface2 : Theme.text
+                        text: model.task; Layout.fillWidth: true; color: model.completed ? Theme.surface2 : Theme.text; font.pixelSize: Theme.scaled(13)
                         onAccepted: { model.task = text; saveTasks(); }
                     }
                     Text { 
-                        text: "󰆴"; font.family: Theme.iconFont; color: Theme.powerRed
+                        text: "󰆴"; font.family: Theme.iconFont; color: Theme.powerRed; font.pixelSize: Theme.scaled(14)
                         MouseArea { anchors.fill: parent; onClicked: { todoModel.remove(index); saveTasks(); } }
                     }
                 }
