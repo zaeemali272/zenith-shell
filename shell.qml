@@ -18,6 +18,15 @@ Scope {
         id: dismissOverlay
     }
 
+    Connections {
+        target: Quickshell.Hyprland
+        function onActiveWindowChanged() {
+            if (HyprlandService.isFullscreen) {
+                MenuService.closeAll();
+            }
+        }
+    }
+
     Bar {
         id: bar
         controlCenterMenuRef: controlCenter

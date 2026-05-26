@@ -140,21 +140,21 @@ PanelWindow {
 
             Update { 
                 id: updateWidget
-                visible: !Theme.isSmallScreen && totalUpdates > 0 
+                visible: !Theme.isSmallScreen && totalUpdates > 0 && !HyprlandService.isFullscreen
             }
             
             Network { 
                 id: wifiWidget 
-                visible: GeneralSettings.enableResources 
+                visible: GeneralSettings.enableResources && !HyprlandService.isFullscreen
             }
             
             PowerProfile { 
                 id: powerProfileWidget 
-                visible: GeneralSettings.enablePowerProfiles && !Theme.isSmallScreen
+                visible: GeneralSettings.enablePowerProfiles && !Theme.isSmallScreen && !HyprlandService.isFullscreen
             }
             
             Resources { 
-                visible: GeneralSettings.enableResources && !Theme.isSmallScreen
+                visible: GeneralSettings.enableResources && !Theme.isSmallScreen && !HyprlandService.isFullscreen
             }
             
             Volume { 
@@ -167,6 +167,7 @@ PanelWindow {
             
             Battery { 
                 id: batteryWidget 
+                visible: !HyprlandService.isFullscreen
             }
             
             Power { }
