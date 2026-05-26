@@ -1,10 +1,10 @@
 //@ pragma UseQApplication
 import QtQml 2.15
 import Quickshell
-import "bar/"
+import "bar"
 import "bar/Menu"
 import "bar/Menu/components"
-import "services/"
+import "services"
 import "windows" as Windows
 
 Scope {

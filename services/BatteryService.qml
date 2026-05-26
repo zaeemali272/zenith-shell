@@ -17,6 +17,10 @@ Item {
     property real voltage: 0.0
     property real energyRate: 0.0
 
+    // Visibility & Notification Flags
+    property bool isFullyCharged: (status === "full" || (status === "charging" && percentage >= 100))
+    property bool isConservative: (status === "not charging" || status === "idle") && acOnline
+
     // Internal State
     property string batPath: ""
     property string acPath: ""
@@ -102,6 +106,13 @@ Item {
         }
 
         if (s === lastStatus || s === "unknown" || s === "") return;
+
+        if (s === "full") {
+            sendNotify("Battery Full", "Charging complete. Ready to unplug.");
+        } else if (s === "not charging" && acOnline) {
+            sendNotify("Conservative Mode", "Charging limit reached. Staying healthy.");
+        }
+
         lastStatus = s;
     }
 
