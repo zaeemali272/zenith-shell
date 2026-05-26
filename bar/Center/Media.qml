@@ -56,7 +56,8 @@ Rectangle {
         let title = MediaPlayerService.formatMediaTitle(String(trackedPlayer.trackTitle || trackedPlayer.identity || "Unknown"), trackedPlayer.identity);
         let artist = String(trackedPlayer.trackArtist || "");
         let full = (artist && artist !== "" && artist !== "undefined") ? title + " | " + artist : title;
-        if (full.length > 50) return full.substring(0, 47) + "...";
+        let limit = Theme.isSmallScreen ? 20 : 50;
+        if (full.length > limit) return full.substring(0, limit - 3) + "...";
         return full;
     }
 
@@ -112,7 +113,7 @@ Rectangle {
                 color: Theme.subtext1
                 font.pixelSize: Theme.scaled(11)
                 Layout.alignment: Qt.AlignVCenter
-                visible: text !== ""
+                visible: text !== "" && !Theme.isSmallScreen
             }
         }
     }

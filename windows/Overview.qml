@@ -76,14 +76,15 @@ PanelWindow {
             anchors.fill: parent
             anchors.topMargin: Root.Theme.scaled ? Root.Theme.scaled(15) : 15
             anchors.bottomMargin: Root.Theme.scaled ? Root.Theme.scaled(20) : 20
-            anchors.leftMargin: Root.Theme.scaled ? Root.Theme.scaled(100) : 100
-            anchors.rightMargin: Root.Theme.scaled ? Root.Theme.scaled(100) : 100
+            anchors.leftMargin: Root.Theme.isSmallScreen ? Root.Theme.scaled(20) : Root.Theme.scaled(100)
+            anchors.rightMargin: Root.Theme.isSmallScreen ? Root.Theme.scaled(20) : Root.Theme.scaled(100)
             spacing: Root.Theme.scaled ? Root.Theme.scaled(20) : 20
 
             // Search Bar
             SearchBar {
                 id: searchBar
                 Layout.alignment: Qt.AlignHCenter
+                Layout.preferredWidth: Root.Theme.isSmallScreen ? parent.width - 40 : Root.Theme.scaled(600)
                 onQueryChanged: (query) => appMenu.searchText = query
             }
 
@@ -91,7 +92,7 @@ PanelWindow {
             WorkspaceView {
                 id: workspaceView
                 Layout.fillWidth: true
-                Layout.preferredHeight: Root.Theme.scaled ? Root.Theme.scaled(250) : 250
+                Layout.preferredHeight: Root.Theme.isSmallScreen ? Root.Theme.scaled(180) : Root.Theme.scaled(250)
             }
 
             // App Grid

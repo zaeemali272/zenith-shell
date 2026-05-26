@@ -54,8 +54,8 @@ PanelWindow {
         NumberAnimation { target: mainTranslate; property: "y"; from: 30; to: 0; duration: 500; easing.type: Easing.OutBack }
     }
 
-    implicitWidth: Theme.scaled(650) 
-    implicitHeight: Theme.scaled(600)
+    implicitWidth: Math.min(Theme.scaled(650), (screen ? screen.width : Theme.screenWidth) - 20)
+    implicitHeight: Math.min(Theme.scaled(600), (screen ? screen.height : Theme.screenHeight) - Theme.barHeight - 20)
 
     Rectangle {
         id: mainContent
@@ -88,15 +88,15 @@ PanelWindow {
             // --- MODERN TAB DASHBOARD ---
             Rectangle {
                 Layout.fillWidth: true
-                height: 70
+                height: Theme.scaled(70)
                 color: Qt.rgba(0,0,0,0.3)
-                radius: 20
+                radius: Theme.scaled(20)
                 border.color: Theme.glassBorder
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.margins: 8
-                    spacing: 8
+                    anchors.margins: Theme.scaled(8)
+                    spacing: Theme.scaled(8)
                     
                     Repeater {
                         model: [
@@ -113,7 +113,7 @@ PanelWindow {
                             id: tabRect
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            radius: 14
+                            radius: Theme.scaled(14)
                             color: QuickSettingsService.activeTab === modelData.id ? Theme.accentColor : (tabMouse.containsMouse ? Qt.rgba(1,1,1,0.05) : "transparent")
                             
                             scale: tabMouse.pressed ? 0.92 : (tabMouse.containsMouse ? 1.05 : 1.0)
@@ -126,13 +126,14 @@ PanelWindow {
                                 spacing: 2
                                 Text {
                                     text: modelData.icon
-                                    font.family: Theme.iconFont; font.pixelSize: 20
+                                    font.family: Theme.iconFont; font.pixelSize: Theme.scaled(20)
                                     color: QuickSettingsService.activeTab === modelData.id ? Theme.base : (tabMouse.containsMouse ? Theme.text : Theme.subtext1)
                                     Layout.alignment: Qt.AlignHCenter
                                 }
                                 Text {
                                     text: modelData.title
-                                    font.pixelSize: 8; font.weight: Font.Black; font.letterSpacing: 1
+                                    font.pixelSize: Theme.scaled(8); font.weight: Font.Black; font.letterSpacing: 1
+                                    visible: !Theme.isSmallScreen || QuickSettingsService.activeTab === modelData.id
                                     color: QuickSettingsService.activeTab === modelData.id ? Theme.base : (tabMouse.containsMouse ? Theme.text : Theme.surface2)
                                     Layout.alignment: Qt.AlignHCenter
                                 }

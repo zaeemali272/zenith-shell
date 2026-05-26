@@ -34,6 +34,7 @@ Row {
     }
 
     Media {
+        visible: !Theme.isSmallScreen
     }
 
 }

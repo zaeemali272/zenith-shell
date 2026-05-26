@@ -15,11 +15,21 @@ QtObject {
     
     // Scale factor: geometric mean of height and width scaling to ensure balanced scaling
     readonly property real scale: Math.sqrt((screenWidth / referenceWidth) * (screenHeight / referenceHeight))
+    
+    // Responsive break points
+    readonly property bool isSmallScreen: screenWidth < 1000 || screenHeight < 700
+    readonly property bool isMobile: screenWidth < 500 || screenHeight < 500
+    readonly property bool isPortrait: screenHeight > screenWidth
 
     // Helper to scale values manually if needed
-    function scaled(val) { return Math.round(val * scale); }
+    function scaled(val) { 
+        let s = Math.round(val * scale);
+        // Ensure minimum sizes for readability on very small scales
+        if (val >= 8 && s < 8) return 8;
+        return s;
+    }
     
-    readonly property int appMenuCol: 6
+    readonly property int appMenuCol: isSmallScreen ? (isPortrait ? 3 : 4) : 6
 
     // ===== Glassmorphism & Effects =====
     readonly property real menuOpacity: 0.7
