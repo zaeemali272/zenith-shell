@@ -45,6 +45,7 @@ Item {
 
     function open() {
         isSticky = true;
+        activeTab = "Default"; // Always reset to default tab
         
         // Ensure others are closed
         if (typeof QuickSettingsService !== "undefined") QuickSettingsService.close();
