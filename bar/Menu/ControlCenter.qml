@@ -26,8 +26,8 @@ PanelWindow {
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
     WlrLayershell.namespace: "controlcenter"
 
-    implicitWidth: Theme.scaled(900)
-    implicitHeight: Theme.scaled(650)
+    implicitWidth: Math.min(Theme.scaled(900), (screen ? screen.width : Theme.screenWidth) - 20)
+    implicitHeight: Math.min(Theme.scaled(650), (screen ? screen.height : Theme.screenHeight) - Theme.barHeight - 20)
 
     // Centered positioning: top anchor
     anchors.top: true
@@ -58,7 +58,7 @@ PanelWindow {
         height: root.height
         focus: true
         color: Theme.glassBackground
-        radius: 32
+        radius: Theme.scaled(32)
         border.color: Theme.glassBorder
         border.width: 1
         opacity: 0
@@ -68,37 +68,38 @@ PanelWindow {
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 25
-            spacing: 20
+            anchors.margins: Theme.scaled(25)
+            spacing: Theme.scaled(20)
 
             // --- HEADER ---
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 15
+                spacing: Theme.scaled(15)
                 
-                Rectangle { width: 4; height: 20; color: Theme.blue; radius: 2 }
+                Rectangle { width: Theme.scaled(4); height: Theme.scaled(20); color: Theme.blue; radius: 2 }
                 Text { 
                     text: "DASHBOARD"
                     color: Theme.text
-                    font.pixelSize: 12
+                    font.pixelSize: Theme.scaled(12)
                     font.weight: Font.Black
                     font.letterSpacing: 2
+                    visible: !Theme.isSmallScreen
                 }
 
                 // Tab Switcher
                 RowLayout {
-                    spacing: 5
+                    spacing: Theme.scaled(5)
                     Repeater {
                         model: ["Default", "Pomodoro"]
                         delegate: Rectangle {
-                            width: 80; height: 30
-                            radius: 8
+                            width: Theme.scaled(80); height: Theme.scaled(30)
+                            radius: Theme.scaled(8)
                             color: CenterState.activeTab === modelData ? Theme.blue : "transparent"
                             border.color: Theme.glassBorder
                             Text {
                                 anchors.centerIn: parent
                                 text: modelData
-                                font.pixelSize: 9
+                                font.pixelSize: Theme.scaled(9)
                                 color: CenterState.activeTab === modelData ? Theme.base : Theme.text
                             }
                             MouseArea { anchors.fill: parent; onClicked: CenterState.activeTab = modelData }
@@ -111,8 +112,8 @@ PanelWindow {
                 // Caffeine Toggle
                 Rectangle {
                     id: caffeineRect
-                    width: 32; height: 32
-                    radius: 8
+                    width: Theme.scaled(32); height: Theme.scaled(32)
+                    radius: Theme.scaled(8)
                     color: CaffeineService.active ? Theme.blue : (caffeineMouse.containsMouse ? Qt.rgba(1,1,1,0.05) : "transparent")
                     border.color: CaffeineService.active ? Theme.blue : Theme.glassBorder
                     scale: caffeineMouse.pressed ? 0.9 : 1.0
@@ -125,7 +126,7 @@ PanelWindow {
                         text: "󱄅"
                         font.family: "Font Awesome 6 Free"
                         font.weight: Font.Black
-                        font.pixelSize: 16
+                        font.pixelSize: Theme.scaled(16)
                         color: CaffeineService.active ? Theme.base : (caffeineMouse.containsMouse ? Theme.text : Theme.subtext1)
                     }
                     MouseArea { 
@@ -145,22 +146,22 @@ PanelWindow {
 
                 // Default Tab
                 GridLayout {
-                    columns: 2
-                    columnSpacing: 20
-                    rowSpacing: 20
+                    columns: (Theme.isSmallScreen && Theme.isPortrait) ? 1 : 2
+                    columnSpacing: Theme.scaled(20)
+                    rowSpacing: Theme.scaled(20)
 
                     // 1. Notifications
                     Rectangle {
-                        Layout.fillWidth: true; Layout.fillHeight: true; Layout.rowSpan: 2
-                        color: Qt.rgba(0,0,0,0.2); radius: 24; border.color: Theme.glassBorder; clip: true
+                        Layout.fillWidth: true; Layout.fillHeight: true; Layout.rowSpan: (Theme.isSmallScreen && Theme.isPortrait) ? 1 : 2
+                        color: Qt.rgba(0,0,0,0.2); radius: Theme.scaled(24); border.color: Theme.glassBorder; clip: true
                         
                         ColumnLayout {
-                            anchors.fill: parent; anchors.margins: 15; spacing: 10
+                            anchors.fill: parent; anchors.margins: Theme.scaled(15); spacing: Theme.scaled(10)
                             
                             RowLayout {
-                                Layout.fillWidth: true; spacing: 8
-                                Text { text: "󰂚"; font.family: Theme.iconFont; color: Theme.blue; font.pixelSize: 14 }
-                                Text { text: "NOTIFICATIONS"; color: Theme.subtext1; font.pixelSize: 9; font.weight: Font.Black; font.letterSpacing: 1 }
+                                Layout.fillWidth: true; spacing: Theme.scaled(8)
+                                Text { text: "󰂚"; font.family: Theme.iconFont; color: Theme.blue; font.pixelSize: Theme.scaled(14) }
+                                Text { text: "NOTIFICATIONS"; color: Theme.subtext1; font.pixelSize: Theme.scaled(9); font.weight: Font.Black; font.letterSpacing: 1 }
                                 Rectangle {
                                        width: Theme.scaled(22); height: Theme.scaled(22); radius: Theme.scaled(6)
                                        color: Theme.surface1
@@ -178,6 +179,7 @@ PanelWindow {
                                 id: fullscreenBtn
                                 flat: true
                                 padding: Theme.scaled(4)
+                                visible: !Theme.isSmallScreen
                                 contentItem: RowLayout {
                                     spacing: 4
                                     Text {
@@ -195,6 +197,7 @@ PanelWindow {
                                 id: osdFullscreenBtn
                                 flat: true
                                 padding: Theme.scaled(4)
+                                visible: !Theme.isSmallScreen
                                 contentItem: RowLayout {
                                     spacing: 4
                                     Text {
@@ -212,7 +215,7 @@ PanelWindow {
                                     id: clearBtn
                                     flat: true
                                     padding: Theme.scaled(4)
-                                    contentItem: Text { text: "󰃢"; font.family: Theme.iconFont; color: Theme.subtext1; font.pixelSize: 14 }
+                                    contentItem: Text { text: "󰃢"; font.family: Theme.iconFont; color: Theme.subtext1; font.pixelSize: Theme.scaled(14) }
                                     background: Rectangle { color: clearBtn.hovered ? Theme.surface0 : "transparent"; radius: 6 }
                                     onClicked: NotificationService.clearAll()
                                 }
@@ -230,13 +233,14 @@ PanelWindow {
                     // 2. Calendar
                     Rectangle {
                         Layout.fillWidth: true; Layout.fillHeight: true
-                        color: Qt.rgba(0,0,0,0.2); radius: 24; border.color: Theme.glassBorder
+                        visible: !Theme.isSmallScreen || !Theme.isPortrait
+                        color: Qt.rgba(0,0,0,0.2); radius: Theme.scaled(24); border.color: Theme.glassBorder
                         ColumnLayout {
-                            anchors.fill: parent; anchors.margins: 15
+                            anchors.fill: parent; anchors.margins: Theme.scaled(15)
                             RowLayout {
-                                spacing: 8
-                                Text { text: "󰃭"; font.family: Theme.iconFont; color: Theme.blue; font.pixelSize: 14 }
-                                Text { text: "CALENDAR"; color: Theme.subtext1; font.pixelSize: 9; font.weight: Font.Black; font.letterSpacing: 1 }
+                                spacing: Theme.scaled(8)
+                                Text { text: "󰃭"; font.family: Theme.iconFont; color: Theme.blue; font.pixelSize: Theme.scaled(14) }
+                                Text { text: "CALENDAR"; color: Theme.subtext1; font.pixelSize: Theme.scaled(9); font.weight: Font.Black; font.letterSpacing: 1 }
                             }
                             CalendarWidget { Layout.fillWidth: true; Layout.fillHeight: true }
                         }
@@ -245,13 +249,14 @@ PanelWindow {
                     // 3. Weather
                     Rectangle {
                         Layout.fillWidth: true; Layout.fillHeight: true
-                        color: Qt.rgba(0,0,0,0.2); radius: 24; border.color: Theme.glassBorder
+                        visible: !Theme.isSmallScreen || !Theme.isPortrait
+                        color: Qt.rgba(0,0,0,0.2); radius: Theme.scaled(24); border.color: Theme.glassBorder
                         ColumnLayout {
-                            anchors.fill: parent; anchors.margins: 15
+                            anchors.fill: parent; anchors.margins: Theme.scaled(15)
                             RowLayout {
-                                spacing: 8
-                                Text { text: "󰖐"; font.family: Theme.iconFont; color: Theme.blue; font.pixelSize: 14 }
-                                Text { text: "WEATHER"; color: Theme.subtext1; font.pixelSize: 9; font.weight: Font.Black; font.letterSpacing: 1 }
+                                spacing: Theme.scaled(8)
+                                Text { text: "󰖐"; font.family: Theme.iconFont; color: Theme.blue; font.pixelSize: Theme.scaled(14) }
+                                Text { text: "WEATHER"; color: Theme.subtext1; font.pixelSize: Theme.scaled(9); font.weight: Font.Black; font.letterSpacing: 1 }
                             }
                             WeatherWidget {
                                 visible: GeneralSettings.enableWeather

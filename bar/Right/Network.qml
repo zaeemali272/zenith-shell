@@ -95,7 +95,7 @@ Item {
             id: content
 
             anchors.centerIn: parent
-            spacing: 6
+            spacing: Theme.scaled(6)
 
             Text {
                 // Changed airplane icon to '󰀕' and disconnected icon to '󰤊'
@@ -109,7 +109,7 @@ Item {
                 // Removed text for airplane mode and disconnected states, showing only icons
                 text: airplaneMode ? ":)" : (!wifiConnected ? ":(" : (pill.containsMouse ? wifiSSID : formatSpeed(showUpload ? upSpeed : downSpeed)))
                 horizontalAlignment: Text.AlignHCenter
-                Layout.preferredWidth: (pill.containsMouse || !wifiConnected || airplaneMode) ? -1 : 55 
+                Layout.preferredWidth: (pill.containsMouse || !wifiConnected || airplaneMode) ? -1 : Theme.scaled(55) 
                 Layout.fillWidth: (pill.containsMouse || !wifiConnected || airplaneMode)
                 font.pixelSize: Theme.fontSize
                 color: airplaneMode ? Theme.activeTextColor : Theme.activeTextColor

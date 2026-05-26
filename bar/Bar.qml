@@ -32,7 +32,7 @@ PanelWindow {
     }
 
     implicitHeight: Theme.barHeight
-    implicitWidth: screen ? screen.width : 1920
+    implicitWidth: screen ? screen.width : Theme.screenWidth
     color: "transparent"
 
     Rectangle {
@@ -117,7 +117,7 @@ PanelWindow {
             // Hide only if the available space is smaller than the widget itself
             visible: {
                 let availableSpace = rightLayout.x - (leftSide.x + leftSide.width) - (Theme.pillGap * 2);
-                return width <= availableSpace;
+                return width <= availableSpace || !Theme.isSmallScreen;
             }
         }
 
@@ -132,7 +132,7 @@ PanelWindow {
 
             Tray { menuRef: trayPopup }
 
-            Update { }
+            Update { visible: !Theme.isSmallScreen }
             
             Network { 
                 id: wifiWidget 
@@ -141,11 +141,11 @@ PanelWindow {
             
             PowerProfile { 
                 id: powerProfileWidget 
-                visible: GeneralSettings.enablePowerProfiles
+                visible: GeneralSettings.enablePowerProfiles && !Theme.isSmallScreen
             }
             
             Resources { 
-                visible: GeneralSettings.enableResources
+                visible: GeneralSettings.enableResources && !Theme.isSmallScreen
             }
             
             Volume { 
