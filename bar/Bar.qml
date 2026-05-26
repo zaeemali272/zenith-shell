@@ -167,7 +167,6 @@ PanelWindow {
             
             Battery { 
                 id: batteryWidget 
-                visible: !HyprlandService.isFullscreen
             }
             
             Power { }

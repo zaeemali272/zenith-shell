@@ -12,9 +12,10 @@ Item {
     readonly property bool isFullyCharged: BatteryService.isFullyCharged
     readonly property bool isConservative: BatteryService.isConservative
     
-    visible: !isFullyCharged && !isConservative
+    // Hide when fully charged, conservative mode is active, or in fullscreen
+    visible: !isFullyCharged && !isConservative && !HyprlandService.isFullscreen
     
-    // Smooth visibility transition
+    // Ensure visibility is completely tied to this condition
     opacity: visible ? 1.0 : 0.0
     Behavior on opacity { NumberAnimation { duration: 400 } }
 

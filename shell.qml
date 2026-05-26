@@ -1,6 +1,7 @@
 //@ pragma UseQApplication
 import QtQml 2.15
 import Quickshell
+import Quickshell.Hyprland
 import "bar"
 import "bar/Menu"
 import "bar/Menu/components"
@@ -19,8 +20,8 @@ Scope {
     }
 
     Connections {
-        target: Quickshell.Hyprland
-        function onActiveWindowChanged() {
+        target: HyprlandService
+        function onIsFullscreenChanged() {
             if (HyprlandService.isFullscreen) {
                 MenuService.closeAll();
             }

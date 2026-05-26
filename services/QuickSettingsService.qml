@@ -52,6 +52,7 @@ Item {
         if (typeof CenterState !== "undefined") CenterState.close();
         
         if (menuRef) menuRef.visible = true;
+        qsVisible = true;
     }
 
     function hoverOpen(tab, rect) {
@@ -86,6 +87,7 @@ Item {
         if (menuRef) menuRef.visible = false;
         if (typeof CenterState !== "undefined" && CenterState.mediaPopupRef) CenterState.mediaPopupRef.visible = false;
         isSticky = false;
+        qsVisible = false;
         hideTimer.stop();
     }
 }

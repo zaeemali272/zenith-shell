@@ -8,7 +8,6 @@ import QtQuick.Controls
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
-import "../../services"
 
 PanelWindow {
     id: root
@@ -55,7 +54,7 @@ PanelWindow {
     MouseArea {
         anchors.fill: parent
         z: -1
-        onClicked: root.visible = false
+        onClicked: CenterState.close()
     }
 
     Rectangle {
