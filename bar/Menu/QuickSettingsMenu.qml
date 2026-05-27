@@ -19,7 +19,7 @@ PanelWindow {
 
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.exclusiveZone: 0
-    WlrLayershell.keyboardFocus: (wifiContent.isInputActive) ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: (wifiContent.isInputActive) ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.OnDemand
     WlrLayershell.namespace: "quicksettings"
 
     // Positioning using anchors and margins

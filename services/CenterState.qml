@@ -12,7 +12,7 @@ Item {
     property bool qsVisible: false
     property bool isSticky: false
     property bool isHoveringMenu: false
-    property string activeTab: "Default"
+    property string activeTab: "Default" // Options: Default, Pomodoro, Wallpaper
     
     property bool _toggleLocked: false
 
@@ -43,9 +43,10 @@ Item {
         }
     }
 
-    function open() {
+    function open(tab) {
         isSticky = true;
-        activeTab = "Default"; // Always reset to default tab
+        if (tab) activeTab = tab;
+        else activeTab = "Default";
         
         // Ensure others are closed
         if (typeof QuickSettingsService !== "undefined") QuickSettingsService.close();

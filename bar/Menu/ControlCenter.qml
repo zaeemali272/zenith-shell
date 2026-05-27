@@ -105,19 +105,29 @@ PanelWindow {
                 RowLayout {
                     spacing: Theme.scaled(5)
                     Repeater {
-                        model: ["Default", "Pomodoro"]
+                        model: ["Default", "Pomodoro", "Wallpaper"]
                         delegate: Rectangle {
+                            id: tabRect
                             width: Theme.scaled(80); height: Theme.scaled(30)
                             radius: Theme.scaled(8)
-                            color: CenterState.activeTab === modelData ? Theme.blue : "transparent"
+                            color: CenterState.activeTab === modelData ? Theme.accentColor : (tabMouse.containsMouse ? Theme.surface1 : "transparent")
                             border.color: Theme.glassBorder
+                            scale: tabMouse.pressed ? 0.95 : 1.0
+                            Behavior on scale { NumberAnimation { duration: 100 } }
+                            Behavior on color { ColorAnimation { duration: 200 } }
+
                             Text {
                                 anchors.centerIn: parent
                                 text: modelData
                                 font.pixelSize: Theme.scaled(9)
-                                color: CenterState.activeTab === modelData ? Theme.base : Theme.text
+                                color: CenterState.activeTab === modelData ? Theme.base : (tabMouse.containsMouse ? Theme.text : Theme.subtext1)
                             }
-                            MouseArea { anchors.fill: parent; onClicked: CenterState.activeTab = modelData }
+                            MouseArea { 
+                                id: tabMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                onClicked: CenterState.activeTab = modelData 
+                            }
                         }
                     }
                 }
@@ -157,7 +167,7 @@ PanelWindow {
             StackLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                currentIndex: CenterState.activeTab === "Pomodoro" ? 1 : 0
+                currentIndex: ["Default", "Pomodoro", "Wallpaper"].indexOf(CenterState.activeTab)
 
                 // Default Tab
                 GridLayout {
@@ -283,6 +293,11 @@ PanelWindow {
 
                 // Pomodoro Tab
                 PomodoroContent {
+                    Layout.fillWidth: true; Layout.fillHeight: true
+                }
+
+                // Wallpaper Tab
+                WallpaperContent {
                     Layout.fillWidth: true; Layout.fillHeight: true
                 }
             }

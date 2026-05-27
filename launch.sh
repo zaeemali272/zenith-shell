@@ -34,8 +34,25 @@ case "$1" in
         quickshell -p "$SHELL_DIR/windows/Cheatsheet.qml" >> "$LOG_FILE" 2>&1 &
         ;;
 
+    actionLauncher)
+        if pgrep -f "quickshell.*windows/ActionLauncher.qml" > /dev/null; then
+            pkill -f "quickshell.*windows/ActionLauncher.qml"
+            exit 0
+        fi
+        quickshell -p "$SHELL_DIR/windows/ActionLauncher.qml" >> "$LOG_FILE" 2>&1 &
+        ;;
+
+    cmd)
+        if [ -z "$2" ]; then
+            echo "Usage: $0 cmd <command>"
+            echo "Example: $0 cmd dashboard:Wallpaper"
+            exit 1
+        fi
+        echo "$2" > "$HOME/.cache/zenith_command"
+        ;;
+
     *)
-        echo "Usage: $0 {wallpaperSelector|overview|cheatsheet}"
+        echo "Usage: $0 {wallpaperSelector|overview|cheatsheet|actionLauncher|cmd}"
         exit 1
         ;;
 esac

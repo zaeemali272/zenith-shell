@@ -17,5 +17,6 @@ ResourcesContent ResourcesContent.qml
 TodoList TodoList.qml
 VolumeContent VolumeContent.qml
 VolumeSlider VolumeSlider.qml
+WallpaperContent WallpaperContent.qml
 WeatherWidget WeatherWidget.qml
 WifiContent WifiContent.qml

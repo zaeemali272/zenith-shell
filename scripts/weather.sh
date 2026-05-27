@@ -7,8 +7,11 @@ MAX_AGE=1800 # 30 minutes
 mkdir -p "$(dirname "$CACHE_FILE")"
 
 fetch_weather() {
+    # Get more accurate location from ipinfo.io (coordinates are more precise than city name)
+    LOC=$(curl -s --max-time 3 "https://ipinfo.io/json/" | jq -r '.loc' 2>/dev/null)
+    
     # Timeout after 5 seconds to prevent hanging
-    if curl -s --max-time 5 "wttr.in/?format=j1" > "$CACHE_FILE.tmp"; then
+    if curl -s --max-time 5 "wttr.in/$LOC?format=j1" > "$CACHE_FILE.tmp"; then
         mv "$CACHE_FILE.tmp" "$CACHE_FILE"
     else
         rm -f "$CACHE_FILE.tmp"
