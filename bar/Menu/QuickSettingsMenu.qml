@@ -191,7 +191,17 @@ PanelWindow {
                     PowerProfileContent { }
                     ResourcesContent { }
                     BatteryContent { }
-                    PowerContent { }
+                    PowerContent { 
+                        id: powerContent
+                        Connections {
+                            target: QuickSettingsService
+                            function onActiveTabChanged() {
+                                if (QuickSettingsService.activeTab === "power") {
+                                    powerContent.forceActiveFocus();
+                                }
+                            }
+                        }
+                    }
                 }            }
         }
     }

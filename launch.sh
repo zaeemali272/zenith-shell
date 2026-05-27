@@ -10,14 +10,6 @@ export QML_IMPORT_PATH="$SHELL_DIR"
 export QML2_IMPORT_PATH="$SHELL_DIR"
 
 case "$1" in
-    wallpaperSelector)
-        if pgrep -f "quickshell.*windows/WallpaperWindow.qml" > /dev/null; then
-            pkill -f "quickshell.*windows/WallpaperWindow.qml"
-            exit 0
-        fi
-        quickshell -p "$SHELL_DIR/windows/WallpaperWindow.qml" >> "$LOG_FILE" 2>&1 &
-        ;;
-
     overview)
         if pgrep -f "quickshell.*windows/Overview.qml" > /dev/null; then
             pkill -f "quickshell.*windows/Overview.qml"
@@ -52,7 +44,7 @@ case "$1" in
         ;;
 
     *)
-        echo "Usage: $0 {wallpaperSelector|overview|cheatsheet|actionLauncher|cmd}"
+        echo "Usage: $0 {overview|cheatsheet|actionLauncher|cmd}"
         exit 1
         ;;
 esac

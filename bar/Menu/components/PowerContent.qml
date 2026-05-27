@@ -13,10 +13,35 @@ ColumnLayout {
     // Explicit sizing for ScrollView integration
     implicitHeight: mainLayout.implicitHeight
 
+    property int selectedIndex: 5 
+
+    // Reset selection every time the menu is opened
+    onVisibleChanged: {
+        if (visible) {
+            selectedIndex = 5;
+            mainLayout.forceActiveFocus();
+        }
+    }
+
     ColumnLayout {
         id: mainLayout
         Layout.fillWidth: true
         spacing: Theme.scaled(25)
+        focus: true
+        
+        Keys.onPressed: (event) => {
+            let cols = 2;
+            let maxIdx = 5;
+            if (event.key === Qt.Key_Right) selectedIndex = Math.min(selectedIndex + 1, maxIdx);
+            else if (event.key === Qt.Key_Left) selectedIndex = Math.max(selectedIndex - 1, 0);
+            else if (event.key === Qt.Key_Down) selectedIndex = Math.min(selectedIndex + cols, maxIdx);
+            else if (event.key === Qt.Key_Up) selectedIndex = Math.max(selectedIndex - cols, 0);
+            else if (event.key === Qt.Key_Enter || event.key === Qt.Key_Return) {
+                let cmd = powerButtons.itemAt(selectedIndex).modelData.cmd;
+                powerProc.command = ["sh", "-c", cmd];
+                powerProc.running = true;
+            }
+        }
 
         Text {
             text: "SYSTEM SESSION"
@@ -34,6 +59,7 @@ ColumnLayout {
             columnSpacing: Theme.scaled(12)
 
             Repeater {
+                id: powerButtons
                 model: [
                     { icon: "󰌾", label: "LOCK",     cmd: "hyprlock --immediate-render --no-fade-in", color: Theme.lavender },
                     { icon: "󰒲", label: "BIOS",     cmd: "systemctl reboot --firmware-setup", color: Theme.mauve },
@@ -47,13 +73,16 @@ ColumnLayout {
                     id: powerBtn
                     Layout.fillWidth: true
                     height: Theme.scaled(100)
-                    // Add margins to prevent border clipping
                     anchors.margins: 2 
-                    color: m.containsMouse ? Qt.rgba(1,1,1,0.05) : Qt.rgba(0,0,0,0.2)
+                    
+                    property bool isSelected: index === root.selectedIndex
+                    
+                    color: isSelected ? Qt.rgba(1,1,1,0.1) : (m.containsMouse ? Qt.rgba(1,1,1,0.05) : Qt.rgba(0,0,0,0.2))
                     radius: Theme.scaled(20)
-                    border.color: m.containsMouse ? modelData.color : Theme.glassBorder
+                    border.color: isSelected ? modelData.color : (m.containsMouse ? modelData.color : Theme.glassBorder)
                     border.width: 1
-                    scale: m.pressed ? 0.92 : (m.containsMouse ? 1.00 : 0.95)
+                    
+                    scale: m.pressed ? 0.92 : (isSelected || m.containsMouse ? 1.00 : 0.95)
                     Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
                     Behavior on color { ColorAnimation { duration: 200 } }
                     Behavior on border.color { ColorAnimation { duration: 200 } }
@@ -61,6 +90,7 @@ ColumnLayout {
                     MouseArea {
                         id: m
                         anchors.fill: parent; hoverEnabled: true
+                        onEntered: root.selectedIndex = index
                         onClicked: { powerProc.command = ["sh", "-c", modelData.cmd]; powerProc.running = true; }
                     }
 
