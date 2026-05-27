@@ -124,11 +124,24 @@ ColumnLayout {
         clip: true
 
         Flickable {
+            id: wallFlickable
             anchors.fill: parent
             contentHeight: wallFlow.height
             visible: root.activeSubTab !== "Animated"
             clip: true
             ScrollBar.vertical: ScrollBar { width: 4; policy: ScrollBar.AsNeeded }
+
+            Connections {
+                target: root
+                function onSelectedIndexChanged() {
+                    let item = wallRepeater.itemAt(root.selectedIndex);
+                    if (item) {
+                        let itemPos = item.y;
+                        if (itemPos < wallFlickable.contentY) wallFlickable.contentY = itemPos;
+                        else if (itemPos + item.height > wallFlickable.contentY + wallFlickable.height) wallFlickable.contentY = itemPos + item.height - wallFlickable.height;
+                    }
+                }
+            }
 
             Flow {
                 id: wallFlow
@@ -293,7 +306,7 @@ ColumnLayout {
     function stopSlideshow() { serviceCmd.command = ["systemctl", "--user", "disable", "--now", "zenith-slideshow.service"]; serviceCmd.running = true; }
     function log(msg) { logger.command = ["sh", "-c", "echo '[$(date +%T)] " + msg + "' >> " + logPath]; logger.running = true; }
 
-    Timer { id: wallDelay; property string wallPath: ""; interval: 600; onTriggered: { setWall.command = ["sh", "-c", "awww img '" + wallPath + "' --transition-type fade >> " + root.logPath + " 2>&1 && ~/.config/quickshell/scripts/zenith-theme.sh --autoselect"]; setWall.running = true; } }
+    Timer { id: wallDelay; property string wallPath: ""; interval: 600; onTriggered: { setWall.command = ["sh", "-c", "awww img --resize=crop '" + wallPath + "' --transition-type fade >> " + root.logPath + " 2>&1 && ~/.config/quickshell/scripts/zenith-theme.sh --autoselect"]; setWall.running = true; } }
     Timer { id: videoDelay; property string videoPath: ""; interval: 400; onTriggered: { mpvProcess.command = ["sh", "-c", "MONITOR=$(awww query | head -n1 | cut -d: -f1); if [ -z \"$MONITOR\" ]; then MONITOR=$(wlr-randr | head -n1 | awk '{print $1}'); fi; mpvpaper -vsf -o 'no-audio loop' $MONITOR '" + videoPath + "' >> " + root.logPath + " 2>&1"]; mpvProcess.running = true; CenterState.close(); } }
 
     Process { id: logger }

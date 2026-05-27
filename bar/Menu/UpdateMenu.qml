@@ -9,11 +9,6 @@ import Quickshell.Hyprland
 PopupWindow {
     id: root
 
-    onVisibleChanged: {
-        if (visible) MenuService.register(root)
-        else MenuService.unregister(root)
-    }
-
     property var zenithData: ({exists: false, updates: 0, commits: []})
     property var shellData: ({exists: false, updates: 0, commits: []})
 
@@ -23,17 +18,13 @@ PopupWindow {
     implicitWidth: menuSurface.implicitWidth
     implicitHeight: menuSurface.implicitHeight + Theme.scaled(20)
 
-    grabFocus: false 
+    grabFocus: true 
 
     HyprlandFocusGrab {
         id: grab
         active: root.visible
-        windows: [root, notificationPopup, osdPopup]
+        windows: [root]
         onCleared: root.visible = false
-    }
-
-    Keys.onPressed: (event) => {
-        if (event.key === Qt.Key_Escape) root.visible = false
     }
 
     function openAt(visualParent) {
@@ -45,12 +36,11 @@ PopupWindow {
     }
 
     function runUpdate(args) {
-        logText.text = "Starting update for: " + args + "
-";
+        logText.text = "Starting update for: " + args + "\n";
         console.log("Starting update with args:", args);
         
         // Directly call the script, capturing output to the log viewer
-        updateRunner.command = ["bash", Quickshell.env("HOME") + "/.config/quickshell/scripts/run_update.sh", ...args.split(" ")];
+        updateRunner.command = ["bash", "-c", Quickshell.env("HOME") + "/.config/quickshell/scripts/run_update.sh " + args];
         updateRunner.running = true;
     }
 
@@ -107,7 +97,7 @@ PopupWindow {
                 Text {
                     id: logText
                     text: "Ready to update..."
-                    color: Theme.text
+                    color: Text.text
                     font.family: "monospace"
                     font.pixelSize: Theme.scaled(11)
                     wrapMode: Text.WordWrap
@@ -171,8 +161,7 @@ PopupWindow {
             }
         }
         onExited: (code) => {
-            logText.text += "
-Update finished with code: " + code;
+            logText.text += "\nUpdate finished with code: " + code;
             console.log("Update finished with code:", code);
         }
     }
