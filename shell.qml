@@ -2,6 +2,7 @@
 import QtQml 2.15
 import Quickshell
 import Quickshell.Hyprland
+import Quickshell.Io
 import "bar"
 import "bar/Menu"
 import "bar/Menu/components"
@@ -14,6 +15,75 @@ Scope {
     readonly property var _battery: BatteryService
     readonly property var _media: MediaPlayerService
     readonly property var _productivity: ProductivityService
+
+    // --- IPC / COMMAND LISTENER ---
+    // Listen for commands from external sources (scripts or other quickshell processes)
+    // Commands are written to ~/.cache/zenith_command
+    property string cmdPath: Quickshell.env("HOME") + "/.cache/zenith_command"
+    
+    Timer {
+        id: ipcTimer
+        interval: 500
+        running: true
+        repeat: true
+        onTriggered: {
+            ipcReader.running = false;
+            ipcReader.running = true;
+        }
+    }
+
+    Process {
+        id: ipcReader
+        command: ["cat", cmdPath]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                let cmd = text.trim();
+                if (cmd !== "") {
+                    handleCommand(cmd);
+                    ipcClearer.running = true;
+                }
+            }
+        }
+    }
+
+    Process {
+        id: ipcClearer
+        command: ["sh", "-c", "> " + cmdPath]
+    }
+
+    function handleCommand(cmd) {
+        console.log("[Zenith IPC]: Received command: " + cmd);
+        let parts = cmd.split(":");
+        let action = parts[0];
+        let arg = parts.length > 1 ? parts[1] : "";
+
+        if (action === "dashboard") {
+            let tab = "Default";
+            let lowerArg = arg.toLowerCase();
+            if (lowerArg === "pomodoro") tab = "Pomodoro";
+            else if (lowerArg === "wallpaper" || lowerArg === "wallpapers") tab = "Wallpaper";
+            
+            // Toggle logic: If already open on the same tab, close it
+            if (CenterState.qsVisible && CenterState.activeTab === tab) {
+                CenterState.close();
+            } else {
+                CenterState.open(tab);
+            }
+        } else if (action === "quicksettings") {
+            // Toggle logic: If already open on the same tab, close it
+            if (QuickSettingsService.qsVisible && QuickSettingsService.activeTab === arg) {
+                QuickSettingsService.close();
+            } else {
+                QuickSettingsService.open(arg || "network");
+            }
+        } else if (action === "close_all") {
+            MenuService.closeAll();
+        } else if (action === "toggle_dashboard") {
+            CenterState.toggle();
+        } else if (action === "toggle_quicksettings") {
+            QuickSettingsService.toggle(arg || "network");
+        }
+    }
 
     DismissOverlay {
         id: dismissOverlay

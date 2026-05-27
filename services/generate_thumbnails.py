@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os
 import subprocess
+import sys
 from pathlib import Path
 from PIL import Image
 
@@ -49,8 +50,10 @@ def process_image(img_path, thumb_path):
             im = im.resize((THUMB_WIDTH, THUMB_HEIGHT), Image.LANCZOS)
             im.save(thumb_path, format="PNG")
             print(f"✓ Image Thumb: {os.path.basename(thumb_path)}")
+            sys.stdout.flush()
     except Exception as e:
         print(f"✗ Image Error: {img_path} → {e}")
+        sys.stdout.flush()
 
 def process_video(vid_path, thumb_path):
     """Extracts a frame from video using ffmpeg, then crops/resizes it."""
@@ -66,10 +69,13 @@ def process_video(vid_path, thumb_path):
         process_image(temp_frame, thumb_path)
         os.remove(temp_frame)
         print(f"✓ Video Thumb: {os.path.basename(thumb_path)}")
+        sys.stdout.flush()
     except subprocess.CalledProcessError as e:
         print(f"✗ Video Error (ffmpeg): {vid_path} → {e}")
+        sys.stdout.flush()
     except Exception as e:
         print(f"✗ Video Error: {vid_path} → {e}")
+        sys.stdout.flush()
 
 def main():
     # Process Wallpapers
@@ -77,7 +83,9 @@ def main():
         for file in os.listdir(WALLPAPER_DIR):
             if file.lower().endswith((".jpg", ".jpeg", ".png", ".webp")):
                 src = os.path.join(WALLPAPER_DIR, file)
-                dst = os.path.join(WALL_THUMB_DIR, file + ".png")
+                # Use stem to avoid .png.png or .jpg.png
+                name_without_ext = os.path.splitext(file)[0]
+                dst = os.path.join(WALL_THUMB_DIR, name_without_ext + ".png")
                 if not os.path.exists(dst):
                     process_image(src, dst)
 
@@ -86,7 +94,8 @@ def main():
         for file in os.listdir(ANIMATION_DIR):
             if file.lower().endswith((".mp4", ".mkv", ".webm", ".mov")):
                 src = os.path.join(ANIMATION_DIR, file)
-                dst = os.path.join(ANIM_THUMB_DIR, file + ".png")
+                name_without_ext = os.path.splitext(file)[0]
+                dst = os.path.join(ANIM_THUMB_DIR, name_without_ext + ".png")
                 if not os.path.exists(dst):
                     process_video(src, dst)
 
