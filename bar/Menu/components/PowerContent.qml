@@ -9,6 +9,38 @@ ColumnLayout {
     id: root
     spacing: Theme.scaled(25)
     Layout.fillWidth: true
+    focus: true
+    
+    function handleKeys(event) {
+        console.log("PowerContent: Key pressed: " + event.key);
+        let cols = 2;
+        let maxIdx = powerButtons.count - 1;
+        if (event.key === Qt.Key_Right) {
+            console.log("Right key detected");
+            root.selectedIndex = Math.min(root.selectedIndex + 1, maxIdx);
+        }
+        else if (event.key === Qt.Key_Left) {
+            console.log("Left key detected");
+            root.selectedIndex = Math.max(root.selectedIndex - 1, 0);
+        }
+        else if (event.key === Qt.Key_Down) {
+            console.log("Down key detected");
+            root.selectedIndex = Math.min(root.selectedIndex + cols, maxIdx);
+        }
+        else if (event.key === Qt.Key_Up) {
+            console.log("Up key detected");
+            root.selectedIndex = Math.max(root.selectedIndex - cols, 0);
+        }
+        else if (event.key === Qt.Key_Enter || event.key === Qt.Key_Return) {
+            console.log("Enter/Return key detected");
+            let modelData = powerButtons.model[root.selectedIndex];
+            if (modelData) {
+                let cmd = modelData.cmd;
+                powerProc.command = ["sh", "-c", cmd];
+                powerProc.running = true;
+            }
+        }
+    }
     
     // Explicit sizing for ScrollView integration
     implicitHeight: mainLayout.implicitHeight
@@ -19,7 +51,7 @@ ColumnLayout {
     onVisibleChanged: {
         if (visible) {
             selectedIndex = 5;
-            mainLayout.forceActiveFocus();
+            root.forceActiveFocus();
         }
     }
 
@@ -27,21 +59,9 @@ ColumnLayout {
         id: mainLayout
         Layout.fillWidth: true
         spacing: Theme.scaled(25)
-        focus: true
         
-        Keys.onPressed: (event) => {
-            let cols = 2;
-            let maxIdx = 5;
-            if (event.key === Qt.Key_Right) selectedIndex = Math.min(selectedIndex + 1, maxIdx);
-            else if (event.key === Qt.Key_Left) selectedIndex = Math.max(selectedIndex - 1, 0);
-            else if (event.key === Qt.Key_Down) selectedIndex = Math.min(selectedIndex + cols, maxIdx);
-            else if (event.key === Qt.Key_Up) selectedIndex = Math.max(selectedIndex - cols, 0);
-            else if (event.key === Qt.Key_Enter || event.key === Qt.Key_Return) {
-                let cmd = powerButtons.itemAt(selectedIndex).modelData.cmd;
-                powerProc.command = ["sh", "-c", cmd];
-                powerProc.running = true;
-            }
-        }
+        // ... (existing content)
+
 
         Text {
             text: "SYSTEM SESSION"

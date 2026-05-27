@@ -65,7 +65,20 @@ PanelWindow {
         anchors.fill: parent
         focus: true
         Keys.onPressed: (event) => {
-            if (event.key === Qt.Key_Escape) QuickSettingsService.close()
+            console.log("Menu key pressed: " + event.key);
+            if (event.key === Qt.Key_Escape) {
+                QuickSettingsService.close();
+            } else {
+                // Forward to current content if it exists
+                let currentContent = contentStack.children[contentStack.currentIndex];
+                console.log("Current content:", currentContent);
+                if (currentContent && typeof currentContent.handleKeys === 'function') {
+                    console.log("Calling handleKeys on currentContent");
+                    currentContent.handleKeys(event);
+                } else {
+                    console.log("handleKeys not found or not a function");
+                }
+            }
         }
         color: Theme.glassBackground
         radius: Theme.menuRadius

@@ -61,7 +61,16 @@ PanelWindow {
         id: mainContent
         focus: true
         Keys.onPressed: (event) => {
-            if (event.key === Qt.Key_Escape) root.visible = false
+            console.log("ControlCenter: Main key pressed: " + event.key);
+            if (event.key === Qt.Key_Escape) {
+                root.visible = false;
+            } else {
+                // Accessing contentStack via its ID
+                let currentContent = contentStack.itemAt(contentStack.currentIndex);
+                if (currentContent && typeof currentContent.handleKeys === 'function') {
+                    currentContent.handleKeys(event);
+                }
+            }
         }
         
         // Centered relative to the screen width
@@ -165,6 +174,7 @@ PanelWindow {
 
             // --- CONTENT AREA ---
             StackLayout {
+                id: contentStack
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 currentIndex: ["Default", "Pomodoro", "Wallpaper"].indexOf(CenterState.activeTab)
@@ -298,9 +308,31 @@ PanelWindow {
 
                 // Wallpaper Tab
                 WallpaperContent {
+                    id: wallpaperContent
                     Layout.fillWidth: true; Layout.fillHeight: true
                 }
             }
         }
     }
+    // Forward keys when Wallpaper tab is active
+    Connections {
+        target: CenterState
+        function onActiveTabChanged() {
+            if (CenterState.activeTab === "Wallpaper") {
+                mainContent.Keys.forwardTo = [wallpaperContent];
+            } else {
+                mainContent.Keys.forwardTo = [];
+            }
+        }
+    }
+
+    function updateFocusForTab(tab) {
+        if (tab === "Wallpaper") {
+            console.log("ControlCenter: Attempting to focus wallpaperContent.");
+            let success = wallpaperContent.forceActiveFocus();
+            console.log("ControlCenter: wallpaperContent focus success: " + success);
+        }
+    }
 }
+
+
