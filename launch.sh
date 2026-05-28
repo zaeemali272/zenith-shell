@@ -9,42 +9,42 @@ LOG_FILE="$SHELL_DIR/zenith.log"
 export QML_IMPORT_PATH="$SHELL_DIR"
 export QML2_IMPORT_PATH="$SHELL_DIR"
 
+show_usage() {
+    echo "Zenith Shell Launch Script"
+    echo ""
+    echo "Usage: $0 [command] [args]"
+    echo ""
+    echo "Commands:"
+    echo "  keybinds          Toggle the Keybinds tab in Dashboard."
+    echo "  cmd <action>      Send a command to the main shell instance."
+    echo ""
+    echo "Available Cmd Actions:"
+    echo "  Overview              Toggle the Overview window."
+    echo "  Keybinds              Toggle Keybinds tab in Dashboard."
+    echo "  ActionLauncher        Toggle Dashboard (Default)."
+    echo "  dashboard:<tab>       Toggle dashboard (tabs: Default, Pomodoro, Wallpaper, Keybinds)."
+    echo "  quicksettings:<tab>   Toggle quicksettings (tabs: network, bluetooth, volume, etc)."
+    echo ""
+    echo "Examples:"
+    echo "  $0 keybinds"
+    echo "  $0 cmd Overview"
+}
+
 case "$1" in
-    overview)
-        if pgrep -f "quickshell.*windows/Overview.qml" > /dev/null; then
-            pkill -f "quickshell.*windows/Overview.qml"
-            exit 0
-        fi
-        quickshell -p "$SHELL_DIR/windows/Overview.qml" >> "$LOG_FILE" 2>&1 &
-        ;;
-
-    cheatsheet)
-        if pgrep -f "quickshell.*windows/Cheatsheet.qml" > /dev/null; then
-            pkill -f "quickshell.*windows/Cheatsheet.qml"
-            exit 0
-        fi
-        quickshell -p "$SHELL_DIR/windows/Cheatsheet.qml" >> "$LOG_FILE" 2>&1 &
-        ;;
-
-    actionLauncher)
-        if pgrep -f "quickshell.*windows/ActionLauncher.qml" > /dev/null; then
-            pkill -f "quickshell.*windows/ActionLauncher.qml"
-            exit 0
-        fi
-        quickshell -p "$SHELL_DIR/windows/ActionLauncher.qml" >> "$LOG_FILE" 2>&1 &
+    keybinds)
+        echo "Keybinds" > "$HOME/.cache/zenith_command"
         ;;
 
     cmd)
         if [ -z "$2" ]; then
-            echo "Usage: $0 cmd <command>"
-            echo "Example: $0 cmd dashboard:Wallpaper"
+            show_usage
             exit 1
         fi
         echo "$2" > "$HOME/.cache/zenith_command"
         ;;
 
     *)
-        echo "Usage: $0 {overview|cheatsheet|actionLauncher|cmd}"
+        show_usage
         exit 1
         ;;
 esac

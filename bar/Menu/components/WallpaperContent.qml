@@ -200,6 +200,7 @@ ColumnLayout {
 
             // Animated Grid
             Flickable {
+                id: animFlickable
                 anchors.fill: parent
                 contentHeight: animFlow.height
                 visible: root.activeSubTab === "Animated"
@@ -321,4 +322,11 @@ ColumnLayout {
     Process { id: saveCurrentWall; property string path: ""; command: ["sh", "-c", "mkdir -p " + Quickshell.env("HOME") + "/.config && echo '" + path + "' > " + Quickshell.env("HOME") + "/.config/current_wallpaper.txt"] }
     Process { id: thumbGen; command: ["python3", (Quickshell.env("ZENITH_ROOT") ? Quickshell.env("ZENITH_ROOT") : Quickshell.env("HOME") + "/.config/quickshell") + "/services/generate_thumbnails.py"]; onRunningChanged: { if (!running) { root.thumbnailsReady = true; root.refreshTrigger++; } } }
     Component.onCompleted: refreshThumbnails()
+
+    function resetScroll() {
+        root.activeSubTab = "Wallpaper";
+        root.selectedIndex = 0;
+        wallFlickable.contentY = 0;
+        animFlickable.contentY = 0;
+    }
 }

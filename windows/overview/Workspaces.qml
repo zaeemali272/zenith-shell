@@ -4,6 +4,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
 import "../../" as Shell
+import "../components" as Components
 import ".." as Windows
 
 Item {
@@ -136,7 +137,7 @@ Item {
 
                                     Item { Layout.fillHeight: true }
 
-                                    IconImage {
+                                    Components.IconImage {
                                         id: appIcon
                                         Layout.alignment: Qt.AlignHCenter
                                         Layout.preferredWidth: Math.min(parent.width * 0.85, 48)

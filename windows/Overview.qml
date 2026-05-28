@@ -5,7 +5,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import "../" as Root
-import "components"
+import "overview"
 
 PanelWindow {
     id: win
@@ -23,10 +23,10 @@ PanelWindow {
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
     WlrLayershell.margins { top: 10; bottom: 10; left: 10; right: 10 }
     
-    visible: true
+    visible: false
     color: "transparent"
     
-    property bool active: true
+    property bool active: false
     
     onActiveChanged: {
         if (active) {
@@ -34,9 +34,13 @@ PanelWindow {
             root.opacity = 0;
             root.scale = 0.98;
             showAnim.start();
-            if (searchBar) searchBar.forceFocus();
+            // Use a small delay for component ready state
+            Qt.callLater(() => {
+                if (searchBar) searchBar.forceFocus();
+            });
         } else {
             hideAnim.start();
+            if (searchBar) searchBar.text = "";
         }
     }
 
@@ -59,8 +63,8 @@ PanelWindow {
     Rectangle {
         id: root
         anchors.fill: parent
-        radius: 15
-        color: Root.Theme.crust ? Qt.rgba(Root.Theme.crust.r, Root.Theme.crust.g, Root.Theme.crust.b, 0.85) : '#a6010101'
+        radius: 20
+        color: Root.Theme.crust ? Qt.rgba(Root.Theme.crust.r, Root.Theme.crust.g, Root.Theme.crust.b, 0.40) : '#4d010101'
         
         focus: true
         Keys.onPressed: (event) => {
@@ -74,30 +78,31 @@ PanelWindow {
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.topMargin: Root.Theme.scaled ? Root.Theme.scaled(15) : 15
+            anchors.topMargin: Root.Theme.scaled ? Root.Theme.scaled(20) : 20
             anchors.bottomMargin: Root.Theme.scaled ? Root.Theme.scaled(20) : 20
-            anchors.leftMargin: Root.Theme.isSmallScreen ? Root.Theme.scaled(20) : Root.Theme.scaled(100)
-            anchors.rightMargin: Root.Theme.isSmallScreen ? Root.Theme.scaled(20) : Root.Theme.scaled(100)
+            anchors.leftMargin: Root.Theme.isSmallScreen ? Root.Theme.scaled(20) : Root.Theme.scaled(120)
+            anchors.rightMargin: Root.Theme.isSmallScreen ? Root.Theme.scaled(20) : Root.Theme.scaled(120)
             spacing: Root.Theme.scaled ? Root.Theme.scaled(20) : 20
 
             // Search Bar
-            SearchBar {
+            Search {
                 id: searchBar
                 Layout.alignment: Qt.AlignHCenter
-                Layout.preferredWidth: Root.Theme.isSmallScreen ? parent.width - 40 : Root.Theme.scaled(600)
-                onQueryChanged: (query) => appMenu.searchText = query
+                Layout.preferredHeight: Root.Theme.scaled ? Root.Theme.scaled(45) : 45
+                Layout.preferredWidth: Root.Theme.isSmallScreen ? parent.width - 40 : Root.Theme.scaled(500)
+                onQueryChanged: (query) => appGrid.searchText = query
             }
 
             // Workspaces (GNOME style top bar)
-            WorkspaceView {
+            Workspaces {
                 id: workspaceView
                 Layout.fillWidth: true
                 Layout.preferredHeight: Root.Theme.isSmallScreen ? Root.Theme.scaled(180) : Root.Theme.scaled(250)
             }
 
             // App Grid
-            AppMenu {
-                id: appMenu
+            Apps {
+                id: appGrid
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 onCloseRequested: active = false
@@ -109,7 +114,4 @@ PanelWindow {
         active = !active;
     }
 
-    Component.onCompleted: {
-        searchBar.forceFocus();
-    }
 }

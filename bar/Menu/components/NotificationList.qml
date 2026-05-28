@@ -59,4 +59,8 @@ Flickable {
 
         Item { Layout.fillHeight: true }
     }
+
+    function resetScroll() {
+        root.contentY = 0;
+    }
 }

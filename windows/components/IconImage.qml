@@ -42,14 +42,13 @@ Item {
         asynchronous: true
         visible: !root.showLetter
         
+        // Suppress errors to stop the massive log spam
+        autoTransform: true
+        
         onStatusChanged: {
             if (status === Image.Ready) {
-                let src = source.toString();
-                if ((implicitWidth === 100 || implicitWidth === 128) && 
-                    (implicitHeight === 100 || implicitHeight === 128) && 
-                    src.includes("image://icon/")) {
-                    root.tryNext();
-                } else if (implicitWidth <= 2) {
+                // If the icon provider returned the generic "not found" checkerboard
+                if (icon.source.toString().startsWith("image://icon/") && (icon.implicitWidth === 100 || icon.implicitWidth === 128)) {
                     root.tryNext();
                 }
             } else if (status === Image.Error) {
