@@ -15,6 +15,7 @@ Scope {
     readonly property var _battery: BatteryService
     readonly property var _media: MediaPlayerService
     readonly property var _productivity: ProductivityService
+    readonly property var _overview: OverviewService { id: overviewService }
 
     // --- IPC / COMMAND LISTENER ---
     // Listen for commands from external sources (scripts or other quickshell processes)
@@ -80,10 +81,25 @@ Scope {
             MenuService.closeAll();
         } else if (action === "toggle_dashboard") {
             CenterState.toggle();
+        } else if (action === "Overview") {
+            overviewService.toggle();
+        } else if (action === "Keybinds") {
+            if (CenterState.qsVisible && CenterState.activeTab === "Keybinds") {
+                CenterState.close();
+            } else {
+                CenterState.open("Keybinds");
+            }
+        } else if (action === "ActionLauncher") {
+            if (CenterState.qsVisible && CenterState.activeTab === "Default") {
+                CenterState.close();
+            } else {
+                CenterState.open("Default");
+            }
         } else if (action === "toggle_quicksettings") {
             QuickSettingsService.toggle(arg || "network");
         }
     }
+
 
     DismissOverlay {
         id: dismissOverlay

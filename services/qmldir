@@ -13,4 +13,6 @@ singleton CaffeineService CaffeineService.qml
 singleton MenuService MenuService.qml
 singleton ProductivityService ProductivityService.qml
 singleton FirewallService FirewallService.qml
+singleton AppUsageService AppUsageService.qml
+OverviewService OverviewService.qml
 

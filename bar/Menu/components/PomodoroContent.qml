@@ -38,4 +38,8 @@ Item {
             TodoContent { Layout.fillWidth: true; Layout.fillHeight: true }
         }
     }
+
+    function resetScroll() {
+        root.activeTool = "Timer";
+    }
 }

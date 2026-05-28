@@ -12,7 +12,7 @@ Item {
     property bool qsVisible: false
     property bool isSticky: false
     property bool isHoveringMenu: false
-    property string activeTab: "Default" // Options: Default, Pomodoro, Wallpaper
+    property string activeTab: "Default" // Options: Default, Pomodoro, Wallpaper, Keybinds
     
     property bool _toggleLocked: false
 

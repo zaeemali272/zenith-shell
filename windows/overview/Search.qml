@@ -10,7 +10,7 @@ Rectangle {
     property alias text: input.text
     
     width: Root.Theme.scaled ? Root.Theme.scaled(500) : 500
-    height: Root.Theme.scaled ? Root.Theme.scaled(50) : 50
+    height: Root.Theme.scaled ? Root.Theme.scaled(40) : 40
     radius: height / 2
     color: Root.Theme.mantle || "#a1232323"
     border.color: input.activeFocus ? (Root.Theme.mauve || '#a1585858') : (Root.Theme.surface0 || "#a6010101")
@@ -20,15 +20,16 @@ Rectangle {
 
     RowLayout {
         anchors.fill: parent
-        anchors.leftMargin: Root.Theme.scaled ? Root.Theme.scaled(20) : 20
-        anchors.rightMargin: Root.Theme.scaled ? Root.Theme.scaled(20) : 20
-        spacing: Root.Theme.scaled ? Root.Theme.scaled(15) : 15
+        anchors.leftMargin: Root.Theme.scaled ? Root.Theme.scaled(15) : 15
+        anchors.rightMargin: Root.Theme.scaled ? Root.Theme.scaled(15) : 15
+        spacing: Root.Theme.scaled ? Root.Theme.scaled(10) : 10
 
         Text {
             text: "󰍉"
             font.family: Root.Theme.iconFont || "monospace"
-            font.pixelSize: Root.Theme.scaled ? Root.Theme.scaled(20) : 20
+            font.pixelSize: Root.Theme.scaled ? Root.Theme.scaled(16) : 16
             color: input.activeFocus ? (Root.Theme.mauve || "#cba6f7") : (Root.Theme.subtext0 || "#a6adc8")
+
 
             Behavior on color { ColorAnimation { duration: 200 } }
         }
@@ -43,7 +44,7 @@ Rectangle {
             cursorVisible: true
 
             Text {
-                text: "Search applications..."
+                text: "Search..."
                 color: Root.Theme.surface2 || "#585b70"
                 font.pixelSize: parent.font.pixelSize
                 visible: !parent.text && !parent.activeFocus
@@ -69,8 +70,9 @@ Rectangle {
                         }
                     }
                 } else if (event.key === Qt.Key_Enter || event.key === Qt.Key_Return || event.key === Qt.Key_Right || event.key === Qt.Key_Left) {
-                    appMenu.focus = true;
-                    appMenu.Keys.pressed(event);
+                    appGrid.focus = true;
+                    appGrid.Keys.pressed(event);
+                    text = "";
                     event.accepted = true;
                 }
             }

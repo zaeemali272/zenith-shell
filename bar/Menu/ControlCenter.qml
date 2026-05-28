@@ -35,6 +35,18 @@ PanelWindow {
         if (visible) {
             MenuService.register(root);
             CenterState.qsVisible = true;
+            
+            // Reset scroll for all stack items that support it
+            for (let i = 0; i < contentStack.count; i++) {
+                let item = contentStack.itemAt(i);
+                if (item && typeof item.resetScroll === "function") {
+                    item.resetScroll();
+                }
+            }
+            
+            // Reset NotificationList specifically as it's nested in the Default tab
+            if (notificationList) notificationList.resetScroll();
+            
             mainContent.forceActiveFocus();
             showAnim.restart();
         } else {
@@ -114,7 +126,7 @@ PanelWindow {
                 RowLayout {
                     spacing: Theme.scaled(5)
                     Repeater {
-                        model: ["Default", "Pomodoro", "Wallpaper"]
+                        model: ["Default", "Pomodoro", "Wallpaper", "Keybinds"]
                         delegate: Rectangle {
                             id: tabRect
                             width: Theme.scaled(80); height: Theme.scaled(30)
@@ -177,7 +189,7 @@ PanelWindow {
                 id: contentStack
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                currentIndex: ["Default", "Pomodoro", "Wallpaper"].indexOf(CenterState.activeTab)
+                currentIndex: ["Default", "Pomodoro", "Wallpaper", "Keybinds"].indexOf(CenterState.activeTab)
 
                 // Default Tab
                 GridLayout {
@@ -258,6 +270,7 @@ PanelWindow {
                             ScrollView {
                                 Layout.fillWidth: true; Layout.fillHeight: true; clip: true
                                 NotificationList {
+                                    id: notificationList
                                     visible: GeneralSettings.enableNotifications
                                     Layout.fillWidth: true; height: parent.height 
                                 }
@@ -309,6 +322,11 @@ PanelWindow {
                 // Wallpaper Tab
                 WallpaperContent {
                     id: wallpaperContent
+                    Layout.fillWidth: true; Layout.fillHeight: true
+                }
+
+                // Keybinds Tab
+                KeybindsContent {
                     Layout.fillWidth: true; Layout.fillHeight: true
                 }
             }
