@@ -63,6 +63,8 @@ Scope {
             let lowerArg = arg.toLowerCase();
             if (lowerArg === "pomodoro") tab = "Pomodoro";
             else if (lowerArg === "wallpaper" || lowerArg === "wallpapers") tab = "Wallpaper";
+            else if (lowerArg === "keybinds") tab = "Keybinds";
+            else if (lowerArg === "user") tab = "User";
             
             // Toggle logic: If already open on the same tab, close it
             if (CenterState.qsVisible && CenterState.activeTab === tab) {
