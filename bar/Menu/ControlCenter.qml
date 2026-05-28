@@ -126,7 +126,7 @@ PanelWindow {
                 RowLayout {
                     spacing: Theme.scaled(5)
                     Repeater {
-                        model: ["Default", "Pomodoro", "Wallpaper", "Keybinds"]
+                        model: ["Default", "Pomodoro", "Wallpaper", "Keybinds", "User"]
                         delegate: Rectangle {
                             id: tabRect
                             width: Theme.scaled(80); height: Theme.scaled(30)
@@ -189,7 +189,7 @@ PanelWindow {
                 id: contentStack
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                currentIndex: ["Default", "Pomodoro", "Wallpaper", "Keybinds"].indexOf(CenterState.activeTab)
+                currentIndex: ["Default", "Pomodoro", "Wallpaper", "Keybinds", "User"].indexOf(CenterState.activeTab)
 
                 // Default Tab
                 GridLayout {
@@ -327,6 +327,11 @@ PanelWindow {
 
                 // Keybinds Tab
                 KeybindsContent {
+                    Layout.fillWidth: true; Layout.fillHeight: true
+                }
+
+                // User Tab
+                UserContent {
                     Layout.fillWidth: true; Layout.fillHeight: true
                 }
             }

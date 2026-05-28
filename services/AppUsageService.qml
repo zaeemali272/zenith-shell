@@ -8,7 +8,7 @@ Item {
     id: service
 
     property string storagePath: Quickshell.env("HOME") + "/.config/quickshell/app_usage.json"
-    property var usageData: ({}) // appId -> { count: N, totalSeconds: N, lastFocus: timestamp }
+    property var usageData: ({})
     property string activeAppId: ""
     property var lastFocusTime: Date.now()
 
@@ -17,20 +17,31 @@ Item {
         trackFocus();
     }
 
-    function load() {
-        let text = Quickshell.Io.readFile(storagePath);
-        if (text) {
-            try { usageData = JSON.parse(text); } catch(e) { usageData = {}; }
+    // Declarative Loader
+    Process {
+        id: loadProc
+        command: ["cat", storagePath]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    if (text) usageData = JSON.parse(text);
+                } catch(e) { usageData = {}; }
+            }
         }
+        onRunningChanged: if (running) {}
+    }
+
+    function load() {
+        loadProc.running = true;
     }
 
     function trackFocus() {
-        // Track the currently focused app
         let win = Hyprland.activeWindow;
-        let appId = win ? win.class : "";
+        let appId = (win && win.class) ? win.class : "";
+        
+        if (!usageData) usageData = {};
         
         if (appId !== activeAppId) {
-            // Update time for the previous app
             if (activeAppId !== "") {
                 updateUsage(activeAppId, Date.now() - lastFocusTime);
             }
@@ -60,22 +71,24 @@ Item {
         if (!usageData) return 0;
         let data = usageData[appId];
         if (!data) return 0;
+        return (data.count * 10) + (data.totalSeconds / 60); 
+    }
 
-        let countScore = data.count || 0;
-        let totalSeconds = data.totalSeconds || 0;
-
-        // Priority Score: 50% frequency, 50% active duration
-        return (countScore * 10) + (totalSeconds / 60); 
+    Process {
+        id: saveProc
+        command: ["sh", "-c", ""]
     }
 
     function save() {
-        let dataStr = JSON.stringify(usageData);
-        Quickshell.Io.writeFile(storagePath, dataStr);
+        let dataStr = JSON.stringify(usageData).replace(/'/g, "'\\''");
+        saveProc.command = ["sh", "-c", "mkdir -p $(dirname " + storagePath + ") && echo '" + dataStr + "' > " + storagePath];
+        saveProc.running = true;
     }
 
-    // Monitor focus changes efficiently
     Connections {
         target: Hyprland
-        function onActiveWindowChanged() { service.trackFocus(); }
+        function onRawEvent(event) {
+            if (event.name === "activewindow") service.trackFocus();
+        }
     }
 }
