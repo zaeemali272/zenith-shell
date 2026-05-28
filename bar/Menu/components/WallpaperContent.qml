@@ -197,78 +197,77 @@ ColumnLayout {
                         }                    }
                 }
             }
+        }
 
-            // Animated Grid
-            Flickable {
-                id: animFlickable
-                anchors.fill: parent
-                contentHeight: animFlow.height
-                visible: root.activeSubTab === "Animated"
-                clip: true
-                ScrollBar.vertical: ScrollBar { width: 4; policy: ScrollBar.AsNeeded }
+        Flickable {
+            id: animFlickable
+            anchors.fill: parent
+            contentHeight: animFlow.height
+            visible: root.activeSubTab === "Animated"
+            clip: true
+            ScrollBar.vertical: ScrollBar { width: 4; policy: ScrollBar.AsNeeded }
 
-                Flow {
-                    id: animFlow
-                    width: parent.width
-                    spacing: Theme.scaled(15)
-                    Repeater {
-                        id: animRepeater
-                        model: FolderListModel {
-                            id: animFolderModel
-                            folder: "file://" + Quickshell.env("HOME") + "/Videos/Animations"
-                            nameFilters: ["*.mp4", "*.mkv", "*.webm"]
-                            onCountChanged: if (root.visible) refreshThumbnails();
-                        }
-                        delegate: Rectangle {
-                            width: (animFlow.width - Theme.scaled(45)) / 4
-                            height: width * 0.6
-                            radius: Theme.scaled(12)
-                            color: Theme.surface1
-                            clip: true
-                            property bool isFocused: index === root.selectedIndex
-                            border.color: isFocused ? Theme.accentColor : Theme.glassBorder
-                            border.width: isFocused ? 3 : 1
-                            
-                            Loader {
-                                id: animThumbLoader; anchors.fill: parent
-                                sourceComponent: (fileName && root.thumbnailsReady) ? animThumbComponent : undefined
-                                Component {
-                                    id: animThumbComponent
-                                    Image {
-                                        anchors.fill: parent; anchors.margins: 2
-                                        source: "file://" + Quickshell.env("HOME") + "/.cache/animation_thumbs/" + fileName.substring(0, fileName.lastIndexOf('.')) + ".png"
-                                        fillMode: Image.PreserveAspectCrop; cache: false; asynchronous: true
-                                        opacity: status === Image.Ready ? 1.0 : 0.0
-                                        Behavior on opacity { NumberAnimation { duration: 400 } }
-                                    }
+            Flow {
+                id: animFlow
+                width: parent.width
+                spacing: Theme.scaled(15)
+                Repeater {
+                    id: animRepeater
+                    model: FolderListModel {
+                        id: animFolderModel
+                        folder: "file://" + Quickshell.env("HOME") + "/Videos/Animations"
+                        nameFilters: ["*.mp4", "*.mkv", "*.webm"]
+                        onCountChanged: if (root.visible) refreshThumbnails();
+                    }
+                    delegate: Rectangle {
+                        width: (animFlow.width - Theme.scaled(45)) / 4
+                        height: width * 0.6
+                        radius: Theme.scaled(12)
+                        color: Theme.surface1
+                        clip: true
+                        property bool isFocused: index === root.selectedIndex
+                        border.color: isFocused ? Theme.accentColor : Theme.glassBorder
+                        border.width: isFocused ? 3 : 1
+                        
+                        Loader {
+                            id: animThumbLoader; anchors.fill: parent
+                            sourceComponent: (fileName && root.thumbnailsReady) ? animThumbComponent : undefined
+                            Component {
+                                id: animThumbComponent
+                                Image {
+                                    anchors.fill: parent; anchors.margins: 2
+                                    source: "file://" + Quickshell.env("HOME") + "/.cache/animation_thumbs/" + fileName.substring(0, fileName.lastIndexOf('.')) + ".png"
+                                    fillMode: Image.PreserveAspectCrop; cache: false; asynchronous: true
+                                    opacity: status === Image.Ready ? 1.0 : 0.0
+                                    Behavior on opacity { NumberAnimation { duration: 400 } }
                                 }
                             }
-                            MouseArea {
-                                anchors.fill: parent; hoverEnabled: true
-                                onEntered: root.selectedIndex = index
-                                onClicked: applyVideo(fileUrl.toString())
-                            }
+                        }
+                        MouseArea {
+                            anchors.fill: parent; hoverEnabled: true
+                            onEntered: root.selectedIndex = index
+                            onClicked: applyVideo(fileUrl.toString())
                         }
                     }
                 }
             }
         }
+    }
 
-        // --- SLIDESHOW CONTROLS ---
-        RowLayout {
-            Layout.alignment: Qt.AlignHCenter; spacing: Theme.scaled(20); visible: root.activeSubTab === "Slideshow"
-            Rectangle {
-                width: Theme.scaled(180); height: Theme.scaled(40); radius: Theme.scaled(10)
-                color: root.selectedWalls.length > 0 ? Theme.accentColor : Theme.surface1
-                Text { anchors.centerIn: parent; text: "Start Slideshow"; color: Theme.blue; font.bold: true }
-                MouseArea { anchors.fill: parent; enabled: root.selectedWalls.length > 0; onClicked: startSlideshow() }
-            }
-            Rectangle {
-                width: Theme.scaled(180); height: Theme.scaled(40); radius: Theme.scaled(10)
-                color: Theme.red
-                Text { anchors.centerIn: parent; text: "Stop Slideshow"; color: Theme.base; font.bold: true }
-                MouseArea { anchors.fill: parent; onClicked: stopSlideshow() }
-            }
+    // --- SLIDESHOW CONTROLS ---
+    RowLayout {
+        Layout.alignment: Qt.AlignHCenter; spacing: Theme.scaled(20); visible: root.activeSubTab === "Slideshow"
+        Rectangle {
+            width: Theme.scaled(180); height: Theme.scaled(40); radius: Theme.scaled(10)
+            color: root.selectedWalls.length > 0 ? Theme.accentColor : Theme.surface1
+            Text { anchors.centerIn: parent; text: "Start Slideshow"; color: Theme.blue; font.bold: true }
+            MouseArea { anchors.fill: parent; enabled: root.selectedWalls.length > 0; onClicked: startSlideshow() }
+        }
+        Rectangle {
+            width: Theme.scaled(180); height: Theme.scaled(40); radius: Theme.scaled(10)
+            color: Theme.red
+            Text { anchors.centerIn: parent; text: "Stop Slideshow"; color: Theme.base; font.bold: true }
+            MouseArea { anchors.fill: parent; onClicked: stopSlideshow() }
         }
     }
 
