@@ -148,8 +148,8 @@ Item {
                         finalIcon = hardPath;
                     } else {
                         finalIcon = Quickshell.iconPath(notif.appIcon);
-                    }
                 }
+            }
             }
             
             // Priority 3: Fallback based on app name
