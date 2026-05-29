@@ -72,7 +72,6 @@ Rectangle {
                 } else if (event.key === Qt.Key_Enter || event.key === Qt.Key_Return || event.key === Qt.Key_Right || event.key === Qt.Key_Left) {
                     appGrid.focus = true;
                     appGrid.Keys.pressed(event);
-                    text = "";
                     event.accepted = true;
                 }
             }
