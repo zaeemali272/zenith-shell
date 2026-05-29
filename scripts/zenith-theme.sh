@@ -43,13 +43,10 @@ log_step "🎨 Generating theme from $WALLPAPER..."
 PROJECT_ROOT="$HOME/.config/"
 
 if command -v matugen &> /dev/null; then
-    MATUGEN_CMD="matugen image \"$WALLPAPER\" --config \"$HOME/.config/matugen/config.toml\""
+    MATUGEN_CMD="matugen image \"$WALLPAPER\" --config \"$HOME/.config/matugen/config.toml\" --prefer=saturation"
     
    if [[ -n "$SOURCE_COLOR" ]]; then
         (cd "$PROJECT_ROOT" && eval "$MATUGEN_CMD --color \"$SOURCE_COLOR\"")
-    elif [[ "$AUTOSELECT" == "true" ]]; then
-        # 'saturation' ensures it works in non-interactive shells
-        (cd "$PROJECT_ROOT" && eval "$MATUGEN_CMD --prefer=saturation")
     else
         (cd "$PROJECT_ROOT" && eval "$MATUGEN_CMD")
     fi

@@ -162,9 +162,27 @@ ColumnLayout {
                         color: Theme.surface1
                         clip: true
                         property bool isSelected: root.selectedWalls.indexOf(fileUrl) !== -1
+                        property int selectionIndex: root.selectedWalls.indexOf(fileUrl)
                         property bool isFocused: index === root.selectedIndex
-                        border.color: isFocused ? Theme.accentColor : (isSelected && root.activeSubTab === "Slideshow" ? Theme.blue : Theme.glassBorder)
-                        border.width: isFocused ? 3 : (isSelected && root.activeSubTab === "Slideshow" ? 3 : 1)
+                        border.color: isFocused ? Theme.accentColor : (isSelected ? Theme.accentColor : Theme.glassBorder)
+                        border.width: isFocused ? 3 : (isSelected ? 3 : 1)
+                        
+                        // Darken if selected
+                        Rectangle {
+                            anchors.fill: parent; color: isSelected ? Qt.rgba(0,0,0,0.4) : "transparent"; radius: Theme.scaled(12)
+                        }
+
+                        // Selection Number Badge
+                        Rectangle {
+                            visible: isSelected
+                            anchors.top: parent.top; anchors.right: parent.right; anchors.margins: Theme.scaled(8)
+                            width: Theme.scaled(24); height: Theme.scaled(24); radius: Theme.scaled(12)
+                            color: Theme.accentColor
+                            Text {
+                                anchors.centerIn: parent; text: (selectionIndex + 1).toString()
+                                font.pixelSize: Theme.scaled(12); font.bold: true; color: Theme.base
+                            }
+                        }
                         
                         Loader {
                             id: thumbLoader; anchors.fill: parent
@@ -186,13 +204,18 @@ ColumnLayout {
                             visible: !root.thumbnailsReady || (thumbLoader.item && thumbLoader.item.status !== Image.Ready)
                             RotationAnimator on rotation { from: 0; to: 360; duration: 1000; loops: Animation.Infinite; running: parent.visible }
                         }
+                        
                         MouseArea {
                             anchors.fill: parent; hoverEnabled: true
                             onEntered: root.selectedIndex = index
                             onClicked: { 
                                 let pathString = fileUrl.toString();
                                 if (root.activeSubTab === "Wallpaper") applyWallpaper(pathString); 
-                                else toggleSelection(pathString); 
+                                else if (root.activeSubTab === "Slideshow") toggleSelection(pathString);
+                            }
+                            Rectangle {
+                                anchors.fill: parent; radius: Theme.scaled(12)
+                                color: parent.containsMouse ? Qt.rgba(1,1,1,0.1) : "transparent"
                             }
                         }                    }
                 }
@@ -260,24 +283,38 @@ ColumnLayout {
         Rectangle {
             width: Theme.scaled(180); height: Theme.scaled(40); radius: Theme.scaled(10)
             color: root.selectedWalls.length > 0 ? Theme.accentColor : Theme.surface1
-            Text { anchors.centerIn: parent; text: "Start Slideshow"; color: Theme.blue; font.bold: true }
+            Text { anchors.centerIn: parent; text: "Start Slideshow"; color: root.selectedWalls.length > 0 ? Theme.base : Theme.subtext1; font.bold: true }
             MouseArea { anchors.fill: parent; enabled: root.selectedWalls.length > 0; onClicked: startSlideshow() }
         }
         Rectangle {
             width: Theme.scaled(180); height: Theme.scaled(40); radius: Theme.scaled(10)
             color: Theme.red
+            visible: slideshowRunning
             Text { anchors.centerIn: parent; text: "Stop Slideshow"; color: Theme.base; font.bold: true }
             MouseArea { anchors.fill: parent; onClicked: stopSlideshow() }
         }
     }
 
+    property bool slideshowRunning: false
+    Timer {
+        interval: 2000; running: root.activeSubTab === "Slideshow"; repeat: true; triggeredOnStart: true
+        onTriggered: checkSlideshowStatus()
+    }
+    function checkSlideshowStatus() {
+        checkStatus.command = ["systemctl", "--user", "is-active", "--quiet", "zenith-slideshow.service"];
+        checkStatus.running = true;
+    }
+    Process { id: checkStatus; onExited: slideshowRunning = (exitCode === 0) }
+
     // --- LOGIC FUNCTIONS ---
     function toggleSelection(path) {
+        console.log("DEBUG: Toggle selection for: " + path);
         let arr = [...root.selectedWalls];
         let idx = arr.indexOf(path);
         if (idx !== -1) arr.splice(idx, 1);
         else arr.push(path);
         root.selectedWalls = arr;
+        console.log("DEBUG: Selected walls count: " + root.selectedWalls.length);
     }
     function applyWallpaper(path) {
         killMpv.running = true; stopSlideshow(); awwwDaemon.running = true; 
@@ -290,12 +327,14 @@ ColumnLayout {
         videoDelay.videoPath = path.replace("file://", ""); videoDelay.start();
     }
     function startSlideshow() {
+        console.log("DEBUG: Start slideshow requested. Selected count: " + root.selectedWalls.length);
         if (root.selectedWalls.length === 0) return;
         let home = Quickshell.env("HOME");
         let scriptPath = root.scriptsPath + "/slideshow.sh";
         let servicePath = home + "/.config/systemd/user/zenith-slideshow.service";
         let listPath = home + "/.cache/zenith_wallpaper_list";
         let paths = root.selectedWalls.map(p => p.replace("file://", "")).join("\n");
+        console.log("DEBUG: Wallpaper list paths:\n" + paths);
         saveList.command = ["sh", "-c", "echo '" + paths + "' > " + listPath]; saveList.running = true;
         let serviceContent = "[Unit]\nDescription=Zenith Slideshow\n\n[Service]\nExecStart=/bin/bash " + scriptPath + "\nRestart=always\nRestartSec=5\nEnvironment=PATH=/usr/bin:/bin:/usr/local/bin\n[Install]\nWantedBy=default.target";
         installService.command = ["sh", "-c", "echo -e '" + serviceContent + "' > " + servicePath + " && chmod +x " + scriptPath + " && systemctl --user daemon-reload"];
@@ -303,7 +342,12 @@ ColumnLayout {
         startTimer.start();
     }
     Timer { id: startTimer; interval: 500; onTriggered: { serviceCmd.command = ["systemctl", "--user", "enable", "--now", "zenith-slideshow.service"]; serviceCmd.running = true; CenterState.close(); } }
-    function stopSlideshow() { serviceCmd.command = ["systemctl", "--user", "disable", "--now", "zenith-slideshow.service"]; serviceCmd.running = true; }
+    function stopSlideshow() {
+        let home = Quickshell.env("HOME");
+        let servicePath = home + "/.config/systemd/user/zenith-slideshow.service";
+        serviceCmd.command = ["sh", "-c", "systemctl --user disable --now zenith-slideshow.service && rm -f " + servicePath + " && systemctl --user daemon-reload"];
+        serviceCmd.running = true;
+    }
     function log(msg) { logger.command = ["sh", "-c", "echo '[$(date +%T)] " + msg + "' >> " + logPath]; logger.running = true; }
 
     Timer { id: wallDelay; property string wallPath: ""; interval: 600; onTriggered: { setWall.command = ["sh", "-c", "awww img --resize=crop '" + wallPath + "' --transition-type fade >> " + root.logPath + " 2>&1 && ~/.config/quickshell/scripts/zenith-theme.sh --autoselect"]; setWall.running = true; } }
