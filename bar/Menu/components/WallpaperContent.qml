@@ -6,6 +6,7 @@ import Quickshell
 import Quickshell.Io
 import "../../../"
 import "../../../services"
+import "../../../Settings"
 
 ColumnLayout {
     id: root
@@ -58,8 +59,8 @@ ColumnLayout {
         thumbGen.running = true;
     }
 
-    readonly property string logPath: (Quickshell.env("ZENITH_ROOT") ? Quickshell.env("ZENITH_ROOT") : Quickshell.env("HOME") + "/.config/quickshell") + "/zenith.log"
-    readonly property string scriptsPath: (Quickshell.env("ZENITH_ROOT") ? Quickshell.env("ZENITH_ROOT") : Quickshell.env("HOME") + "/.config/quickshell") + "/scripts"
+    readonly property string logPath: PathSettings.shellDir + "/zenith.log"
+    readonly property string scriptsPath: PathSettings.scriptsDir
 
     // --- SUB-TABS ---
     RowLayout {

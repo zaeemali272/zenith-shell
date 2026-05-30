@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import "../../.."
+import "../../../Settings"
 
 Rectangle {
     id: root
@@ -24,7 +25,7 @@ Rectangle {
         if (year === lastFetchedYear) return;
         
         lastFetchedYear = year;
-        fetchProcess.command = ['bash', '/home/zaeem/Documents/Dots/zenith-shell/scripts/fetch_events.sh', year.toString()];
+        fetchProcess.command = ['bash', PathSettings.scriptsDir + '/fetch_events.sh', year.toString()];
         fetchProcess.running = true;
     }
 
@@ -34,7 +35,7 @@ Rectangle {
 
     Process {
         id: fetchProcess
-        command: ['bash', '/home/zaeem/Documents/Dots/zenith-shell/scripts/fetch_events.sh', root.today.getFullYear().toString()]
+        command: ['bash', PathSettings.scriptsDir + '/fetch_events.sh', root.today.getFullYear().toString()]
         onExited: {
             readProcess.running = false;
             readProcess.running = true;
@@ -43,7 +44,7 @@ Rectangle {
 
     Process {
         id: readProcess
-        command: ['cat', '/home/zaeem/Documents/Dots/zenith-shell/events.json']
+        command: ['cat', PathSettings.shellDir + '/events.json']
         stdout: StdioCollector {
             onStreamFinished: {
                 if (text) {

@@ -1,4 +1,5 @@
 import "../../../services"
+import "../../../Settings"
 import QtQuick
 import QtQuick.Controls 2.15
 import QtQuick.Layouts
@@ -9,7 +10,7 @@ import "../../.."
 PanelWindow {
     id: osdWindow
 
-    readonly property bool useFullscreenLayout: GeneralSettings.fullscreenOSD
+    readonly property bool useFullscreenLayout: NotificationSettings.fullscreenOSD
     readonly property bool isFullscreen: HyprlandService.isFullscreen
 
     property string osdType: ""

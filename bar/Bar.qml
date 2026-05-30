@@ -43,8 +43,8 @@ PanelWindow {
         color: Theme.barColor
         radius: Theme.barRadius || 0
         clip: true
-        opacity: GeneralSettings.barEntryAnimation ? 0 : 1
-        y: GeneralSettings.barEntryAnimation ? -height : 0
+        opacity: BarSettings.entryAnimation ? 0 : 1
+        y: BarSettings.entryAnimation ? -height : 0
 
         ParallelAnimation {
             id: barEntryAnim
@@ -53,7 +53,7 @@ PanelWindow {
                 target: barVisual
                 property: "y"
                 to: 0
-                duration: GeneralSettings.barAnimationDuration
+                duration: BarSettings.animationDuration
                 easing.type: Easing.OutExpo
             }
 
@@ -61,7 +61,7 @@ PanelWindow {
                 target: barVisual
                 property: "opacity"
                 to: 1
-                duration: GeneralSettings.barAnimationDuration * 0.75
+                duration: BarSettings.animationDuration * 0.75
             }
         }
 
@@ -73,7 +73,7 @@ PanelWindow {
         }
 
         Component.onCompleted: {
-            if (GeneralSettings.barEntryAnimation) {
+            if (BarSettings.entryAnimation) {
                 barEntryAnim.start();
                 contentFadeAnim.start();
             }
@@ -84,7 +84,7 @@ PanelWindow {
             targets: [leftSide, centerSide, rightLayout]
             property: "opacity"
             from: 0; to: 1
-            duration: GeneralSettings.barAnimationDuration * 1.5
+            duration: BarSettings.animationDuration * 1.5
         }
 
         // --- LEFT SIDE ---
@@ -93,7 +93,7 @@ PanelWindow {
             anchors.left: parent.left
             anchors.leftMargin: Theme.barMarginLeft
             anchors.verticalCenter: parent.verticalCenter
-            opacity: GeneralSettings.barEntryAnimation ? 0 : 1
+            opacity: BarSettings.entryAnimation ? 0 : 1
         }
 
         // --- PERFECT CENTER ---
@@ -101,7 +101,7 @@ PanelWindow {
             id: centerSide
             anchors.verticalCenter: parent.verticalCenter
             controlCenterMenuRef: bar.controlCenterMenuRef
-            opacity: GeneralSettings.barEntryAnimation ? 0 : 1
+            opacity: BarSettings.entryAnimation ? 0 : 1
             
             x: {
                 let screenW = (screen ? screen.width : Theme.screenWidth);
@@ -145,17 +145,23 @@ PanelWindow {
             
             Network { 
                 id: wifiWidget 
-                visible: GeneralSettings.enableResources && !HyprlandService.isFullscreen
+                visible: WidgetSettings.enableResources && !HyprlandService.isFullscreen
             }
             
             PowerProfile { 
                 id: powerProfileWidget 
-                visible: GeneralSettings.enablePowerProfiles && !Theme.isSmallScreen && !HyprlandService.isFullscreen
+                visible: WidgetSettings.enablePowerProfiles && !Theme.isSmallScreen && !HyprlandService.isFullscreen
             }
             
             Resources { 
-                visible: GeneralSettings.enableResources && !Theme.isSmallScreen && !HyprlandService.isFullscreen
+                visible: WidgetSettings.enableResources && !Theme.isSmallScreen && !HyprlandService.isFullscreen
             }
+            
+            // TodoList widget (if one exists in the tray/bar area)
+            // Assuming TodoList is in the bar, add similar visibility check:
+            // TodoList {
+            //    visible: WidgetSettings.enableTodoList && !HyprlandService.isFullscreen
+            // }
             
             Volume { 
                 id: volumeWidget 
@@ -167,6 +173,7 @@ PanelWindow {
             
             Battery { 
                 id: batteryWidget 
+                visible: WidgetSettings.enableBattery && !HyprlandService.isFullscreen
             }
             
             Power { }

@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 pragma Singleton
+import "."
 
 QtObject {
     // enable / disable

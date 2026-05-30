@@ -1,6 +1,7 @@
 pragma Singleton
 import QtQuick
 import Quickshell
+import "Settings"
 
 QtObject {
     // =====================================================
@@ -32,10 +33,10 @@ QtObject {
     readonly property int appMenuCol: isSmallScreen ? (isPortrait ? 3 : 4) : 6
 
     // ===== Glassmorphism & Effects =====
-    readonly property real menuOpacity: 0.7
+    readonly property real menuOpacity: AppearanceSettings.menuOpacity
     readonly property color glassBackground: Qt.alpha(Colors.background, menuOpacity)
     readonly property color glassBorder: Qt.rgba(1, 1, 1, 0.15)
-    readonly property real glassBlur: 200
+    readonly property real glassBlur: AppearanceSettings.glassBlur
     
     // ===== Animation Defaults =====
     readonly property int animFast: 150
@@ -74,54 +75,54 @@ QtObject {
     readonly property color shadowColor: Qt.rgba(0, 0, 0, 0.5)
 
     // ===== Bar =====
-    readonly property int barHeight: scaled(30)
-    readonly property int barRadius: scaled(18)
-    readonly property int barMarginLeft: scaled(5)
-    readonly property int barMarginRight: scaled(5)
-    readonly property int barMarginTop: scaled(5)
-    readonly property int barMarginBottom: 0
+    readonly property int barHeight: scaled(BarSettings.height)
+    readonly property int barRadius: scaled(BarSettings.radius)
+    readonly property int barMarginLeft: scaled(BarSettings.marginLeft)
+    readonly property int barMarginRight: scaled(BarSettings.marginRight)
+    readonly property int barMarginTop: scaled(BarSettings.marginTop)
+    readonly property int barMarginBottom: scaled(BarSettings.marginBottom)
     readonly property color barColor: "#00000000"
     readonly property color backgroundColor: Colors.surface_container
     readonly property color borderColor: Colors.surface_variant
-    readonly property real barOpacity: 0.92
+    readonly property real barOpacity: BarSettings.opacity
 
     // ===== Workspaces =====
-    readonly property string workspaceBackgroundStyle: "pills" // "full" or "pills"
-    readonly property int wsHeight: scaled(10)
-    readonly property int wsActiveWidth: scaled(28)
-    readonly property int wsInactiveWidth: scaled(10)
-    readonly property int wsSpacing: scaled(6)
+    readonly property string workspaceBackgroundStyle: WorkspaceSettings.backgroundStyle
+    readonly property int wsHeight: scaled(WorkspaceSettings.height)
+    readonly property int wsActiveWidth: scaled(WorkspaceSettings.activeWidth)
+    readonly property int wsInactiveWidth: scaled(WorkspaceSettings.inactiveWidth)
+    readonly property int wsSpacing: scaled(WorkspaceSettings.spacing)
     readonly property color wsActiveColor: Colors.primary
     readonly property color wsActiveTextColor: Colors.on_primary
     readonly property color wsOccupiedColor: Colors.secondary
     readonly property color wsEmptyColor: pillColor
 
     // ===== Pills =====
-    readonly property int pillHeight: scaled(28)
-    readonly property int pillRadius: scaled(14)
-    readonly property int pillPadding: scaled(16)
-    readonly property int extraPillPadding: scaled(5)
+    readonly property int pillHeight: scaled(PillSettings.height)
+    readonly property int pillRadius: scaled(PillSettings.radius)
+    readonly property int pillPadding: scaled(PillSettings.padding)
+    readonly property int extraPillPadding: scaled(PillSettings.extraPadding)
     readonly property color pillColor: Colors.background
-    readonly property int pillSpacing: scaled(4)
-    readonly property int pillGap: scaled(6)
+    readonly property int pillSpacing: scaled(PillSettings.spacing)
+    readonly property int pillGap: scaled(PillSettings.gap)
     readonly property color pillBorderColor: Colors.outline
-    readonly property int pillBorderWidth: 1
-    readonly property int pillHoverBorderWidth: 2
+    readonly property int pillBorderWidth: PillSettings.borderWidth
+    readonly property int pillHoverBorderWidth: PillSettings.hoverBorderWidth
     readonly property color pillHoverColor: Colors.surface_variant
     
     // ===== Typography =====
-    readonly property int fontSize: scaled(13)
-    readonly property int iconSize: scaled(14)
-    readonly property string iconFont: "MesloLGS NF"
+    readonly property int fontSize: scaled(AppearanceSettings.fontSize)
+    readonly property int iconSize: scaled(AppearanceSettings.iconSize)
+    readonly property string iconFont: AppearanceSettings.iconFont
     readonly property color fontColor: Colors.on_background
     
     // ===== Menu / Popup Styling =====
     readonly property color menuBackground: Colors.background
     readonly property color menuBorder: Colors.surface_variant
     readonly property color menuHoverBorder: Colors.primary
-    readonly property int menuRadius: scaled(24)
-    readonly property int menuPadding: scaled(20)
-    readonly property int menuSpacing: scaled(15)
+    readonly property int menuRadius: scaled(AppearanceSettings.menuRadius)
+    readonly property int menuPadding: scaled(AppearanceSettings.menuPadding)
+    readonly property int menuSpacing: scaled(AppearanceSettings.menuSpacing)
     readonly property color menuActiveTab: Colors.primary
     readonly property color menuInactiveTab: "transparent"
     
@@ -144,11 +145,11 @@ QtObject {
     readonly property color inactiveTextColor: Colors.outline
 
     // ===== Battery thresholds =====
-    readonly property int high: 90
-    readonly property int midHigh: 70
-    readonly property int mid: 50
-    readonly property int low: 30
-    readonly property int critical: 10
+    readonly property int high: BatterySettings.high
+    readonly property int midHigh: BatterySettings.midHigh
+    readonly property int mid: BatterySettings.mid
+    readonly property int low: BatterySettings.low
+    readonly property int critical: BatterySettings.critical
 
     // ===== Battery colors =====
     readonly property color chargingColor: Colors.tertiary

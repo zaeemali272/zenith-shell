@@ -1,13 +1,15 @@
-pragma Singleton
 import QtQuick
 import Quickshell
-import Quickshell.Hyprland
 import Quickshell.Io
+import Quickshell.Hyprland
+import "../Settings"
+
+pragma Singleton
 
 Item {
     id: service
 
-    property string storagePath: Quickshell.env("HOME") + "/.config/quickshell/app_usage.json"
+    property string storagePath: PathSettings.configDir + "/quickshell/app_usage.json"
     property var usageData: ({})
     property string activeAppId: ""
     property var lastFocusTime: Date.now()

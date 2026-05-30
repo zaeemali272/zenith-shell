@@ -1,6 +1,8 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "../Settings"
+
 pragma Singleton
 
 Item {
@@ -8,7 +10,7 @@ Item {
 
     property var networks: []
     property var knownNetworks: ({})
-    
+
     // Station Info
     property string currentState: "disconnected"
     property string currentSsid: ""
@@ -32,7 +34,7 @@ Item {
         loadSecrets();
     }
 
-    readonly property string secretsPath: Quickshell.env("HOME") + "/.local/share/zenith/wifi_secrets.json"
+    readonly property string secretsPath: PathSettings.home + "/.local/share/zenith/wifi_secrets.json"
 
     function loadSecrets() {
         secretsLoader.running = false;

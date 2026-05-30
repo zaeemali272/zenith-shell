@@ -15,6 +15,7 @@ show_usage() {
     echo "Usage: $0 [command] [args]"
     echo ""
     echo "Commands:"
+    echo "  settings          Toggle the Settings GUI."
     echo "  keybinds          Toggle the Keybinds tab in Dashboard."
     echo "  cmd <action>      Send a command to the main shell instance."
     echo ""
@@ -33,6 +34,11 @@ show_usage() {
 case "$1" in
     keybinds)
         echo "Keybinds" > "$HOME/.cache/zenith_command"
+        ;;
+
+    settings)
+        echo "Settings" > "$HOME/.cache/zenith_command"
+        echo "Wrote Settings to $HOME/.cache/zenith_command"
         ;;
 
     cmd)
