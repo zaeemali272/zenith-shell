@@ -3,6 +3,7 @@ import "Center"
 import QtQuick
 import Quickshell
 import "../services"
+import "../Settings"
 
 Row {
     id: root
@@ -58,7 +59,7 @@ Row {
     }
 
     Media {
-        visible: !Theme.isSmallScreen
+        visible: WidgetSettings.enableMedia && !Theme.isSmallScreen
     }
 
 }

@@ -11,8 +11,14 @@ Rectangle {
     id: root
     color: "transparent"
 
-    property string ppPath: Quickshell.env("HOME") + "/.config/quickshell/pp.png"
+    property string ppPath: Quickshell.env("HOME") + "/.config/quickshell/profilePicture"
+    property string pathFile: Quickshell.env("HOME") + "/.config/quickshell/profilePicturePath"
+    property string savedPath: ""
     property string defaultPp: "../../assets/cat_f0.png"
+
+    Component.onCompleted: {
+        // Simple loading from local path
+    }
 
     FolderListModel {
         id: folderModel
@@ -24,10 +30,14 @@ Rectangle {
     FileDialog {
         id: fileDialog
         title: "Choose Profile Picture"
-        nameFilters: ["Images (*.png *.jpg *.jpeg)"]
+        nameFilters: ["Images (*.png *.jpg *.jpeg *.gif *.ico *.webp)"]
         onAccepted: {
             let src = selectedFile.toString().replace("file://", "");
+            if (Qt.platform.os === "linux") {
+                src = decodeURIComponent(src);
+            }
             Quickshell.Io.copyFile(src, root.ppPath);
+            ppImage.source = "";
             ppImage.source = "file://" + root.ppPath + "?" + Date.now();
         }
     }
@@ -94,7 +104,12 @@ Rectangle {
                         Behavior on opacity { NumberAnimation { duration: 200 } }
                         states: State { name: "hovered"; when: mouse.containsMouse; PropertyChanges { target: hoverOverlay; opacity: 1 } }
                     }
-                    MouseArea { id: mouse; anchors.fill: parent; hoverEnabled: true; onClicked: fileDialog.open(); z: 11 }
+                    MouseArea { 
+                        id: mouse; anchors.fill: parent; hoverEnabled: true; z: 11
+                        onClicked: {
+                            Services.SettingsService.toggle();
+                        }
+                    }
                 }
 
                 ColumnLayout {
@@ -142,23 +157,27 @@ Rectangle {
 
     function resetScroll() { statsList.positionViewAtBeginning(); }
 
+    onVisibleChanged: {
+        if (visible) refreshData();
+    }
+
+    function refreshData() {
+        let data = [];
+        for (let i = 0; i < folderModel.count; i++) {
+            let fn = folderModel.get(i, "fileName");
+            let appId = fn.replace(".desktop", "");
+            let displayName = appId.charAt(0).toUpperCase() + appId.slice(1);
+            let usage = Services.AppUsageService.usageData[appId] || { totalSeconds: 0 };
+            data.push({ name: displayName, time: usage.totalSeconds });
+        }
+        data.sort((a, b) => b.time - a.time);
+        statsList.model = data;
+    }
+
     Timer {
         interval: 1000
         running: true
         repeat: true
-        onTriggered: {
-            let data = [];
-            // Map all installed apps
-            for (let i = 0; i < folderModel.count; i++) {
-                let fn = folderModel.get(i, "fileName");
-                let appId = fn.replace(".desktop", "");
-                let displayName = appId.charAt(0).toUpperCase() + appId.slice(1);
-                
-                let usage = Services.AppUsageService.usageData[appId] || { totalSeconds: 0 };
-                data.push({ name: displayName, time: usage.totalSeconds });
-            }
-            data.sort((a, b) => b.time - a.time);
-            statsList.model = data;
-        }
+        onTriggered: refreshData()
     }
 }

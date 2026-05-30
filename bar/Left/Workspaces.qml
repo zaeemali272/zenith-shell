@@ -1,5 +1,6 @@
 import ".."
 import "../.."
+import "../../Settings"
 import QtQuick
 import QtQuick.Controls
 import Quickshell
@@ -83,8 +84,8 @@ Item {
 
                 Text {
                     anchors.centerIn: parent
-                    text: workspace.id.toString()
-                    font.pixelSize: Theme.scaled(12)
+                    text: WorkspaceSettings.displayStyle === "numbers" ? workspace.id.toString() : "•"
+                    font.pixelSize: WorkspaceSettings.displayStyle === "numbers" ? Theme.scaled(12) : Theme.scaled(24)
                     color: Theme.workspaceBackgroundStyle === "full" ? (workspace.active ? Theme.wsActiveColor : Theme.text) : (workspace.active ? Theme.wsActiveTextColor : Theme.inactiveTextColor)
                 }
             }

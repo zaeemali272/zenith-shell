@@ -4,6 +4,7 @@ import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
 import "../../../"
+import "../../../Settings"
 
 Rectangle {
     id: root
@@ -128,8 +129,8 @@ Rectangle {
                                     Text {
                                         anchors.centerIn: parent
                                         text: modelData.combo
-                                        font.family: "monospace"
-                                        font.pixelSize: Theme.scaled(12)
+                                        font.family: Theme.iconFont
+                                        font.pixelSize: Theme.scaled(13)
                                         font.weight: Font.Bold
                                         color: Theme.lavender
                                     }
@@ -179,41 +180,34 @@ Rectangle {
                     lineNoComment = parts.slice(0, -1).join("#").trim();
                 }
                 
-                // Improved regex to handle "bind = , KEY, ..." and "bind = MOD, KEY, ..."
+                    // Improved regex to handle "bind = , KEY, ..." and "bind = MOD, KEY, ..."
                 let match = lineNoComment.match(/bind[a-z]*\s*=\s*([^,]*),\s*([^,]+)/);
                 if (match) {
                     let mod = match[1].trim();
                     let key = match[2].trim();
                     
-                    let combo = "";
+                    let combo = [];
                     if (mod) {
-                        let mods = mod.split(/[\s&_+]+/).map(m => {
-                            let clean = m.toUpperCase();
-                            if (clean === "SUPER" || clean === "MOD4") return "󰘳";
-                            if (clean === "SHIFT") return "󰘶";
-                            if (clean === "CONTROL" || clean === "CTRL") return "󰘵";
-                            if (clean === "ALT" || clean === "MOD1" || clean === "^") return "󰘴";
-                            return m;
-                        }).filter(m => m.length > 0).join(" ");
-
-                        let cleanKey = key.replace("XF86", "");
-                        if (cleanKey === "left") cleanKey = "";
-                        else if (cleanKey === "right") cleanKey = "";
-                        else if (cleanKey === "up") cleanKey = "";
-                        else if (cleanKey === "down") cleanKey = "";
-
-                        combo = mods + " " + cleanKey;
-                    } else {
-                        let cleanKey = key.replace("XF86", "");
-                        if (cleanKey === "left") cleanKey = "";
-                        else if (cleanKey === "right") cleanKey = "";
-                        else if (cleanKey === "up") cleanKey = "";
-                        else if (cleanKey === "down") cleanKey = "";
-                        combo = cleanKey;
+                        mod.split(/[\s&_+]+/).forEach(m => {
+                            let clean = m.trim().toUpperCase();
+                            if (clean === "$MAINMOD" || clean === "SUPER" || clean === "MOD4" || clean === "SUPER_L" || clean === "SUPER_R") combo.push("󰘳");
+                            else if (clean === "$CTRLMOD" || clean === "CONTROL" || clean === "CTRL" || clean === "CTRL_L" || clean === "CTRL_R") combo.push("󰘵");
+                            else if (clean === "$SHIFTMOD" || clean === "SHIFT" || clean === "SHIFT_L" || clean === "SHIFT_R") combo.push("󰘶");
+                            else if (clean === "$ALTMOD" || clean === "ALT" || clean === "MOD1" || clean === "^" || clean === "ALT_L" || clean === "ALT_R") combo.push("󰘴");
+                            else if (clean.length > 0) combo.push(m.trim());
+                        });
                     }
 
+                    let cleanKey = key.replace("XF86", "").trim();
+                    if (cleanKey.toLowerCase() === "left") cleanKey = "";
+                    else if (cleanKey.toLowerCase() === "right") cleanKey = "";
+                    else if (cleanKey.toLowerCase() === "up") cleanKey = "";
+                    else if (cleanKey.toLowerCase() === "down") cleanKey = "";
+                    
+                    if (cleanKey.length > 0) combo.push(cleanKey);
+
                     currentSection.binds.push({ 
-                        combo: combo, 
+                        combo: combo.filter(c => c && c.length > 0).join("  "), 
                         desc: comment || "No description" 
                     });
                 }
@@ -225,7 +219,7 @@ Rectangle {
 
     Process {
         id: keybindsReader
-        command: ["cat", Quickshell.env("HOME") + "/.config/hypr/hyprland/keybinds.conf"]
+        command: ["cat", PathSettings.configDir + "/hypr/hyprland/keybinds.conf"]
         stdout: StdioCollector {
             onStreamFinished: { if (typeof text !== "undefined" && text !== null) parseKeybinds(text); }
         }

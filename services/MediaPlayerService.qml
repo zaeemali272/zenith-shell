@@ -69,7 +69,7 @@ Singleton {
     }
 
     function manageFocus(newPlayer) {
-        if (!newPlayer || !_initialized || !GeneralSettings.autoManageMediaFocus || !service.mediaFocus) return;
+        if (!newPlayer || !_initialized || !MediaSettings.autoManageMediaFocus || !service.mediaFocus) return;
         if (newPlayer.playbackState !== MprisPlaybackState.Playing) return;
         if (isBlacklisted(newPlayer)) return;
 

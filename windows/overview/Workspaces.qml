@@ -149,7 +149,6 @@ Item {
                                             let parts = raw.split(".");
                                             return parts[parts.length - 1];
                                         }
-                                        // Try to find a valid identifier for the window
                                         candidates: {
                                             if (!win) return [];
                                             let id = (win.appId && win.appId !== "") ? win.appId : (win.initialClass || "");
@@ -160,7 +159,6 @@ Item {
 
                                     Text {
                                         Layout.fillWidth: true
-                                        // Clean display name strictly
                                         text: {
                                             if (!win) return "Unknown";
                                             let raw = win.appId || win.initialClass || "";

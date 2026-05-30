@@ -8,6 +8,7 @@ import "bar/Menu"
 import "bar/Menu/components"
 import "services"
 import "windows" as Windows
+import "Settings"
 
 Scope {
 // We need to reference these services to ensure they start listening for system events.
@@ -16,6 +17,7 @@ Scope {
     readonly property var _media: MediaPlayerService
     readonly property var _productivity: ProductivityService
     readonly property var _overview: OverviewService { id: overviewService }
+    readonly property var _settings: SettingsService { id: settingsService }
 
     // --- IPC / COMMAND LISTENER ---
     // Listen for commands from external sources (scripts or other quickshell processes)
@@ -85,6 +87,8 @@ Scope {
             CenterState.toggle();
         } else if (action === "Overview") {
             overviewService.toggle();
+        } else if (action === "Settings") {
+            settingsService.toggle();
         } else if (action === "Keybinds") {
             if (CenterState.qsVisible && CenterState.activeTab === "Keybinds") {
                 CenterState.close();

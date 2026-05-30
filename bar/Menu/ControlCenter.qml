@@ -129,10 +129,10 @@ PanelWindow {
                         model: ["Default", "Pomodoro", "Wallpaper", "Keybinds", "User"]
                         delegate: Rectangle {
                             id: tabRect
-                            width: Theme.scaled(80); height: Theme.scaled(30)
-                            radius: Theme.scaled(8)
-                            color: CenterState.activeTab === modelData ? Theme.accentColor : (tabMouse.containsMouse ? Theme.surface1 : "transparent")
-                            border.color: Theme.glassBorder
+                            width: Theme.scaled(90); height: Theme.scaled(35)
+                            radius: Theme.scaled(10)
+                            color: CenterState.activeTab === modelData ? Theme.blue : (tabMouse.containsMouse ? Theme.surface1 : "transparent")
+                            border.color: CenterState.activeTab === modelData ? Theme.blue : Theme.glassBorder
                             scale: tabMouse.pressed ? 0.95 : 1.0
                             Behavior on scale { NumberAnimation { duration: 100 } }
                             Behavior on color { ColorAnimation { duration: 200 } }
@@ -140,8 +140,9 @@ PanelWindow {
                             Text {
                                 anchors.centerIn: parent
                                 text: modelData
-                                font.pixelSize: Theme.scaled(9)
-                                color: CenterState.activeTab === modelData ? Theme.base : (tabMouse.containsMouse ? Theme.text : Theme.subtext1)
+                                font.pixelSize: Theme.scaled(11)
+                                font.weight: Font.Bold
+                                color: CenterState.activeTab === modelData ? Theme.base : Theme.text
                             }
                             MouseArea { 
                                 id: tabMouse
@@ -230,15 +231,15 @@ PanelWindow {
                                 contentItem: RowLayout {
                                     spacing: 4
                                     Text {
-                                        text: GeneralSettings.fullscreenNotification ? "󰊓" : "󰊔"
+                                        text: NotificationSettings.fullscreenNotification ? "󰊓" : "󰊔"
                                         font.family: Theme.iconFont
-                                        color: GeneralSettings.fullscreenNotification ? Theme.blue : Theme.surface2
+                                        color: NotificationSettings.fullscreenNotification ? Theme.blue : Theme.surface2
                                         font.pixelSize: 12
                                     }
                                     Text { text: "NOTIFY"; font.pixelSize: 8; font.weight: Font.Black; color: Theme.subtext1 }
                                 }
                                 background: Rectangle { color: fullscreenBtn.hovered ? Theme.surface0 : "transparent"; radius: 6 }
-                                onClicked: GeneralSettings.fullscreenNotification = !GeneralSettings.fullscreenNotification
+                                onClicked: NotificationSettings.fullscreenNotification = !NotificationSettings.fullscreenNotification
                             }
                             Button {
                                 id: osdFullscreenBtn
@@ -248,15 +249,15 @@ PanelWindow {
                                 contentItem: RowLayout {
                                     spacing: 4
                                     Text {
-                                        text: GeneralSettings.fullscreenOSD ? "󰊓" : "󰊔"
+                                        text: NotificationSettings.fullscreenOSD ? "󰊓" : "󰊔"
                                         font.family: Theme.iconFont
-                                        color: GeneralSettings.fullscreenOSD ? Theme.blue : Theme.surface2
+                                        color: NotificationSettings.fullscreenOSD ? Theme.blue : Theme.surface2
                                         font.pixelSize: 12
                                     }
                                     Text { text: "OSD"; font.pixelSize: 8; font.weight: Font.Black; color: Theme.subtext1 }
                                 }
                                 background: Rectangle { color: osdFullscreenBtn.hovered ? Theme.surface0 : "transparent"; radius: 6 }
-                                onClicked: GeneralSettings.fullscreenOSD = !GeneralSettings.fullscreenOSD
+                                onClicked: NotificationSettings.fullscreenOSD = !NotificationSettings.fullscreenOSD
                             }
                                 Button {
                                     id: clearBtn
@@ -271,7 +272,7 @@ PanelWindow {
                                 Layout.fillWidth: true; Layout.fillHeight: true; clip: true
                                 NotificationList {
                                     id: notificationList
-                                    visible: GeneralSettings.enableNotifications
+                                    visible: NotificationSettings.enableNotifications
                                     Layout.fillWidth: true; height: parent.height 
                                 }
                             }
@@ -297,7 +298,7 @@ PanelWindow {
                     // 3. Weather
                     Rectangle {
                         Layout.fillWidth: true; Layout.fillHeight: true
-                        visible: !Theme.isSmallScreen || !Theme.isPortrait
+                        visible: (!Theme.isSmallScreen || !Theme.isPortrait) && WidgetSettings.enableWeather
                         color: Qt.rgba(0,0,0,0.2); radius: Theme.scaled(24); border.color: Theme.glassBorder
                         ColumnLayout {
                             anchors.fill: parent; anchors.margins: Theme.scaled(15)
@@ -307,7 +308,6 @@ PanelWindow {
                                 Text { text: "WEATHER"; color: Theme.subtext1; font.pixelSize: Theme.scaled(9); font.weight: Font.Black; font.letterSpacing: 1 }
                             }
                             WeatherWidget {
-                                visible: GeneralSettings.enableWeather
                                 Layout.fillWidth: true; Layout.fillHeight: true
                             }
                         }

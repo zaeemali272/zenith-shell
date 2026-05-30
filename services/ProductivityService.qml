@@ -1,12 +1,14 @@
-pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "../Settings"
+
+pragma Singleton
 
 Item {
     id: service
 
-    property string storagePath: Quickshell.env("HOME") + "/.config/quickshell/productivity.json"
+    property string storagePath: PathSettings.configDir + "/quickshell/productivity.json"
     
     // --- Reactive Properties (Source of Truth) ---
     property int duration: 0
