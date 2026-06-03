@@ -72,6 +72,13 @@ ColumnLayout {
                 Rectangle {
                     Layout.fillWidth: true; height: Theme.scaled(40); radius: Theme.scaled(12); color: Theme.menuBackground; border.color: Theme.surface1
                     Text { anchors.centerIn: parent; text: "MIC SETTINGS"; color: Theme.subtext0; font.weight: Font.Black; font.pixelSize: Theme.scaled(11); font.letterSpacing: 1 }
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            pavuProc.command = ["pavucontrol", "-t", "3"];
+                            pavuProc.running = true;
+                        }
+                    }
                 }
             }
         }
@@ -106,4 +113,5 @@ ColumnLayout {
     Process { id: muteProc }
     Process { id: setOut }
     Process { id: setMic }
+    Process { id: pavuProc }
 }

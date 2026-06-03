@@ -104,7 +104,7 @@ QtObject {
         // Deduplicate
         names = names.filter((v, i, a) => v && v !== "" && a.indexOf(v) === i);
 
-        // 3. Quickshell icon provider (System Theme)
+        // 3. Quickshell icon provider (System Theme) - Primary Source
         for (let name of names) {
             if (!name.includes("/")) {
                 let path = Quickshell.iconPath(name);
@@ -116,23 +116,19 @@ QtObject {
             }
         }
 
-        // 4. Manual directory scan (Broad Search)
+        // 4. Manual directory scan (Broad Search) - Fallback
         let bases = [
-            "/usr/share/icons/OneUI/scalable/apps/",
-            "/usr/share/icons/OneUI/48x48/apps/",
-            "/usr/share/icons/OneUI/symbolic/status/",
             "/usr/share/icons/hicolor/scalable/apps/",
-            "/usr/share/icons/hicolor/512x512/apps/",
-            "/usr/share/icons/hicolor/256x256/apps/",
-            "/usr/share/icons/hicolor/128x128/apps/",
-            "/usr/share/icons/hicolor/64x64/apps/",
             "/usr/share/icons/hicolor/48x48/apps/",
-            "/usr/share/icons/hicolor/32x32/apps/",
-            "/usr/share/icons/Adwaita/scalable/apps/",
-            "/usr/share/icons/Adwaita/48x48/apps/",
-            "/usr/share/icons/breeze/apps/48/",
+            "/usr/share/icons/hicolor/128x128/apps/",
+            "/usr/share/icons/hicolor/256x256/apps/",
             "/usr/share/pixmaps/",
-            "/usr/share/icons/"
+            "/usr/share/icons/Adwaita/scalable/apps/",
+            "/usr/share/icons/breeze/apps/48/",
+            "/usr/share/icons/Papirus/48x48/apps/",
+            "/usr/share/icons/Papirus-Dark/48x48/apps/",
+            "/usr/share/icons/OneUI/scalable/apps/",
+            "/usr/share/icons/OneUI/48x48/apps/"
         ];
 
         for (let name of names) {
@@ -140,8 +136,6 @@ QtObject {
             for (let base of bases) {
                 candidates.push("file://" + base + name + ".svg");
                 candidates.push("file://" + base + name + ".png");
-                candidates.push("file://" + base + name + ".xpm");
-                // Try with @48 or similar if needed (optional)
             }
         }
         

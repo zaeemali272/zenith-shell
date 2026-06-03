@@ -11,7 +11,7 @@ PopupWindow {
 
     property var zenithData: ({exists: false, updates: 0, commits: []})
     property var shellData: ({exists: false, updates: 0, commits: []})
-
+    
     visible: false
     color: "transparent"
     
@@ -20,12 +20,12 @@ PopupWindow {
 
     grabFocus: true 
 
-    HyprlandFocusGrab {
-        id: grab
-        active: root.visible
-        windows: [root]
-        onCleared: root.visible = false
-    }
+    // HyprlandFocusGrab {
+    //     id: grab
+    //     active: root.visible
+    //     windows: [root]
+    //     onCleared: root.visible = false
+    // }
 
     function openAt(visualParent) {
         root.anchor.window = visualParent.QsWindow.window;
@@ -39,7 +39,6 @@ PopupWindow {
         logText.text = "Starting update for: " + args + "\n";
         console.log("Starting update with args:", args);
         
-        // Directly call the script, capturing output to the log viewer
         updateRunner.command = ["bash", "-c", Quickshell.env("HOME") + "/.config/quickshell/scripts/run_update.sh " + args];
         updateRunner.running = true;
     }
@@ -97,7 +96,7 @@ PopupWindow {
                 Text {
                     id: logText
                     text: "Ready to update..."
-                    color: Text.text
+                    color: Theme.text
                     font.family: "monospace"
                     font.pixelSize: Theme.scaled(11)
                     wrapMode: Text.WordWrap
@@ -116,21 +115,21 @@ PopupWindow {
                     text: "Update All"
                     icon: "󰚰"
                     Layout.columnSpan: 2
-                    color: Theme.blue
+                    btnColor: Theme.blue
                     onClicked: root.runUpdate("--quickshell --configs --new-pkgs --skip-xdg")
                 }
 
                 ActionButton {
                     text: "Zenith"
                     icon: "󱂵"
-                    color: Theme.surface1
+                    btnColor: Theme.surface1
                     onClicked: root.runUpdate("--configs --skip-xdg")
                 }
 
                 ActionButton {
                     text: "Shell"
                     icon: "󰓞"
-                    color: Theme.surface1
+                    btnColor: Theme.surface1
                     onClicked: root.runUpdate("--quickshell")
                 }
 
@@ -138,7 +137,7 @@ PopupWindow {
                     text: "Packages"
                     icon: "󰏖"
                     Layout.columnSpan: 2
-                    color: Theme.surface1
+                    btnColor: Theme.surface1
                     onClicked: root.runUpdate("--new-pkgs")
                 }
             }
@@ -200,13 +199,13 @@ PopupWindow {
     component ActionButton: Rectangle {
         property string text
         property string icon
-        property color color: Theme.surface1
+        property color btnColor: Theme.surface1
         signal clicked()
 
         Layout.fillWidth: true
         implicitHeight: Theme.scaled(36)
         radius: Theme.scaled(8)
-        color: mouse.containsMouse ? Qt.lighter(parent.color, 1.1) : parent.color
+        color: mouse.containsMouse ? Qt.lighter(btnColor, 1.1) : btnColor
         border.color: Theme.glassBorder
         border.width: 1
 
