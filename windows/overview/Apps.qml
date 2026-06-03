@@ -24,9 +24,61 @@ Item {
         onCountChanged: updateList()
     }
 
+    property var fullAppList: []
+    property bool isInitialized: false
+
     function updateList() {
+        if (!isInitialized) {
+            if (folderModel.status !== FolderListModel.Ready && folderModel.count === 0) return;
+            
+            let arr = [];
+            for (let i = 0; i < folderModel.count; i++) {
+                let fn = folderModel.get(i, "fileName");
+                let fp = folderModel.get(i, "filePath");
+                let rawId = fn.replace(".desktop", "");
+                let nameParts = rawId.split(".");
+                let baseName = nameParts[nameParts.length - 1];
+                let displayName = baseName.replace(/[-_]/g, " ");
+                displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+                
+                // Try to extract Icon and Name from the desktop file for better accuracy
+                let iconName = "";
+                try {
+                    let content = Quickshell.Io.readTextFile(fp);
+                    let lines = content.split("\n");
+                    for (let line of lines) {
+                        if (line.startsWith("Icon=")) {
+                            iconName = line.substring(5).trim();
+                        } else if (line.startsWith("Name=") && displayName === baseName) {
+                            // Use the actual name from the desktop file if available
+                            let n = line.substring(5).trim();
+                            if (n) displayName = n;
+                        }
+                        if (iconName && displayName !== baseName) break;
+                    }
+                } catch(e) {}
+
+                if (!Windows.IconsFetcher.isMainApp(rawId, displayName)) continue;
+
+                let score = (typeof AppUsageService !== 'undefined') ? AppUsageService.getScore(rawId) : 0;
+                arr.push({ 
+                    fileName: fn, 
+                    appId: rawId, 
+                    displayName: displayName,
+                    displayLower: displayName.toLowerCase(),
+                    rawLower: rawId.toLowerCase(),
+                    iconName: iconName,
+                    usageScore: score
+                });
+            }
+            
+            if (arr.length > 0 || folderModel.status === FolderListModel.Ready) {
+                fullAppList = arr;
+                isInitialized = true;
+            }
+        }
+
         filteredModel.clear();
-        let arr = [];
         let searchLower = root.searchText.toLowerCase().replace(/\s/g, "");
 
         // Helper to check for fuzzy subsequence match
@@ -38,41 +90,41 @@ Item {
             return sIdx === query.length;
         }
 
-        for (let i = 0; i < folderModel.count; i++) {
-            let fn = folderModel.get(i, "fileName");
-            let rawId = fn.replace(".desktop", "");
-            let nameParts = rawId.split(".");
-            let baseName = nameParts[nameParts.length - 1];
-            let displayName = baseName.replace(/[-_]/g, " ");
-            displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
-            
-            if (!Windows.IconsFetcher.isMainApp(rawId, displayName)) continue;
-
-            let displayLower = displayName.toLowerCase();
-            let rawLower = rawId.toLowerCase();
-            
-            let isMatch = (root.searchText === "") || isFuzzyMatch(displayLower, searchLower) || isFuzzyMatch(rawLower, searchLower);
-
-            if (isMatch) {
-                let score = (typeof AppUsageService !== 'undefined') ? AppUsageService.getScore(rawId) : 0;
-                arr.push({ 
-                    fileName: fn, 
-                    appId: rawId, 
-                    displayName: displayName,
-                    usageScore: score
-                });
+        let filtered = [];
+        if (root.searchText === "") {
+            filtered = fullAppList;
+        } else {
+            for (let item of fullAppList) {
+                if (isFuzzyMatch(item.displayLower, searchLower) || isFuzzyMatch(item.rawLower, searchLower)) {
+                    filtered.push(item);
+                }
             }
         }
         
-        arr.sort((a, b) => {
+        filtered.sort((a, b) => {
             if (b.usageScore !== a.usageScore) return b.usageScore - a.usageScore;
             return a.displayName.localeCompare(b.displayName);
         });
-        for (let item of arr) filteredModel.append(item);
+        
+        for (let item of filtered) filteredModel.append(item);
         root.currentIndex = 0;
     }
 
     onSearchTextChanged: updateList()
+    
+    // Refresh scores when opening if needed
+    function refreshScores() {
+        if (!isInitialized) return;
+        let changed = false;
+        for (let i = 0; i < fullAppList.length; i++) {
+            let score = (typeof AppUsageService !== 'undefined') ? AppUsageService.getScore(fullAppList[i].appId) : 0;
+            if (fullAppList[i].usageScore !== score) {
+                fullAppList[i].usageScore = score;
+                changed = true;
+            }
+        }
+        if (changed || root.searchText === "") updateList();
+    }
 
     GridView {
         id: grid
@@ -112,7 +164,7 @@ Item {
                         anchors.centerIn: parent
                         width: parent.width * 0.7
                         height: parent.height * 0.7
-                        candidates: Windows.IconsFetcher.getCandidates(model.appId, model.fileName, "")
+                        candidates: Windows.IconsFetcher.getCandidates(model.appId, model.fileName, model.iconName)
                     }
                 }
 

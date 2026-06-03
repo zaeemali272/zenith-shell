@@ -31,10 +31,15 @@ PanelWindow {
     onActiveChanged: {
         if (active) {
             win.visible = true;
+
+            // Initial refresh
+            appGrid.refreshScores();
+
             root.opacity = 0;
             root.scale = 0.98;
             showAnim.start();
-            // Use a small delay for component ready state
+
+            // Focus and secondary refresh
             Qt.callLater(() => {
                 if (searchBar) searchBar.forceFocus();
             });
@@ -94,10 +99,16 @@ PanelWindow {
             }
 
             // Workspaces (GNOME style top bar)
-            Workspaces {
-                id: workspaceView
+            Loader {
+                id: workspaceLoader
                 Layout.fillWidth: true
                 Layout.preferredHeight: Root.Theme.isSmallScreen ? Root.Theme.scaled(180) : Root.Theme.scaled(250)
+                sourceComponent: workspaceComponent
+            }
+
+            Component {
+                id: workspaceComponent
+                Workspaces {}
             }
 
             // App Grid

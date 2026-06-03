@@ -13,8 +13,32 @@ Item {
     
     property var activeWorkspaces: []
     property string currentWallpaper: ""
+    property int refreshTick: 0
+    property var clientData: ({})
 
     onVisibleChanged: if (visible) updateWorkspaces()
+
+    Process {
+        id: clientFetcher
+        command: ["hyprctl", "clients", "-j"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const clients = JSON.parse(text);
+                    const map = {};
+                    clients.forEach(c => {
+                        let addr = c.address;
+                        if (addr.startsWith("0x")) addr = addr.substring(2);
+                        map[addr] = c;
+                    });
+                    root.clientData = map;
+                    root.refreshTick++;
+                } catch (e) {
+                    console.error("[Overview] Failed to parse hyprctl clients:", e);
+                }
+            }
+        }
+    }
 
     Process {
         id: wallpaperReader
@@ -28,14 +52,28 @@ Item {
     }
 
     function updateWorkspaces() {
+        // Trigger manual client fetch to ensure fresh data
+        clientFetcher.running = false;
+        clientFetcher.running = true;
+
         if (!Hyprland.workspaces) return;
         
         let wsValues = Hyprland.workspaces.values;
         if (!wsValues) return;
 
-        activeWorkspaces = wsValues
-            .filter(ws => ws && ws.id > 0)
-            .sort((a, b) => a.id - b.id);
+        let newList = [];
+        for (let i = 0; i < wsValues.length; i++) {
+            let ws = wsValues[i];
+            if (ws && ws.id > 0) {
+                newList.push(ws);
+            }
+        }
+        
+        newList.sort((a, b) => a.id - b.id);
+        
+        // Force a model refresh by assigning a new array reference
+        activeWorkspaces = newList;
+        root.refreshTick++;
     }
 
     Component.onCompleted: updateWorkspaces()
@@ -43,13 +81,13 @@ Item {
     Connections {
         target: Hyprland.workspaces
         ignoreUnknownSignals: true
-        function onValuesChanged() { updateWorkspaces(); }
+        function onValuesChanged() { if (root.visible) updateWorkspaces(); }
     }
     
     Connections {
         target: Hyprland.toplevels
         ignoreUnknownSignals: true
-        function onValuesChanged() { updateWorkspaces(); }
+        function onValuesChanged() { if (root.visible) updateWorkspaces(); }
     }
 
     RowLayout {
@@ -71,6 +109,7 @@ Item {
                 
                 readonly property var workspace: modelData
                 readonly property var displayWindows: {
+                    let _force = root.refreshTick;
                     if (!workspace || !workspace.toplevels) return [];
                     let list = workspace.toplevels.values || [];
                     let filtered = [];
@@ -113,11 +152,36 @@ Item {
                                 readonly property var win: modelData
                                 readonly property var mon: workspace.monitor || { width: 1920, height: 1080, x: 0, y: 0 }
                                 
-                                readonly property real rawX: (win && win.x !== undefined) ? win.x : (win?.lastIpcObject?.at?.[0] || 0)
-                                readonly property real rawY: (win && win.y !== undefined) ? win.y : (win?.lastIpcObject?.at?.[1] || 0)
-                                readonly property real rawW: (win && win.width !== undefined) ? win.width : (win?.lastIpcObject?.size?.[0] || 400)
-                                readonly property real rawH: (win && win.height !== undefined) ? win.height : (win?.lastIpcObject?.size?.[1] || 300)
-
+                                // Address matching logic
+                                readonly property string winAddr: {
+                                    let addr = win.address || "";
+                                    if (addr.startsWith("0x")) return addr.substring(2);
+                                    return addr;
+                                }
+                                
+                                readonly property var ipcData: root.clientData[winAddr]
+                                
+                                readonly property real rawX: { 
+                                    let _f = root.refreshTick; 
+                                    if (ipcData && ipcData.at) return ipcData.at[0];
+                                    return (win && win.x !== undefined) ? win.x : 0;
+                                }
+                                readonly property real rawY: { 
+                                    let _f = root.refreshTick; 
+                                    if (ipcData && ipcData.at) return ipcData.at[1];
+                                    return (win && win.y !== undefined) ? win.y : 0;
+                                }
+                                readonly property real rawW: { 
+                                    let _f = root.refreshTick; 
+                                    if (ipcData && ipcData.size) return ipcData.size[0];
+                                    return (win && win.width !== undefined) ? win.width : 400;
+                                }
+                                readonly property real rawH: { 
+                                    let _f = root.refreshTick; 
+                                    if (ipcData && ipcData.size) return ipcData.size[1];
+                                    return (win && win.height !== undefined) ? win.height : 300;
+                                }
+                                
                                 readonly property real barHeight: 40
                                 x: ((rawX - (mon.x || 0)) / mon.width) * previewArea.width
                                 y: ((rawY - (mon.y || 0) - barHeight) / (mon.height - barHeight)) * previewArea.height
