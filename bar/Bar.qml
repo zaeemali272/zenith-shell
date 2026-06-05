@@ -69,7 +69,12 @@ PanelWindow {
         MouseArea {
             anchors.fill: parent
             z: -1 // Bottom of stack, handles clicks on empty space
-            onClicked: MenuService.closeAll()
+            // Ensure we capture clicks even on transparent background
+            onPressed: (mouse) => mouse.accepted = true
+            onClicked: {
+                console.log("[Bar] Background clicked, closing all menus");
+                MenuService.closeAll();
+            }
         }
 
         Component.onCompleted: {

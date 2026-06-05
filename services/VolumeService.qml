@@ -53,7 +53,9 @@ Singleton {
                         return;
                     }
                     processData(data);
-                } catch (e) {}
+                } catch (e) {
+                    console.log("[VolumeService] JSON parse error: " + e);
+                }
             }
         }
     }
@@ -64,19 +66,24 @@ Singleton {
         
         for (let i = 0; i < data.length; i++) {
             let app = data[i];
-            if (!app || typeof app !== "object" || !app.volume) continue;
+            if (!app || typeof app !== "object") continue;
             
             let vol = 0;
-            try {
-                for (let channel in app.volume) {
-                    let chObj = app.volume[channel];
-                    if (chObj && chObj.value_percent) {
-                        vol = parseInt(chObj.value_percent);
-                        break;
+            if (app.volume) {
+                try {
+                    for (let channel in app.volume) {
+                        let chObj = app.volume[channel];
+                        if (chObj && chObj.value_percent) {
+                            let v = parseInt(chObj.value_percent);
+                            if (!isNaN(v)) {
+                                vol = v;
+                                break;
+                            }
+                        }
                     }
+                } catch (err) {
+                    console.log("[VolumeService] Error parsing app volume: " + err);
                 }
-            } catch (err) {
-                console.log("[VolumeService] Error parsing app volume: " + err);
             }
             
             let name = "Unknown App";
@@ -94,7 +101,8 @@ Singleton {
                 let item = appModel.get(j);
                 if (item && item.appId === appId) {
                     if (item.volume !== vol) appModel.setProperty(j, "volume", vol);
-                    if (item.muted !== app.mute) appModel.setProperty(j, "muted", app.mute);
+                    let muted = app.mute || false;
+                    if (item.muted !== muted) appModel.setProperty(j, "muted", muted);
                     found = true;
                     break;
                 }
@@ -105,7 +113,7 @@ Singleton {
                     "appId": appId,
                     "name": name,
                     "volume": vol,
-                    "muted": app.mute,
+                    "muted": app.mute || false,
                     "icon": "\uf2d2"
                 });
             }

@@ -40,6 +40,7 @@ Item {
             shellExec.command = ["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", percent + "%"];
         else if (type === "brightness")
             shellExec.command = ["brightnessctl", "set", percent + "%"];
+        shellExec.running = false;
         shellExec.running = true;
     }
 

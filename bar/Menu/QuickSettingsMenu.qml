@@ -28,6 +28,9 @@ PanelWindow {
     WlrLayershell.margins.top: Theme.barMarginTop + 4
     WlrLayershell.margins.right: Theme.isSmallScreen ? 5 : 10
 
+    // Fill screen to enable dismissal on click anywhere
+    anchors.fill: parent
+
     onVisibleChanged: {
         if (visible) {
             MenuService.register(root);
@@ -57,12 +60,17 @@ PanelWindow {
         onClicked: QuickSettingsService.close()
     }
 
-    implicitWidth: Math.min(Theme.scaled(650), (screen ? screen.width : Theme.screenWidth) - 20)
-    implicitHeight: Math.min(Theme.scaled(600), (screen ? screen.height : Theme.screenHeight) - Theme.barHeight - 20)
-
     Rectangle {
         id: mainContent
-        anchors.fill: parent
+        
+        anchors.top: parent.top
+        anchors.right: parent.right
+        anchors.topMargin: Theme.barMarginTop + 4
+        anchors.rightMargin: Theme.isSmallScreen ? 5 : 10
+
+        width: Math.min(Theme.scaled(650), (screen ? screen.width : Theme.screenWidth) - 20)
+        height: Math.min(Theme.scaled(600), (screen ? screen.height : Theme.screenHeight) - Theme.barHeight - 20)
+
         focus: true
         Keys.onPressed: (event) => {
             console.log("Menu key pressed: " + event.key);
@@ -187,16 +195,21 @@ PanelWindow {
                     contentItem: Rectangle { radius: 2; color: Theme.accentColor; opacity: 0.3 }
                 }
 
+                NumberAnimation { id: fadeAnim; target: contentStack; property: "opacity"; from: 0; to: 1; duration: 300 }
+
                 StackLayout {
                     id: contentStack
                     width: scrollArea.availableWidth
                     // Calculate height dynamically based on the current child
-                    height: children[currentIndex] ? children[currentIndex].implicitHeight : 500
+                    height: {
+                        if (currentIndex >= 0 && currentIndex < children.length && children[currentIndex]) {
+                            return children[currentIndex].implicitHeight || 500;
+                        }
+                        return 500;
+                    }
                     currentIndex: ["network", "bluetooth", "volume", "powerprofile", "resources", "battery", "power"].indexOf(QuickSettingsService.activeTab)
 
                     onCurrentIndexChanged: fadeAnim.restart()
-
-                    NumberAnimation { id: fadeAnim; target: contentStack; property: "opacity"; from: 0; to: 1; duration: 300 }
 
                     WifiContent { id: wifiContent }
                     BluetoothContent { }
@@ -215,7 +228,8 @@ PanelWindow {
                             }
                         }
                     }
-                }            }
+                }
+            }
         }
     }
 }

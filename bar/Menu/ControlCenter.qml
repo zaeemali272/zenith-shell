@@ -21,16 +21,9 @@ PanelWindow {
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
     WlrLayershell.namespace: "controlcenter"
 
-    // Fill screen width to enable perfect centering of mainContent
-    anchors {
-        top: true
-        left: true
-        right: true
-    }
+    // Fill screen to enable dismissal on click anywhere
+    anchors.fill: parent
     
-    // Total height of the window container
-    implicitHeight: Math.min(Theme.scaled(700), (screen ? screen.height : Theme.screenHeight))
-
     onVisibleChanged: {
         if (visible) {
             MenuService.register(root);
