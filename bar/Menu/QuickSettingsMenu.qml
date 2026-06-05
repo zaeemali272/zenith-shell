@@ -21,17 +21,15 @@ PanelWindow {
     WlrLayershell.exclusiveZone: 0
     WlrLayershell.keyboardFocus: (typeof wifiContent !== "undefined" && wifiContent.isInputActive) ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.OnDemand
     WlrLayershell.namespace: "quicksettings"
-
-    // Positioning using anchors and margins
-    anchors.top: true
-    anchors.right: true
-    WlrLayershell.margins.top: Theme.barMarginTop + 4
-    WlrLayershell.margins.right: Theme.isSmallScreen ? 5 : 10
-
-    // Fill screen to enable dismissal on click anywhere
-    anchors.fill: parent
+    anchors {
+        top: true
+        bottom: true
+        left: true
+        right: true
+    }
 
     onVisibleChanged: {
+
         if (visible) {
             MenuService.register(root);
             QuickSettingsService.qsVisible = true;

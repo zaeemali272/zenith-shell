@@ -14,8 +14,10 @@ PanelWindow {
     WlrLayershell.exclusiveZone: 0
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     WlrLayershell.namespace: "dismiss_overlay"
-
-    anchors.fill: parent
+    WlrLayershell.anchors.top: true
+    WlrLayershell.anchors.bottom: true
+    WlrLayershell.anchors.left: true
+    WlrLayershell.anchors.right: true
 
     color: "transparent"
     visible: MenuService.openMenus.length > 0
