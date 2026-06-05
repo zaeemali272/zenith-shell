@@ -99,7 +99,7 @@ ColumnLayout {
                     ColumnLayout {
                         anchors.fill: parent; anchors.margins: Theme.scaled(15)
                         VolumeSlider {
-                            label: name.toUpperCase(); icon: "󰓃"; value: volume; sliderColor: Theme.powerGreen
+                            label: (name || "Unknown App").toUpperCase(); icon: "󰓃"; value: volume; sliderColor: Theme.powerGreen
                             onChange: (v) => { setAppVol.command = ["pactl", "set-sink-input-volume", appId, v + "%"]; setAppVol.running = true; }
                             Process { id: setAppVol }
                         }

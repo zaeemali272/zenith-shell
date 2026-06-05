@@ -19,7 +19,7 @@ PanelWindow {
 
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.exclusiveZone: 0
-    WlrLayershell.keyboardFocus: (wifiContent.isInputActive) ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.OnDemand
+    WlrLayershell.keyboardFocus: (typeof wifiContent !== "undefined" && wifiContent.isInputActive) ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.OnDemand
     WlrLayershell.namespace: "quicksettings"
 
     // Positioning using anchors and margins
@@ -32,7 +32,7 @@ PanelWindow {
         if (visible) {
             MenuService.register(root);
             QuickSettingsService.qsVisible = true;
-            mainContent.forceActiveFocus();
+            Qt.callLater(() => mainContent.forceActiveFocus());
             showAnim.restart();
         } else {
             MenuService.unregister(root);

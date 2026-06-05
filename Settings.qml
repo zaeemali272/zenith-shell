@@ -14,6 +14,8 @@ Window {
     visible: true
     color: "transparent"
     flags: Qt.FramelessWindowHint | Qt.Window
+
+    property alias currentIndex: view.currentIndex
     
     Rectangle {
         id: container

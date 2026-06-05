@@ -47,7 +47,7 @@ PanelWindow {
             // Reset NotificationList specifically as it's nested in the Default tab
             if (notificationList) notificationList.resetScroll();
             
-            mainContent.forceActiveFocus();
+            Qt.callLater(() => mainContent.forceActiveFocus());
             showAnim.restart();
         } else {
             MenuService.unregister(root);

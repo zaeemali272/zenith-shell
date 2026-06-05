@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import QtQuick.Controls
 import QtQuick.Dialogs
 import Quickshell
+import Quickshell.Io
 import Qt.labs.folderlistmodel
 import "../../../" as Shell
 import "../../../services" as Services
@@ -11,10 +12,18 @@ Rectangle {
     id: root
     color: "transparent"
 
-    property string ppPath: Quickshell.env("HOME") + "/.config/quickshell/profilePicture"
+    property string ppPath: Services.UserService.ppPath
     property string pathFile: Quickshell.env("HOME") + "/.config/quickshell/profilePicturePath"
     property string savedPath: ""
     property string defaultPp: "../../assets/cat_f0.png"
+
+    Connections {
+        target: Services.UserService
+        function onProfilePictureChanged() {
+            ppImage.source = "";
+            ppImage.source = "file://" + root.ppPath + "?" + Date.now();
+        }
+    }
 
     Component.onCompleted: {
         // Simple loading from local path
@@ -25,21 +34,6 @@ Rectangle {
         folder: "file:///usr/share/applications"
         nameFilters: ["*.desktop"]
         showDirs: false
-    }
-
-    FileDialog {
-        id: fileDialog
-        title: "Choose Profile Picture"
-        nameFilters: ["Images (*.png *.jpg *.jpeg *.gif *.ico *.webp)"]
-        onAccepted: {
-            let src = selectedFile.toString().replace("file://", "");
-            if (Qt.platform.os === "linux") {
-                src = decodeURIComponent(src);
-            }
-            Quickshell.Io.copyFile(src, root.ppPath);
-            ppImage.source = "";
-            ppImage.source = "file://" + root.ppPath + "?" + Date.now();
-        }
     }
 
     ColumnLayout {
@@ -99,16 +93,18 @@ Rectangle {
                     
                     Rectangle {
                         id: hoverOverlay
-                        anchors.fill: parent; color: Qt.rgba(0,0,0,0.4); opacity: 0; z: 10
-                        Text { anchors.centerIn: parent; text: "󰏘"; color: "white"; font.pixelSize: 20 }
+                        anchors.fill: parent; color: Qt.rgba(0,0,0,0.5); opacity: 0; z: 10
+                        Text { 
+                            anchors.centerIn: parent; text: "󰒓"; color: "white"; 
+                            font.family: Shell.Theme.iconFont; font.pixelSize: 24 
+                        }
                         Behavior on opacity { NumberAnimation { duration: 200 } }
-                        states: State { name: "hovered"; when: mouse.containsMouse; PropertyChanges { target: hoverOverlay; opacity: 1 } }
                     }
                     MouseArea { 
                         id: mouse; anchors.fill: parent; hoverEnabled: true; z: 11
-                        onClicked: {
-                            Services.SettingsService.toggle();
-                        }
+                        onEntered: hoverOverlay.opacity = 1
+                        onExited: hoverOverlay.opacity = 0
+                        onClicked: Services.SettingsService.toggle(7)
                     }
                 }
 

@@ -7,12 +7,17 @@ Item {
     id: root
     property var _win: null
 
-    function toggle() {
+    function toggle(index = -1) {
         if (!_win) {
             _win = settingsComponent.createObject(null);
         }
         if (_win) {
-            _win.visible = !_win.visible;
+            if (index !== -1) {
+                _win.currentIndex = index;
+                _win.visible = true;
+            } else {
+                _win.visible = !_win.visible;
+            }
         }
     }
 

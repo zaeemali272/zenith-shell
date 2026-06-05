@@ -15,6 +15,7 @@ Item {
     property var lastFocusTime: Date.now()
 
     Component.onCompleted: {
+        console.log("AppUsageService: Component completed, initializing load and trackFocus.");
         load();
         trackFocus();
     }
@@ -40,11 +41,13 @@ Item {
     function trackFocus() {
         let win = Hyprland.activeWindow;
         let appId = (win && win.class) ? win.class : "";
+        console.log("AppUsageService: Tracking focus, new app ID:", appId, "Active app ID:", activeAppId);
         
         if (!usageData) usageData = {};
         
         if (appId !== activeAppId) {
             if (activeAppId !== "") {
+                console.log("AppUsageService: App changed, updating usage for", activeAppId);
                 updateUsage(activeAppId, Date.now() - lastFocusTime);
             }
             activeAppId = appId;
@@ -90,7 +93,11 @@ Item {
     Connections {
         target: Hyprland
         function onRawEvent(event) {
-            if (event.name === "activewindow") service.trackFocus();
+            console.log("AppUsageService: Hyprland event received:", event.name);
+            if (event.name === "activewindow") {
+                console.log("AppUsageService: activewindow event triggered.");
+                service.trackFocus();
+            }
         }
     }
 }
