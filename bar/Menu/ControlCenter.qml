@@ -20,10 +20,13 @@ PanelWindow {
     WlrLayershell.exclusiveZone: 0
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
     WlrLayershell.namespace: "controlcenter"
+    anchors {
+        top: true
+        bottom: true
+        left: true
+        right: true
+    }
 
-    // Fill screen to enable dismissal on click anywhere
-    anchors.fill: parent
-    
     onVisibleChanged: {
         if (visible) {
             MenuService.register(root);
