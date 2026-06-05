@@ -9,6 +9,7 @@ PowerProfileService PowerProfileService.qml
 QuickSettingsService QuickSettingsService.qml
 MediaPlayerService MediaPlayerService.qml
 WallpaperService WallpaperService.qml
+singleton UserService UserService.qml
 singleton CaffeineService CaffeineService.qml
 singleton MenuService MenuService.qml
 singleton ProductivityService ProductivityService.qml

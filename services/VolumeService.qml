@@ -79,10 +79,11 @@ Singleton {
                 console.log("[VolumeService] Error parsing app volume: " + err);
             }
             
-            let name = "Unknown";
+            let name = "Unknown App";
             if (app.properties) {
-                name = app.properties["application.name"] || app.properties["media.name"] || "Unknown App";
+                name = app.properties["application.name"] || app.properties["media.name"] || name;
             }
+            name = String(name);
             
             let appId = app.index;
             if (appId === undefined) continue;
