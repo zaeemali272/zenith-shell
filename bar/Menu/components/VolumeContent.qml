@@ -45,7 +45,11 @@ ColumnLayout {
                 VolumeSlider {
                     label: "OUTPUT"; icon: VolumeService.btActive ? "󰓃" : "󰓃"
                     value: VolumeService.outputVolume; sliderColor: Theme.blue
-                    onChange: (v) => { setOut.command = ["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", (v / 100).toFixed(2)]; setOut.running = true; }
+                    onChange: (v) => { 
+                        setOut.command = ["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", (v / 100).toFixed(2)]; 
+                        setOut.running = false;
+                        setOut.running = true; 
+                    }
                 }
                 Rectangle {
                     Layout.fillWidth: true; height: Theme.scaled(40); radius: Theme.scaled(12)
@@ -54,7 +58,14 @@ ColumnLayout {
                         anchors.centerIn: parent; text: VolumeService.muted ? "MUTED" : "ACTIVE"
                         color: VolumeService.muted ? "black" : Theme.text; font.weight: Font.Black; font.pixelSize: Theme.scaled(11); font.letterSpacing: 1
                     }
-                    MouseArea { anchors.fill: parent; onClicked: { muteProc.command = ["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"]; muteProc.running = true; } }
+                    MouseArea { 
+                        anchors.fill: parent; 
+                        onClicked: { 
+                            muteProc.command = ["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"]; 
+                            muteProc.running = false;
+                            muteProc.running = true; 
+                        } 
+                    }
                 }
 
             }
@@ -67,7 +78,11 @@ ColumnLayout {
                 anchors.fill: parent; anchors.margins: Theme.scaled(18); spacing: Theme.scaled(15)
                 VolumeSlider {
                     label: "INPUT"; icon: "󰍬"; value: VolumeService.micVolume; sliderColor: Theme.powerYellow
-                    onChange: (v) => { setMic.command = ["wpctl", "set-volume", "@DEFAULT_AUDIO_SOURCE@", (v / 100).toFixed(2)]; setMic.running = true; }
+                    onChange: (v) => { 
+                        setMic.command = ["wpctl", "set-volume", "@DEFAULT_AUDIO_SOURCE@", (v / 100).toFixed(2)]; 
+                        setMic.running = false;
+                        setMic.running = true; 
+                    }
                 }
                 Rectangle {
                     Layout.fillWidth: true; height: Theme.scaled(40); radius: Theme.scaled(12); color: Theme.menuBackground; border.color: Theme.surface1
@@ -76,6 +91,7 @@ ColumnLayout {
                         anchors.fill: parent
                         onClicked: {
                             pavuProc.command = ["pavucontrol", "-t", "3"];
+                            pavuProc.running = false;
                             pavuProc.running = true;
                         }
                     }
@@ -100,16 +116,22 @@ ColumnLayout {
                         anchors.fill: parent; anchors.margins: Theme.scaled(15)
                         VolumeSlider {
                             label: (name || "Unknown App").toUpperCase(); icon: "󰓃"; value: volume; sliderColor: Theme.powerGreen
-                            onChange: (v) => { setAppVol.command = ["pactl", "set-sink-input-volume", appId, v + "%"]; setAppVol.running = true; }
-                            Process { id: setAppVol }
+                            onChange: (v) => { 
+                                setAppVol.command = ["pactl", "set-sink-input-volume", appId, v + "%"]; 
+                                setAppVol.running = false;
+                                setAppVol.running = true; 
+                            }
                         }
                     }
+                    Process { id: setAppVol }
                 }
             }
         }
     }
 
     Item { Layout.fillHeight: true }
+
+    // --- Backend Processes ---
     Process { id: muteProc }
     Process { id: setOut }
     Process { id: setMic }

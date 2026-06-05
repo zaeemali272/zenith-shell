@@ -42,6 +42,7 @@ Item {
         
         onClicked: (mouse) => {
             if (mouse.button === Qt.RightButton) {
+                muteExec.running = false;
                 muteExec.running = true;
             } else if (mouse.button === Qt.LeftButton) {
                 QuickSettingsService.toggle("volume");
@@ -49,10 +50,13 @@ Item {
         }
 
         onWheel: (wheel) => {
-            if (wheel.angleDelta.y > 0)
+            if (wheel.angleDelta.y > 0) {
+                volUp.running = false;
                 volUp.running = true;
-            else
+            } else {
+                volDown.running = false;
                 volDown.running = true;
+            }
             // Tell the service to refresh immediately for a snappy UI
             VolumeService.update();
         }
