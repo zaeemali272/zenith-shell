@@ -9,4 +9,5 @@ QtObject {
     property int activeWidth: 28
     property int inactiveWidth: 10
     property int spacing: 6
+    property int barMargins: 10
 }

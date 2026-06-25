@@ -12,27 +12,21 @@ ColumnLayout {
     focus: true
     
     function handleKeys(event) {
-        console.log("PowerContent: Key pressed: " + event.key);
         let cols = 2;
         let maxIdx = powerButtons.count - 1;
         if (event.key === Qt.Key_Right) {
-            console.log("Right key detected");
             root.selectedIndex = Math.min(root.selectedIndex + 1, maxIdx);
         }
         else if (event.key === Qt.Key_Left) {
-            console.log("Left key detected");
             root.selectedIndex = Math.max(root.selectedIndex - 1, 0);
         }
         else if (event.key === Qt.Key_Down) {
-            console.log("Down key detected");
             root.selectedIndex = Math.min(root.selectedIndex + cols, maxIdx);
         }
         else if (event.key === Qt.Key_Up) {
-            console.log("Up key detected");
             root.selectedIndex = Math.max(root.selectedIndex - cols, 0);
         }
         else if (event.key === Qt.Key_Enter || event.key === Qt.Key_Return) {
-            console.log("Enter/Return key detected");
             let modelData = powerButtons.model[root.selectedIndex];
             if (modelData) {
                 let cmd = modelData.cmd;

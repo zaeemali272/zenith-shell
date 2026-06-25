@@ -108,13 +108,23 @@ Rectangle {
                     }
                 }
 
+                // Use direct bindings to ensure reactivity
+                readonly property string username: Services.UserService.username
+                readonly property string location: Services.UserService.location
+
                 ColumnLayout {
                     spacing: 5
-                    Text { text: "Welcome, Zaeem"; color: Shell.Theme.text; font.pixelSize: Shell.Theme.scaled(20); font.bold: true }
+                    Text { text: "Welcome, " + (root.username || "User"); color: Shell.Theme.text; font.pixelSize: Shell.Theme.scaled(20); font.bold: true }
                     RowLayout {
                         spacing: 5
-                        Text { id: locText; text: "Living in: Lahore, Pakistan"; color: Shell.Theme.subtext1; font.pixelSize: Shell.Theme.scaled(14) }
-                        Text { text: "(wrong? click here)"; color: Shell.Theme.blue; font.pixelSize: Shell.Theme.scaled(10); font.underline: true }
+                        Text { id: locText; text: "Living in: " + (root.location || "Unknown"); color: Shell.Theme.subtext1; font.pixelSize: Shell.Theme.scaled(14) }
+                        Text { 
+                            text: "(wrong? click here)"; color: Shell.Theme.blue; font.pixelSize: Shell.Theme.scaled(10); font.underline: true 
+                            MouseArea {
+                                anchors.fill: parent
+                                onClicked: Services.SettingsService.toggle(7)
+                            }
+                        }
                     }
                 }
             }

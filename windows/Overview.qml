@@ -96,19 +96,7 @@ PanelWindow {
                 Layout.preferredHeight: Root.Theme.scaled ? Root.Theme.scaled(45) : 45
                 Layout.preferredWidth: Root.Theme.isSmallScreen ? parent.width - 40 : Root.Theme.scaled(500)
                 onQueryChanged: (query) => appGrid.searchText = query
-            }
-
-            // Workspaces (GNOME style top bar)
-            Loader {
-                id: workspaceLoader
-                Layout.fillWidth: true
-                Layout.preferredHeight: Root.Theme.isSmallScreen ? Root.Theme.scaled(180) : Root.Theme.scaled(250)
-                sourceComponent: workspaceComponent
-            }
-
-            Component {
-                id: workspaceComponent
-                Workspaces {}
+                onRequestCalculation: (expr) => searchBar.setCalcResult(calculateMath(expr))
             }
 
             // App Grid
@@ -125,4 +113,15 @@ PanelWindow {
         active = !active;
     }
 
+    function calculateMath(expression) {
+        if (/^[0-9+\-*/(). ]+$/.test(expression) && /[+\-*/]/.test(expression)) {
+            try {
+                let result = eval(expression);
+                if (typeof result === 'number' && !isNaN(result)) {
+                    return "= " + result;
+                }
+            } catch (e) {}
+        }
+        return "";
+    }
 }

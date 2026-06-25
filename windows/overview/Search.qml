@@ -7,7 +7,13 @@ Rectangle {
     id: root
     
     signal queryChanged(string query)
+    signal requestCalculation(string expression)
     property alias text: input.text
+    property string calcResult: ""
+    
+    function setCalcResult(result) {
+        calcResult = result;
+    }
     
     width: Root.Theme.scaled ? Root.Theme.scaled(500) : 500
     height: Root.Theme.scaled ? Root.Theme.scaled(40) : 40
@@ -50,7 +56,10 @@ Rectangle {
                 visible: !parent.text && !parent.activeFocus
             }
 
-            onTextChanged: root.queryChanged(text)
+            onTextChanged: {
+                root.queryChanged(text);
+                root.requestCalculation(text);
+            }
 
             
             Keys.onPressed: (event) => {
@@ -75,6 +84,13 @@ Rectangle {
                     event.accepted = true;
                 }
             }
+        }
+        
+        Text {
+            text: root.calcResult
+            color: Root.Theme.subtext0 || "#a6adc8"
+            font.pixelSize: Root.Theme.scaled ? Root.Theme.scaled(14) : 14
+            visible: root.calcResult !== ""
         }
         
         Text {

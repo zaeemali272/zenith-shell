@@ -17,7 +17,6 @@ Item {
     }
 
     function enable() {
-        console.log("Caffeine: Enabling (Stopping hypridle)");
         active = true;
         inhibitProc.command = ["systemctl", "--user", "stop", "hypridle"];
         inhibitProc.running = true;
@@ -26,7 +25,6 @@ Item {
     }
 
     function disable() {
-        console.log("Caffeine: Disabling (Starting hypridle)");
         active = false;
         inhibitProc.command = ["systemctl", "--user", "start", "hypridle"];
         inhibitProc.running = true;
@@ -36,7 +34,6 @@ Item {
 
     Process { 
         id: inhibitProc 
-        onExited: (code) => console.log("Caffeine: Process exited with code " + code)
     }
     Process { id: notifyProc }
 

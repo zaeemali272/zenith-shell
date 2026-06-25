@@ -13,6 +13,7 @@ Item {
     property int rounding: 13
     property int shadowRange: 12
     property real blurVibrancy: 0.5
+    property int barMargins: 10
     
     // Logic to apply changes in real-time
     onGapsInChanged: apply("general:gaps_in", gapsIn)

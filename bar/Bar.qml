@@ -72,7 +72,6 @@ PanelWindow {
             // Ensure we capture clicks even on transparent background
             onPressed: (mouse) => mouse.accepted = true
             onClicked: {
-                console.log("[Bar] Background clicked, closing all menus");
                 MenuService.closeAll();
             }
         }

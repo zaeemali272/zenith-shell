@@ -16,8 +16,9 @@ Scope {
     readonly property var _battery: BatteryService
     readonly property var _media: MediaPlayerService
     readonly property var _productivity: ProductivityService
-    readonly property var _overview: OverviewService { id: overviewService }
-    readonly property var _settings: SettingsService { id: settingsService }
+    readonly property var _userService: UserService
+    readonly property var _overview: OverviewService
+    readonly property var _settings: SettingsService
 
     // --- IPC / COMMAND LISTENER ---
     // Listen for commands from external sources (scripts or other quickshell processes)
@@ -37,7 +38,7 @@ Scope {
 
     Process {
         id: ipcReader
-        command: ["cat", cmdPath]
+        command: ["tail", "-c", "100", cmdPath]
         stdout: StdioCollector {
             onStreamFinished: {
                 let cmd = text.trim();
@@ -55,7 +56,6 @@ Scope {
     }
 
     function handleCommand(cmd) {
-        console.log("[Zenith IPC]: Received command: " + cmd);
         let parts = cmd.split(":");
         let action = parts[0];
         let arg = parts.length > 1 ? parts[1] : "";
@@ -63,11 +63,13 @@ Scope {
         if (action === "dashboard") {
             let tab = "Default";
             let lowerArg = arg.toLowerCase();
+            
             if (lowerArg === "pomodoro") tab = "Pomodoro";
             else if (lowerArg === "wallpaper" || lowerArg === "wallpapers") tab = "Wallpaper";
             else if (lowerArg === "keybinds") tab = "Keybinds";
             else if (lowerArg === "user") tab = "User";
             
+
             // Toggle logic: If already open on the same tab, close it
             if (CenterState.qsVisible && CenterState.activeTab === tab) {
                 CenterState.close();
@@ -86,9 +88,9 @@ Scope {
         } else if (action === "toggle_dashboard") {
             CenterState.toggle();
         } else if (action === "Overview") {
-            overviewService.toggle();
+            OverviewService.toggle();
         } else if (action === "Settings") {
-            settingsService.toggle();
+            SettingsService.toggle();
         } else if (action === "Keybinds") {
             if (CenterState.qsVisible && CenterState.activeTab === "Keybinds") {
                 CenterState.close();

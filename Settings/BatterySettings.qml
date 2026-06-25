@@ -3,9 +3,10 @@ import "."
 import QtQuick
 
 QtObject {
-    property int high: 90
-    property int midHigh: 70
-    property int mid: 50
-    property int low: 30
+    property int high: 80
+    property int midHigh: 60
+    property int mid: 40
+    property int low: 20
     property int critical: 10
+    property int barMargins: 10
 }

@@ -37,7 +37,6 @@ PopupWindow {
 
     function runUpdate(args) {
         logText.text = "Starting update for: " + args + "\n";
-        console.log("Starting update with args:", args);
         
         updateRunner.command = ["bash", "-c", Quickshell.env("HOME") + "/.config/quickshell/scripts/run_update.sh " + args];
         updateRunner.running = true;
@@ -150,18 +149,15 @@ PopupWindow {
         stdout: StdioCollector {
             onRead: (text) => {
                 logText.text += text;
-                console.log("Update output:", text);
             }
         }
         stderr: StdioCollector {
             onRead: (text) => {
                 logText.text += "ERR: " + text;
-                console.log("Update error:", text);
             }
         }
         onExited: (code) => {
             logText.text += "\nUpdate finished with code: " + code;
-            console.log("Update finished with code:", code);
         }
     }
 
@@ -244,7 +240,6 @@ PopupWindow {
                     zenithData = data.zenith || {exists: false, updates: 0, commits: []};
                     shellData = data.zenith_shell || {exists: false, updates: 0, commits: []};
                 } catch (e) {
-                    console.log("Update check failed:", e);
                 }
             }
         }

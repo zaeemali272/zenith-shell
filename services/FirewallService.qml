@@ -41,7 +41,6 @@ Item {
         }
         onExited: (exitCode, exitStatus) => {
             if (exitCode !== 0) {
-                console.log("Firewall status check failed:", exitCode, exitStatus);
             }
         }
     }
@@ -50,7 +49,6 @@ Item {
         id: toggleProc
         onExited: (exitCode, exitStatus) => {
             if (exitCode !== 0) {
-                console.log("Firewall toggle failed:", exitCode, exitStatus);
             }
             checkStatus();
         }

@@ -54,7 +54,6 @@ Singleton {
                     }
                     processData(data);
                 } catch (e) {
-                    console.log("[VolumeService] JSON parse error: " + e);
                 }
             }
         }
@@ -82,7 +81,6 @@ Singleton {
                         }
                     }
                 } catch (err) {
-                    console.log("[VolumeService] Error parsing app volume: " + err);
                 }
             }
             

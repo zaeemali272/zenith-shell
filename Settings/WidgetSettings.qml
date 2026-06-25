@@ -6,4 +6,5 @@ QtObject {
     property bool enableBattery: true
     property bool enableResources: true
     property bool enablePowerProfiles: true
+    property bool enableWeather: true
 }

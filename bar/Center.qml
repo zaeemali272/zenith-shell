@@ -45,8 +45,7 @@ Row {
                 if (ProductivityService.isBeeping) {
                     ProductivityService.dismissAlarm();
                 } else {
-                    CenterState.activeTab = "Pomodoro";
-                    CenterState.toggle();
+                    CenterState.open("Pomodoro");
                 }
             }
         }

@@ -1,38 +1,21 @@
 import QtQuick
-import "../../"
+import Quickshell
+import "../../" as Shell // To access Theme
+import ".."     // This imports the parent directory where iconfetcher.qml lives
 
 Item {
     id: root
     
-    property var candidates: []
-    property int currentIndex: -1
-    property string fallbackIcon: "image://icon/application-x-executable"
     property string appName: ""
-    
-    readonly property bool showLetter: icon.status !== Image.Ready || isBroken
-    property bool isBroken: false
+    property string desktopEntry: ""
+    property string iconName: ""
 
-    function tryNext() {
-        if (currentIndex >= candidates.length - 1) {
-            isBroken = true;
-            return;
-        }
-        
-        currentIndex++;
-        let next = candidates[currentIndex];
-        if (next && next !== "") {
-            isBroken = false;
-            icon.source = next;
-        } else {
-            tryNext();
-        }
+    // Call the Singleton directly using its QML file name type (IconsFetcher)
+    readonly property string resolvedSource: {
+        let src = IconsFetcher.getValidIcon(root.appName, root.desktopEntry, root.iconName);
+        return src;
     }
-    
-    onCandidatesChanged: {
-        currentIndex = -1;
-        isBroken = false;
-        tryNext();
-    }
+    readonly property bool showLetter: resolvedSource === "" || resolvedSource === "image://icon/application-x-executable" || icon.status === Image.Error
 
     Image {
         id: icon
@@ -41,39 +24,24 @@ Item {
         smooth: true
         asynchronous: true
         visible: !root.showLetter
-        
-        // Suppress errors to stop the massive log spam
+        source: root.resolvedSource
         autoTransform: true
-        
-        onStatusChanged: {
-            if (status === Image.Ready) {
-                // If the icon provider returned the generic "not found" checkerboard
-                if (icon.source.toString().startsWith("image://icon/") && (icon.implicitWidth === 100 || icon.implicitWidth === 128)) {
-                    root.tryNext();
-                }
-            } else if (status === Image.Error) {
-                root.tryNext();
-            }
-        }
     }
 
     Rectangle {
         anchors.fill: parent
         visible: root.showLetter
-        color: Theme.surface0
+        color: (Shell.Theme && Shell.Theme.surface0) ? Shell.Theme.surface0 : "#252525"
         radius: width / 4
-        border.color: Theme.surface1
+        border.color: (Shell.Theme && Shell.Theme.surface1) ? Shell.Theme.surface1 : "#353535"
         border.width: 1
 
         Text {
             anchors.centerIn: parent
-            text: {
-                if (!root.appName || root.appName === "") return "?";
-                return root.appName.charAt(0).toUpperCase();
-            }
+            text: (root.appName && root.appName !== "") ? root.appName.charAt(0).toUpperCase() : "?"
             font.pixelSize: parent.height * 0.6
             font.bold: true
-            color: Theme.mauve
+            color: (Shell.Theme && Shell.Theme.text) ? Shell.Theme.text : "#cba6f7"
         }
     }
 }

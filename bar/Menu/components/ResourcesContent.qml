@@ -31,7 +31,9 @@ ColumnLayout {
                     root.temp = data.temp ?? 0;
                     root.fs = data.fs ?? 0;
                     root.coreUsages = data.core_usages ?? [];
-                } catch (e) { console.log("Parse Error") }
+                } catch (e) {
+                    // Handle potential JSON parse errors
+                }
             }
         }
     }

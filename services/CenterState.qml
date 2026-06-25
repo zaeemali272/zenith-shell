@@ -48,6 +48,7 @@ Item {
         if (tab) activeTab = tab;
         else activeTab = "Default";
         
+        
         // Ensure others are closed
         if (typeof QuickSettingsService !== "undefined") QuickSettingsService.close();
         

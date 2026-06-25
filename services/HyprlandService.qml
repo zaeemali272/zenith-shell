@@ -60,7 +60,6 @@ Item {
     // Optional debug log
     /*
     onIsFullscreenChanged: {
-        console.log("[HyprlandService] Fullscreen detected:", isFullscreen);
     }
     */
 }

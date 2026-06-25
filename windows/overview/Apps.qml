@@ -5,7 +5,7 @@ import Quickshell
 import Quickshell.Io
 import "../../" as Shell
 import "../components" as Components
-import ".." as Windows
+import ".." // Imports parent directory directly to expose the IconsFetcher Singleton cleanly
 
 Item {
     id: root
@@ -41,28 +41,45 @@ Item {
                 let displayName = baseName.replace(/[-_]/g, " ");
                 displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
                 
-                // Try to extract Icon and Name from the desktop file for better accuracy
-                let iconName = "";
+                let iconName = rawId; 
+                let isHidden = false;
+
                 try {
                     let content = Quickshell.Io.readTextFile(fp);
                     let lines = content.split("\n");
                     for (let line of lines) {
-                        if (line.startsWith("Icon=")) {
-                            iconName = line.substring(5).trim();
-                        } else if (line.startsWith("Name=") && displayName === baseName) {
-                            // Use the actual name from the desktop file if available
-                            let n = line.substring(5).trim();
+                        let trimmed = line.trim();
+                        let lowerLine = trimmed.toLowerCase();
+                        
+                        if (trimmed.startsWith("Icon=")) {
+                            iconName = trimmed.substring(5).trim();
+                        } else if (trimmed.startsWith("Name=")) {
+                            let n = trimmed.substring(5).trim();
                             if (n) displayName = n;
+                        } else if (lowerLine.startsWith("nodisplay=true") || 
+                                   lowerLine.startsWith("no_display=true") ||
+                                   lowerLine.startsWith("terminal=true")) { 
+                            // Drop background agents, installers, handlers, and CLI commands
+                            isHidden = true;
+                            break;
+                        } else if (lowerLine.startsWith("categories=")) {
+                            let cats = lowerLine.substring(11);
+                            // Drop core development sub-tools and internal setting handlers
+                            if (cats.includes("core;") || cats.includes("settings;") || cats.includes("x-desktop-applet;")) {
+                                isHidden = true;
+                                break;
+                            }
                         }
-                        if (iconName && displayName !== baseName) break;
                     }
                 } catch(e) {}
 
-                if (!Windows.IconsFetcher.isMainApp(rawId, displayName)) continue;
+                // Evaluate structural system markers + explicit keyword exclusions
+                if (isHidden || !IconsFetcher.isMainApp(rawId, displayName)) continue;
 
                 let score = (typeof AppUsageService !== 'undefined') ? AppUsageService.getScore(rawId) : 0;
                 arr.push({ 
                     fileName: fn, 
+                    filePath: fp,
                     appId: rawId, 
                     displayName: displayName,
                     displayLower: displayName.toLowerCase(),
@@ -81,7 +98,6 @@ Item {
         filteredModel.clear();
         let searchLower = root.searchText.toLowerCase().replace(/\s/g, "");
 
-        // Helper to check for fuzzy subsequence match
         function isFuzzyMatch(text, query) {
             let sIdx = 0;
             for (let cIdx = 0; cIdx < text.length && sIdx < query.length; cIdx++) {
@@ -112,7 +128,6 @@ Item {
 
     onSearchTextChanged: updateList()
     
-    // Refresh scores when opening if needed
     function refreshScores() {
         if (!isInitialized) return;
         let changed = false;
@@ -164,7 +179,9 @@ Item {
                         anchors.centerIn: parent
                         width: parent.width * 0.7
                         height: parent.height * 0.7
-                        candidates: Windows.IconsFetcher.getCandidates(model.appId, model.fileName, model.iconName)
+                        appName: model.displayName
+                        desktopEntry: model.fileName
+                        iconName: model.iconName
                     }
                 }
 
@@ -184,14 +201,16 @@ Item {
                 anchors.fill: parent
                 hoverEnabled: true
                 onEntered: root.currentIndex = index
-                onClicked: { launchApp(model.fileName, model.appId); }
+                onClicked: { launchApp(model.filePath, model.appId); }
             }
         }
     }
 
-    function launchApp(fileName, appId) {
+    function launchApp(filePath, appId) {
         if (appId && typeof AppUsageService !== 'undefined') AppUsageService.recordLaunch(appId);
-        launchProcess.command = ["gtk-launch", fileName];
+        // Use setsid to start the command in a new session, detaching it from quickshell's process group.
+        // Redirecting output to /dev/null ensures the process doesn't hold onto quickshell's pipes.
+        launchProcess.command = ["setsid", "sh", "-c", "ELECTRON_OZONE_PLATFORM_HINT=x11 gio launch " + filePath + " > /dev/null 2>&1 &"];
         launchProcess.running = true;
         root.closeRequested();
     }
@@ -200,7 +219,7 @@ Item {
         if (event.key === Qt.Key_Enter || event.key === Qt.Key_Return) {
             if (root.currentIndex < filteredModel.count) {
                 let item = filteredModel.get(root.currentIndex);
-                launchApp(item.fileName, item.appId);
+                launchApp(item.filePath, item.appId);
             }
         } else if (event.key === Qt.Key_Right) {
             root.currentIndex = Math.min(root.currentIndex + 1, filteredModel.count - 1);

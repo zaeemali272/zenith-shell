@@ -17,7 +17,7 @@ Item {
             Layout.fillWidth: true
             spacing: Theme.scaled(10)
             Repeater {
-                model: ["Timer", "Todo"]
+                model: ["Timer", "Pomodoro"]
                 delegate: Rectangle {
                     width: Theme.scaled(80); height: Theme.scaled(30); radius: Theme.scaled(8)
                     color: root.activeTool === modelData ? Theme.blue : Theme.surface1
@@ -32,7 +32,7 @@ Item {
 
         StackLayout {
             Layout.fillWidth: true; Layout.fillHeight: true
-            currentIndex: ["Timer", "Todo"].indexOf(root.activeTool)
+            currentIndex: ["Timer", "Pomodoro"].indexOf(root.activeTool)
 
             TimerContent { Layout.fillWidth: true; Layout.fillHeight: true }
             TodoContent { Layout.fillWidth: true; Layout.fillHeight: true }

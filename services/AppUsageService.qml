@@ -15,7 +15,6 @@ Item {
     property var lastFocusTime: Date.now()
 
     Component.onCompleted: {
-        console.log("AppUsageService: Component completed, initializing load and trackFocus.");
         load();
         trackFocus();
     }
@@ -41,13 +40,11 @@ Item {
     function trackFocus() {
         let win = Hyprland.activeWindow;
         let appId = (win && win.class) ? win.class : "";
-        console.log("AppUsageService: Tracking focus, new app ID:", appId, "Active app ID:", activeAppId);
         
         if (!usageData) usageData = {};
         
         if (appId !== activeAppId) {
             if (activeAppId !== "") {
-                console.log("AppUsageService: App changed, updating usage for", activeAppId);
                 updateUsage(activeAppId, Date.now() - lastFocusTime);
             }
             activeAppId = appId;
@@ -56,20 +53,40 @@ Item {
     }
 
     function updateUsage(appId, durationMs) {
-        if (!usageData[appId]) {
-            usageData[appId] = { count: 0, totalSeconds: 0, lastFocus: 0 };
+        if (!appId) return;
+        let data = JSON.parse(JSON.stringify(usageData));
+        if (!data[appId]) {
+            data[appId] = { count: 0, totalSeconds: 0, lastFocus: 0 };
         }
-        usageData[appId].totalSeconds += Math.round(durationMs / 1000);
-        usageData[appId].lastFocus = Date.now();
+        data[appId].totalSeconds += Math.round(durationMs / 1000);
+        data[appId].lastFocus = Date.now();
+        usageData = data;
         save();
     }
 
     function recordLaunch(appId) {
-        if (!usageData[appId]) {
-            usageData[appId] = { count: 0, totalSeconds: 0, lastFocus: 0 };
+        if (!appId) return;
+        let data = JSON.parse(JSON.stringify(usageData));
+        if (!data[appId]) {
+            data[appId] = { count: 0, totalSeconds: 0, lastFocus: 0 };
         }
-        usageData[appId].count += 1;
+        data[appId].count += 1;
+        usageData = data;
         save();
+    }
+
+    // Periodic update for active app
+    Timer {
+        interval: 10000 // Update every 10 seconds
+        running: true
+        repeat: true
+        onTriggered: {
+            if (activeAppId !== "") {
+                let now = Date.now();
+                updateUsage(activeAppId, now - lastFocusTime);
+                lastFocusTime = now;
+            }
+        }
     }
 
     function getScore(appId) {
@@ -93,9 +110,7 @@ Item {
     Connections {
         target: Hyprland
         function onRawEvent(event) {
-            console.log("AppUsageService: Hyprland event received:", event.name);
             if (event.name === "activewindow") {
-                console.log("AppUsageService: activewindow event triggered.");
                 service.trackFocus();
             }
         }

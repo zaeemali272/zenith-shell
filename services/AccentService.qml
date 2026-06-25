@@ -9,6 +9,5 @@ QtObject {
     
     function setAccent(index) {
         activeColorIndex = index;
-        console.log("[Theme]: Accent set to " + colors[index]);
     }
 }

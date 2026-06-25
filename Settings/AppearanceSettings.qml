@@ -5,6 +5,7 @@ import QtQuick
 QtObject {
     id: appearanceSettings
     property real menuOpacity: 0.7
+    property real settingsOpacity: 0.8
     property real glassBlur: 200
     property int fontSize: 13
     property int iconSize: 14

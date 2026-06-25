@@ -29,7 +29,6 @@ Item {
     property string connectedIcon: "bluetooth"
 
     function log(msg) {
-        console.log("[Bluetooth] " + msg);
     }
 
     function refresh() {

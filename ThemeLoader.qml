@@ -14,7 +14,6 @@ Item {
             console.warn("[ThemeLoader]: Theme singleton not found, returning fallback.");
             return {
                 scaled: function(v) { return v; },
-                setAccent: function(i) { console.log("Theme.setAccent is unavailable"); },
                 menuBackground: "#11111b",
                 surface1: "#313244",
                 text: "#cdd6f4",

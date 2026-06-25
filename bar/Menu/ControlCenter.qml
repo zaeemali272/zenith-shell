@@ -69,7 +69,6 @@ PanelWindow {
         id: mainContent
         focus: true
         Keys.onPressed: (event) => {
-            console.log("ControlCenter: Main key pressed: " + event.key);
             if (event.key === Qt.Key_Escape) {
                 root.visible = false;
             } else {
@@ -122,7 +121,7 @@ PanelWindow {
                 RowLayout {
                     spacing: Theme.scaled(5)
                     Repeater {
-                        model: ["Default", "Pomodoro", "Wallpaper", "Keybinds", "User"]
+                        model: ["Default", "Pomodoro", "Wallpaper", "Keybinds"]
                         delegate: Rectangle {
                             id: tabRect
                             width: Theme.scaled(90); height: Theme.scaled(35)
@@ -186,7 +185,7 @@ PanelWindow {
                 id: contentStack
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                currentIndex: ["Default", "Pomodoro", "Wallpaper", "Keybinds", "User"].indexOf(CenterState.activeTab)
+                currentIndex: ["Default", "Pomodoro", "Wallpaper", "Keybinds"].indexOf(CenterState.activeTab)
 
                 // Default Tab
                 GridLayout {
@@ -325,11 +324,6 @@ PanelWindow {
                 KeybindsContent {
                     Layout.fillWidth: true; Layout.fillHeight: true
                 }
-
-                // User Tab
-                UserContent {
-                    Layout.fillWidth: true; Layout.fillHeight: true
-                }
             }
         }
     }
@@ -347,9 +341,7 @@ PanelWindow {
 
     function updateFocusForTab(tab) {
         if (tab === "Wallpaper") {
-            console.log("ControlCenter: Attempting to focus wallpaperContent.");
-            let success = wallpaperContent.forceActiveFocus();
-            console.log("ControlCenter: wallpaperContent focus success: " + success);
+            wallpaperContent.forceActiveFocus();
         }
     }
 }

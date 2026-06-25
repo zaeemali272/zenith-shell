@@ -1,3 +1,4 @@
+//@ pragma UseQApplication
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
@@ -11,12 +12,12 @@ Window {
     id: win
     width: 900
     height: 650
-    visible: true
+    visible: false
     color: "transparent"
     flags: Qt.FramelessWindowHint | Qt.Window
 
     property alias currentIndex: view.currentIndex
-    
+
     Rectangle {
         id: container
         anchors.fill: parent
@@ -69,8 +70,7 @@ Window {
                             { name: "Workspace", icon: "󰨇" },
                             { name: "Battery", icon: "󰁹" },
                             { name: "Media", icon: "󰎆" },
-                            { name: "Hyprland", icon: "󱓞" },
-                            { name: "User", icon: "󰀂" }
+                            { name: "Hyprland", icon: "󱓞" }
                         ]
                         delegate: Rectangle {
                             Layout.fillWidth: true
@@ -106,23 +106,6 @@ Window {
                     
                     Item { Layout.fillHeight: true }
                     
-                    Button {
-                        text: "Save & Apply"
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 45
-                        contentItem: Text {
-                            text: parent.text
-                            color: Shell.Theme.base
-                            font.bold: true
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                        }
-                        background: Rectangle {
-                            radius: 12
-                            color: Shell.Theme.blue
-                        }
-                    }
-
                     Button {
                         text: "Close"
                         Layout.fillWidth: true
@@ -163,7 +146,6 @@ Window {
                     Tabs.BatteryTab { }
                     Tabs.MediaTab { }
                     Tabs.HyprlandTab { }
-                    Tabs.UserSettingsTab { }
                 }
             }
         }

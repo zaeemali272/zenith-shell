@@ -51,7 +51,6 @@ Rectangle {
                     try {
                         eventData = JSON.parse(text);
                     } catch (e) {
-                        console.log("Error parsing events: " + e);
                     }
                 }
             }

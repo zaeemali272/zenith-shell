@@ -19,7 +19,6 @@ ColumnLayout {
     property int selectedIndex: 0
 
     function handleKeys(event) {
-        console.log("WallpaperContent: Handling key: " + event.key);
         let cols = 4;
         let isAnimated = (root.activeSubTab === "Animated");
         let model = isAnimated ? animFolderModel : wallFolderModel;
@@ -309,13 +308,11 @@ ColumnLayout {
 
     // --- LOGIC FUNCTIONS ---
     function toggleSelection(path) {
-        console.log("DEBUG: Toggle selection for: " + path);
         let arr = [...root.selectedWalls];
         let idx = arr.indexOf(path);
         if (idx !== -1) arr.splice(idx, 1);
         else arr.push(path);
         root.selectedWalls = arr;
-        console.log("DEBUG: Selected walls count: " + root.selectedWalls.length);
     }
     function applyWallpaper(path) {
         killMpv.running = true; stopSlideshow(); awwwDaemon.running = true; 
@@ -328,14 +325,12 @@ ColumnLayout {
         videoDelay.videoPath = path.replace("file://", ""); videoDelay.start();
     }
     function startSlideshow() {
-        console.log("DEBUG: Start slideshow requested. Selected count: " + root.selectedWalls.length);
         if (root.selectedWalls.length === 0) return;
         let home = Quickshell.env("HOME");
         let scriptPath = root.scriptsPath + "/slideshow.sh";
         let servicePath = home + "/.config/systemd/user/zenith-slideshow.service";
         let listPath = home + "/.cache/zenith_wallpaper_list";
         let paths = root.selectedWalls.map(p => p.replace("file://", "")).join("\n");
-        console.log("DEBUG: Wallpaper list paths:\n" + paths);
         saveList.command = ["sh", "-c", "echo '" + paths + "' > " + listPath]; saveList.running = true;
         let serviceContent = "[Unit]\nDescription=Zenith Slideshow\n\n[Service]\nExecStart=/bin/bash " + scriptPath + "\nRestart=always\nRestartSec=5\nEnvironment=PATH=/usr/bin:/bin:/usr/local/bin\n[Install]\nWantedBy=default.target";
         installService.command = ["sh", "-c", "echo -e '" + serviceContent + "' > " + servicePath + " && chmod +x " + scriptPath + " && systemctl --user daemon-reload"];

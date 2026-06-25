@@ -12,7 +12,7 @@ ColumnLayout {
     spacing: 15
     Layout.margins: 20
 
-    property string ppPath: Services.UserService.ppPath
+    property string ppPath: UserService.ppPath
 
     FileDialog {
         id: profilePicDialog
@@ -23,13 +23,20 @@ ColumnLayout {
             if (Qt.platform.os === "linux") {
                 src = decodeURIComponent(src);
             }
-            Quickshell.Io.copyFile(src, ppPath);
-            Services.UserService.updateProfilePicture();
+            copyProc.command = ["cp", src, UserService.ppPath];
+            copyProc.running = true;
+        }
+    }
+
+    Process {
+        id: copyProc
+        onExited: (exitCode) => {
+            if (exitCode === 0) UserService.updateProfilePicture();
         }
     }
 
     Connections {
-        target: Services.UserService
+        target: UserService
         function onProfilePictureChanged() {
             ppImage.source = "";
             ppImage.source = "file://" + ppPath + "?" + Date.now();
@@ -110,20 +117,34 @@ ColumnLayout {
 
             ColumnLayout {
                 spacing: 5
-                Text { text: "Zaeem"; color: Shell.Theme.text; font.pixelSize: Shell.Theme.scaled(20); font.bold: true }
-                Text { text: "Lahore, Pakistan"; color: Shell.Theme.subtext1; font.pixelSize: Shell.Theme.scaled(14) }
+                Text { text: UserService.username; color: Shell.Theme.text; font.pixelSize: Shell.Theme.scaled(20); font.bold: true }
+                Text { text: UserService.location; color: Shell.Theme.subtext1; font.pixelSize: Shell.Theme.scaled(14) }
             }
         }
     }
 
     SettingRow {
         label: "Username"
-        TextInputBox { text: "Zaeem"; Layout.preferredWidth: Shell.Theme.scaled(200) }
+        TextInputBox { 
+            text: UserService.username
+            Layout.preferredWidth: Shell.Theme.scaled(200)
+            onAccepted: {
+                UserService.username = text;
+                UserService.save();
+            }
+        }
     }
 
     SettingRow {
         label: "Location"
-        TextInputBox { text: "Lahore, Pakistan"; Layout.preferredWidth: Shell.Theme.scaled(200) }
+        TextInputBox { 
+            text: UserService.location
+            Layout.preferredWidth: Shell.Theme.scaled(200)
+            onAccepted: {
+                UserService.location = text;
+                UserService.save();
+            }
+        }
     }
 
     Item { Layout.fillHeight: true }
