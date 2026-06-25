@@ -11,7 +11,6 @@ import "windows" as Windows
 import "Settings"
 
 Scope {
-// We need to reference these services to ensure they start listening for system events.
     readonly property var _notifications: NotificationService
     readonly property var _battery: BatteryService
     readonly property var _media: MediaPlayerService
@@ -20,39 +19,23 @@ Scope {
     readonly property var _overview: OverviewService
     readonly property var _settings: SettingsService
 
-    // --- IPC / COMMAND LISTENER ---
-    // Listen for commands from external sources (scripts or other quickshell processes)
-    // Commands are written to ~/.cache/zenith_command
+// --- INSTANT IPC VIA NAMED PIPE (FIFO) ---
     property string cmdPath: Quickshell.env("HOME") + "/.cache/zenith_command"
     
-    Timer {
-        id: ipcTimer
-        interval: 500
-        running: true
-        repeat: true
-        onTriggered: {
-            ipcReader.running = false;
-            ipcReader.running = true;
-        }
-    }
-
     Process {
         id: ipcReader
-        command: ["tail", "-c", "100", cmdPath]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                let cmd = text.trim();
+        command: ["tail", "-f", cmdPath]
+        running: true
+        
+        stdout: SplitParser {
+            // splitMarker defaults to "\n"
+            onRead: (data) => {
+                let cmd = data.trim();
                 if (cmd !== "") {
                     handleCommand(cmd);
-                    ipcClearer.running = true;
                 }
             }
         }
-    }
-
-    Process {
-        id: ipcClearer
-        command: ["sh", "-c", "> " + cmdPath]
     }
 
     function handleCommand(cmd) {
@@ -69,15 +52,12 @@ Scope {
             else if (lowerArg === "keybinds") tab = "Keybinds";
             else if (lowerArg === "user") tab = "User";
             
-
-            // Toggle logic: If already open on the same tab, close it
             if (CenterState.qsVisible && CenterState.activeTab === tab) {
                 CenterState.close();
             } else {
                 CenterState.open(tab);
             }
         } else if (action === "quicksettings") {
-            // Toggle logic: If already open on the same tab, close it
             if (QuickSettingsService.qsVisible && QuickSettingsService.activeTab === arg) {
                 QuickSettingsService.close();
             } else {
@@ -107,7 +87,6 @@ Scope {
             QuickSettingsService.toggle(arg || "network");
         }
     }
-
 
     DismissOverlay {
         id: dismissOverlay

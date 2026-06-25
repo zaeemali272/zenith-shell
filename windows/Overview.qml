@@ -10,7 +10,6 @@ import "overview"
 PanelWindow {
     id: win
     
-    // Fill the screen
     anchors {
         top: true
         bottom: true
@@ -18,7 +17,6 @@ PanelWindow {
         right: true
     }
     
-    // Overlay layer to cover everything
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
     WlrLayershell.margins { top: 10; bottom: 10; left: 10; right: 10 }
@@ -28,43 +26,24 @@ PanelWindow {
     
     property bool active: false
     
+    // Core performance tweak: Populate the layout on boot, not on window display!
+    Component.onCompleted: {
+        if (!appGrid.isInitialized) {
+            appGrid.updateList();
+        }
+    }
+    
     onActiveChanged: {
         if (active) {
             win.visible = true;
-
-            // Initial refresh
-            appGrid.refreshScores();
-
-            root.opacity = 0;
-            root.scale = 0.98;
-            showAnim.start();
-
-            // Focus and secondary refresh
-            Qt.callLater(() => {
-                if (searchBar) searchBar.forceFocus();
-            });
+            // Immediate focus targeting without deep JS nesting callbacks
+            searchBar.forceFocus();
         } else {
-            hideAnim.start();
-            if (searchBar) searchBar.text = "";
+            win.visible = false;
+            searchBar.text = "";
         }
     }
 
-    ParallelAnimation {
-        id: showAnim
-        NumberAnimation { target: root; property: "opacity"; from: 0; to: 1; duration: 300; easing.type: Easing.OutCubic }
-        NumberAnimation { target: root; property: "scale"; from: 0.98; to: 1; duration: 300; easing.type: Easing.OutCubic }
-    }
-    
-    SequentialAnimation {
-        id: hideAnim
-        ParallelAnimation {
-            NumberAnimation { target: root; property: "opacity"; to: 0; duration: 250; easing.type: Easing.InCubic }
-            NumberAnimation { target: root; property: "scale"; to: 0.98; duration: 250; easing.type: Easing.InCubic }
-        }
-        PropertyAction { target: win; property: "visible"; value: false }
-    }
-
-    // Full screen background blur effect (simulated with dark transparent rect)
     Rectangle {
         id: root
         anchors.fill: parent
@@ -89,17 +68,20 @@ PanelWindow {
             anchors.rightMargin: Root.Theme.isSmallScreen ? Root.Theme.scaled(20) : Root.Theme.scaled(120)
             spacing: Root.Theme.scaled ? Root.Theme.scaled(20) : 20
 
-            // Search Bar
             Search {
                 id: searchBar
                 Layout.alignment: Qt.AlignHCenter
                 Layout.preferredHeight: Root.Theme.scaled ? Root.Theme.scaled(45) : 45
                 Layout.preferredWidth: Root.Theme.isSmallScreen ? parent.width - 40 : Root.Theme.scaled(500)
+                
+                // Route navigation requests directly to the grid instance properties
+                onNavigateRequested: (direction) => appGrid.navigate(direction)
+                onSelectRequested: appGrid.launchCurrent()
+                
                 onQueryChanged: (query) => appGrid.searchText = query
                 onRequestCalculation: (expr) => searchBar.setCalcResult(calculateMath(expr))
             }
 
-            // App Grid
             Apps {
                 id: appGrid
                 Layout.fillWidth: true

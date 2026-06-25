@@ -79,7 +79,7 @@ PopupWindow {
                 Rectangle {
                     width: Theme.scaled(40); height: Theme.scaled(20); radius: Theme.scaled(10)
                     color: MediaPlayerService.mediaFocus ? Theme.blue : Theme.surface1
-                    
+
                     Text {
                         anchors.centerIn: parent
                         text: MediaPlayerService.mediaFocus ? "󰖳" : "󰖲"
@@ -87,19 +87,21 @@ PopupWindow {
                         color: MediaPlayerService.mediaFocus ? Theme.base : Theme.text
                         font.pixelSize: 12
                     }
-                    
+
                     MouseArea {
                         anchors.fill: parent
                         onClicked: MediaPlayerService.mediaFocus = !MediaPlayerService.mediaFocus
                     }
                 }
-            }
+                }
 
-            MprisPlayer {
+                // Only show player when media is actually playing/tracked
+                MprisPlayer {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                active: root.visible
-            }
-        }
-    }
+                active: root.visible && MediaPlayerService.trackedPlayer !== null
+                visible: MediaPlayerService.trackedPlayer !== null
+                }
+                }
+                }
 }

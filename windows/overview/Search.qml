@@ -8,6 +8,11 @@ Rectangle {
     
     signal queryChanged(string query)
     signal requestCalculation(string expression)
+    
+    // Explicit signal conduits for layout driving
+    signal navigateRequested(string direction)
+    signal selectRequested()
+
     property alias text: input.text
     property string calcResult: ""
     
@@ -22,8 +27,6 @@ Rectangle {
     border.color: input.activeFocus ? (Root.Theme.mauve || '#a1585858') : (Root.Theme.surface0 || "#a6010101")
     border.width: 1
 
-    Behavior on border.color { ColorAnimation { duration: 200 } }
-
     RowLayout {
         anchors.fill: parent
         anchors.leftMargin: Root.Theme.scaled ? Root.Theme.scaled(15) : 15
@@ -35,9 +38,6 @@ Rectangle {
             font.family: Root.Theme.iconFont || "monospace"
             font.pixelSize: Root.Theme.scaled ? Root.Theme.scaled(16) : 16
             color: input.activeFocus ? (Root.Theme.mauve || "#cba6f7") : (Root.Theme.subtext0 || "#a6adc8")
-
-
-            Behavior on color { ColorAnimation { duration: 200 } }
         }
 
         TextInput {
@@ -60,7 +60,6 @@ Rectangle {
                 root.queryChanged(text);
                 root.requestCalculation(text);
             }
-
             
             Keys.onPressed: (event) => {
                 if (event.key === Qt.Key_Escape) {
@@ -68,7 +67,6 @@ Rectangle {
                         text = "";
                         event.accepted = true;
                     } else {
-                        // find active property in parents
                         let p = root.parent;
                         while (p) {
                             if (p.hasOwnProperty("active")) {
@@ -78,9 +76,20 @@ Rectangle {
                             p = p.parent;
                         }
                     }
-                } else if (event.key === Qt.Key_Enter || event.key === Qt.Key_Return || event.key === Qt.Key_Right || event.key === Qt.Key_Left) {
-                    appGrid.focus = true;
-                    appGrid.Keys.pressed(event);
+                } else if (event.key === Qt.Key_Enter || event.key === Qt.Key_Return) {
+                    root.selectRequested();
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_Right) {
+                    root.navigateRequested("right");
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_Left) {
+                    root.navigateRequested("left");
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_Down) {
+                    root.navigateRequested("down");
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_Up) {
+                    root.navigateRequested("up");
                     event.accepted = true;
                 }
             }

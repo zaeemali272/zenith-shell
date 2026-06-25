@@ -5,7 +5,7 @@ import Quickshell
 import Quickshell.Io
 import "../../" as Shell
 import "../components" as Components
-import ".." // Imports parent directory directly to expose the IconsFetcher Singleton cleanly
+import ".."
 
 Item {
     id: root
@@ -20,17 +20,37 @@ Item {
         folder: "file:///usr/share/applications"
         nameFilters: ["*.desktop"]
         showDirs: false
-        
         onCountChanged: updateList()
     }
 
+    property string cachePath: "/tmp/zenith_apps_cache.json"
     property var fullAppList: []
     property bool isInitialized: false
+    readonly property int columns: Shell.Theme.appMenuCol || 6
+
+    Component.onCompleted: {
+        loadCache();
+    }
+
+    function loadCache() {
+        try {
+            let data = Quickshell.Io.readTextFile(cachePath);
+            fullAppList = JSON.parse(data);
+            isInitialized = true;
+            updateList();
+        } catch(e) {}
+    }
+
+    Process { id: saveProc }
+
+    function saveCache() {
+        let content = JSON.stringify(fullAppList).replace(/'/g, "'\\''");
+        saveProc.command = ["sh", "-c", "echo '" + content + "' > " + cachePath];
+        saveProc.running = true;
+    }
 
     function updateList() {
         if (!isInitialized) {
-            if (folderModel.status !== FolderListModel.Ready && folderModel.count === 0) return;
-            
             let arr = [];
             for (let i = 0; i < folderModel.count; i++) {
                 let fn = folderModel.get(i, "fileName");
@@ -59,12 +79,10 @@ Item {
                         } else if (lowerLine.startsWith("nodisplay=true") || 
                                    lowerLine.startsWith("no_display=true") ||
                                    lowerLine.startsWith("terminal=true")) { 
-                            // Drop background agents, installers, handlers, and CLI commands
                             isHidden = true;
                             break;
                         } else if (lowerLine.startsWith("categories=")) {
                             let cats = lowerLine.substring(11);
-                            // Drop core development sub-tools and internal setting handlers
                             if (cats.includes("core;") || cats.includes("settings;") || cats.includes("x-desktop-applet;")) {
                                 isHidden = true;
                                 break;
@@ -73,7 +91,6 @@ Item {
                     }
                 } catch(e) {}
 
-                // Evaluate structural system markers + explicit keyword exclusions
                 if (isHidden || !IconsFetcher.isMainApp(rawId, displayName)) continue;
 
                 let score = (typeof AppUsageService !== 'undefined') ? AppUsageService.getScore(rawId) : 0;
@@ -89,21 +106,21 @@ Item {
                 });
             }
             
-            if (arr.length > 0 || folderModel.status === FolderListModel.Ready) {
+            if (arr.length > 0) {
                 fullAppList = arr;
                 isInitialized = true;
+                saveCache();
             }
         }
 
         filteredModel.clear();
         let searchLower = root.searchText.toLowerCase().replace(/\s/g, "");
 
-        function isFuzzyMatch(text, query) {
-            let sIdx = 0;
-            for (let cIdx = 0; cIdx < text.length && sIdx < query.length; cIdx++) {
-                if (text[cIdx] === query[sIdx]) sIdx++;
-            }
-            return sIdx === query.length;
+        function getMatchScore(text, query) {
+            if (text === query) return 100;
+            if (text.startsWith(query)) return 80;
+            if (text.includes(query)) return 50;
+            return 0;
         }
 
         let filtered = [];
@@ -111,13 +128,18 @@ Item {
             filtered = fullAppList;
         } else {
             for (let item of fullAppList) {
-                if (isFuzzyMatch(item.displayLower, searchLower) || isFuzzyMatch(item.rawLower, searchLower)) {
+                let score = Math.max(getMatchScore(item.displayLower, searchLower), getMatchScore(item.rawLower, searchLower));
+                if (score > 0) {
+                    item.matchScore = score;
                     filtered.push(item);
                 }
             }
         }
         
         filtered.sort((a, b) => {
+            if (root.searchText !== "") {
+                if (b.matchScore !== a.matchScore) return b.matchScore - a.matchScore;
+            }
             if (b.usageScore !== a.usageScore) return b.usageScore - a.usageScore;
             return a.displayName.localeCompare(b.displayName);
         });
@@ -128,23 +150,38 @@ Item {
 
     onSearchTextChanged: updateList()
     
-    function refreshScores() {
-        if (!isInitialized) return;
-        let changed = false;
-        for (let i = 0; i < fullAppList.length; i++) {
-            let score = (typeof AppUsageService !== 'undefined') ? AppUsageService.getScore(fullAppList[i].appId) : 0;
-            if (fullAppList[i].usageScore !== score) {
-                fullAppList[i].usageScore = score;
-                changed = true;
-            }
+    // Performance Navigation Handlers driven cleanly from Search context
+    function navigate(direction) {
+        if (filteredModel.count === 0) return;
+        if (direction === "right") {
+            root.currentIndex = Math.min(root.currentIndex + 1, filteredModel.count - 1);
+        } else if (direction === "left") {
+            root.currentIndex = Math.max(root.currentIndex - 1, 0);
+        } else if (direction === "down") {
+            root.currentIndex = Math.min(root.currentIndex + root.columns, filteredModel.count - 1);
+        } else if (direction === "up") {
+            root.currentIndex = Math.max(root.currentIndex - root.columns, 0);
         }
-        if (changed || root.searchText === "") updateList();
+    }
+
+    function launchCurrent() {
+        if (root.currentIndex < filteredModel.count) {
+            let item = filteredModel.get(root.currentIndex);
+            launchApp(item.filePath, item.appId);
+        }
+    }
+
+    function launchApp(filePath, appId) {
+        if (appId && typeof AppUsageService !== 'undefined') AppUsageService.recordLaunch(appId);
+        launchProcess.command = ["setsid", "sh", "-c", "ELECTRON_OZONE_PLATFORM_HINT=x11 gio launch " + filePath + " > /dev/null 2>&1 &"];
+        launchProcess.running = true;
+        root.closeRequested();
     }
 
     GridView {
         id: grid
         anchors.fill: parent
-        cellWidth: Math.floor(grid.width / (Shell.Theme.appMenuCol || 6))
+        cellWidth: Math.floor(grid.width / root.columns)
         cellHeight: Shell.Theme.scaled ? Shell.Theme.scaled(120) : 120
         clip: true
         model: filteredModel
@@ -203,32 +240,6 @@ Item {
                 onEntered: root.currentIndex = index
                 onClicked: { launchApp(model.filePath, model.appId); }
             }
-        }
-    }
-
-    function launchApp(filePath, appId) {
-        if (appId && typeof AppUsageService !== 'undefined') AppUsageService.recordLaunch(appId);
-        // Use setsid to start the command in a new session, detaching it from quickshell's process group.
-        // Redirecting output to /dev/null ensures the process doesn't hold onto quickshell's pipes.
-        launchProcess.command = ["setsid", "sh", "-c", "ELECTRON_OZONE_PLATFORM_HINT=x11 gio launch " + filePath + " > /dev/null 2>&1 &"];
-        launchProcess.running = true;
-        root.closeRequested();
-    }
-
-    Keys.onPressed: (event) => {
-        if (event.key === Qt.Key_Enter || event.key === Qt.Key_Return) {
-            if (root.currentIndex < filteredModel.count) {
-                let item = filteredModel.get(root.currentIndex);
-                launchApp(item.filePath, item.appId);
-            }
-        } else if (event.key === Qt.Key_Right) {
-            root.currentIndex = Math.min(root.currentIndex + 1, filteredModel.count - 1);
-        } else if (event.key === Qt.Key_Left) {
-            root.currentIndex = Math.max(root.currentIndex - 1, 0);
-        } else if (event.key === Qt.Key_Down) {
-            root.currentIndex = Math.min(root.currentIndex + (Shell.Theme.appMenuCol || 6), filteredModel.count - 1);
-        } else if (event.key === Qt.Key_Up) {
-            root.currentIndex = Math.max(root.currentIndex - (Shell.Theme.appMenuCol || 6), 0);
         }
     }
     
