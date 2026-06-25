@@ -10,3 +10,4 @@ singleton NotificationSettings NotificationSettings.qml
 singleton HyprlandSettings HyprlandSettings.qml
 singleton PathSettings PathSettings.qml
 singleton WidgetSettings WidgetSettings.qml
+singleton FirewallSettings FirewallSettings.qml

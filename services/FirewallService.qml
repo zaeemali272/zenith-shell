@@ -2,11 +2,12 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "../Settings"
 
 Item {
     id: root
 
-    property bool enabled: false
+    property bool enabled: FirewallSettings.enabled
 
     Timer {
         interval: 30000
@@ -15,7 +16,10 @@ Item {
         onTriggered: checkStatus()
     }
 
-    Component.onCompleted: checkStatus()
+    Component.onCompleted: {
+        // Apply persisted state on startup
+        toggle(FirewallSettings.enabled);
+    }
 
     function checkStatus() {
         if (statusProc.running) return;
@@ -28,7 +32,11 @@ Item {
         let cmd = ["sudo", "secure-mode", on ? "on" : "off"];
         toggleProc.command = cmd;
         toggleProc.running = true;
+        enabled = on;
+        FirewallSettings.enabled = on;
     }
+
+
 
     Process {
         id: statusProc

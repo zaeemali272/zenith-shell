@@ -26,8 +26,6 @@ Item {
 
         // If it's a battery icon, we know where they are
         if (iconName.startsWith("battery-")) {
-            // OneUI theme often has multiple names for the same icon
-            // battery-level-X and battery-0X
             return "file:///usr/share/icons/OneUI/symbolic/status/" + iconName + ".svg";
         }
 
@@ -49,7 +47,6 @@ Item {
             let n = historyModel.get(i);
             if (n.originalNotif)
                 n.originalNotif.dismiss();
-
         }
         historyModel.clear();
     }
@@ -70,7 +67,6 @@ Item {
 
     Timer {
         id: duplicateResetTimer
-
         interval: 5000
         onTriggered: root.lastNotifKey = ""
     }
@@ -121,7 +117,7 @@ Item {
                 duplicateResetTimer.restart();
             }
 
-            // Icon Resolution
+            // Icon Resolution via Unified IconsFetcher Pipeline
             let finalIcon = "";
             let rawIcon = notif.appIcon || "";
             
@@ -130,7 +126,7 @@ Item {
                 rawIcon = notif.image.substring(13);
             }
 
-            // Priority 1: Raw image or direct path from Quickshell (notif.image)
+            // Priority 1: Raw image or direct file path payload
             if (notif.image && notif.image !== "") {
                 if (notif.image.startsWith("/") || notif.image.startsWith("file://")) {
                     finalIcon = notif.image.startsWith("file://") ? notif.image : "file://" + notif.image;
@@ -138,25 +134,18 @@ Item {
                     finalIcon = notif.image;
                 }
             } 
-            // Priority 2: Themed icon name (notif.appIcon)
-            else if (notif.appIcon && notif.appIcon !== "") {
-                if (notif.appIcon.startsWith("/") || notif.appIcon.startsWith("file://")) {
-                    finalIcon = notif.appIcon.startsWith("file://") ? notif.appIcon : "file://" + notif.appIcon;
-                } else {
-                    // Try hardcoded path first for known themes like OneUI
-                    let hardPath = root.getHardcodedPath(notif.appIcon);
-                    if (hardPath !== notif.appIcon) {
-                        finalIcon = hardPath;
-                    } else {
-                        finalIcon = Quickshell.iconPath(notif.appIcon);
+            // Priority 2: Try explicit hardcoded mappings first (like status/battery icons)
+            else if (rawIcon !== "") {
+                let hardPath = root.getHardcodedPath(rawIcon);
+                if (hardPath !== rawIcon) {
+                    finalIcon = hardPath;
                 }
             }
-            }
-            
-            // Priority 3: Fallback based on app name
+
+            // Priority 3: Fallback seamlessly to IconsFetcher mechanism
             if (finalIcon === "") {
-                let fallback = (notif.appName || "dialog-information").toLowerCase().replace(/\s+/g, '-');
-                finalIcon = Quickshell.iconPath(fallback);
+                let lookupName = rawIcon !== "" ? rawIcon : (notif.appName || "dialog-information").toLowerCase().replace(/\s+/g, '-');
+                finalIcon = IconsFetcher.getValidIcon(notif.appName || "", notif.desktopEntry || "", lookupName);
             }
 
             let notifData = {
@@ -169,11 +158,11 @@ Item {
                 "desktopEntry": notif.desktopEntry || "",
                 "originalNotif": notif
             };
+
             if (!isBattery && !isCaffeine) {
                 historyModel.insert(0, notifData);
             }
             root.notificationReceived(notifData);
         }
     }
-
 }

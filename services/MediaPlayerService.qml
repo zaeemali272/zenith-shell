@@ -188,11 +188,6 @@ Singleton {
                 let players = Mpris.players.values;
                 let next = players.find(p => p.playbackState === MprisPlaybackState.Playing && !isBlacklisted(p));
                 
-                if (!next && _playerStack.length > 0) {
-                    next = _playerStack.pop();
-                    if (GeneralSettings.autoManageMediaFocus) next.play();
-                }
-                
                 service.trackedPlayer = next ? next : (players.length > 0 ? players[0] : null);
             }
         }
@@ -209,14 +204,6 @@ Singleton {
                     
                     if (active) {
                         updateTrackedPlayer(active);
-                    } else if (_playerStack.length > 0 && GeneralSettings.autoManageMediaFocus) {
-                        if (modelData.playbackState === MprisPlaybackState.Paused || modelData.playbackState === MprisPlaybackState.Stopped) {
-                            let resume = _playerStack.pop();
-                            if (players.indexOf(resume) !== -1) {
-                                resume.play();
-                                service.trackedPlayer = resume;
-                            }
-                        }
                     }
                 }
             }

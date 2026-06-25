@@ -118,12 +118,14 @@ Rectangle {
         }
     }
 
+    /*
     Connections {
         target: VolumeService
         function onMicActiveChanged() {
             if (VolumeService.micActive && mediaWidget.isActuallyPlaying) mediaWidget.trackedPlayer.pause();
         }
     }
+    */
 
     Menu.MediaPlayerPopup { 
         id: mediaPopup; 
