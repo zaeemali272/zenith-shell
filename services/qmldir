@@ -1,3 +1,5 @@
+singleton Variables Variables.qml
+singleton IconsFetcher IconsFetcher.qml
 singleton NotificationService NotificationService.qml
 singleton CenterState CenterState.qml
 singleton BatteryService BatteryService.qml

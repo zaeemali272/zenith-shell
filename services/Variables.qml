@@ -1,0 +1,107 @@
+pragma Singleton
+
+import QtQuick
+import Quickshell
+import Quickshell.Io
+
+QtObject {
+    id: variables
+
+    // Distro & OS Metadata
+    property string distroId: "nixos"
+    property string distroName: "NixOS"
+    property string distroVersion: ""
+    property string kernelVersion: ""
+    property string hostname: "desktop"
+    property bool isNixOS: true
+    property bool isArch: false
+
+    // User & System Metadata
+    property string user: Quickshell.env("USER") || "zaeem"
+    property string homeDir: Quickshell.env("HOME") || "/home/zaeem"
+
+    // Location, Country, Locale & Screen Resolution
+    property string timezone: "UTC"
+    property string language: "en_US"
+    property string countryCode: "PK"
+    property string countryName: "Pakistan"
+    property int screenWidth: 1920
+    property int screenHeight: 1080
+    property int refreshRate: 60
+    property string resolution: "1920x1080"
+
+    // Pre-computed, verified Icon Base Directories
+    property var iconBases: [
+        "/etc/profiles/per-user/" + user + "/share/icons",
+        "/run/current-system/sw/share/icons",
+        homeDir + "/.local/share/icons",
+        homeDir + "/.icons",
+        "/usr/share/icons"
+    ]
+
+    // Pre-combined high-frequency theme subpaths
+    property var themeSubPaths: [
+        "/Reversal/status@2x/32/",
+        "/Reversal/status@2x/22/",
+        "/Reversal/status/32/",
+        "/Reversal/status/22/",
+        "/Reversal/status/scalable/",
+        "/Reversal/apps/scalable/",
+        "/Reversal/apps/48/",
+        "/Reversal-dark/status@2x/32/",
+        "/Reversal-dark/status@2x/22/",
+        "/Reversal-dark/status/scalable/",
+        "/Reversal-dark/apps/scalable/",
+        "/breeze/status/22@2x/",
+        "/breeze/status/22/",
+        "/breeze/status/scalable/",
+        "/breeze/apps/scalable/",
+        "/breeze/apps/48/",
+        "/breeze-dark/status/22/",
+        "/breeze-dark/status/scalable/",
+        "/hicolor/scalable/status/",
+        "/hicolor/scalable/apps/",
+        "/hicolor/48x48/status/",
+        "/hicolor/48x48/apps/",
+        "/Papirus/48x48/apps/",
+        "/Papirus/scalable/apps/",
+        "/Adwaita/scalable/apps/",
+        "/"
+    ]
+
+    property Process envDetector: Process {
+        command: ["bash", Quickshell.env("HOME") + "/.config/quickshell/scripts/detect_env.sh"]
+        running: true
+
+        stdout: SplitParser {
+            onRead: (data) => {
+                try {
+                    let parsed = JSON.parse(data);
+                    if (parsed.distroId) variables.distroId = parsed.distroId;
+                    if (parsed.distroName) variables.distroName = parsed.distroName;
+                    if (parsed.distroVersion !== undefined) variables.distroVersion = parsed.distroVersion;
+                    if (parsed.kernelVersion) variables.kernelVersion = parsed.kernelVersion;
+                    if (parsed.hostname) variables.hostname = parsed.hostname;
+                    if (parsed.isNixOS !== undefined) variables.isNixOS = parsed.isNixOS;
+                    if (parsed.isArch !== undefined) variables.isArch = parsed.isArch;
+                    if (parsed.user) variables.user = parsed.user;
+                    if (parsed.homeDir) variables.homeDir = parsed.homeDir;
+                    if (parsed.timezone) variables.timezone = parsed.timezone;
+                    if (parsed.language) variables.language = parsed.language;
+                    if (parsed.countryCode) variables.countryCode = parsed.countryCode;
+                    if (parsed.countryName) variables.countryName = parsed.countryName;
+                    if (parsed.screenWidth) variables.screenWidth = parsed.screenWidth;
+                    if (parsed.screenHeight) variables.screenHeight = parsed.screenHeight;
+                    if (parsed.refreshRate) variables.refreshRate = parsed.refreshRate;
+                    if (parsed.resolution) variables.resolution = parsed.resolution;
+
+                    if (parsed.iconBases && Array.isArray(parsed.iconBases) && parsed.iconBases.length > 0) {
+                        variables.iconBases = parsed.iconBases.filter((v, i, a) => v && v !== "" && a.indexOf(v) === i);
+                    }
+                } catch (e) {
+                    // Fallback to default NixOS initialization if JSON parse error
+                }
+            }
+        }
+    }
+}

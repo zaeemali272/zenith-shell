@@ -3,6 +3,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Notifications
+import "../windows" as Win
 
 pragma Singleton
 
@@ -101,37 +102,19 @@ Item {
                 duplicateResetTimer.restart();
             }
 
-            // Comprehensive Candidate Icon Construction
+            // Dynamic Icon Candidate Resolution via IconsFetcher
             let rawIcon = notif.appIcon || "";
             let rawImg = notif.image || "";
             let candidates = [];
 
             if (rawImg !== "") {
-                candidates.push(rawImg.startsWith("/") ? "file://" + rawImg : rawImg);
+                candidates.push(rawImg.startsWith("file://") || rawImg.startsWith("/") ? (rawImg.startsWith("file://") ? rawImg : "file://" + rawImg) : rawImg);
             }
 
-            if (rawIcon !== "") {
-                if (rawIcon.startsWith("/") || rawIcon.startsWith("file://") || rawIcon.startsWith("image://")) {
-                    candidates.push(rawIcon.startsWith("/") ? "file://" + rawIcon : rawIcon);
-                } else {
-                    candidates.push(Quickshell.iconPath(rawIcon));
-                    candidates.push("image://icon/" + rawIcon);
-                }
+            let fetcherCandidates = Win.IconsFetcher.getIconCandidates(notif.appName || "", notif.desktopEntry || "", rawIcon);
+            for (let cand of fetcherCandidates) {
+                candidates.push(cand);
             }
-
-            if (notif.desktopEntry && notif.desktopEntry !== "") {
-                candidates.push(Quickshell.iconPath(notif.desktopEntry));
-                candidates.push("image://icon/" + notif.desktopEntry);
-            }
-
-            if (notif.appName && notif.appName !== "") {
-                let appSlug = notif.appName.toLowerCase().replace(/\s+/g, '-');
-                candidates.push(Quickshell.iconPath(appSlug));
-                candidates.push("image://icon/" + appSlug);
-            }
-
-            candidates.push(Quickshell.iconPath("dialog-information"));
-            candidates.push("image://icon/dialog-information");
 
             let validCandidates = candidates.filter((v, i, a) => v && v !== "" && a.indexOf(v) === i);
 

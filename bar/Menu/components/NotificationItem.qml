@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Services.Notifications
 import "../../../services"
+import "../../../windows" as Win
 import "../../../"
 
 Rectangle {
@@ -43,7 +44,10 @@ Rectangle {
     scale: 0.92
     transform: Translate { id: trans; x: 50 }
 
-    Component.onCompleted: appearAnim.start()
+    Component.onCompleted: {
+        appearAnim.start();
+        updateCandidates();
+    }
 
     ParallelAnimation {
         id: appearAnim
@@ -70,71 +74,37 @@ Rectangle {
         }
     }
 
-    // --- ICON RESOLUTION ---
+    // --- DYNAMIC ICON RESOLUTION & WATERFALL ---
     property var iconCandidates: []
     property int currentCandidateIndex: -1
+    property bool showFallbackLetter: false
 
     function tryNextIcon() {
         currentCandidateIndex++;
         if (currentCandidateIndex < iconCandidates.length) {
             let nextSource = iconCandidates[currentCandidateIndex];
-            if (nextSource && nextSource !== "") iconImg.source = nextSource;
-            else tryNextIcon();
+            if (nextSource && nextSource !== "") {
+                iconImg.source = nextSource;
+            } else {
+                Qt.callLater(tryNextIcon);
+            }
         } else {
-            iconImg.source = Quickshell.iconPath("dialog-information");
+            // All candidates exhausted, show letter fallback
+            showFallbackLetter = true;
         }
     }
 
     function updateCandidates() {
         if (!notification) return;
-        
-        let candidates = notification.iconCandidates || [];
-        
-        let raw = (notification.rawIcon || "").toLowerCase();
-        let desktop = (notification.desktopEntry || "").toLowerCase();
-        let app = (notification.appName || "").toLowerCase();
-        let summary = (notification.summary || "").toLowerCase().replace(/\s+/g, '-');
-        let appDashed = app.replace(/\s+/g, '-');
-        let appNoSpace = app.replace(/\s+/g, '');
-        
-        let names = [raw, desktop, appDashed, appNoSpace, app, summary].filter((v, i, a) => v !== "" && a.indexOf(v) === i);
+        showFallbackLetter = false;
 
-        let bases = [
-            "/usr/share/icons/hicolor/scalable/apps/",
-            "/usr/share/icons/hicolor/256x256/apps/",
-            "/usr/share/icons/hicolor/128x128/apps/",
-            "/usr/share/icons/hicolor/64x64/apps/",
-            "/usr/share/icons/hicolor/48x48/apps/",
-            "/usr/share/icons/OneUI/scalable/apps/",
-            "/usr/share/icons/OneUI/48x48/apps/",
-            "/usr/share/icons/Adwaita/scalable/apps/",
-            "/usr/share/icons/Adwaita/48x48/apps/",
-            "/usr/share/icons/breeze/apps/48/",
-            "/usr/share/icons/breeze-dark/apps/48/"
-        ];
-
-        if (notification.appIcon) candidates.push(notification.appIcon);
-        
-        for (let name of names) {
-            if (!name.includes("/")) {
-                candidates.push(Quickshell.iconPath(name));
-                if (!name.endsWith("-bin")) {
-                    candidates.push(Quickshell.iconPath(name + "-bin"));
-                }
-            }
+        let candidates = [];
+        if (notification.iconCandidates && Array.isArray(notification.iconCandidates) && notification.iconCandidates.length > 0) {
+            candidates = notification.iconCandidates;
+        } else {
+            candidates = Win.IconsFetcher.getIconCandidates(notification.appName || "", notification.desktopEntry || "", notification.rawIcon || notification.appIcon || "");
         }
 
-        for (let name of names) {
-            if (name.includes("/")) continue;
-            for (let base of bases) {
-                candidates.push("file://" + base + name + ".svg");
-                candidates.push("file://" + base + name + ".png");
-            }
-        }
-        
-        candidates.push(Quickshell.iconPath("dialog-information"));
-        candidates.push(Quickshell.iconPath("application-x-executable"));
-        
         iconCandidates = candidates.filter((v, i, a) => v && v !== "" && a.indexOf(v) === i);
         currentCandidateIndex = -1;
         tryNextIcon();
@@ -164,15 +134,6 @@ Rectangle {
             border.color: Theme.surface1
             border.width: 1
 
-            Text {
-                anchors.centerIn: parent
-                visible: iconImg.status !== Image.Ready || (iconImg.implicitWidth === 100 && iconImg.implicitHeight === 100)
-                text: "󰂚"
-                font.family: Theme.iconFont
-                font.pixelSize: Theme.scaled(20)
-                color: Theme.accentColor
-            }
-
             Image {
                 id: iconImg
                 anchors.centerIn: parent
@@ -183,17 +144,32 @@ Rectangle {
                 fillMode: Image.PreserveAspectFit
                 asynchronous: true
                 smooth: true
+                visible: !root.showFallbackLetter
                 
                 onStatusChanged: {
                     if (status === Image.Ready) {
-                         if ((iconImg.implicitWidth === 100 && iconImg.implicitHeight === 100) ||
-                             (iconImg.sourceSize.width === 100 && iconImg.sourceSize.height === 100)) {
-                             tryNextIcon();
-                         }
+                        // Detect Qt's 100x100 missing icon checkerboard pattern
+                        if (iconImg.source.toString().startsWith("image://icon/") &&
+                            iconImg.implicitWidth === 100 && iconImg.implicitHeight === 100) {
+                            let iconName = iconImg.source.toString().replace("image://icon/", "");
+                            if (!Quickshell.hasThemeIcon(iconName)) {
+                                Qt.callLater(tryNextIcon);
+                            }
+                        }
                     } else if (status === Image.Error) {
-                         tryNextIcon();
+                        Qt.callLater(tryNextIcon);
                     }
                 }
+            }
+
+            // Fallback Letter Container
+            Text {
+                anchors.centerIn: parent
+                visible: root.showFallbackLetter
+                text: (notification && notification.appName && notification.appName !== "") ? notification.appName.charAt(0).toUpperCase() : "!"
+                font.pixelSize: Theme.scaled(20)
+                font.bold: true
+                color: Theme.accentColor
             }
         }
 

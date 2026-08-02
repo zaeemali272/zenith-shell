@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Io
 import "../../.."
 import "../../../Settings"
+import "../../../services" as Services
 
 Rectangle {
     id: root
@@ -15,6 +16,8 @@ Rectangle {
     property bool showAllEvents: false
 
     property int lastFetchedYear: today.getFullYear()
+    property string countryCode: Services.Variables.countryCode || "PK"
+    property string countryName: Services.Variables.countryName || "Pakistan"
 
     function nextMonth() { viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1) }
     function prevMonth() { viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1) }
@@ -22,20 +25,16 @@ Rectangle {
 
     function fetchEvents() {
         let year = root.viewDate.getFullYear();
-        if (year === lastFetchedYear) return;
-        
-        lastFetchedYear = year;
-        fetchProcess.command = ['bash', PathSettings.scriptsDir + '/fetch_events.sh', year.toString()];
+        fetchProcess.command = ['bash', PathSettings.scriptsDir + '/fetch_events.sh', year.toString(), root.countryCode];
+        fetchProcess.running = false;
         fetchProcess.running = true;
     }
 
-    onViewDateChanged: {
-        fetchEvents();
-    }
+    onViewDateChanged: fetchEvents()
 
     Process {
         id: fetchProcess
-        command: ['bash', PathSettings.scriptsDir + '/fetch_events.sh', root.today.getFullYear().toString()]
+        command: ['bash', PathSettings.scriptsDir + '/fetch_events.sh', root.today.getFullYear().toString(), root.countryCode]
         onExited: {
             readProcess.running = false;
             readProcess.running = true;
@@ -49,20 +48,20 @@ Rectangle {
             onStreamFinished: {
                 if (text) {
                     try {
-                        eventData = JSON.parse(text);
-                    } catch (e) {
-                    }
+                        let parsed = JSON.parse(text);
+                        if (Array.isArray(parsed)) {
+                            root.eventData = parsed;
+                        }
+                    } catch (e) {}
                 }
             }
         }
     }
 
-    Component.onCompleted: {
-        fetchProcess.running = true;
-    }
+    Component.onCompleted: fetchEvents()
 
-    implicitHeight: Theme.scaled(290)
-    implicitWidth: Theme.scaled(320)
+    implicitHeight: Theme.scaled(310)
+    implicitWidth: Theme.scaled(340)
     color: Theme.menuBackground
     radius: Theme.scaled(16)
     border.color: Theme.surface1
@@ -70,67 +69,133 @@ Rectangle {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: Theme.scaled(20)
-        spacing: Theme.scaled(12)
+        anchors.margins: Theme.scaled(16)
+        spacing: Theme.scaled(10)
 
+        // Header Section
         RowLayout {
             Layout.fillWidth: true
-            Label {
-                text: Qt.formatDateTime(root.viewDate, "MMMM yyyy")
-                color: Theme.text
-                font.pixelSize: Theme.scaled(18); font.weight: Font.Bold
-            }
-            Item { Layout.fillWidth: true }
-            
-            Button {
-                flat: true; implicitWidth: Theme.scaled(60); implicitHeight: Theme.scaled(32)
-                onClicked: root.toggleEvents()
-                background: Rectangle { color: root.showAllEvents ? Theme.surface1 : "transparent"; radius: Theme.scaled(8) }
-                contentItem: Text { text: "Events"; color: Theme.blue; font.pixelSize: Theme.scaled(12); horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+
+            ColumnLayout {
+                spacing: 0
+                Label {
+                    text: Qt.formatDateTime(root.viewDate, "MMMM yyyy")
+                    color: Theme.text
+                    font.pixelSize: Theme.scaled(17)
+                    font.weight: Font.Bold
+                }
+                Label {
+                    text: "📍 " + root.countryName + " (" + root.countryCode + ")"
+                    color: Theme.accentColor
+                    font.pixelSize: Theme.scaled(10)
+                    font.weight: Font.DemiBold
+                }
             }
 
+            Item { Layout.fillWidth: true }
+            
+            // Events Toggle Button
+            Button {
+                flat: true
+                implicitWidth: Theme.scaled(72)
+                implicitHeight: Theme.scaled(30)
+                onClicked: root.toggleEvents()
+                background: Rectangle {
+                    color: root.showAllEvents ? Theme.accentColor : Theme.surface0
+                    radius: Theme.scaled(8)
+                    border.color: Theme.glassBorder
+                    border.width: 1
+                }
+                contentItem: Text {
+                    text: root.showAllEvents ? "Calendar" : "Holidays"
+                    color: root.showAllEvents ? "#ffffff" : Theme.accentColor
+                    font.pixelSize: Theme.scaled(11)
+                    font.bold: true
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+            }
+
+            // Month Navigation Buttons
             RowLayout {
-                spacing: Theme.scaled(8)
+                spacing: Theme.scaled(4)
                 Button {
-                    flat: true; implicitWidth: Theme.scaled(32); implicitHeight: Theme.scaled(32)
+                    flat: true; implicitWidth: Theme.scaled(30); implicitHeight: Theme.scaled(30)
                     onClicked: root.prevMonth()
-                    background: Rectangle { color: parent.hovered ? Theme.surface1 : "transparent"; radius: Theme.scaled(8) }
-                    contentItem: Text { text: "󰁍"; color: Theme.blue; font.pixelSize: Theme.scaled(16); horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                    background: Rectangle { color: parent.hovered ? Theme.surface1 : "transparent"; radius: Theme.scaled(6) }
+                    contentItem: Text { text: "󰁍"; color: Theme.subtext0; font.pixelSize: Theme.scaled(15); horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
                 }
                 Button {
-                    flat: true; implicitWidth: Theme.scaled(32); implicitHeight: Theme.scaled(32)
+                    flat: true; implicitWidth: Theme.scaled(30); implicitHeight: Theme.scaled(30)
                     onClicked: root.nextMonth()
-                    background: Rectangle { color: parent.hovered ? Theme.surface1 : "transparent"; radius: Theme.scaled(8) }
-                    contentItem: Text { text: "󰁔"; color: Theme.blue; font.pixelSize: Theme.scaled(16); horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                    background: Rectangle { color: parent.hovered ? Theme.surface1 : "transparent"; radius: Theme.scaled(6) }
+                    contentItem: Text { text: "󰁔"; color: Theme.subtext0; font.pixelSize: Theme.scaled(15); horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
                 }
             }
         }
 
-        // Overlay Area
+        // Main Overlay Area
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
 
-            // Event List Overlay
+            // Event List Overlay View
             Rectangle {
                 visible: root.showAllEvents
                 anchors.fill: parent
                 color: Theme.menuBackground
-                Column {
+
+                ScrollView {
                     anchors.fill: parent
-                    padding: Theme.scaled(10)
-                    spacing: Theme.scaled(5)
-                    Repeater {
-                        model: root.eventData
-                        delegate: Label {
-                            text: modelData.date + ": " + modelData.name
-                            color: Theme.text
-                            font.pixelSize: Theme.scaled(11)
+                    clip: true
+
+                    ListView {
+                        width: parent.width
+                        spacing: Theme.scaled(6)
+                        model: root.eventData || []
+                        delegate: Rectangle {
+                            width: ListView.view.width - Theme.scaled(8)
+                            height: Theme.scaled(40)
+                            radius: Theme.scaled(8)
+                            color: Theme.surface0
+                            border.color: Theme.glassBorder
+                            border.width: 1
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.margins: Theme.scaled(8)
+                                spacing: Theme.scaled(8)
+
+                                Rectangle {
+                                    width: Theme.scaled(6); height: Theme.scaled(22)
+                                    radius: Theme.scaled(3)
+                                    color: Theme.accentColor
+                                }
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 0
+                                    Text {
+                                        text: modelData.name
+                                        color: Theme.text
+                                        font.bold: true
+                                        font.pixelSize: Theme.scaled(11)
+                                        elide: Text.ElideRight
+                                        Layout.fillWidth: true
+                                    }
+                                    Text {
+                                        text: modelData.date
+                                        color: Theme.subtext0
+                                        font.pixelSize: Theme.scaled(9)
+                                    }
+                                }
+                            }
                         }
-                        }
-                        }
-                        }
-            // Calendar Grid
+                    }
+                }
+            }
+
+            // Calendar Grid View
             GridLayout {
                 id: calendarGrid
                 visible: !root.showAllEvents
@@ -149,7 +214,7 @@ Rectangle {
                 }
 
                 Repeater {
-                    model: 35 
+                    model: 35
                     delegate: Rectangle {
                         id: dayCell
                         readonly property var dateValue: {
@@ -160,47 +225,94 @@ Rectangle {
                         readonly property bool isToday: dateValue.toDateString() === root.today.toDateString()
                         readonly property bool isSelected: dateValue.toDateString() === root.selectedDate.toDateString()
                         readonly property bool isCurrentMonth: dateValue.getMonth() === root.viewDate.getMonth()
-                        readonly property bool hasEvent: {
+                        readonly property var dayEvents: {
                             let dateStr = Qt.formatDate(dateValue, "yyyy-MM-dd");
-                            return root.eventData.some(e => e.date === dateStr);
+                            return root.eventData.filter(e => e.date === dateStr);
                         }
+                        readonly property bool hasEvent: dayEvents.length > 0
 
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         radius: Theme.scaled(8)
-                        color: isSelected ? Theme.blue : (hasEvent && isCurrentMonth ? Qt.alpha(Theme.blue, 0.2) : (isToday ? Theme.surface1 : "transparent"))
-                        border.color: isSelected ? "transparent" : (isToday ? Theme.blue : (hasEvent && isCurrentMonth ? Theme.blue : "transparent"))
-                        border.width: isSelected ? 0 : 1
+
+                        color: {
+                            if (!isCurrentMonth) return "transparent";
+                            if (hasEvent) return Theme.accentColor;
+                            if (isToday) return Theme.surface1;
+                            return "transparent";
+                        }
+
+                        border.color: {
+                            if (isSelected) return "#ffffff";
+                            if (isToday) return Theme.accentColor;
+                            return "transparent";
+                        }
+                        border.width: isSelected || isToday ? 2 : 0
 
                         Label {
                             anchors.centerIn: parent
                             text: dayCell.dateValue.getDate()
                             font.pixelSize: Theme.scaled(12)
                             font.bold: dayCell.isToday || dayCell.isSelected || dayCell.hasEvent
-                            color: !dayCell.isCurrentMonth ? Theme.surface2 : (dayCell.isSelected ? Theme.menuBackground : (dayCell.isToday || dayCell.hasEvent ? Theme.blue : Theme.text))
+                            color: {
+                                if (!dayCell.isCurrentMonth) return Theme.surface2;
+                                if (dayCell.hasEvent) return "#ffffff";
+                                if (dayCell.isToday) return Theme.accentColor;
+                                return Theme.text;
+                            }
                         }
 
                         MouseArea { 
                             anchors.fill: parent
                             hoverEnabled: true
-                            onClicked: { root.selectedDate = dayCell.dateValue }
+                            onClicked: root.selectedDate = dayCell.dateValue
                         }
                     }
                 }
             }
         }
         
-        Label {
+        // Selected Date Event Inspector Footer
+        Rectangle {
             Layout.fillWidth: true
+            implicitHeight: Theme.scaled(32)
+            color: Theme.surface0
+            radius: Theme.scaled(8)
             visible: !root.showAllEvents
-            text: {
-                let dateStr = Qt.formatDate(root.selectedDate, "yyyy-MM-dd");
-                let events = root.eventData.filter(e => e.date === dateStr);
-                return events.length > 0 ? "Events: " + events.map(e => e.name).join(", ") : "No events"
+            border.color: Theme.glassBorder
+            border.width: 1
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.margins: Theme.scaled(6)
+                spacing: Theme.scaled(8)
+
+                Text {
+                    text: Qt.formatDate(root.selectedDate, "yyyy-MM-dd")
+                    color: Theme.subtext0
+                    font.bold: true
+                    font.pixelSize: Theme.scaled(10)
+                }
+
+                Text {
+                    id: selectedEventLabel
+                    Layout.fillWidth: true
+                    text: {
+                        let dateStr = Qt.formatDate(root.selectedDate, "yyyy-MM-dd");
+                        let events = root.eventData.filter(e => e.date === dateStr);
+                        if (events.length === 0) return "No official holidays";
+                        return events.map(e => e.name).join(" | ");
+                    }
+                    color: {
+                        let dateStr = Qt.formatDate(root.selectedDate, "yyyy-MM-dd");
+                        let events = root.eventData.filter(e => e.date === dateStr);
+                        return events.length > 0 ? Theme.accentColor : Theme.subtext1;
+                    }
+                    font.bold: true
+                    font.pixelSize: Theme.scaled(11)
+                    elide: Text.ElideRight
+                }
             }
-            color: Theme.subtext1
-            font.pixelSize: Theme.scaled(10)
-            horizontalAlignment: Text.AlignHCenter
         }
     }
 }

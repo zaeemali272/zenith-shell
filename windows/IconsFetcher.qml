@@ -1,100 +1,144 @@
 pragma Singleton
 import QtQuick
 import Quickshell
+import "../services" as Services
 
 QtObject {
     id: iconsFetcher
 
-    function getValidIcon(appName, desktopEntry, iconName) {
+    function getIconCandidates(appName, desktopEntry, iconName) {
         let raw = (iconName || "").trim();
-        let desktop = (desktopEntry || "").replace(".desktop", "").trim();
+        let desktop = (desktopEntry || "").replace(/\.desktop$/i, "").trim();
         let app = (appName || "").trim();
-
-        let searchStr = (desktop + " " + app + " " + raw).toLowerCase();
-        let id = (app + " " + desktop).toLowerCase();
 
         let candidates = [];
 
-        // 1. Precise Target Mappings using the actual names found on your drive
-        if (id.includes("freedownloadmanager") || searchStr.includes("freedownloadmanager") || id.includes("fdm")) {
-            candidates.push("freedownloadmanager-bin", "freedownloadmanager", "freedownloadmanager_fdm_up", "fdm");
-        } else if (id.includes("zed") || searchStr.includes("zed")) {
-            candidates.push("zed", "dev.zed.Zed", "zed-editor");
-        } else if (id.includes("thunar") || searchStr.includes("thunar")) {
-            candidates.push("org.xfce.thunar", "thunar");
-        } else if (id.includes("code") || searchStr.includes("vscode") || searchStr.includes("visual studio code")) {
-            candidates.push("com.visualstudio.code", "vscode", "code");
-        } else if (id.includes("zen") && !id.includes("zenity")) {
-            candidates.push("zen-browser", "zen");
-        } else if (id.includes("kitty")) {
-            candidates.push("kitty");
-        } else if (id.includes("terminal") || id.includes("foot") || id.includes("alacritty")) {
-            candidates.push("utilities-terminal", "terminal");
-        } else if (searchStr.includes("discord")) {
-            candidates.push("com.discordapp.Discord", "discord");
-        } else if (searchStr.includes("spotify")) {
-            candidates.push("com.spotify.Client", "spotify");
+        // Direct file path if specified
+        if (raw.startsWith("/") || raw.startsWith("file://")) {
+            candidates.push(raw.startsWith("file://") ? raw : "file://" + raw);
         }
 
+        let rawTokens = [];
         if (raw !== "") {
-            candidates.push(raw);
+            rawTokens.push(raw);
             if (raw.includes("/")) {
                 let parts = raw.split("/");
-                candidates.push(parts[parts.length - 1]);
-            }
-        }
-        if (desktop !== "") candidates.push(desktop);
-
-        if (desktop.includes(".")) {
-            let parts = desktop.split(".");
-            candidates.push(parts[parts.length - 1]);
-        }
-
-        let cleanCandidates = [];
-        for (let entry of candidates) {
-            let base = entry.replace(/\.(png|svg|xpm|jpg)$/i, "");
-            cleanCandidates.push(base);
-        }
-
-        let uniqueCandidates = cleanCandidates.filter((v, i, a) => v && v !== "" && a.indexOf(v) === i);
-
-        // 2. Native Quickshell Theme Provider Match Loop
-        for (let name of uniqueCandidates) {
-            let path = Quickshell.iconPath(name, false); 
-            if (path && path !== "") {
-                if (path.startsWith("/")) return "file://" + path;
-                return "image://icon/" + name;
+                rawTokens.push(parts[parts.length - 1]);
             }
         }
 
-        if (raw.startsWith("/")) {
-            if (Quickshell.iconPath(raw, true) !== "") return "file://" + raw;
+        if (desktop !== "") {
+            rawTokens.push(desktop);
+            if (desktop.includes(".")) {
+                let parts = desktop.split(".");
+                rawTokens.push(parts[parts.length - 1]);
+            }
         }
 
-        // 3. System Directory Hard Fallbacks with absolute home folder paths
-        let iconBases = [
-            "/usr/share/icons/hicolor/scalable/apps/",
-            "/usr/share/icons/hicolor/512x512/apps/", // Targets Zed
-            "/usr/share/icons/hicolor/256x256/apps/", // Targets FDM
-            "/usr/share/icons/hicolor/48x48/apps/",
-            "/usr/share/pixmaps/",
-            "/usr/share/icons/Papirus/48x48/apps/",
-            "/usr/share/icons/Papirus-Dark/48x48/apps/",
-            "/home/zaeem/.local/share/icons/hicolor/scalable/apps/",
-            "/home/zaeem/.local/share/icons/hicolor/512x512/apps/",
-            "/home/zaeem/.local/share/icons/hicolor/256x256/apps/"
-        ];
+        if (app !== "") {
+            let appSlug = app.toLowerCase().replace(/\s+/g, '-');
+            rawTokens.push(appSlug);
+            rawTokens.push(app.toLowerCase());
+        }
 
-        for (let name of uniqueCandidates) {
+        let cleanTokens = [];
+        for (let entry of rawTokens) {
+            if (!entry || entry === "") continue;
+            if (entry.startsWith("/") || entry.startsWith("file://")) continue;
+            let base = entry.replace(/\.(png|svg|xpm|jpg|jpeg)$/i, "").trim();
+            if (base && base !== "") cleanTokens.push(base);
+        }
+
+        let uniqueTokens = cleanTokens.filter((v, i, a) => v && v !== "" && a.indexOf(v) === i);
+
+        // Prioritized token expansion for battery, status, and symbolic icon formats
+        let expandedTokens = [];
+        for (let token of uniqueTokens) {
+            // Normalize battery level tokens first (e.g. battery-level-100-symbolic -> battery-100)
+            let batMatch = token.match(/^battery(?:-level)?-(\d+)(?:-(charging))?(?:-(symbolic))?$/i);
+            if (batMatch) {
+                let lvl = parseInt(batMatch[1]);
+                let numStr = lvl.toString();
+                let pad3 = numStr.padStart(3, '0');
+                let isChg = !!batMatch[2];
+                let chgSuffix = isChg ? "-charging" : "";
+
+                expandedTokens.push("battery-" + numStr + chgSuffix);
+                expandedTokens.push("battery-" + pad3 + chgSuffix);
+                expandedTokens.push("battery-" + numStr + chgSuffix + "-symbolic");
+                expandedTokens.push("battery-" + pad3 + chgSuffix + "-symbolic");
+                expandedTokens.push("battery-" + numStr);
+                expandedTokens.push("battery-" + pad3);
+                if (isChg) {
+                    expandedTokens.push("battery-good-charging-symbolic");
+                    expandedTokens.push("battery-good-charging");
+                    expandedTokens.push("battery-charging");
+                } else {
+                    expandedTokens.push("battery-good-symbolic");
+                    expandedTokens.push("battery-good");
+                }
+                expandedTokens.push("battery-symbolic");
+                expandedTokens.push("battery");
+            }
+
+            expandedTokens.push(token);
+            if (token.endsWith("-symbolic")) {
+                expandedTokens.push(token.replace(/-symbolic$/i, ""));
+            } else {
+                expandedTokens.push(token + "-symbolic");
+            }
+        }
+
+        let allTokens = expandedTokens.filter((v, i, a) => v && v !== "" && a.indexOf(v) === i);
+
+        // 1. Native Qt Theme resolution (instant C++ check)
+        for (let token of allTokens) {
+            if (Quickshell.hasThemeIcon(token)) {
+                candidates.push("image://icon/" + token);
+            }
+        }
+
+        // 2. Pre-computed, distro-verified icon base paths and theme subpaths from Services.Variables
+        let iconBases = Services.Variables.iconBases || [];
+        let themeSubPaths = Services.Variables.themeSubPaths || [];
+
+        let fileTokens = allTokens.slice(0, 5);
+        for (let token of fileTokens) {
             for (let base of iconBases) {
-                let svgPath = base + name + ".svg";
-                let pngPath = base + name + ".png";
-                
-                if (Quickshell.iconPath(svgPath, true) !== "") return "file://" + svgPath;
-                if (Quickshell.iconPath(pngPath, true) !== "") return "file://" + pngPath;
+                for (let sub of themeSubPaths) {
+                    let fullDir = base + sub;
+                    candidates.push("file://" + fullDir + token + ".svg");
+                    candidates.push("file://" + fullDir + token + ".png");
+                }
             }
         }
 
+        // Fallback theme names
+        for (let token of allTokens) {
+            candidates.push("image://icon/" + token);
+        }
+
+        if (Quickshell.hasThemeIcon("dialog-information")) {
+            candidates.push("image://icon/dialog-information");
+        }
+        candidates.push("image://icon/application-x-executable");
+
+        return candidates.filter((v, i, a) => v && v !== "" && a.indexOf(v) === i);
+    }
+
+    function getValidIcon(appName, desktopEntry, iconName) {
+        let candidates = getIconCandidates(appName, desktopEntry, iconName);
+        
+        for (let cand of candidates) {
+            if (cand.startsWith("image://icon/")) {
+                let name = cand.replace("image://icon/", "");
+                if (Quickshell.hasThemeIcon(name)) {
+                    return cand;
+                }
+            }
+        }
+
+        if (candidates.length > 0) return candidates[0];
         return "image://icon/application-x-executable";
     }
 
