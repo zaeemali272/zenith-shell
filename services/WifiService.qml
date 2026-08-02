@@ -11,82 +11,34 @@ Item {
     property var networks: []
     property var knownNetworks: ({})
 
-    // Station Info
+    // Station & Connection Info
     property string currentState: "disconnected"
     property string currentSsid: ""
     property string ipv4Address: ""
     property string rssi: ""
     property string txBitrate: ""
     property string frequency: ""
+    property bool isAirplane: false
 
-    property var savedSecrets: ({})
+    // Speeds & Speed Test
+    property string currentSpeed: "0.0 Mbps"
+    property bool isTesting: false
+    property bool isUserTyping: false
 
     signal connectionFailed(string ssid)
     signal connectionSuccess(string ssid)
 
-    property string currentSpeed: "0.0 Mbps"
-    property bool isTesting: false
+    readonly property string helperScript: Quickshell.env("HOME") + "/.config/quickshell/scripts/wifi_nm.py"
 
     function refresh() {
-        startHardwareScan();
-        updateKnownNetworks();
-        updateStationInfo();
-        loadSecrets();
-    }
-
-    readonly property string secretsPath: PathSettings.home + "/.local/share/zenith/wifi_secrets.json"
-
-    function loadSecrets() {
-        secretsLoader.running = false;
-        secretsLoader.running = true;
-    }
-
-    function saveSecret(ssid, password) {
-        if (!ssid || !password) return;
-        let temp = {};
-        for (let key in savedSecrets) {
-            temp[key] = savedSecrets[key];
+        if (!stateProc.running) {
+            stateProc.running = true;
         }
-        temp[ssid] = password;
-        savedSecrets = temp;
-        
-        let cmd = "mkdir -p " + Quickshell.env("HOME") + "/.local/share/zenith && echo '" + JSON.stringify(savedSecrets).replace(/'/g, "'\\''") + "' > " + secretsPath + " && chmod 600 " + secretsPath;
-        secretsSaver.command = ["sh", "-c", cmd];
-        secretsSaver.running = true;
     }
 
-    function removeSecret(ssid) {
-        if (!ssid) return;
-        let temp = {};
-        for (let key in savedSecrets) {
-            if (key !== ssid) {
-                temp[key] = savedSecrets[key];
-            }
-        }
-        savedSecrets = temp;
-        let cmd = "mkdir -p " + Quickshell.env("HOME") + "/.local/share/zenith && echo '" + JSON.stringify(savedSecrets).replace(/'/g, "'\\''") + "' > " + secretsPath + " && chmod 600 " + secretsPath;
-        secretsSaver.command = ["sh", "-c", cmd];
-        secretsSaver.running = true;
-    }
-
-    function startHardwareScan() {
-        scanProcess.running = false;
-        scanProcess.running = true;
-    }
-
-    function updateNetworkList() {
-        listProcess.running = false;
-        listProcess.running = true;
-    }
-
-    function updateKnownNetworks() {
-        knownNetworksProcess.running = false;
-        knownNetworksProcess.running = true;
-    }
-
-    function updateStationInfo() {
-        stationInfoProcess.running = false;
-        stationInfoProcess.running = true;
+    function toggleAirplane(block) {
+        actionProc.command = ["python3", helperScript, "airplane", block ? "off" : "on"];
+        actionProc.running = true;
     }
 
     function runMaxSpeedTest() {
@@ -99,161 +51,65 @@ Item {
     function connect(ssid, password) {
         _pendingConnectSsid = ssid;
         if (password && password !== "") {
-            saveSecret(ssid, password);
-        }
-        
-        executor.running = false;
-        if (password && password !== "") {
-            executor.command = ["sh", "-c", 'iwctl station $(ls /sys/class/net | grep ^wl | head -n1) connect "$1" --passphrase "$2"', "sh", ssid, password];
-        } else if (savedSecrets[ssid]) {
-            executor.command = ["sh", "-c", 'iwctl station $(ls /sys/class/net | grep ^wl | head -n1) connect "$1" --passphrase "$2"', "sh", ssid, savedSecrets[ssid]];
+            actionProc.command = ["python3", helperScript, "connect", ssid, password];
         } else {
-            executor.command = ["sh", "-c", 'iwctl station $(ls /sys/class/net | grep ^wl | head -n1) connect "$1"', "sh", ssid];
+            actionProc.command = ["python3", helperScript, "connect", ssid];
         }
-        executor.running = true;
+        actionProc.running = true;
     }
 
     function disconnect() {
-        executor.running = false;
-        executor.command = ["sh", "-c", 'iwctl station $(ls /sys/class/net | grep ^wl | head -n1) disconnect'];
-        executor.running = true;
+        actionProc.command = ["python3", helperScript, "disconnect"];
+        actionProc.running = true;
     }
 
     function forgetNetwork(ssid) {
         if (!ssid) return;
-        removeSecret(ssid);
-        executor.running = false;
-        executor.command = ["sh", "-c", 'iwctl known-networks "$1" forget; iwctl station $(ls /sys/class/net | grep ^wl | head -n1) disconnect', "sh", ssid];
-        executor.running = true;
+        actionProc.command = ["python3", helperScript, "forget", ssid];
+        actionProc.running = true;
     }
 
     // --- Processes ---
 
     Process {
-        id: secretsLoader
-        command: ["sh", "-c", "cat " + secretsPath + " 2>/dev/null || echo '{}'"]
+        id: stateProc
+        command: ["python3", helperScript, "json"]
         stdout: StdioCollector {
             onStreamFinished: {
+                if (!text || text.trim() === "") return;
                 try {
-                    service.savedSecrets = JSON.parse(text);
-                } catch(e) {
-                    service.savedSecrets = {};
-                }
-            }
-        }
-    }
-
-    Process {
-        id: secretsSaver
-    }
-
-    Process {
-        id: scanProcess
-        command: ["sh", "-c", "iwctl station $(ls /sys/class/net | grep ^wl | head -n1) scan"]
-        onExited: (exitCode) => { service.updateNetworkList(); }
-    }
-
-    Process {
-        id: stationInfoProcess
-        command: ["sh", "-c", "iwctl station $(ls /sys/class/net | grep ^wl | head -n1) show | sed 's/\\x1b\\[[0-9;]*m//g'"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                let lines = text.trim().split("\n");
-                let info = {};
-                for (let line of lines) {
-                    let parts = line.trim().split(/\s{2,}/);
-                    if (parts.length >= 2) {
-                        info[parts[0].trim()] = parts[1].trim();
+                    let data = JSON.parse(text);
+                    if (data.isAirplane !== undefined) service.isAirplane = data.isAirplane;
+                    if (data.currentState !== undefined) service.currentState = data.currentState;
+                    if (data.currentSsid !== undefined) service.currentSsid = data.currentSsid;
+                    if (data.ipv4Address !== undefined) service.ipv4Address = data.ipv4Address;
+                    if (data.knownDict) service.knownNetworks = data.knownDict;
+                    if (data.networks && Array.isArray(data.networks)) {
+                        service.networks = data.networks;
                     }
+                } catch (e) {
+                    console.log("WifiService JSON parse error:", e);
                 }
-                service.currentState = info["State"] || "disconnected";
-                service.currentSsid = info["Connected network"] || "";
-                service.ipv4Address = info["IPv4 address"] || "";
-                service.rssi = info["AverageRSSI"] || info["RSSI"] || "";
-                service.txBitrate = info["TxBitrate"] || "";
-                service.frequency = info["Frequency"] || "";
             }
         }
     }
+
+    property string _pendingConnectSsid: ""
 
     Process {
-        id: knownNetworksProcess
-        command: ["sh", "-c", "iwctl known-networks list | sed 's/\\x1b\\[[0-9;]*m//g'"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                let lines = text.trim().split("\n");
-                let temp = {};
-                for (let line of lines) {
-                    let trimmed = line.trim();
-                    if (!trimmed || trimmed.startsWith('Name') || trimmed.startsWith('---') || trimmed.includes('Known Networks')) continue;
-                    let parts = trimmed.split(/\s{2,}/);
-                    if (parts.length >= 1 && parts[0] !== "") {
-                        temp[parts[0].trim()] = true;
-                    }
+        id: actionProc
+        onExited: (exitCode) => {
+            if (exitCode === 0) {
+                if (_pendingConnectSsid !== "") {
+                    service.connectionSuccess(_pendingConnectSsid);
                 }
-                service.knownNetworks = temp;
-            }
-        }
-    }
-
-    property bool isUserTyping: false
-
-    function isSameNetworks(arr1, arr2) {
-        if (arr1.length !== arr2.length) return false;
-        for (let i = 0; i < arr1.length; i++) {
-            if (arr1[i].ssid !== arr2[i].ssid ||
-                arr1[i].connected !== arr2[i].connected ||
-                arr1[i].signal !== arr2[i].signal) return false;
-        }
-        return true;
-    }
-
-    Process {
-        id: listProcess
-        command: ["sh", "-c", "iwctl station $(ls /sys/class/net | grep ^wl | head -n1) get-networks | sed 's/\\x1b\\[[0-9;]*m//g'"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                let lines = text.trim().split("\n");
-                let temp = [];
-                for (let line of lines) {
-                    let rawLine = line;
-                    let trimmed = line.trim();
-                    if (!trimmed || trimmed.startsWith('Network name') || trimmed.startsWith('---') || trimmed.includes('Available networks')) continue;
-                    
-                    let isConnected = rawLine.trim().startsWith('>');
-                    let contentPart = isConnected ? rawLine.trim().substring(1).trim() : rawLine.trim();
-                    let parts = contentPart.split(/\s{2,}/);
-                    
-                    if (parts.length >= 2) {
-                        let ssid = parts[0].trim();
-                        let security = parts[1].trim().toLowerCase();
-                        let signalStr = parts[parts.length - 1]; 
-                        let signal = 0;
-                        if (signalStr.includes('****')) signal = 4;
-                        else if (signalStr.includes('***')) signal = 3;
-                        else if (signalStr.includes('**')) signal = 2;
-                        else if (signalStr.includes('*')) signal = 1;
-
-                        temp.push({
-                            "ssid": ssid,
-                            "security": security,
-                            "connected": isConnected, 
-                            "signal": signal
-                        });
-                    }
-                }
-                temp.sort((a, b) => {
-                    if (a.connected !== b.connected) return a.connected ? -1 : 1;
-                    let aKnown = service.knownNetworks[a.ssid] ? 1 : 0;
-                    let bKnown = service.knownNetworks[b.ssid] ? 1 : 0;
-                    if (aKnown !== bKnown) return bKnown - aKnown;
-                    if (a.signal !== b.signal) return b.signal - a.signal;
-                    return a.ssid.localeCompare(b.ssid);
-                });
-                if (!service.isUserTyping && !isSameNetworks(service.networks, temp)) {
-                    service.networks = temp;
+            } else {
+                if (_pendingConnectSsid !== "") {
+                    service.connectionFailed(_pendingConnectSsid);
                 }
             }
+            _pendingConnectSsid = "";
+            service.refresh();
         }
     }
 
@@ -274,38 +130,14 @@ Item {
         }
     }
 
-    property string _pendingConnectSsid: ""
-
-    Process {
-        id: executor
-        onExited: (exitCode) => {
-            if (exitCode === 0) {
-                if (_pendingConnectSsid !== "") {
-                    service.connectionSuccess(_pendingConnectSsid);
-                }
-            } else {
-                if (_pendingConnectSsid !== "") {
-                    service.connectionFailed(_pendingConnectSsid);
-                }
-            }
-            _pendingConnectSsid = "";
-            service.refresh();
-        }
-    }
-    
     Component.onCompleted: service.refresh()
 
+    // Adaptive Recurring Task Scheduler Timer
     Timer {
         id: statusPollTimer
-        interval: (service.currentState === "associating" || service.currentState === "authenticating") ? 1000 : 5000
-        running: true
+        interval: Variables.quickSettingsOpen ? Variables.mediumInterval : Variables.slowInterval
+        running: !service.isUserTyping
         repeat: true
-        onTriggered: {
-            service.updateStationInfo();
-            // If we just got an IP, refresh the full list to show the '>' indicator
-            if (service.currentState === "connected" && service.ipv4Address !== "") {
-                service.updateNetworkList();
-            }
-        }
+        onTriggered: service.refresh()
     }
 }

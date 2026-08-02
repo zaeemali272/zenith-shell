@@ -1,29 +1,30 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+
 pragma Singleton
 
 Item {
     id: service
 
-    readonly property string home: Quickshell.env("HOME")
-    readonly property string daemonPath: home + "/.local/bin/power-profile-daemon.sh"
-    readonly property string stateFile: home + "/.cache/power-profile-state"
     property string currentProfile: "balanced"
     property bool available: false
 
     function setProfile(profile) {
-        if (!available)
-            return ;
+        if (!available) return;
 
-        setExec.command = [daemonPath, profile];
+        let target = profile;
+        if (target === "powersave") target = "power-saver";
+        else if (target === "turbo") target = "performance";
+
+        setExec.command = ["powerprofilesctl", "set", target];
+        setExec.running = false;
         setExec.running = true;
     }
 
     function update() {
-        if (!available)
-            return ;
-
+        if (!available) return;
+        updateExec.running = false;
         updateExec.running = true;
     }
 
@@ -33,73 +34,42 @@ Item {
 
     Process {
         id: checkAvailability
-
-        command: ["ls", daemonPath]
+        command: ["which", "powerprofilesctl"]
         onExited: (code) => {
             if (code === 0) {
                 service.available = true;
                 service.update();
-                // Ensure state file exists before watching
-                ensureStateFile.running = true;
             } else {
-                console.warn("power-profile-daemon.sh not found. PowerProfileService disabled.");
+                console.warn("powerprofilesctl not found. PowerProfileService disabled.");
             }
         }
-    }
-
-    Process {
-        id: ensureStateFile
-
-        command: ["touch", service.stateFile]
-        onExited: watcher.running = true
     }
 
     Process {
         id: updateExec
-
-        command: [daemonPath, "status"]
-
+        command: ["powerprofilesctl", "get"]
         stdout: StdioCollector {
             onStreamFinished: {
-                if (text)
-                    service.currentProfile = text.trim();
-
+                if (text) {
+                    let prof = text.trim();
+                    if (prof === "power-saver") prof = "powersave";
+                    service.currentProfile = prof;
+                }
             }
         }
-
     }
 
     Process {
         id: setExec
-
-        onExited: service.update()
-    }
-
-    // Reactive watcher: waits for one change, then restarts
-    Process {
-        id: watcher
-
-        command: ["sh", "-c", "inotifywait -q -e close_write " + service.stateFile]
-        running: false
-        onExited: {
+        onExited: (code) => {
             service.update();
-            restartTimer.start();
         }
     }
 
     Timer {
-        id: restartTimer
-
-        interval: 100
-        onTriggered: watcher.running = true
-    }
-
-    // Fallback sync
-    Timer {
-        interval: 300000 // 5 minutes
+        interval: 10000
         running: service.available
         repeat: true
         onTriggered: service.update()
     }
-
 }

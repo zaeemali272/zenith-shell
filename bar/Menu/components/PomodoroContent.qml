@@ -6,7 +6,7 @@ import "../../../"
 
 Item {
     id: root
-    property string activeTool: "Timer"
+    property string activeTool: "Todo"
 
     ColumnLayout {
         anchors.fill: parent
@@ -17,7 +17,7 @@ Item {
             Layout.fillWidth: true
             spacing: Theme.scaled(10)
             Repeater {
-                model: ["Timer", "Pomodoro"]
+                model: ["Todo", "Timer"]
                 delegate: Rectangle {
                     width: Theme.scaled(80); height: Theme.scaled(30); radius: Theme.scaled(8)
                     color: root.activeTool === modelData ? Theme.blue : Theme.surface1
@@ -32,14 +32,14 @@ Item {
 
         StackLayout {
             Layout.fillWidth: true; Layout.fillHeight: true
-            currentIndex: ["Timer", "Pomodoro"].indexOf(root.activeTool)
+            currentIndex: ["Todo", "Timer"].indexOf(root.activeTool)
 
-            TimerContent { Layout.fillWidth: true; Layout.fillHeight: true }
             TodoContent { Layout.fillWidth: true; Layout.fillHeight: true }
+            TimerContent { Layout.fillWidth: true; Layout.fillHeight: true }
         }
     }
 
     function resetScroll() {
-        root.activeTool = "Timer";
+        root.activeTool = "Todo";
     }
 }

@@ -158,14 +158,14 @@ ColumnLayout {
                     delegate: Rectangle {
                         width: (wallFlow.width - Theme.scaled(45)) / 4
                         height: width * 0.6
-                        radius: Theme.scaled(12)
+                        radius: Theme.scaled(13)
                         color: Theme.surface1
                         clip: true
                         property bool isSelected: root.selectedWalls.indexOf(fileUrl) !== -1
                         property int selectionIndex: root.selectedWalls.indexOf(fileUrl)
                         property bool isFocused: index === root.selectedIndex
                         border.color: isFocused ? Theme.accentColor : (isSelected ? Theme.accentColor : Theme.glassBorder)
-                        border.width: isFocused ? 3 : (isSelected ? 3 : 1)
+                        border.width: isFocused ? 3 : (isSelected ? 4 : 1)
                         
                         // Darken if selected
                         Rectangle {

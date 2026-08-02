@@ -6,7 +6,7 @@ import "../../.."
 
 Rectangle {
     id: root
-    implicitHeight: Theme.scaled(300)
+    implicitHeight: Theme.scaled(320)
     implicitWidth: Theme.scaled(320)
     color: Theme.menuBackground
     radius: Theme.scaled(16)

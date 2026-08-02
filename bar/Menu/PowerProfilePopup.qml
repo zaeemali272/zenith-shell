@@ -34,9 +34,9 @@ PopupWindow {
 
         anchors.fill: parent
         anchors.margins: Theme.scaled(5)
-        radius: Theme.scaled(12)
-        color: Theme.backgroundColor || "#111111"
-        border.color: hoverTracker.containsMouse ? Theme.menuHoverBorder : Theme.menuBorder
+        radius: Theme.scaled(20)
+        color: Theme.glassBackground
+        border.color: Theme.glassBorder
         border.width: 1
         clip: true
         focus: true

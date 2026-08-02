@@ -45,6 +45,18 @@ QtObject {
     readonly property int animEasing: Easing.OutQuint
     readonly property int elasticEasing: Easing.OutBack
 
+    // ===== Material 3 Expressive & Bubble Tokens =====
+    readonly property int bubbleRadiusSmall: scaled(12)
+    readonly property int bubbleRadiusMedium: scaled(20)
+    readonly property int bubbleRadiusLarge: scaled(28)
+    readonly property int bubbleRadiusPill: scaled(9999)
+
+    readonly property color surfaceContainer: Colors.surface_container
+    readonly property color surfaceContainerLow: Colors.surface_container_low
+    readonly property color surfaceContainerHigh: Colors.surface_container_high
+    readonly property color surfaceContainerHighest: Colors.surface_container_highest
+
+
     // ===== Colors (Dynamic from Matugen) =====
     readonly property color base: Colors.background
     readonly property color mantle: Colors.surface
@@ -121,6 +133,7 @@ QtObject {
     readonly property color menuBorder: Colors.surface_variant
     readonly property color menuHoverBorder: Colors.primary
     readonly property int menuRadius: scaled(AppearanceSettings.menuRadius)
+    readonly property int cardRadius: scaled(24)
     readonly property int menuPadding: scaled(AppearanceSettings.menuPadding)
     readonly property int menuSpacing: scaled(AppearanceSettings.menuSpacing)
     readonly property color menuActiveTab: Colors.primary

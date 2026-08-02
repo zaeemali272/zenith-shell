@@ -28,6 +28,7 @@ PanelWindow {
     }
 
     onVisibleChanged: {
+        Variables.controlCenterOpen = visible;
         if (visible) {
             MenuService.register(root);
             CenterState.qsVisible = true;
@@ -75,7 +76,7 @@ PanelWindow {
 
         // Production-ready responsive dimensions
         width: Math.min(Theme.scaled(840), (screen ? screen.width : Theme.screenWidth) - Theme.scaled(20))
-        height: Math.min(Theme.scaled(560), (screen ? screen.height : Theme.screenHeight) - Theme.barHeight - Theme.scaled(20))
+        height: Math.min(Theme.scaled(660), (screen ? screen.height : Theme.screenHeight) - Theme.barHeight - Theme.scaled(20))
 
         focus: true
         Keys.onPressed: (event) => {
@@ -92,7 +93,8 @@ PanelWindow {
         color: Theme.glassBackground
         radius: Theme.cardRadius
         border.color: Theme.glassBorder
-        border.width: 1
+        border.width: 2
+        clip: true
 
         opacity: 0
         scale: 0.94
@@ -217,7 +219,7 @@ PanelWindow {
                     // 1. Notifications Bubble Card
                     Rectangle {
                         Layout.fillWidth: true; Layout.fillHeight: true; Layout.rowSpan: (Theme.isSmallScreen && Theme.isPortrait) ? 1 : 2
-                        color: Qt.rgba(0,0,0,0.3); radius: Theme.cardRadius; border.width: 0; clip: true
+                        color: Qt.rgba(0,0,0,0.3); radius: Theme.cardRadius; border.color: Theme.glassBorder; border.width: 1; clip: true
                         
                         ColumnLayout {
                             anchors.fill: parent; anchors.margins: Theme.scaled(14); spacing: Theme.scaled(8)
@@ -299,7 +301,7 @@ PanelWindow {
                     Rectangle {
                         Layout.fillWidth: true; Layout.fillHeight: true
                         visible: !Theme.isSmallScreen || !Theme.isPortrait
-                        color: Qt.rgba(0,0,0,0.3); radius: Theme.cardRadius; border.width: 0
+                        color: Qt.rgba(0,0,0,0.3); radius: Theme.cardRadius; border.color: Theme.glassBorder; border.width: 1; clip: true
                         ColumnLayout {
                             anchors.fill: parent; anchors.margins: Theme.scaled(14)
                             RowLayout {
@@ -315,7 +317,7 @@ PanelWindow {
                     Rectangle {
                         Layout.fillWidth: true; Layout.fillHeight: true
                         visible: (!Theme.isSmallScreen || !Theme.isPortrait) && WidgetSettings.enableWeather
-                        color: Qt.rgba(0,0,0,0.3); radius: Theme.cardRadius; border.width: 0
+                        color: Qt.rgba(0,0,0,0.3); radius: Theme.cardRadius; border.color: Theme.glassBorder; border.width: 1; clip: true
                         ColumnLayout {
                             anchors.fill: parent; anchors.margins: Theme.scaled(14)
                             RowLayout {

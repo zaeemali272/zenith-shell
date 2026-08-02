@@ -357,7 +357,7 @@ Item {
 
     Timer {
         id: healthCheckTimer
-        interval: 30000
+        interval: Variables.slowInterval
         repeat: true
         running: true
         onTriggered: serviceCheck.running = true

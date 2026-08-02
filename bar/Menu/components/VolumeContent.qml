@@ -3,23 +3,26 @@ import "../../../"
 import "../../../services"
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
 
 ColumnLayout {
     id: root
-    spacing: Theme.scaled(25)
+    spacing: Theme.scaled(20)
     Layout.fillWidth: true
 
     opacity: 0
     scale: 0.98
     Component.onCompleted: {
+        VolumeService.update();
         entryAnim.start();
     }
+
     ParallelAnimation {
         id: entryAnim
-        NumberAnimation { target: root; property: "opacity"; to: 1; duration: 400; easing.type: Easing.OutCubic }
-        NumberAnimation { target: root; property: "scale"; to: 1; duration: 500; easing.type: Theme.elasticEasing }
+        NumberAnimation { target: root; property: "opacity"; to: 1; duration: Theme.animNormal; easing.type: Theme.animEasing }
+        NumberAnimation { target: root; property: "scale"; to: 1; duration: Theme.animNormal; easing.type: Theme.elasticEasing }
     }
 
     // --- Header ---
@@ -27,72 +30,334 @@ ColumnLayout {
         Layout.fillWidth: true
         ColumnLayout {
             spacing: Theme.scaled(2); Layout.fillWidth: true
-            Text { text: "AUDIO CONTROL"; color: Theme.blue; font.pixelSize: Theme.scaled(14); font.letterSpacing: 2; font.weight: Font.Black; opacity: 0.8 }
-            Text { text: "OUTPUT & INPUT"; color: Theme.surface2; font.pixelSize: Theme.scaled(10); font.weight: Font.Bold; font.letterSpacing: 1 }
+            Text { text: "AUDIO CONTROL"; color: Theme.accentColor; font.pixelSize: Theme.scaled(14); font.letterSpacing: 2; font.weight: Font.Black }
+            Text { text: "OUTPUT & INPUT DEVICES"; color: Theme.subtext0; font.pixelSize: Theme.scaled(10); font.weight: Font.Bold; font.letterSpacing: 1 }
         }
     }
 
-    // Main Controls Row
+    // Main Controls Row (Output & Input Cards)
     GridLayout {
         columns: (Theme.isSmallScreen && Theme.isPortrait) ? 1 : 2
-        Layout.fillWidth: true; columnSpacing: Theme.scaled(15); rowSpacing: Theme.scaled(15)
+        Layout.fillWidth: true
+        columnSpacing: Theme.scaled(15)
+        rowSpacing: Theme.scaled(15)
 
-        // Speaker Card
+        // Output Speaker Card
         Rectangle {
-            Layout.fillWidth: true; height: Theme.scaled(160); color: Theme.menuBackground; radius: Theme.scaled(24); border.color: Theme.surface1
+            id: outputCard
+            Layout.fillWidth: true
+            property bool dropdownOpen: false
+            height: dropdownOpen ? (Theme.scaled(165) + Math.max(Theme.scaled(76), VolumeService.sinks.length * Theme.scaled(36))) : Theme.scaled(165)
+            color: Theme.surfaceContainerLow
+            radius: Theme.bubbleRadiusLarge
+            border.color: Theme.glassBorder
+            border.width: 1
+            clip: true
+
+            Behavior on height { NumberAnimation { duration: Theme.animNormal; easing.type: Theme.animEasing } }
+
             ColumnLayout {
-                anchors.fill: parent; anchors.margins: Theme.scaled(18); spacing: Theme.scaled(15)
+                anchors.fill: parent
+                anchors.margins: Theme.scaled(16)
+                spacing: Theme.scaled(12)
+
                 VolumeSlider {
-                    label: "OUTPUT"; icon: VolumeService.btActive ? "󰓃" : "󰓃"
-                    value: VolumeService.outputVolume; sliderColor: Theme.blue
+                    label: "OUTPUT VOLUME"
+                    icon: VolumeService.muted ? "󰝟" : (VolumeService.btActive ? "󰓃" : "󰕾")
+                    value: VolumeService.outputVolume
+                    sliderColor: Theme.accentColor
                     onChange: (v) => { 
                         setOut.command = ["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", (v / 100).toFixed(2)]; 
                         setOut.running = false;
                         setOut.running = true; 
                     }
                 }
-                Rectangle {
-                    Layout.fillWidth: true; height: Theme.scaled(40); radius: Theme.scaled(12)
-                    color: VolumeService.muted ? Theme.powerRed : Theme.backgroundColor; border.color: Theme.surface1
-                    Text { 
-                        anchors.centerIn: parent; text: VolumeService.muted ? "MUTED" : "ACTIVE"
-                        color: VolumeService.muted ? "black" : Theme.text; font.weight: Font.Black; font.pixelSize: Theme.scaled(11); font.letterSpacing: 1
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: Theme.scaled(8)
+
+                    // Output Device Dropdown Button
+                    Rectangle {
+                        Layout.fillWidth: true
+                        height: Theme.scaled(38)
+                        radius: Theme.bubbleRadiusSmall
+                        color: outputCard.dropdownOpen ? Theme.surfaceContainerHighest : Theme.surfaceContainerHigh
+                        border.color: Theme.glassBorder
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: Theme.scaled(10)
+                            spacing: Theme.scaled(8)
+
+                            Text {
+                                text: "󰓃"
+                                font.family: Theme.iconFont
+                                font.pixelSize: Theme.scaled(14)
+                                color: Theme.accentColor
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: {
+                                    for (let s of VolumeService.sinks) {
+                                        if (s.isDefault) return s.name;
+                                    }
+                                    return VolumeService.sinks.length > 0 ? VolumeService.sinks[0].name : "Select Output Device";
+                                }
+                                color: Theme.text
+                                font.pixelSize: Theme.scaled(11)
+                                font.weight: Font.Bold
+                                elide: Text.ElideRight
+                            }
+
+                            Text {
+                                text: outputCard.dropdownOpen ? "󰅀" : "󰅂"
+                                font.family: Theme.iconFont
+                                font.pixelSize: Theme.scaled(12)
+                                color: Theme.subtext0
+                            }
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: outputCard.dropdownOpen = !outputCard.dropdownOpen
+                        }
                     }
-                    MouseArea { 
-                        anchors.fill: parent; 
-                        onClicked: { 
-                            muteProc.command = ["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"]; 
-                            muteProc.running = false;
-                            muteProc.running = true; 
-                        } 
+
+                    // Mute Output Toggle
+                    Rectangle {
+                        width: Theme.scaled(38)
+                        height: Theme.scaled(38)
+                        radius: Theme.bubbleRadiusSmall
+                        color: VolumeService.muted ? Qt.rgba(Theme.red.r, Theme.red.g, Theme.red.b, 0.2) : Theme.surfaceContainerHigh
+                        border.color: VolumeService.muted ? Theme.powerRed : Theme.glassBorder
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: VolumeService.muted ? "󰝟" : "󰕾"
+                            font.family: Theme.iconFont
+                            font.pixelSize: Theme.scaled(16)
+                            color: VolumeService.muted ? Theme.powerRed : Theme.text
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                muteProc.command = ["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"]; 
+                                muteProc.running = false;
+                                muteProc.running = true; 
+                            }
+                        }
                     }
                 }
 
+                // Dropdown Sinks List
+                ListView {
+                    visible: outputCard.dropdownOpen
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+                    model: VolumeService.sinks
+                    spacing: Theme.scaled(4)
+
+                    delegate: Rectangle {
+                        width: ListView.view.width
+                        height: Theme.scaled(32)
+                        radius: Theme.bubbleRadiusSmall
+                        color: modelData.isDefault ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.2) : (devMouse.containsMouse ? Theme.surfaceContainerHighest : "transparent")
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: Theme.scaled(6)
+                            spacing: Theme.scaled(8)
+
+                            Text {
+                                text: modelData.isDefault ? "󰄬" : "󰓃"
+                                font.family: Theme.iconFont
+                                font.pixelSize: Theme.scaled(12)
+                                color: modelData.isDefault ? Theme.powerGreen : Theme.subtext0
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: modelData.name
+                                color: modelData.isDefault ? Theme.accentColor : Theme.text
+                                font.pixelSize: Theme.scaled(10)
+                                font.weight: modelData.isDefault ? Font.Bold : Font.Normal
+                                elide: Text.ElideRight
+                            }
+                        }
+
+                        MouseArea {
+                            id: devMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            onClicked: {
+                                VolumeService.setDefaultDevice(modelData.id);
+                                outputCard.dropdownOpen = false;
+                            }
+                        }
+                    }
+                }
             }
         }
 
-        // Mic Card
+        // Input Microphone Card
         Rectangle {
-            Layout.fillWidth: true; height: Theme.scaled(160); color: Theme.menuBackground; radius: Theme.scaled(24); border.color: Theme.surface1
+            id: inputCard
+            Layout.fillWidth: true
+            property bool dropdownOpen: false
+            height: dropdownOpen ? (Theme.scaled(165) + Math.max(Theme.scaled(76), VolumeService.sources.length * Theme.scaled(36))) : Theme.scaled(165)
+            color: Theme.surfaceContainerLow
+            radius: Theme.bubbleRadiusLarge
+            border.color: Theme.glassBorder
+            border.width: 1
+            clip: true
+
+            Behavior on height { NumberAnimation { duration: Theme.animNormal; easing.type: Theme.animEasing } }
+
             ColumnLayout {
-                anchors.fill: parent; anchors.margins: Theme.scaled(18); spacing: Theme.scaled(15)
+                anchors.fill: parent
+                anchors.margins: Theme.scaled(16)
+                spacing: Theme.scaled(12)
+
                 VolumeSlider {
-                    label: "INPUT"; icon: "󰍬"; value: VolumeService.micVolume; sliderColor: Theme.powerYellow
+                    label: "INPUT VOLUME"
+                    icon: VolumeService.micMuted ? "󰍭" : "󰍬"
+                    value: VolumeService.micVolume
+                    sliderColor: Theme.accentColor
                     onChange: (v) => { 
                         setMic.command = ["wpctl", "set-volume", "@DEFAULT_AUDIO_SOURCE@", (v / 100).toFixed(2)]; 
                         setMic.running = false;
                         setMic.running = true; 
                     }
                 }
-                Rectangle {
-                    Layout.fillWidth: true; height: Theme.scaled(40); radius: Theme.scaled(12); color: Theme.menuBackground; border.color: Theme.surface1
-                    Text { anchors.centerIn: parent; text: "MIC SETTINGS"; color: Theme.subtext0; font.weight: Font.Black; font.pixelSize: Theme.scaled(11); font.letterSpacing: 1 }
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: {
-                            pavuProc.command = ["pavucontrol", "-t", "3"];
-                            pavuProc.running = false;
-                            pavuProc.running = true;
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: Theme.scaled(8)
+
+                    // Input Device Dropdown Button
+                    Rectangle {
+                        Layout.fillWidth: true
+                        height: Theme.scaled(38)
+                        radius: Theme.bubbleRadiusSmall
+                        color: inputCard.dropdownOpen ? Theme.surfaceContainerHighest : Theme.surfaceContainerHigh
+                        border.color: Theme.glassBorder
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: Theme.scaled(10)
+                            spacing: Theme.scaled(8)
+
+                            Text {
+                                text: "󰍬"
+                                font.family: Theme.iconFont
+                                font.pixelSize: Theme.scaled(14)
+                                color: Theme.accentColor
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: {
+                                    for (let s of VolumeService.sources) {
+                                        if (s.isDefault) return s.name;
+                                    }
+                                    return VolumeService.sources.length > 0 ? VolumeService.sources[0].name : "Select Input Device";
+                                }
+                                color: Theme.text
+                                font.pixelSize: Theme.scaled(11)
+                                font.weight: Font.Bold
+                                elide: Text.ElideRight
+                            }
+
+                            Text {
+                                text: inputCard.dropdownOpen ? "󰅀" : "󰅂"
+                                font.family: Theme.iconFont
+                                font.pixelSize: Theme.scaled(12)
+                                color: Theme.subtext0
+                            }
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: inputCard.dropdownOpen = !inputCard.dropdownOpen
+                        }
+                    }
+
+                    // Mute Input Toggle
+                    Rectangle {
+                        width: Theme.scaled(38)
+                        height: Theme.scaled(38)
+                        radius: Theme.bubbleRadiusSmall
+                        color: VolumeService.micMuted ? Qt.rgba(Theme.red.r, Theme.red.g, Theme.red.b, 0.2) : Theme.surfaceContainerHigh
+                        border.color: VolumeService.micMuted ? Theme.powerRed : Theme.glassBorder
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: VolumeService.micMuted ? "󰍭" : "󰍬"
+                            font.family: Theme.iconFont
+                            font.pixelSize: Theme.scaled(16)
+                            color: VolumeService.micMuted ? Theme.powerRed : Theme.text
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                setMicMute.command = ["wpctl", "set-mute", "@DEFAULT_AUDIO_SOURCE@", "toggle"];
+                                setMicMute.running = false;
+                                setMicMute.running = true;
+                            }
+                        }
+                    }
+                }
+
+                // Dropdown Sources List
+                ListView {
+                    visible: inputCard.dropdownOpen
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+                    model: VolumeService.sources
+                    spacing: Theme.scaled(4)
+
+                    delegate: Rectangle {
+                        width: ListView.view.width
+                        height: Theme.scaled(32)
+                        radius: Theme.bubbleRadiusSmall
+                        color: modelData.isDefault ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.2) : (srcMouse.containsMouse ? Theme.surfaceContainerHighest : "transparent")
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: Theme.scaled(6)
+                            spacing: Theme.scaled(8)
+
+                            Text {
+                                text: modelData.isDefault ? "󰄬" : "󰍬"
+                                font.family: Theme.iconFont
+                                font.pixelSize: Theme.scaled(12)
+                                color: modelData.isDefault ? Theme.powerGreen : Theme.subtext0
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: modelData.name
+                                color: modelData.isDefault ? Theme.accentColor : Theme.text
+                                font.pixelSize: Theme.scaled(10)
+                                font.weight: modelData.isDefault ? Font.Bold : Font.Normal
+                                elide: Text.ElideRight
+                            }
+                        }
+
+                        MouseArea {
+                            id: srcMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            onClicked: {
+                                VolumeService.setDefaultDevice(modelData.id);
+                                inputCard.dropdownOpen = false;
+                            }
                         }
                     }
                 }
@@ -100,24 +365,52 @@ ColumnLayout {
         }
     }
 
-    // App volumes
+    // Application Streams Volume Control
     ColumnLayout {
-        Layout.fillWidth: true; spacing: Theme.scaled(15); visible: VolumeService.appsModel.count > 0
-        Text { text: "APPLICATIONS"; color: Theme.surface2; font.pixelSize: Theme.scaled(10); font.weight: Font.Black; font.letterSpacing: 2 }
+        Layout.fillWidth: true
+        spacing: Theme.scaled(12)
+        visible: VolumeService.appsModel.count > 0
+
+        Text { 
+            text: "APPLICATION STREAMS"
+            color: Theme.accentColor
+            font.pixelSize: Theme.scaled(11)
+            font.weight: Font.Black
+            font.letterSpacing: 2
+        }
 
         GridLayout {
-            columns: 2; Layout.fillWidth: true; columnSpacing: Theme.scaled(15); rowSpacing: Theme.scaled(15)
+            columns: 2
+            Layout.fillWidth: true
+            columnSpacing: Theme.scaled(12)
+            rowSpacing: Theme.scaled(12)
+
             Repeater {
                 model: VolumeService.appsModel
                 delegate: Rectangle {
-                    Layout.fillWidth: true; height: Theme.scaled(130); color: Theme.menuBackground; radius: Theme.scaled(20); border.color: Theme.surface1
-                    required property string name; required property int volume; required property int appId; required property string icon
+                    Layout.fillWidth: true
+                    height: Theme.scaled(110)
+                    color: Theme.surfaceContainerLow
+                    radius: Theme.bubbleRadiusMedium
+                    border.color: Theme.glassBorder
+                    border.width: 1
+
+                    required property string name
+                    required property int volume
+                    required property int appId
+                    required property string icon
+
                     ColumnLayout {
-                        anchors.fill: parent; anchors.margins: Theme.scaled(15)
+                        anchors.fill: parent
+                        anchors.margins: Theme.scaled(12)
+
                         VolumeSlider {
-                            label: (name || "Unknown App").toUpperCase(); icon: "󰓃"; value: volume; sliderColor: Theme.powerGreen
+                            label: (name || "Unknown Stream").toUpperCase()
+                            icon: "󰓃"
+                            value: volume
+                            sliderColor: Theme.powerGreen
                             onChange: (v) => { 
-                                setAppVol.command = ["pactl", "set-sink-input-volume", appId, v + "%"]; 
+                                setAppVol.command = ["sh", "-c", "wpctl set-volume " + appId + " " + (v / 100).toFixed(2) + " 2>/dev/null"]; 
                                 setAppVol.running = false;
                                 setAppVol.running = true; 
                             }
@@ -133,7 +426,7 @@ ColumnLayout {
 
     // --- Backend Processes ---
     Process { id: muteProc }
+    Process { id: setMicMute }
     Process { id: setOut }
     Process { id: setMic }
-    Process { id: pavuProc }
 }

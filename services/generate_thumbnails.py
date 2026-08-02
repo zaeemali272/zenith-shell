@@ -3,12 +3,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-
-try:
-    from PIL import Image, ImageDraw
-except ImportError:
-    print("PIL (Pillow) not installed. Thumbnail generation skipped.")
-    sys.exit(0)
+from PIL import Image, ImageDraw
 
 def get_xdg_dir(type_name, default_path):
     try:
@@ -30,8 +25,8 @@ ANIM_THUMB_DIR = os.path.expanduser("~/.cache/animation_thumbs")
 THUMB_WIDTH = 320
 THUMB_HEIGHT = 180
 
-# Corner radius to match QML UI
-CORNER_RADIUS = 18
+# Updated corner radius to match your QML UI (scale-adjusted)
+CORNER_RADIUS = 32
 
 # Ensure cache dirs exist
 os.makedirs(WALL_THUMB_DIR, exist_ok=True)
@@ -57,7 +52,8 @@ def process_image(img_path, thumb_path):
 
             im = im.resize((THUMB_WIDTH, THUMB_HEIGHT), Image.LANCZOS)
 
-            # Anti-aliased rounded corner mask
+            # --- ANTI-ALIASED MASK GENERATION ---
+            # 1. Scale up mask by 4x for high-precision vector drawing
             scale = 4
             big_w, big_h = THUMB_WIDTH * scale, THUMB_HEIGHT * scale
             big_radius = CORNER_RADIUS * scale
@@ -65,13 +61,17 @@ def process_image(img_path, thumb_path):
             mask_big = Image.new("L", (big_w, big_h), 0)
             draw = ImageDraw.Draw(mask_big)
 
+            # 2. Correct bounding box end coordinates (-1 on right & bottom)
             draw.rounded_rectangle(
                 [(0, 0), (big_w - 1, big_h - 1)],
                 radius=big_radius,
                 fill=255
             )
 
+            # 3. Downsample back to thumb size for smooth alpha edges
             mask = mask_big.resize((THUMB_WIDTH, THUMB_HEIGHT), Image.BILINEAR)
+
+            # Apply the smooth mask as alpha channel
             im.putalpha(mask)
 
             im.save(thumb_path, format="PNG")
@@ -91,18 +91,15 @@ def process_video(vid_path, thumb_path):
         ], check=True, capture_output=True)
         
         process_image(temp_frame, thumb_path)
-        if os.path.exists(temp_frame):
-            os.remove(temp_frame)
+        os.remove(temp_frame)
         print(f"✓ Video Thumb: {os.path.basename(thumb_path)}")
+        sys.stdout.flush()
+    except subprocess.CalledProcessError as e:
+        print(f"✗ Video Error (ffmpeg): {vid_path} → {e}")
         sys.stdout.flush()
     except Exception as e:
         print(f"✗ Video Error: {vid_path} → {e}")
         sys.stdout.flush()
-
-def is_outdated(src, dst):
-    if not os.path.exists(dst):
-        return True
-    return os.path.getmtime(src) > os.path.getmtime(dst)
 
 def main():
     # Process Wallpapers
@@ -112,7 +109,7 @@ def main():
                 src = os.path.join(WALLPAPER_DIR, file)
                 name_without_ext = os.path.splitext(file)[0]
                 dst = os.path.join(WALL_THUMB_DIR, name_without_ext + ".png")
-                if is_outdated(src, dst):
+                if not os.path.exists(dst):
                     process_image(src, dst)
 
     # Process Animations
@@ -122,7 +119,7 @@ def main():
                 src = os.path.join(ANIMATION_DIR, file)
                 name_without_ext = os.path.splitext(file)[0]
                 dst = os.path.join(ANIM_THUMB_DIR, name_without_ext + ".png")
-                if is_outdated(src, dst):
+                if not os.path.exists(dst):
                     process_video(src, dst)
 
 if __name__ == "__main__":

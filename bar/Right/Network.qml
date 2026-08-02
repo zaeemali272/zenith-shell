@@ -4,7 +4,6 @@ import "../../services"
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
-import Quickshell.Hyprland
 import Quickshell.Io
 
 Item {
@@ -16,71 +15,25 @@ Item {
     property real txPrev: 0
     property int downSpeed: 0
     property int upSpeed: 0
-    property bool wifiConnected: false
-    property string wifiSSID: ""
-    property bool airplaneMode: false
+
+    readonly property bool wifiConnected: WifiService.currentState === "connected"
+    readonly property string wifiSSID: WifiService.currentSsid
+    readonly property bool airplaneMode: WifiService.isAirplane
 
     function formatSpeed(kb) {
         if (kb < 1024)
             return kb + " KB/s";
-
         return (kb / 1024).toFixed(1) + " MB/s";
     }
 
     implicitHeight: Theme.pillHeight
-    implicitWidth: pill.implicitWidth
-    Component.onCompleted: {
-        statusExec.running = true;
-        netExec.running = true;
-    }
-
-    // THE RULE: Watch for network or airplane mode changes
-    Process {
-        id: netWatcher
-        command: ["sh", "-c", "inotifywait -q -m -e modify /sys/class/net/*/operstate /dev/rfkill"]
-        running: true
-        stdout: SplitParser {
-            onRead: (line) => {
-                statusExec.running = true;
-            }
-        }
-    }
-
-    Process {
-        id: statusExec
-        command: ["sh", "-c",
-            `iwctl station $(ls /sys/class/net | grep ^wl | head -n1) show | grep 'Connected network' | awk '{$1=$2=""; print "SSID", $0}'; ` +
-            `rfkill list wifi | grep -q 'Soft blocked: yes' && echo 'AIRPLANE ON' || echo 'AIRPLANE OFF'`
-        ]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                if (!text) return;
-                const lines = text.trim().split("\n");
-                let foundSsid = false;
-                lines.forEach((line) => {
-                    const parts = line.trim().split(/\s+/);
-                    if (parts[0] === "SSID") {
-                        wifiSSID = parts.slice(1).join(" ").trim();
-                        wifiConnected = true;
-                        foundSsid = true;
-                    } else if (parts[0] === "AIRPLANE") {
-                        airplaneMode = (parts[1] === "ON");
-                    }
-                });
-                if (!foundSsid) {
-                    wifiConnected = false;
-                    wifiSSID = "";
-                }
-            }
-        }
-    }
+    implicitWidth: pill.width
 
     Pill {
         id: pill
 
-        anchors.fill: parent
-        implicitWidth: content.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
-        color: !wifiConnected ? Theme.accentColor : Theme.pillColor
+        implicitHeight: Theme.pillHeight
+        width: content.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
 
         onClicked: (mouse) => {
             if (mouse.button === Qt.RightButton)
@@ -95,35 +48,31 @@ Item {
             id: content
 
             anchors.centerIn: parent
-            spacing: Theme.scaled(6)
+            spacing: Theme.pillGap
 
             Text {
-                // Changed airplane icon to '󰀕' and disconnected icon to '󰤊'
                 text: airplaneMode ? "󰀞" : (!wifiConnected ? "󰤮" : (showUpload ? Theme.netUpIcon : Theme.netDownIcon))
                 font.family: Theme.iconFont
                 font.pixelSize: Theme.iconSize
-                color: airplaneMode ? Theme.activeTextColor : Theme.activeTextColor
+                color: airplaneMode ? Theme.powerRed : (!wifiConnected ? Theme.powerRed : Theme.accentColor)
+                Layout.alignment: Qt.AlignVCenter
             }
 
             Text {
-                // Removed text for airplane mode and disconnected states, showing only icons
-                text: airplaneMode ? ":)" : (!wifiConnected ? ":(" : (pill.containsMouse ? wifiSSID : formatSpeed(showUpload ? upSpeed : downSpeed)))
-                horizontalAlignment: Text.AlignHCenter
-                Layout.preferredWidth: (pill.containsMouse || !wifiConnected || airplaneMode) ? -1 : Theme.scaled(55) 
-                Layout.fillWidth: (pill.containsMouse || !wifiConnected || airplaneMode)
+                text: airplaneMode ? "OFF" : (!wifiConnected ? "DISC" : (pill.containsMouse ? (wifiSSID ? wifiSSID : "Connected") : formatSpeed(showUpload ? upSpeed : downSpeed)))
                 font.pixelSize: Theme.fontSize
-                color: airplaneMode ? Theme.activeTextColor : Theme.activeTextColor
-                font.bold: airplaneMode || !wifiConnected
+                font.weight: (airplaneMode || !wifiConnected) ? Font.Bold : Font.Normal
+                color: airplaneMode ? Theme.powerRed : (!wifiConnected ? Theme.powerRed : Theme.fontColor)
+                Layout.alignment: Qt.AlignVCenter
             }
         }
     }
 
     Process {
         id: netExec
-
         command: ["sh", "-c",
             `IFACE=$(ip route | awk '/default/ {print $5; exit}'); ` +
-            `awk -v iface="$IFACE" '$1 ~ iface":" {print "SPEED", $2, $10}' /proc/net/dev`
+            `[ -n "$IFACE" ] && awk -v iface="$IFACE" '$1 ~ iface":" {print "SPEED", $2, $10}' /proc/net/dev`
         ]
 
         stdout: StdioCollector {
@@ -133,9 +82,10 @@ Item {
                 if (parts[0] === "SPEED") {
                     const rx = parseFloat(parts[1]);
                     const tx = parseFloat(parts[2]);
-                    if (rxPrev > 0) {
-                        downSpeed = Math.max(0, Math.floor(((rx - rxPrev) / 1024) / 5));
-                        upSpeed = Math.max(0, Math.floor(((tx - txPrev) / 1024) / 5));
+                    const dt = (refreshTimer.interval / 1000.0);
+                    if (rxPrev > 0 && dt > 0) {
+                        downSpeed = Math.max(0, Math.floor(((rx - rxPrev) / 1024) / dt));
+                        upSpeed = Math.max(0, Math.floor(((tx - txPrev) / 1024) / dt));
                     }
                     rxPrev = rx;
                     txPrev = tx;
@@ -146,15 +96,14 @@ Item {
 
     Timer {
         id: refreshTimer
-        interval: 5000 
+        interval: (pill.containsMouse || Variables.quickSettingsOpen) ? Variables.fastInterval : Variables.mediumInterval
         running: true
         repeat: true
+        triggeredOnStart: true
         onTriggered: {
-            netExec.running = false;
-            netExec.running = true;
-            statusExec.running = false;
-            statusExec.running = true;
+            if (!netExec.running) {
+                netExec.running = true;
+            }
         }
     }
-
 }

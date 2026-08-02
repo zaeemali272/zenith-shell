@@ -1,127 +1,153 @@
 #!/usr/bin/env bash
 
-exec awk '
-BEGIN {
-    prev_file = "/tmp/zenith_proc_stat.txt"
-    while ((getline line < prev_file) > 0) {
-        split(line, f, " ")
-        prev_idle[f[1]] = f[2]
-        prev_total[f[1]] = f[3]
-    }
-    close(prev_file)
+python3 -c '
+import json, os, glob, time, subprocess
 
-    while ((getline line < "/proc/stat") > 0) {
-        if (line ~ /^cpu[0-9]*/) {
-            n = split(line, f, " ")
-            name = f[1]
-            idle = f[5] + f[6]
-            total = 0
-            for (i=2; i<=n; i++) total += f[i]
-            curr_idle[name] = idle
-            curr_total[name] = total
-            print name, idle, total > prev_file
-        }
-    }
-    close("/proc/stat")
-    close(prev_file)
+def get_stats():
+    prev_stat_file = "/tmp/zenith_proc_stat.json"
+    prev_stat = {}
+    if os.path.exists(prev_stat_file):
+        try:
+            with open(prev_stat_file, "r") as f:
+                prev_stat = json.load(f)
+        except Exception:
+            pass
 
-    t_diff = curr_total["cpu"] - prev_total["cpu"]
-    i_diff = curr_idle["cpu"] - prev_idle["cpu"]
-    cpu_overall = (t_diff > 0) ? int(0.5 + 100 * (t_diff - i_diff) / t_diff) : 0
-    if (cpu_overall < 0) cpu_overall = 0
-    if (cpu_overall > 100) cpu_overall = 100
+    curr_stat = {}
+    with open("/proc/stat", "r") as f:
+        for line in f:
+            if line.startswith("cpu"):
+                parts = line.split()
+                name = parts[0]
+                vals = [int(x) for x in parts[1:]]
+                idle = vals[3] + (vals[4] if len(vals) > 4 else 0)
+                total = sum(vals)
+                curr_stat[name] = {"idle": idle, "total": total}
 
+    try:
+        with open(prev_stat_file, "w") as f:
+            json.dump(curr_stat, f)
+    except Exception:
+        pass
+
+    if not prev_stat:
+        time.sleep(0.1)
+        with open("/proc/stat", "r") as f:
+            for line in f:
+                if line.startswith("cpu"):
+                    parts = line.split()
+                    name = parts[0]
+                    vals = [int(x) for x in parts[1:]]
+                    idle = vals[3] + (vals[4] if len(vals) > 4 else 0)
+                    total = sum(vals)
+                    curr_stat[name] = {"idle": idle, "total": total}
+        prev_stat = curr_stat
+
+    def calc_perc(curr, prev):
+        total_diff = curr.get("total", 0) - prev.get("total", 0)
+        idle_diff = curr.get("idle", 0) - prev.get("idle", 0)
+        if total_diff <= 0:
+            return 0
+        usage = int(round(100.0 * (total_diff - idle_diff) / total_diff))
+        return max(0, min(100, usage))
+
+    cpu_overall = calc_perc(curr_stat.get("cpu", {}), prev_stat.get("cpu", {}))
+    
+    core_usages = []
     core_idx = 0
-    core_json = ""
-    while (("cpu" core_idx) in curr_total) {
-        name = "cpu" core_idx
-        ct_diff = curr_total[name] - prev_total[name]
-        ci_diff = curr_idle[name] - prev_idle[name]
-        c_usage = (ct_diff > 0) ? int(0.5 + 100 * (ct_diff - ci_diff) / ct_diff) : 0
-        if (c_usage < 0) c_usage = 0
-        if (c_usage > 100) c_usage = 100
-        core_json = (core_json == "") ? c_usage : (core_json ", " c_usage)
-        core_idx++
-    }
+    while f"cpu{core_idx}" in curr_stat:
+        name = f"cpu{core_idx}"
+        core_usages.append(calc_perc(curr_stat[name], prev_stat.get(name, {})))
+        core_idx += 1
 
-    mem_total = 0; mem_avail = 0
-    while ((getline line < "/proc/meminfo") > 0) {
-        if (line ~ /^MemTotal:/) mem_total = $2
-        else if (line ~ /^MemAvailable:/) mem_avail = $2
-    }
-    close("/proc/meminfo")
-    mem_perc = (mem_total > 0) ? int(0.5 + 100 * (mem_total - mem_avail) / mem_total) : 0
+    mem_total, mem_avail = 0, 0
+    with open("/proc/meminfo", "r") as f:
+        for line in f:
+            if line.startswith("MemTotal:"):
+                mem_total = int(line.split()[1])
+            elif line.startswith("MemAvailable:"):
+                mem_avail = int(line.split()[1])
+    mem_perc = int(round(100.0 * (mem_total - mem_avail) / mem_total)) if mem_total > 0 else 0
 
-    getline line < "/proc/loadavg"
-    close("/proc/loadavg")
-    split(line, f, " ")
-    load = f[1] + 0
-    num_cores = (core_idx > 0) ? core_idx : 1
-    load_perc = int(0.5 + (load / num_cores) * 100)
+    temps = []
+    for p in glob.glob("/sys/class/hwmon/hwmon*/temp*_input") + glob.glob("/sys/class/thermal/thermal_zone*/temp"):
+        try:
+            with open(p, "r") as f:
+                v = int(f.read().strip())
+                if 10000 <= v <= 115000:
+                    temps.append(v // 1000)
+                elif 10 <= v <= 115:
+                    temps.append(v)
+        except Exception:
+            pass
+    cpu_temp = max(temps) if temps else 0
 
-    cpu_model = ""; freq_mhz = 0
-    while ((getline line < "/proc/cpuinfo") > 0) {
-        if (cpu_model == "" && line ~ /model name/) {
-            sub(/^.*:[ \t]*/, "", line)
-            gsub(/"/, "\\\"", line)
-            cpu_model = line
-        }
-        else if (freq_mhz == 0 && line ~ /cpu MHz/) {
-            split(line, f, ":")
-            freq_mhz = f[2] + 0
-        }
-    }
-    close("/proc/cpuinfo")
-    freq_str = (freq_mhz > 0) ? sprintf("%.2fGHz", freq_mhz / 1000) : "N/A"
+    core_temps = [cpu_temp] * len(core_usages)
 
-    os_name = "Linux"
-    if ((getline line < "/etc/os-release") > 0) {
-        close("/etc/os-release")
-        while ((getline line < "/etc/os-release") > 0) {
-            if (line ~ /^PRETTY_NAME=/) {
-                sub(/^PRETTY_NAME="/, "", line)
-                sub(/"$/, "", line)
-                os_name = line
-            }
-        }
-        close("/etc/os-release")
-    }
-    getline kernel < "/proc/sys/kernel/osrelease"
-    close("/proc/sys/kernel/osrelease")
+    with open("/proc/loadavg", "r") as f:
+        load = float(f.read().split()[0])
+    num_cores = len(core_usages) or 1
+    load_perc = int(round((load / num_cores) * 100))
 
-    max_temp = 0
-    cmd = "cat /sys/class/hwmon/hwmon*/temp*_input /sys/class/thermal/thermal_zone*/temp 2>/dev/null"
-    while ((cmd | getline line) > 0) {
-        t = line + 0
-        if (t >= 10000 && t <= 115000) t = int(t / 1000)
-        if (t > max_temp && t <= 115) max_temp = t
-    }
-    close(cmd)
+    cpu_model = ""
+    curr_freq_mhz = 0
+    with open("/proc/cpuinfo", "r") as f:
+        for line in f:
+            if "model name" in line and not cpu_model:
+                cpu_model = line.split(":", 1)[1].strip()
+            elif "cpu MHz" in line and curr_freq_mhz == 0:
+                try:
+                    curr_freq_mhz = float(line.split(":", 1)[1].strip())
+                except Exception:
+                    pass
+    freq_str = f"{round(curr_freq_mhz/1000, 2)}GHz" if curr_freq_mhz else "N/A"
 
-    core_temp_json = ""
-    for (i = 0; i < core_idx; i++) {
-        core_temp_json = (core_temp_json == "") ? max_temp : (core_temp_json ", " max_temp)
-    }
+    os_name = "NixOS"
+    if os.path.exists("/etc/os-release"):
+        with open("/etc/os-release", "r") as f:
+            for line in f:
+                if line.startswith("PRETTY_NAME="):
+                    os_name = line.split("=", 1)[1].strip().strip("\"")
+    kernel = os.uname().release
 
     ip_addr = ""
-    cmd_ip = "hostname -I 2>/dev/null"
-    if ((cmd_ip | getline line) > 0) {
-        split(line, f, " ")
-        ip_addr = f[1]
-    }
-    close(cmd_ip)
+    try:
+        out = subprocess.check_output(["ip", "addr", "show"], text=True)
+        for line in out.splitlines():
+            line = line.strip()
+            if line.startswith("inet ") and not line.startswith("inet 127."):
+                ip_addr = line.split()[1]
+                break
+    except Exception:
+        pass
 
     fs_perc = 0
-    cmd_df = "df -P / 2>/dev/null"
-    while ((cmd_df | getline line) > 0) {
-        if (line !~ /^Filesystem/) {
-            split(line, f, " ")
-            sub(/%/, "", f[5])
-            fs_perc = f[5] + 0
-        }
-    }
-    close(cmd_df)
+    try:
+        out = subprocess.check_output(["df", "-P", "/home", "/nix/store", "/"], text=True)
+        for line in out.splitlines():
+            if not line.startswith("Filesystem") and "tmpfs" not in line:
+                parts = line.split()
+                if len(parts) >= 5 and parts[4].endswith("%"):
+                    fs_perc = int(parts[4].rstrip("%"))
+                    break
+    except Exception:
+        pass
 
-    printf "{\"cpu\": %d, \"mem\": %d, \"temp\": %d, \"load\": %.2f, \"load_perc\": %d, \"fs\": %d, \"cpu_model\": \"%s\", \"freq\": \"%s\", \"arch\": \"%s\", \"kernel\": \"%s\", \"ip\": \"%s\", \"core_usages\": [%s], \"core_temps\": [%s]}\n", \
-        cpu_overall, mem_perc, max_temp, load, load_perc, fs_perc, cpu_model, freq_str, os_name, kernel, ip_addr, core_json, core_temp_json
-}'
+    return {
+        "cpu": cpu_overall,
+        "mem": mem_perc,
+        "temp": cpu_temp,
+        "load": load,
+        "load_perc": load_perc,
+        "fs": fs_perc,
+        "cpu_model": cpu_model,
+        "freq": freq_str,
+        "arch": os_name,
+        "kernel": kernel,
+        "ip": ip_addr,
+        "core_usages": core_usages,
+        "core_temps": core_temps
+    }
+
+print(json.dumps(get_stats()))
+'

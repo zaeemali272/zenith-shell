@@ -66,12 +66,13 @@ Item {
             anchors.centerIn: parent
             spacing: Theme.pillGap
 
+            // Microphone Indicator (Visible ONLY when active/capturing)
             Text {
                 visible: root.micActive
                 text: VolumeService.micMuted ? "\uf131" : "\uf130"
                 font.family: Theme.iconFont
                 font.pixelSize: Theme.iconSize
-                color: VolumeService.micMuted ? Theme.powerRed : Theme.powerGreen
+                color: VolumeService.micMuted ? Theme.red : Theme.accentColor
             }
 
             Text {
@@ -115,5 +116,4 @@ Item {
 
         command: ["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", "5%-"]
     }
-
 }

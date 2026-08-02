@@ -40,10 +40,11 @@ PanelWindow {
     Rectangle {
         id: content
         anchors.fill: parent
-        color: Theme.menuBackground
-        radius: Theme.scaled(13)
-        border.color: Theme.surface1
+        color: Theme.glassBackground
+        radius: Theme.scaled(20)
+        border.color: Theme.glassBorder
         border.width: 1
+        clip: true
         // Fade logic: Stay visible on hover
         opacity: (osdTimer.running || mainMouseArea.containsMouse) ? 1 : 0
 

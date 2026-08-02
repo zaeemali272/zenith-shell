@@ -93,7 +93,6 @@ Item {
 
                 if (isHidden || !IconsFetcher.isMainApp(rawId, displayName)) continue;
 
-                let score = (typeof AppUsageService !== 'undefined') ? AppUsageService.getScore(rawId) : 0;
                 arr.push({ 
                     fileName: fn, 
                     filePath: fp,
@@ -101,8 +100,7 @@ Item {
                     displayName: displayName,
                     displayLower: displayName.toLowerCase(),
                     rawLower: rawId.toLowerCase(),
-                    iconName: iconName,
-                    usageScore: score
+                    iconName: iconName
                 });
             }
             
@@ -140,7 +138,6 @@ Item {
             if (root.searchText !== "") {
                 if (b.matchScore !== a.matchScore) return b.matchScore - a.matchScore;
             }
-            if (b.usageScore !== a.usageScore) return b.usageScore - a.usageScore;
             return a.displayName.localeCompare(b.displayName);
         });
         
@@ -172,7 +169,6 @@ Item {
     }
 
     function launchApp(filePath, appId) {
-        if (appId && typeof AppUsageService !== 'undefined') AppUsageService.recordLaunch(appId);
         launchProcess.command = ["setsid", "sh", "-c", "ELECTRON_OZONE_PLATFORM_HINT=x11 gio launch " + filePath + " > /dev/null 2>&1 &"];
         launchProcess.running = true;
         root.closeRequested();

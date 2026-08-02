@@ -28,6 +28,7 @@ PanelWindow {
     }
 
     onVisibleChanged: {
+        Variables.quickSettingsOpen = visible;
         if (visible) {
             MenuService.register(root);
             QuickSettingsService.qsVisible = true;
@@ -101,7 +102,8 @@ PanelWindow {
         color: Theme.glassBackground
         radius: Theme.cardRadius
         border.color: Theme.glassBorder
-        border.width: 1
+        border.width: 2
+        clip: true
 
         opacity: 0
         scale: 0.94

@@ -48,7 +48,8 @@ PopupWindow {
         color: Theme.glassBackground
         border.color: Theme.glassBorder
         border.width: 1
-        radius: Theme.scaled(16)
+        radius: Theme.scaled(24)
+        clip: true
         
         implicitWidth: Theme.scaled(450)
         implicitHeight: content.implicitHeight + Theme.scaled(32)

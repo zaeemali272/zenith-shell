@@ -11,8 +11,8 @@ singleton QuickSettingsService services/QuickSettingsService.qml
 singleton HyprlandService services/HyprlandService.qml
 singleton MediaPlayerService services/MediaPlayerService.qml
 singleton WallpaperService services/WallpaperService.qml
+singleton ResourceService services/ResourceService.qml
+singleton Variables services/Variables.qml
 singleton GeneralSettings Settings/GeneralSettings.qml
 singleton ClockSettings Settings/ClockSettings.qml
-WorkspaceView windows/components/WorkspaceView.qml
-AppMenu windows/components/AppMenu.qml
-SearchBar windows/components/SearchBar.qml
+singleton TaskSettings Settings/TaskSettings.qml

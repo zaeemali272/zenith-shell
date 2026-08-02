@@ -294,10 +294,9 @@ Item {
         id: udevMonitor
         command: ["udevadm", "monitor", "--subsystem-match=power_supply"]
         running: true
-        stdout: StdioCollector {
-            onStreamFinished: {
-                if (udevMonitor.running) return;
-                udevDelay.start();
+        stdout: SplitParser {
+            onRead: (data) => {
+                service.update();
             }
         }
         onExited: udevDelay.start()
@@ -309,16 +308,9 @@ Item {
         onTriggered: udevMonitor.running = true
     }
 
-    Connections {
-        target: udevMonitor.stdout
-        function onTextChanged() {
-            service.update();
-        }
-    }
-
     Timer {
         id: pollTimer
-        interval: 15000
+        interval: Variables.slowInterval
         running: true
         repeat: true
         onTriggered: service.update()

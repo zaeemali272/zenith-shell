@@ -4,41 +4,21 @@ import "../../services"
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
-import Quickshell.Io
-import Quickshell.Wayland
 
 Item {
     id: root
 
-    property int cpu: 0
-    property int mem: 0
-    property int temp: 0
-    property double load: 0.0
-    property int loadPerc: 0
-    property int fs: 0
-    property string cpuModel: ""
-    property string freq: ""
-    property string arch: ""
-    property string kernel: ""
-    property string ip: ""
-    property var coreUsages: []
-    property var coreTemps: []
-
-    Process {
-        id: glancesExec
-        command: ["kitty", "-e", "glances"]
-    }
+    readonly property int cpu: ResourceService.cpu
+    readonly property int mem: ResourceService.mem
+    readonly property int temp: ResourceService.temp
 
     implicitHeight: Theme.pillHeight
     implicitWidth: pill.width
-    width: implicitWidth
-    height: implicitHeight
 
     Pill {
         id: pill
         implicitHeight: Theme.pillHeight
         width: content.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
-        clip: true
         
         onClicked: (mouse) => {
             if (mouse.button === Qt.LeftButton)
@@ -52,44 +32,10 @@ Item {
             anchors.centerIn: parent
             spacing: Theme.pillSpacing
 
-            ResourceItem { icon: ""; value: root.cpu; iconColor: Theme.red }
-            ResourceItem { icon: "|  "; value: root.mem; showAbove: 60; iconColor: Theme.green }
-            ResourceItem { icon: "|  "; value: root.temp; suffix: "°C"; showAbove: 85; iconColor: Theme.yellow }
+            ResourceItem { icon: ""; value: root.cpu; iconColor: Theme.powerRed }
+            ResourceItem { icon: "|  "; value: root.mem; showAbove: 60; iconColor: Theme.powerGreen }
+            ResourceItem { icon: "|  "; value: root.temp; suffix: "°C"; showAbove: 85; iconColor: Theme.powerYellow }
         }
-
-        Behavior on width {
-            NumberAnimation { duration: 400; easing.type: Easing.OutExpo }
-        }
-    }
-
-    Process {
-        id: resourceExec
-        command: ["bash", "-c", "$HOME/.config/quickshell/scripts/resources.sh"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                try {
-                    const data = JSON.parse(text);
-                    root.cpu = data.cpu ?? 0;
-                    root.mem = data.mem ?? 0;
-                    root.temp = data.temp ?? 0;
-                    root.load = data.load ?? 0.0;
-                    root.loadPerc = data.load_perc ?? 0;
-                    root.fs = data.fs ?? 0;
-                    root.cpuModel = data.cpu_model ?? "";
-                    root.freq = data.freq ?? "";
-                    root.arch = data.arch ?? "";
-                    root.kernel = data.kernel ?? "";
-                    root.ip = data.ip ?? "";
-                    root.coreUsages = data.core_usages ?? [];
-                    root.coreTemps = data.core_temps ?? [];
-                } catch (e) {}
-            }
-        }
-    }
-
-    Timer {
-        interval: 2000; repeat: true; running: true; triggeredOnStart: true
-        onTriggered: { resourceExec.running = true; }
     }
 
     component ResourceItem: RowLayout {
@@ -105,8 +51,20 @@ Item {
         Layout.preferredWidth: active ? -1 : 0
         opacity: active ? 1 : 0
 
-        Text { text: icon; color: iconColor; font.family: Theme.iconFont; font.pixelSize: Theme.iconSize; Layout.alignment: Qt.AlignVCenter }
-        Text { text: value.toString().padStart(2, '0') + suffix; color: Theme.fontColor; font.pixelSize: Theme.fontSize; Layout.alignment: Qt.AlignVCenter }
+        Text {
+            text: icon
+            color: iconColor
+            font.family: Theme.iconFont
+            font.pixelSize: Theme.iconSize
+            Layout.alignment: Qt.AlignVCenter
+        }
+
+        Text {
+            text: value.toString().padStart(2, '0') + suffix
+            color: Theme.fontColor
+            font.pixelSize: Theme.fontSize
+            Layout.alignment: Qt.AlignVCenter
+        }
 
         Behavior on opacity { NumberAnimation { duration: 300 } }
     }

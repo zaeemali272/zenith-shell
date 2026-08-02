@@ -11,3 +11,5 @@ singleton HyprlandSettings HyprlandSettings.qml
 singleton PathSettings PathSettings.qml
 singleton WidgetSettings WidgetSettings.qml
 singleton FirewallSettings FirewallSettings.qml
+singleton TaskSettings TaskSettings.qml
+

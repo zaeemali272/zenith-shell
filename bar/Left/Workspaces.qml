@@ -8,69 +8,60 @@ import Quickshell.Hyprland
 
 Item {
     id: workspaceBar
-    implicitWidth: row.implicitWidth
-    implicitHeight: Theme.pillHeight
-    
-    readonly property HyprlandMonitor monitor: Hyprland.monitorFor(workspaceBar.QsWindow.window?.screen)
-    property var activeWorkspaces: []
+    // Clean dynamic bounds scaling alongside inner element rows
+    implicitWidth: row.implicitWidth + (Theme.scaled ? Theme.scaled(28) : 28)
+    implicitHeight: Theme.pillHeight ? Theme.pillHeight : (Theme.scaled ? Theme.scaled(32) : 32)
 
-    function updateActiveWorkspaces() {
-        activeWorkspaces = Hyprland.workspaces.values
-            .filter(ws => ws)
-            .sort((a, b) => a.id - b.id);
-    }
+    readonly property HyprlandMonitor monitor: QsWindow.window ? QsWindow.window.monitor : null
 
-    Component.onCompleted: updateActiveWorkspaces()
-
-    Connections {
-        target: Hyprland.workspaces
-        function onValuesChanged() { updateActiveWorkspaces(); }
-    }
-    Connections {
-        target: Hyprland
-        function onFocusedWorkspaceChanged() { updateActiveWorkspaces(); }
-    }
-    Connections {
-        target: monitor
-        function onActiveWorkspaceChanged() { updateActiveWorkspaces(); }
-    }
-    
-    // Background handling
+    // Balanced Solid Capsule Background Track
     Rectangle {
-        anchors.fill: row
-        anchors.margins: -Theme.scaled(4)
+        anchors.fill: parent
         color: Theme.pillColor
-        radius: Theme.pillRadius + Theme.scaled(20)
-        visible: Theme.workspaceBackgroundStyle === "full"
+        radius: Theme.pillRadius ? Theme.pillRadius : height / 2
+        opacity: 1.0
+        visible: true
         z: -1
     }
 
     Row {
         id: row
-        spacing: Theme.scaled(Theme.pillSpacing)
-        anchors.verticalCenter: parent.verticalCenter
+        // Well proportioned gap spacing to prevent overlapping
+        spacing: Theme.scaled ? Theme.scaled(8) : 8
+        anchors.centerIn: parent
 
         Repeater {
-            model: activeWorkspaces.length
+            model: Hyprland.workspaces
 
             delegate: Rectangle {
                 id: wsDelegate
-                width: Theme.scaled(25)
-                implicitHeight: Theme.workspaceBackgroundStyle === "full" ? Theme.scaled(Theme.pillHeight - Theme.scaled(8)) : Theme.scaled(Theme.pillHeight)
-                radius: Theme.pillRadius
+
+                visible: modelData && modelData.id > 0
+
+                // --- CALIBRATED ELEMENT SIZING ---
+                // Sizing handled explicitly via properties to keep layouts stable
+                width: visible ? (isCurrentActive ? (WorkspaceSettings.displayStyle === "numbers" ? Theme.scaled(44) : Theme.scaled(36)) : Theme.scaled(20)) : 0
+                height: Theme.scaled ? Theme.scaled(20) : 20
+                radius: height / 2
                 smooth: true
+                anchors.verticalCenter: parent.verticalCenter
 
-                property var workspace: activeWorkspaces[index]
-                property bool isOccupied: workspace.windows > 0
+                readonly property bool isOccupied: modelData ? (modelData.toplevels.count > 0) : false
+                readonly property bool isCurrentActive: (Hyprland.focusedWorkspace && modelData) ? (Hyprland.focusedWorkspace.id === modelData.id) : false
 
-                // Fill color logic
-                color: Theme.workspaceBackgroundStyle === "full" ? "transparent" : (workspace.active ? Theme.wsActiveColor : (isOccupied ? Theme.wsOccupiedColor : Theme.wsEmptyColor))
-                border.color: Theme.workspaceBackgroundStyle === "full" ? "transparent" : (workspace.active ? Theme.wsActiveColor : "transparent")
-                border.width: Theme.scaled(1)
-                
-                scale: wsMouse.containsMouse ? 1.1 : 1.0
-                Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-                Behavior on color { ColorAnimation { duration: 300 } }
+                color: isCurrentActive
+                       ? (Theme.wsActiveColor ? Theme.wsActiveColor : "#ffb48a")
+                       : (isOccupied ? (Theme.wsOccupiedColor ? Theme.wsOccupiedColor : "#444b6a") : "#292e42")
+
+                opacity: isCurrentActive ? 1.0 : (isOccupied ? 0.75 : 0.4)
+
+                Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutQuint } }
+                Behavior on color { ColorAnimation { duration: 150 } }
+                Behavior on opacity { NumberAnimation { duration: 150 } }
+
+                // Kept at 1.0 default baseline to stop parent overflow clipping
+                scale: wsMouse.containsMouse ? 1.15 : 1.0
+                Behavior on scale { NumberAnimation { duration: 100; easing.type: Easing.OutCubic } }
 
                 MouseArea {
                     id: wsMouse
@@ -78,15 +69,21 @@ Item {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        Hyprland.dispatch(`workspace ${workspace.id}`)
+                        if (modelData) {
+                            Hyprland.dispatch(`hl.dsp.focus({ workspace = "${modelData.id}" })`)
+                        }
                     }
                 }
 
                 Text {
                     anchors.centerIn: parent
-                    text: WorkspaceSettings.displayStyle === "numbers" ? workspace.id.toString() : "•"
-                    font.pixelSize: WorkspaceSettings.displayStyle === "numbers" ? Theme.scaled(12) : Theme.scaled(24)
-                    color: Theme.workspaceBackgroundStyle === "full" ? (workspace.active ? Theme.wsActiveColor : Theme.text) : (workspace.active ? Theme.wsActiveTextColor : Theme.inactiveTextColor)
+                    text: modelData ? modelData.id.toString() : ""
+                    font.pixelSize: Theme.scaled ? Theme.scaled(11) : 11
+                    font.bold: true
+                    color: "#1a1b26"
+                    opacity: isCurrentActive ? 1.0 : 0.0
+
+                    Behavior on opacity { NumberAnimation { duration: 120 } }
                 }
             }
         }
@@ -94,8 +91,11 @@ Item {
 
     WheelHandler {
         onWheel: (event) => {
-            if (event.angleDelta.y < 0) Hyprland.dispatch(`workspace r+1`)
-            else if (event.angleDelta.y > 0) Hyprland.dispatch(`workspace r-1`)
+            if (event.angleDelta.y < 0) {
+                Hyprland.dispatch("hl.dsp.focus({ workspace = 'r+1' })")
+            } else if (event.angleDelta.y > 0) {
+                Hyprland.dispatch("hl.dsp.focus({ workspace = 'r-1' })")
+            }
         }
         acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
     }

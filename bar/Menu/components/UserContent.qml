@@ -4,7 +4,6 @@ import QtQuick.Controls
 import QtQuick.Dialogs
 import Quickshell
 import Quickshell.Io
-import Qt.labs.folderlistmodel
 import "../../../" as Shell
 import "../../../services" as Services
 
@@ -23,17 +22,6 @@ Rectangle {
             ppImage.source = "";
             ppImage.source = "file://" + root.ppPath + "?" + Date.now();
         }
-    }
-
-    Component.onCompleted: {
-        // Simple loading from local path
-    }
-
-    FolderListModel {
-        id: folderModel
-        folder: "file:///usr/share/applications"
-        nameFilters: ["*.desktop"]
-        showDirs: false
     }
 
     ColumnLayout {
@@ -108,16 +96,15 @@ Rectangle {
                     }
                 }
 
-                // Use direct bindings to ensure reactivity
                 readonly property string username: Services.UserService.username
                 readonly property string location: Services.UserService.location
 
                 ColumnLayout {
                     spacing: 5
-                    Text { text: "Welcome, " + (root.username || "User"); color: Shell.Theme.text; font.pixelSize: Shell.Theme.scaled(20); font.bold: true }
+                    Text { text: "Welcome, " + (Services.UserService.username || "User"); color: Shell.Theme.text; font.pixelSize: Shell.Theme.scaled(20); font.bold: true }
                     RowLayout {
                         spacing: 5
-                        Text { id: locText; text: "Living in: " + (root.location || "Unknown"); color: Shell.Theme.subtext1; font.pixelSize: Shell.Theme.scaled(14) }
+                        Text { id: locText; text: "Living in: " + (Services.UserService.location || "Unknown"); color: Shell.Theme.subtext1; font.pixelSize: Shell.Theme.scaled(14) }
                         Text { 
                             text: "(wrong? click here)"; color: Shell.Theme.blue; font.pixelSize: Shell.Theme.scaled(10); font.underline: true 
                             MouseArea {
@@ -129,61 +116,5 @@ Rectangle {
                 }
             }
         }
-
-        // Wellbeing Stats
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            color: Qt.rgba(0,0,0,0.2)
-            radius: Shell.Theme.scaled(24)
-            border.color: Shell.Theme.glassBorder
-
-            ColumnLayout {
-                anchors.fill: parent
-                anchors.margins: Shell.Theme.scaled(20)
-                spacing: Shell.Theme.scaled(15)
-
-                Text { text: "DIGITAL WELLBEING"; color: Shell.Theme.subtext1; font.pixelSize: Shell.Theme.scaled(11); font.weight: Font.Black }
-                
-                // Stats
-                ListView {
-                    id: statsList
-                    Layout.fillWidth: true; Layout.fillHeight: true
-                    model: [] 
-                    delegate: RowLayout {
-                        width: statsList.width
-                        spacing: 10
-                        Text { text: modelData.name; color: Shell.Theme.text; Layout.fillWidth: true; elide: Text.ElideRight }
-                        Text { text: Math.floor(modelData.time / 60) + " mins"; color: Shell.Theme.blue; font.bold: true }
-                    }
-                }
-            }
-        }
-    }
-
-    function resetScroll() { statsList.positionViewAtBeginning(); }
-
-    onVisibleChanged: {
-        if (visible) refreshData();
-    }
-
-    function refreshData() {
-        let data = [];
-        for (let i = 0; i < folderModel.count; i++) {
-            let fn = folderModel.get(i, "fileName");
-            let appId = fn.replace(".desktop", "");
-            let displayName = appId.charAt(0).toUpperCase() + appId.slice(1);
-            let usage = Services.AppUsageService.usageData[appId] || { totalSeconds: 0 };
-            data.push({ name: displayName, time: usage.totalSeconds });
-        }
-        data.sort((a, b) => b.time - a.time);
-        statsList.model = data;
-    }
-
-    Timer {
-        interval: 1000
-        running: true
-        repeat: true
-        onTriggered: refreshData()
     }
 }

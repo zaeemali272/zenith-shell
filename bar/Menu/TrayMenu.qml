@@ -69,7 +69,8 @@ PopupWindow {
         color: Theme.glassBackground
         border.color: Theme.glassBorder
         border.width: 1
-        radius: Theme.scaled(14)
+        radius: Theme.scaled(20)
+        clip: true
         focus: true
         Keys.onPressed: (event) => {
             if (event.key === Qt.Key_Escape) root.closeAll()

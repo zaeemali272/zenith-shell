@@ -30,10 +30,10 @@ Rectangle {
     signal autoDismissed(real id)
 
     // --- ZENITH THEMEING ---
-    color: Theme.menuBackground
-    radius: Theme.cardRadius
+    color: Theme.glassBackground
+    radius: Theme.scaled(20)
     border.color: Theme.glassBorder
-    border.width: 1
+    border.width: 2
     clip: true
 
     implicitHeight: layout.implicitHeight + Theme.scaled(24)

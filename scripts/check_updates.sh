@@ -5,9 +5,6 @@ if [ -d "$HOME/Documents/Dots/zenith/.git" ]; then
     ZENITH_DIR="$HOME/Documents/Dots/zenith"
 else
     ZENITH_DIR="$HOME/zenith"
-    if [ ! -d "$ZENITH_DIR/.git" ]; then
-        git clone https://github.com/zaeemali272/zenith "$ZENITH_DIR" > /dev/null 2>&1
-    fi
 fi
 ZENITH_SHELL_DIR="$HOME/.config/quickshell"
 

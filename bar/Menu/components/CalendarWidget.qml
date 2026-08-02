@@ -60,7 +60,7 @@ Rectangle {
 
     Component.onCompleted: fetchEvents()
 
-    implicitHeight: Theme.scaled(310)
+    implicitHeight: Theme.scaled(340)
     implicitWidth: Theme.scaled(340)
     color: Theme.menuBackground
     radius: Theme.scaled(16)
@@ -237,8 +237,8 @@ Rectangle {
 
                         color: {
                             if (!isCurrentMonth) return "transparent";
-                            if (hasEvent) return Theme.accentColor;
-                            if (isToday) return Theme.surface1;
+                            if (hasEvent) return "transparent";
+                            if (isToday) return "transparent";
                             return "transparent";
                         }
 
@@ -256,8 +256,8 @@ Rectangle {
                             font.bold: dayCell.isToday || dayCell.isSelected || dayCell.hasEvent
                             color: {
                                 if (!dayCell.isCurrentMonth) return Theme.surface2;
-                                if (dayCell.hasEvent) return "#ffffff";
-                                if (dayCell.isToday) return Theme.accentColor;
+                                if (dayCell.hasEvent) return Theme.accentColor;
+                                if (dayCell.isToday) return "#ffffffff";
                                 return Theme.text;
                             }
                         }

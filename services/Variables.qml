@@ -3,9 +3,25 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "../Settings"
 
 QtObject {
     id: variables
+
+    // =====================================================
+    // ============ CENTRAL RECURRING TASK SYSTEM ==========
+    // =====================================================
+    readonly property int fastInterval: TaskSettings.fastPollInterval
+    readonly property int mediumInterval: TaskSettings.mediumPollInterval
+    readonly property int slowInterval: TaskSettings.slowPollInterval
+    readonly property int lazyInterval: TaskSettings.lazyPollInterval
+    readonly property int idleInterval: TaskSettings.idlePollInterval
+
+    // Adaptive Task Scheduler Flags
+    property bool quickSettingsOpen: false
+    property bool controlCenterOpen: false
+    property bool activeMenuOpen: quickSettingsOpen || controlCenterOpen
+
 
     // Distro & OS Metadata
     property string distroId: "nixos"

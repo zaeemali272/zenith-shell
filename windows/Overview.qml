@@ -47,8 +47,11 @@ PanelWindow {
     Rectangle {
         id: root
         anchors.fill: parent
-        radius: 20
-        color: Root.Theme.crust ? Qt.rgba(Root.Theme.crust.r, Root.Theme.crust.g, Root.Theme.crust.b, 0.40) : '#4d010101'
+        radius: Root.Theme.scaled ? Root.Theme.scaled(28) : 28
+        color: Root.Theme.crust ? Qt.rgba(Root.Theme.crust.r, Root.Theme.crust.g, Root.Theme.crust.b, 0.50) : '#4d010101'
+        border.color: Root.Theme.glassBorder || "#33ffffff"
+        border.width: 1
+        clip: true
         
         focus: true
         Keys.onPressed: (event) => {
