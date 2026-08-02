@@ -49,8 +49,7 @@ Item {
             }
         };
         
-        let cmd = "mkdir -p " + Quickshell.env("HOME") + "/.config/quickshell && echo '" + JSON.stringify(data).replace(/'/g, "'\\''") + "' > " + storagePath;
-        saveProcess.command = ["sh", "-c", cmd];
+        saveProcess.command = ["python3", "-c", "import json, os, sys; p=sys.argv[1]; d=sys.argv[2]; os.makedirs(os.path.dirname(p), exist_ok=True); f=open(p, 'w'); f.write(d); f.close()", storagePath, JSON.stringify(data)];
         saveProcess.running = true;
     }
 

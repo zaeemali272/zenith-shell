@@ -106,7 +106,7 @@ Singleton {
     Timer {
         id: engineTimer
         interval: 1000
-        running: true
+        running: Mpris.players.values.length > 0
         repeat: true
         onTriggered: {
             let players = Mpris.players.values;

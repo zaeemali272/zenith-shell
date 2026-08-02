@@ -12,6 +12,8 @@ Item {
     property var menuRef: null
     property rect lastRect: Qt.rect(0, 0, 0, 0)
 
+    onQsVisibleChanged: Variables.quickSettingsOpen = qsVisible
+
     function open(tab, rect) {
         if (typeof CenterState !== "undefined") {
             CenterState.close();

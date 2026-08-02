@@ -23,7 +23,7 @@ Item {
         ];
         applyProcess.running = true;
 
-        saveHistory.command = ["sh", "-c", `echo "${cleanPath}" > ` + PathSettings.configDir + `/current_wallpaper.txt` ];
+        saveHistory.command = ["python3", "-c", "import sys; open(sys.argv[1], 'w').write(sys.argv[2])", PathSettings.configDir + "/current_wallpaper.txt", cleanPath];
         saveHistory.running = true;
     }
 

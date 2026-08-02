@@ -2,6 +2,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "../Settings"
 
 Item {
     id: root
@@ -17,7 +18,7 @@ Item {
     property string state: "Idle" // Idle, Scanning, Connecting, Disconnecting, Powering
     
     readonly property bool isPerformingAction: actionExec.running || powerExec.running || scanExec.running || oneShotScan.running || _actionInProgress || startupToggleExec.running
-    readonly property bool isRefreshing: statusCheck.running || deviceRefresh.running || rfkillCheck.running || serviceCheck.running || infoExec.running || enabledCheck.running
+    readonly property bool isRefreshing: statusExec.running
     property bool busy: isPerformingAction || isRefreshing
     
     property bool _actionInProgress: false
@@ -28,53 +29,127 @@ Item {
     property int connectedBattery: -1
     property string connectedIcon: "bluetooth"
 
-    function log(msg) {
-    }
-
-    function refresh() {
-        if (isRefreshing) return;
-        serviceCheck.running = false;
-        serviceCheck.running = true;
-        enabledCheck.running = false;
-        enabledCheck.running = true;
-        rfkillCheck.running = false;
-        rfkillCheck.running = true;
-        statusCheck.running = false;
-        statusCheck.running = true;
+    function refresh(full) {
+        if (statusExec.running) return;
+        let doFull = (full !== undefined) ? full : Variables.quickSettingsOpen;
         
-        deviceRefresh.running = false;
-        deviceRefresh.running = true;
+        statusExec.command = ["python3", "-c", `
+import subprocess, json, re
 
-        if (powered && Variables.quickSettingsOpen) {
-            startScan();
-        }
+def run(cmd):
+    try: return subprocess.check_output(cmd, text=True, timeout=3).strip()
+    except: return ''
+
+show = run(['bluetoothctl', 'show'])
+is_powered = 'Powered: yes' in show
+is_scanning = 'Discovering: yes' in show
+
+do_full = ${doFull ? "True" : "False"}
+
+all_devs_raw = run(['bluetoothctl', 'devices']) if do_full else ''
+paired_devs_raw = run(['bluetoothctl', 'paired-devices']) if do_full else ''
+connected_devs_raw = run(['bluetoothctl', 'devices', 'Connected'])
+
+paired_addrs = set(l.split()[1] for l in paired_devs_raw.splitlines() if l.startswith('Device ')) if do_full else set()
+connected_addrs = set(l.split()[1] for l in connected_devs_raw.splitlines() if l.startswith('Device '))
+
+devices = []
+if do_full:
+    seen = set()
+    for line in all_devs_raw.splitlines():
+        p = line.split()
+        if len(p) >= 2 and p[0] == 'Device':
+            addr = p[1]
+            if addr in seen: continue
+            seen.add(addr)
+            raw_name = ' '.join(p[2:]) if len(p) > 2 else addr
+            is_addr_fmt = bool(re.match(r'^[0-9A-Fa-f]{2}([:-][0-9A-Fa-f]{2}){5}$', raw_name))
+            has_real_name = len(p) > 2 and not is_addr_fmt
+            devices.append({
+                'address': addr,
+                'name': raw_name,
+                'hasName': has_real_name,
+                'paired': addr in paired_addrs,
+                'connected': addr in connected_addrs,
+                'icon': 'bluetooth',
+                'battery': -1
+            })
+
+conn_name = ''
+conn_addr = ''
+conn_battery = -1
+conn_icon = 'bluetooth'
+
+if connected_addrs:
+    first_conn = list(connected_addrs)[0]
+    info_raw = run(['bluetoothctl', 'info', first_conn])
+    for line in info_raw.splitlines():
+        l = line.strip()
+        if l.startswith('Name: '): conn_name = l[6:]
+        elif l.startswith('Icon: '): conn_icon = l[6:]
+        elif 'Battery Percentage:' in l:
+            b_match = re.search(r'\((\d+)\)', l) or re.search(r':\s+(\d+)', l)
+            if b_match: conn_battery = int(b_match.group(1))
+
+    conn_addr = first_conn
+    for d in devices:
+        if d['address'] == first_conn:
+            d['battery'] = conn_battery
+            d['icon'] = conn_icon
+            if not d['name'] or d['name'] == first_conn:
+                d['name'] = conn_name
+
+service_active = run(['systemctl', 'is-active', 'bluetooth.service']) == 'active'
+is_enabled = run(['systemctl', 'is-enabled', 'bluetooth.service']) == 'enabled'
+
+print(json.dumps({
+    'powered': is_powered,
+    'scanning': is_scanning,
+    'connected': len(connected_addrs) > 0,
+    'connectedName': conn_name,
+    'connectedAddress': conn_addr,
+    'connectedBattery': conn_battery,
+    'connectedIcon': conn_icon,
+    'serviceActive': service_active,
+    'isServiceEnabled': is_enabled,
+    'devices': devices if do_full else None
+}))
+`];
+        statusExec.running = true;
     }
 
     Process {
-        id: serviceCheck
-        command: ["systemctl", "is-active", "bluetooth.service"]
+        id: statusExec
         stdout: StdioCollector {
             onStreamFinished: {
-                root.serviceActive = (text && text.trim() === "active");
-                if (!root.serviceActive) {
-                    root.state = "Service Error";
-                }
-            }
-        }
-    }
+                if (!text || text.trim() === "") return;
+                try {
+                    let data = JSON.parse(text);
+                    root.powered = data.powered || false;
+                    root.scanning = data.scanning || false;
+                    root.connected = data.connected || false;
+                    root.connectedName = data.connectedName || "";
+                    root.connectedAddress = data.connectedAddress || "";
+                    root.connectedBattery = data.connectedBattery !== undefined ? data.connectedBattery : -1;
+                    root.connectedIcon = data.connectedIcon || "bluetooth";
+                    root.serviceActive = data.serviceActive || false;
+                    root.isServiceEnabled = data.isServiceEnabled || false;
 
-    Process {
-        id: enabledCheck
-        command: ["systemctl", "is-enabled", "bluetooth.service"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                root.isServiceEnabled = (text && text.trim() === "enabled");
+                    if (!root.serviceActive) {
+                        root.state = "Service Error";
+                    } else if (root.state === "Service Error" || root.state === "Idle" || root.state === "Scanning") {
+                        root.state = root.scanning ? "Scanning" : "Idle";
+                    }
+
+                    if (data.devices && Array.isArray(data.devices)) {
+                        updateModel(data.devices);
+                    }
+                } catch (e) {}
             }
         }
     }
 
     function toggleStartup() {
-        log("Toggling startup status...");
         let target = !isServiceEnabled;
         startupToggleExec.command = ["pkexec", "systemctl", target ? "enable" : "disable", "bluetooth.service"];
         startupToggleExec.running = true;
@@ -84,171 +159,15 @@ Item {
         id: startupToggleExec
         onExited: (exitCode) => {
             if (exitCode === 0) {
-                enabledCheck.running = true;
+                root.refresh(false);
             }
         }
     }
 
     function restartService() {
-        log("Restarting service...");
         root.state = "Restarting Service";
         actionExec.command = ["pkexec", "systemctl", "restart", "bluetooth"];
         actionExec.running = true;
-    }
-
-    Process {
-        id: rfkillCheck
-        command: ["sh", "-c", "rfkill list bluetooth | grep -i 'soft blocked: yes'"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                if (text && text.trim() !== "") {
-                    if (root.powered) root.powered = false;
-                }
-            }
-        }
-    }
-
-    Process {
-        id: statusCheck
-        command: ["sh", "-c", "bluetoothctl show | grep -E 'Powered:|Discovering:'; bluetoothctl devices Connected"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                let lines = text.split("\n");
-                let isPowered = false;
-                let isScanning = false;
-                let hasConnected = false;
-
-                for (let line of lines) {
-                    if (line.includes("Powered: yes")) isPowered = true;
-                    if (line.includes("Discovering: yes")) isScanning = true;
-                    if (line.startsWith("Device ")) hasConnected = true;
-                }
-
-                root.powered = isPowered;
-                root.scanning = isScanning;
-                root.connected = hasConnected;
-                
-                if (root.state === "Idle" || root.state === "Scanning") {
-                    root.state = isScanning ? "Scanning" : "Idle";
-                }
-            }
-        }
-    }
-
-    Process {
-        id: deviceRefresh
-        command: ["sh", "-c", "bluetoothctl devices; echo '---'; bluetoothctl paired-devices; echo '---'; bluetoothctl devices Connected"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                if (!text) return;
-                
-                let parts = text.split("---");
-                let allDevicesRaw = parts[0].trim().split("\n");
-                let pairedDevicesRaw = parts.length > 1 ? parts[1].trim().split("\n") : [];
-                let connectedDevicesRaw = parts.length > 2 ? parts[2].trim().split("\n") : [];
-
-                let pairedAddresses = pairedDevicesRaw.map(l => {
-                    let parts = l.trim().split(" ");
-                    return parts.length > 1 ? parts[1] : "";
-                }).filter(a => a);
-
-                let connectedAddresses = connectedDevicesRaw.map(l => {
-                    let parts = l.trim().split(" ");
-                    return parts.length > 1 ? parts[1] : "";
-                }).filter(a => a);
-
-                let newDevices = [];
-                let seen = {};
-
-                for (let line of allDevicesRaw) {
-                    let p = line.trim().split(" ");
-                    if (p.length < 2) continue;
-                    let addr = p[1];
-                    if (!addr || seen[addr]) continue;
-                    
-                    let rawName = p.length > 2 ? p.slice(2).join(" ") : addr;
-                    let isAddressFormat = rawName.match(/^[0-9A-Fa-f]{2}([:-][0-9A-Fa-f]{2}){5}$/);
-                    let hasRealName = p.length > 2 && !isAddressFormat;
-                    
-                    let isPaired = pairedAddresses.indexOf(addr) !== -1;
-                    let isConnected = connectedAddresses.indexOf(addr) !== -1;
-                    
-                    seen[addr] = true;
-                    newDevices.push({
-                        "address": addr,
-                        "name": rawName,
-                        "hasName": hasRealName,
-                        "paired": isPaired,
-                        "connected": isConnected,
-                        "icon": "bluetooth",
-                        "battery": -1
-                    });
-                }
-
-                updateModel(newDevices);
-                
-                if (connectedAddresses.length > 0) {
-                    fetchDetailedInfo(connectedAddresses[0]);
-                } else {
-                    root.connectedName = "";
-                    root.connectedAddress = "";
-                    root.connectedBattery = -1;
-                }
-            }
-        }
-    }
-
-    function fetchDetailedInfo(addr) {
-        infoExec.command = ["bluetoothctl", "info", addr];
-        infoExec.running = true;
-    }
-
-    Process {
-        id: infoExec
-        stdout: StdioCollector {
-            onStreamFinished: {
-                if (!text) return;
-                let lines = text.split("\n");
-                let name = "";
-                let addr = "";
-                let battery = -1;
-                let icon = "bluetooth";
-                let connected = false;
-
-                for (let line of lines) {
-                    let l = line.trim();
-                    if (l.startsWith("Device ")) addr = l.split(" ")[1];
-                    else if (l.startsWith("Name: ")) name = l.substring(6);
-                    else if (l.startsWith("Icon: ")) icon = l.substring(6);
-                    else if (l.startsWith("Connected: yes")) connected = true;
-                    else if (l.includes("Battery Percentage:")) {
-                        let bMatch = l.match(/\((\d+)\)/) || l.match(/:\s+(\d+)/);
-                        if (bMatch) battery = parseInt(bMatch[1]);
-                    }
-                }
-
-                if (connected) {
-                    root.connectedName = name;
-                    root.connectedAddress = addr;
-                    root.connectedBattery = battery;
-                    root.connectedIcon = icon;
-                    
-                    // Update the array element
-                    let updated = root.devices.map(d => {
-                        if (d.address === addr) {
-                            let newD = {};
-                            for (let key in d) newD[key] = d[key];
-                            newD.battery = battery;
-                            newD.icon = icon;
-                            newD.connected = true;
-                            return newD;
-                        }
-                        return d;
-                    });
-                    root.devices = updated;
-                }
-            }
-        }
     }
 
     function updateModel(newDevices) {
@@ -265,8 +184,6 @@ Item {
         let newState = !powered;
         root.state = newState ? "Powering On" : "Powering Off";
         _actionInProgress = true;
-        
-        // Optimistic update for instant feedback
         root.powered = newState;
         
         powerExec.command = ["bluetoothctl", "power", newState ? "on" : "off"];
@@ -277,8 +194,6 @@ Item {
         if (isPerformingAction) return;
         let target = !scanning;
         root.state = target ? "Starting Scan" : "Stopping Scan";
-        
-        // Optimistic update
         root.scanning = target;
         
         scanExec.command = ["bluetoothctl", "scan", target ? "on" : "off"];
@@ -320,17 +235,15 @@ Item {
         actionExec.running = true;
     }
 
-
     Process { id: oneShotScan; command: ["sh", "-c", "bluetoothctl --timeout 10 scan on & bluetoothctl --timeout 10 discoverable on; wait"] }
     
-    // Post-action polling to ensure state is eventually correct
     Timer {
         id: postActionPoll
         interval: 1000
         repeat: true
         property int count: 0
         onTriggered: {
-            refresh();
+            refresh(true);
             count++;
             if (count >= 3) stop();
         }
@@ -346,22 +259,19 @@ Item {
 
     Timer {
         id: scanUpdateTimer
-        interval: 2000
+        interval: 2500
         repeat: true
-        running: oneShotScan.running || scanExec.running
-        onTriggered: {
-            deviceRefresh.running = false;
-            deviceRefresh.running = true;
-        }
+        running: (oneShotScan.running || scanExec.running) && Variables.quickSettingsOpen
+        onTriggered: refresh(true)
     }
 
     Timer {
-        id: healthCheckTimer
+        id: pollTimer
         interval: Variables.slowInterval
         repeat: true
         running: true
-        onTriggered: serviceCheck.running = true
+        onTriggered: refresh(Variables.quickSettingsOpen)
     }
 
-    Component.onCompleted: refresh()
+    Component.onCompleted: refresh(false)
 }

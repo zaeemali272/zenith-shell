@@ -67,7 +67,7 @@ Item {
     }
 
     Timer {
-        interval: 10000
+        interval: Variables.quickSettingsOpen ? Variables.slowInterval : Variables.lazyInterval
         running: service.available
         repeat: true
         onTriggered: service.update()

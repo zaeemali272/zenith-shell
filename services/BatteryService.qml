@@ -2,6 +2,8 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "../Settings"
+
 pragma Singleton
 
 Item {
@@ -34,7 +36,7 @@ Item {
     property real temp: 0
 
     function update() {
-        if (service.batPath && service.acPath) {
+        if (!updateExec.running) {
             updateExec.running = true;
         }
     }
@@ -76,6 +78,7 @@ Item {
         let iconName = getIconName(percentage, status);
         let u = urgency || "normal";
         notifyProc.command = ["notify-send", "-u", u, "-a", "Battery", "-i", iconName, title, msg];
+        notifyProc.running = false;
         notifyProc.running = true;
     }
 
@@ -153,25 +156,7 @@ Item {
         }
     }
 
-    Component.onCompleted: findPaths.running = true
-
-    Process {
-        id: findPaths
-        command: ["sh", "-c", "echo BATS=$(ls -d /sys/class/power_supply/BAT* 2>/dev/null); echo AC=$(ls -d /sys/class/power_supply/AC* /sys/class/power_supply/ADP* /sys/class/power_supply/Mains* 2>/dev/null | head -n1)"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const lines = text.trim().split("\n");
-                lines.forEach((l) => {
-                    if (l.startsWith("BATS=")) service.batPath = l.slice(5);
-                    if (l.startsWith("AC=")) service.acPath = l.slice(3);
-                });
-                if (service.batPath) {
-                    service.update();
-                    pollTimer.running = true;
-                }
-            }
-        }
-    }
+    Component.onCompleted: service.update()
 
     function formatTime(seconds) {
         if (seconds <= 0 || isNaN(seconds) || seconds === Infinity) return "N/A";
@@ -180,110 +165,118 @@ Item {
         return h + "h " + m + "m";
     }
 
-
     Process {
         id: updateExec
-        command: ["sh", "-c", `
-            AC="${service.acPath}"
-            [ -n "$AC" ] && cat "$AC/online" 2>/dev/null || echo 0
-            
-            for B in ${service.batPath}; do
-                [ ! -d "$B" ] && continue
-                cat "$B/capacity" 2>/dev/null || echo 0
-                cat "$B/status" 2>/dev/null || echo unknown
-                cat "$B/cycle_count" 2>/dev/null || echo 0
-                cat "$B/voltage_now" 2>/dev/null || cat "$B/voltage_avg" 2>/dev/null || echo 0
-                
-                # Rate
-                if [ -f "$B/power_now" ]; then cat "$B/power_now"
-                elif [ -f "$B/current_now" ]; then cat "$B/current_now"
-                else echo 0; fi
-                
-                # Now
-                if [ -f "$B/energy_now" ]; then cat "$B/energy_now"
-                elif [ -f "$B/charge_now" ]; then cat "$B/charge_now"
-                else echo 0; fi
-                
-                # Full
-                if [ -f "$B/energy_full" ]; then cat "$B/energy_full"
-                elif [ -f "$B/charge_full" ]; then cat "$B/charge_full"
-                else echo 0; fi
-                
-                # Design
-                if [ -f "$B/energy_full_design" ]; then cat "$B/energy_full_design"
-                elif [ -f "$B/charge_full_design" ]; then cat "$B/charge_full_design"
-                else echo 0; fi
-            done
-            
-            # Temperature
-            cat /sys/class/hwmon/hwmon*/temp1_input 2>/dev/null | head -n1 || echo 0
-        `]
+        command: ["python3", "-c", `
+import glob, json, os
+
+bat_paths = glob.glob('/sys/class/power_supply/BAT*')
+ac_paths = glob.glob('/sys/class/power_supply/AC*') + glob.glob('/sys/class/power_supply/ADP*') + glob.glob('/sys/class/power_supply/Mains*')
+
+ac_online = False
+if ac_paths and os.path.exists(ac_paths[0] + '/online'):
+    try:
+        with open(ac_paths[0] + '/online') as f: ac_online = f.read().strip() == '1'
+    except: pass
+
+def read_val(path, filenames, default=0):
+    for name in filenames:
+        p = os.path.join(path, name)
+        if os.path.exists(p):
+            try:
+                with open(p) as f: return f.read().strip()
+            except: pass
+    return default
+
+total_now = 0
+total_full = 0
+total_design = 0
+total_rate = 0
+total_volt = 0
+total_cycles = 0
+statuses = []
+
+for b in bat_paths:
+    if not os.path.isdir(b): continue
+    cap = int(read_val(b, ['capacity'], 0))
+    stat = str(read_val(b, ['status'], 'unknown')).lower()
+    cycles = int(read_val(b, ['cycle_count'], 0))
+    volt = int(read_val(b, ['voltage_now', 'voltage_avg'], 0))
+    rate = abs(int(read_val(b, ['power_now', 'current_now'], 0)))
+    now = int(read_val(b, ['energy_now', 'charge_now'], 0))
+    full = int(read_val(b, ['energy_full', 'charge_full'], 0))
+    design = int(read_val(b, ['energy_full_design', 'charge_full_design'], 0))
+
+    total_now += now
+    total_full += full
+    total_design += design
+    total_rate += rate
+    total_volt += volt
+    total_cycles += cycles
+    statuses.append(stat)
+
+temp = 0
+for hw in glob.glob('/sys/class/hwmon/hwmon*/temp1_input'):
+    try:
+        with open(hw) as f: temp = int(f.read().strip()) / 1000; break
+    except: pass
+
+print(json.dumps({
+    'acOnline': ac_online,
+    'now': total_now,
+    'full': total_full,
+    'design': total_design,
+    'rate': total_rate,
+    'volt': total_volt,
+    'cycles': total_cycles,
+    'statuses': statuses,
+    'temp': temp,
+    'count': len(bat_paths)
+}))
+`]
         stdout: StdioCollector {
             onStreamFinished: {
-                if (!text) return;
-                const parts = text.trim().split("\n");
-                if (parts.length < 2) return;
-                
-                service.acOnline = parts[0].trim() === "1";
-                
-                let totalEnergyNow = 0;
-                let totalEnergyFull = 0;
-                let totalEnergyDesign = 0;
-                let totalRate = 0;
-                let totalVoltage = 0;
-                let totalCycles = 0;
-                let mainStatus = "unknown";
-                let batCount = 0;
+                if (!text || text.trim() === "") return;
+                try {
+                    const data = JSON.parse(text);
+                    service.acOnline = data.acOnline || false;
+                    let batCount = data.count || 0;
 
-                // Each battery provides 8 lines of data
-                for (let i = 1; i < parts.length - 1; i += 8) {
-                    if (i + 7 >= parts.length - 1) break;
-                    
-                    batCount++;
-                    let cap = parseInt(parts[i]);
-                    let stat = parts[i+1].toLowerCase().trim();
-                    let cycles = parseInt(parts[i+2]);
-                    let volt = parseInt(parts[i+3]);
-                    let rate = Math.abs(parseInt(parts[i+4]));
-                    let now = parseInt(parts[i+5]);
-                    let full = parseInt(parts[i+6]);
-                    let design = parseInt(parts[i+7]);
+                    if (batCount > 0) {
+                        let totalNow = data.now || 0;
+                        let totalFull = data.full || 0;
+                        let totalDesign = data.design || 0;
+                        let totalRate = data.rate || 0;
 
-                    totalEnergyNow += now;
-                    totalEnergyFull += full;
-                    totalEnergyDesign += design;
-                    totalRate += rate;
-                    totalVoltage += volt;
-                    totalCycles += cycles;
-
-                    if (stat === "charging") mainStatus = "charging";
-                    else if (stat === "discharging" && mainStatus !== "charging") mainStatus = "discharging";
-                    else if (stat === "full" && mainStatus === "unknown") mainStatus = "full";
-                    else if (mainStatus === "unknown") mainStatus = stat;
-                }
-
-                if (batCount > 0) {
-                    service.percentage = totalEnergyFull > 0 ? Math.round((totalEnergyNow / totalEnergyFull) * 100) : 0;
-                    service.status = mainStatus;
-                    service.cycleCount = totalCycles;
-                    service.voltage = (totalVoltage / batCount) / 1000000;
-                    service.energyRate = totalRate;
-                    service.energyNow = totalEnergyNow;
-                    service.health = totalEnergyDesign > 0 ? (totalEnergyFull / totalEnergyDesign) * 100 : 0;
-                    
-                    if (service.status === "discharging" && totalRate > 0) {
-                        service.timeRemaining = service.formatTime((totalEnergyNow / totalRate) * 3600);
-                    } else if (service.status === "charging" && totalRate > 0) {
-                        service.timeRemaining = service.formatTime(((totalEnergyFull - totalEnergyNow) / totalRate) * 3600) + " to full";
-                    } else {
-                        service.timeRemaining = "N/A";
+                        service.percentage = totalFull > 0 ? Math.round((totalNow / totalFull) * 100) : 0;
+                        
+                        let mainStatus = "unknown";
+                        if (data.statuses && data.statuses.length > 0) {
+                            if (data.statuses.includes("charging")) mainStatus = "charging";
+                            else if (data.statuses.includes("discharging")) mainStatus = "discharging";
+                            else if (data.statuses.includes("full")) mainStatus = "full";
+                            else mainStatus = data.statuses[0];
+                        }
+                        service.status = mainStatus;
+                        service.cycleCount = data.cycles || 0;
+                        service.voltage = batCount > 0 ? ((data.volt || 0) / batCount) / 1000000 : 0.0;
+                        service.energyRate = totalRate;
+                        service.energyNow = totalNow;
+                        service.health = totalDesign > 0 ? (totalFull / totalDesign) * 100 : 0;
+                        
+                        if (service.status === "discharging" && totalRate > 0) {
+                            service.timeRemaining = service.formatTime((totalNow / totalRate) * 3600);
+                        } else if (service.status === "charging" && totalRate > 0) {
+                            service.timeRemaining = service.formatTime(((totalFull - totalNow) / totalRate) * 3600) + " to full";
+                        } else {
+                            service.timeRemaining = "N/A";
+                        }
                     }
-                }
 
-                // Last line is temp
-                if (parts.length > 0) {
-                    service.temp = parseInt(parts[parts.length - 1]) / 1000;
-                }
+                    if (data.temp !== undefined) {
+                        service.temp = data.temp;
+                    }
+                } catch (e) {}
             }
         }
     }
@@ -295,11 +288,16 @@ Item {
         command: ["udevadm", "monitor", "--subsystem-match=power_supply"]
         running: true
         stdout: SplitParser {
-            onRead: (data) => {
-                service.update();
-            }
+            onRead: (data) => udevDebounceTimer.restart()
         }
         onExited: udevDelay.start()
+    }
+
+    Timer {
+        id: udevDebounceTimer
+        interval: 250
+        repeat: false
+        onTriggered: service.update()
     }
 
     Timer {
