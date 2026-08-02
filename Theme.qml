@@ -202,7 +202,5 @@ QtObject {
         return highColor;
     }
 
-    function setAccent(index) {
-        AccentService.setAccent(index);
-    }
+
 }

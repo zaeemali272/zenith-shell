@@ -3,7 +3,12 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from PIL import Image
+
+try:
+    from PIL import Image, ImageDraw
+except ImportError:
+    print("PIL (Pillow) not installed. Thumbnail generation skipped.")
+    sys.exit(0)
 
 def get_xdg_dir(type_name, default_path):
     try:
@@ -25,15 +30,18 @@ ANIM_THUMB_DIR = os.path.expanduser("~/.cache/animation_thumbs")
 THUMB_WIDTH = 320
 THUMB_HEIGHT = 180
 
+# Corner radius to match QML UI
+CORNER_RADIUS = 18
+
 # Ensure cache dirs exist
 os.makedirs(WALL_THUMB_DIR, exist_ok=True)
 os.makedirs(ANIM_THUMB_DIR, exist_ok=True)
 
 def process_image(img_path, thumb_path):
-    """Crops and resizes images to 16:9 using Pillow."""
+    """Crops, resizes, and applies smooth anti-aliased rounded corners to images."""
     try:
         with Image.open(img_path) as im:
-            im = im.convert("RGB")
+            im = im.convert("RGBA")
             w, h = im.size
             target_aspect = THUMB_WIDTH / THUMB_HEIGHT
             src_aspect = w / h
@@ -48,6 +56,24 @@ def process_image(img_path, thumb_path):
                 im = im.crop((0, top, w, top + new_h))
 
             im = im.resize((THUMB_WIDTH, THUMB_HEIGHT), Image.LANCZOS)
+
+            # Anti-aliased rounded corner mask
+            scale = 4
+            big_w, big_h = THUMB_WIDTH * scale, THUMB_HEIGHT * scale
+            big_radius = CORNER_RADIUS * scale
+
+            mask_big = Image.new("L", (big_w, big_h), 0)
+            draw = ImageDraw.Draw(mask_big)
+
+            draw.rounded_rectangle(
+                [(0, 0), (big_w - 1, big_h - 1)],
+                radius=big_radius,
+                fill=255
+            )
+
+            mask = mask_big.resize((THUMB_WIDTH, THUMB_HEIGHT), Image.BILINEAR)
+            im.putalpha(mask)
+
             im.save(thumb_path, format="PNG")
             print(f"✓ Image Thumb: {os.path.basename(thumb_path)}")
             sys.stdout.flush()
@@ -59,23 +85,24 @@ def process_video(vid_path, thumb_path):
     """Extracts a frame from video using ffmpeg, then crops/resizes it."""
     temp_frame = thumb_path + ".tmp.png"
     try:
-        # Extract frame at 1 second mark
         subprocess.run([
             "ffmpeg", "-y", "-ss", "00:00:01", "-i", vid_path, 
             "-vframes", "1", "-q:v", "2", temp_frame
         ], check=True, capture_output=True)
         
-        # Use existing Pillow logic to crop the frame to 16:9
         process_image(temp_frame, thumb_path)
-        os.remove(temp_frame)
+        if os.path.exists(temp_frame):
+            os.remove(temp_frame)
         print(f"✓ Video Thumb: {os.path.basename(thumb_path)}")
-        sys.stdout.flush()
-    except subprocess.CalledProcessError as e:
-        print(f"✗ Video Error (ffmpeg): {vid_path} → {e}")
         sys.stdout.flush()
     except Exception as e:
         print(f"✗ Video Error: {vid_path} → {e}")
         sys.stdout.flush()
+
+def is_outdated(src, dst):
+    if not os.path.exists(dst):
+        return True
+    return os.path.getmtime(src) > os.path.getmtime(dst)
 
 def main():
     # Process Wallpapers
@@ -83,10 +110,9 @@ def main():
         for file in os.listdir(WALLPAPER_DIR):
             if file.lower().endswith((".jpg", ".jpeg", ".png", ".webp")):
                 src = os.path.join(WALLPAPER_DIR, file)
-                # Use stem to avoid .png.png or .jpg.png
                 name_without_ext = os.path.splitext(file)[0]
                 dst = os.path.join(WALL_THUMB_DIR, name_without_ext + ".png")
-                if not os.path.exists(dst):
+                if is_outdated(src, dst):
                     process_image(src, dst)
 
     # Process Animations
@@ -96,7 +122,7 @@ def main():
                 src = os.path.join(ANIMATION_DIR, file)
                 name_without_ext = os.path.splitext(file)[0]
                 dst = os.path.join(ANIM_THUMB_DIR, name_without_ext + ".png")
-                if not os.path.exists(dst):
+                if is_outdated(src, dst):
                     process_video(src, dst)
 
 if __name__ == "__main__":

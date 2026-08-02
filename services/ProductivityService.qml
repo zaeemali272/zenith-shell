@@ -105,8 +105,7 @@ Item {
     function stopBeeping() {
         isBeeping = false;
         beepProcess.running = false;
-        // Kill paplay using a shell command if necessary, but try to use process control first
-        shellExec.command = ["pkill", "paplay"];
+        shellExec.command = ["pkill", "-f", "ffplay|mpv|paplay|pw-play|canberra-gtk-play"];
         shellExec.running = true;
     }
 
@@ -124,7 +123,7 @@ Item {
     // --- Background Countdown ---
     Timer {
         interval: 1000
-        running: true
+        running: service.running
         repeat: true
         onTriggered: {
             if (service.running) {
@@ -155,7 +154,19 @@ Item {
         }
     }
 
-    Process { id: beepProcess; command: ["paplay", "/usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga"] }
+    // Priority sound player: ffplay -> mpv -> paplay -> pw-play / canberra
+    Process { 
+        id: beepProcess
+        command: ["sh", "-c", 
+            "SOUND_FILE='/run/current-system/sw/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga'; " +
+            "[ ! -f \"$SOUND_FILE\" ] && SOUND_FILE='/usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga'; " +
+            "ffplay -nodisp -autoexit \"$SOUND_FILE\" 2>/dev/null || " +
+            "mpv --no-video --no-terminal \"$SOUND_FILE\" 2>/dev/null || " +
+            "paplay \"$SOUND_FILE\" 2>/dev/null || " +
+            "pw-play \"$SOUND_FILE\" 2>/dev/null || " +
+            "canberra-gtk-play -i alarm-clock-elapsed 2>/dev/null"
+        ] 
+    }
     Process { id: shellExec }
 
     Process { 

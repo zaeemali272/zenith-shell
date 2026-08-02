@@ -32,7 +32,6 @@ PanelWindow {
             MenuService.register(root);
             CenterState.qsVisible = true;
             
-            // Reset scroll for all stack items that support it
             for (let i = 0; i < contentStack.count; i++) {
                 let item = contentStack.itemAt(i);
                 if (item && typeof item.resetScroll === "function") {
@@ -40,7 +39,6 @@ PanelWindow {
                 }
             }
             
-            // Reset NotificationList specifically as it's nested in the Default tab
             if (notificationList) notificationList.resetScroll();
             
             Qt.callLater(() => mainContent.forceActiveFocus());
@@ -48,14 +46,17 @@ PanelWindow {
         } else {
             MenuService.unregister(root);
             CenterState.qsVisible = false;
+            mainContent.opacity = 0;
+            mainContent.scale = 0.94;
+            mainTranslate.y = -6;
         }
     }
 
     ParallelAnimation {
         id: showAnim
-        NumberAnimation { target: mainContent; property: "opacity"; from: 0; to: 1; duration: 400; easing.type: Easing.OutQuint }
-        NumberAnimation { target: mainContent; property: "scale"; from: 0.98; to: 1.0; duration: 500; easing.type: Easing.OutBack }
-        NumberAnimation { target: mainTranslate; property: "y"; from: -20; to: 0; duration: 500; easing.type: Easing.OutBack }
+        NumberAnimation { target: mainContent; property: "opacity"; from: 0; to: 1; duration: Theme.animNormal; easing.type: Theme.animEasing }
+        NumberAnimation { target: mainContent; property: "scale"; from: 0.94; to: 1.0; duration: Theme.animNormal; easing.type: Theme.animEasing }
+        NumberAnimation { target: mainTranslate; property: "y"; from: -6; to: 0; duration: Theme.animNormal; easing.type: Theme.animEasing }
     }
 
     // --- DISMISS ON OUTER CLICK ---
@@ -65,14 +66,22 @@ PanelWindow {
         onClicked: CenterState.close()
     }
 
+    // Masterwork Material 3 Floating Dashboard Card (Directly below center clock)
     Rectangle {
         id: mainContent
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+        anchors.topMargin: Theme.barMarginTop + Theme.barHeight + Theme.scaled(4)
+
+        // Production-ready responsive dimensions
+        width: Math.min(Theme.scaled(840), (screen ? screen.width : Theme.screenWidth) - Theme.scaled(20))
+        height: Math.min(Theme.scaled(560), (screen ? screen.height : Theme.screenHeight) - Theme.barHeight - Theme.scaled(20))
+
         focus: true
         Keys.onPressed: (event) => {
             if (event.key === Qt.Key_Escape) {
                 root.visible = false;
             } else {
-                // Accessing contentStack via its ID
                 let currentContent = contentStack.itemAt(contentStack.currentIndex);
                 if (currentContent && typeof currentContent.handleKeys === 'function') {
                     currentContent.handleKeys(event);
@@ -80,70 +89,82 @@ PanelWindow {
             }
         }
         
-        // Centered relative to the screen width
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: parent.top
-        anchors.topMargin: Theme.barMarginTop + 4
-
-        width: Math.min(Theme.scaled(900), (screen ? screen.width : Theme.screenWidth) - Theme.scaled(20))
-        height: Math.min(Theme.scaled(650), (screen ? screen.height : Theme.screenHeight) - Theme.barHeight - Theme.scaled(20))
-        
         color: Theme.glassBackground
-        radius: Theme.scaled(32)
+        radius: Theme.cardRadius
         border.color: Theme.glassBorder
         border.width: 1
+
         opacity: 0
-        scale: 0.98
+        scale: 0.94
+        transformOrigin: Item.Top
         
-        transform: Translate { id: mainTranslate; y: -20 }
+        transform: Translate { id: mainTranslate; y: -6 }
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: Theme.scaled(25)
-            spacing: Theme.scaled(20)
+            anchors.margins: Theme.scaled(18)
+            spacing: Theme.scaled(14)
 
-            // --- HEADER ---
+            // --- HEADER WITH BUBBLE SWITCHER ---
             RowLayout {
                 Layout.fillWidth: true
-                spacing: Theme.scaled(15)
+                spacing: Theme.scaled(12)
                 
-                Rectangle { width: Theme.scaled(4); height: Theme.scaled(20); color: Theme.blue; radius: 2 }
+                Rectangle {
+                    width: Theme.scaled(4)
+                    height: Theme.scaled(22)
+                    color: Theme.accentColor
+                    radius: 999
+                }
+
                 Text { 
                     text: "DASHBOARD"
-                    color: Theme.text
-                    font.pixelSize: Theme.scaled(12)
+                    color: "#ffffff"
+                    font.pixelSize: Theme.scaled(11)
                     font.weight: Font.Black
                     font.letterSpacing: 2
                     visible: !Theme.isSmallScreen
                 }
 
-                // Tab Switcher
-                RowLayout {
-                    spacing: Theme.scaled(5)
-                    Repeater {
-                        model: ["Default", "Pomodoro", "Wallpaper", "Keybinds"]
-                        delegate: Rectangle {
-                            id: tabRect
-                            width: Theme.scaled(90); height: Theme.scaled(35)
-                            radius: Theme.scaled(10)
-                            color: CenterState.activeTab === modelData ? Theme.blue : (tabMouse.containsMouse ? Theme.surface1 : "transparent")
-                            border.color: CenterState.activeTab === modelData ? Theme.blue : Theme.glassBorder
-                            scale: tabMouse.pressed ? 0.95 : 1.0
-                            Behavior on scale { NumberAnimation { duration: 100 } }
-                            Behavior on color { ColorAnimation { duration: 200 } }
+                // Bubble Tab Switcher Capsule
+                Rectangle {
+                    height: Theme.scaled(38)
+                    implicitWidth: tabRow.implicitWidth + Theme.scaled(8)
+                    radius: 999
+                    color: Qt.rgba(0, 0, 0, 0.35)
+                    border.width: 0
 
-                            Text {
-                                anchors.centerIn: parent
-                                text: modelData
-                                font.pixelSize: Theme.scaled(11)
-                                font.weight: Font.Bold
-                                color: CenterState.activeTab === modelData ? Theme.base : Theme.text
-                            }
-                            MouseArea { 
-                                id: tabMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                onClicked: CenterState.activeTab = modelData 
+                    RowLayout {
+                        id: tabRow
+                        anchors.centerIn: parent
+                        spacing: Theme.scaled(4)
+
+                        Repeater {
+                            model: ["Default", "Pomodoro", "Wallpaper"]
+                            delegate: Rectangle {
+                                id: tabRect
+                                width: Theme.scaled(88)
+                                height: Theme.scaled(30)
+                                radius: 999
+                                color: CenterState.activeTab === modelData ? Theme.accentColor : (tabMouse.containsMouse ? Qt.rgba(255,255,255,0.12) : "transparent")
+                                scale: tabMouse.pressed ? 0.94 : (tabMouse.containsMouse ? 1.03 : 1.0)
+                                
+                                Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.animEasing } }
+                                Behavior on color { ColorAnimation { duration: Theme.animFast } }
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: modelData
+                                    font.pixelSize: Theme.scaled(10.5)
+                                    font.weight: Font.Bold
+                                    color: CenterState.activeTab === modelData ? Colors.on_primary : "#ffffff"
+                                }
+                                MouseArea { 
+                                    id: tabMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    onClicked: CenterState.activeTab = modelData 
+                                }
                             }
                         }
                     }
@@ -151,25 +172,25 @@ PanelWindow {
                 
                 Item { Layout.fillWidth: true }
                 
-                // Caffeine Toggle
+                // Caffeine Bubble Toggle
                 Rectangle {
                     id: caffeineRect
-                    width: Theme.scaled(32); height: Theme.scaled(32)
-                    radius: Theme.scaled(8)
-                    color: CaffeineService.active ? Theme.blue : (caffeineMouse.containsMouse ? Qt.rgba(1,1,1,0.05) : "transparent")
-                    border.color: CaffeineService.active ? Theme.blue : Theme.glassBorder
-                    scale: caffeineMouse.pressed ? 0.9 : 1.0
+                    width: Theme.scaled(38); height: Theme.scaled(38)
+                    radius: 999
+                    color: CaffeineService.active ? Theme.accentColor : (caffeineMouse.containsMouse ? Qt.rgba(255,255,255,0.12) : Qt.rgba(0,0,0,0.3))
+                    border.width: 0
+                    scale: caffeineMouse.pressed ? 0.94 : (caffeineMouse.containsMouse ? 1.05 : 1.0)
                     
-                    Behavior on color { ColorAnimation { duration: 200 } }
-                    Behavior on scale { NumberAnimation { duration: 100 } }
+                    Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                    Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.animEasing } }
 
                     Text {
                         anchors.centerIn: parent
-                        text: "󱄅"
+                        text: "☕"
                         font.family: "Font Awesome 6 Free"
                         font.weight: Font.Black
-                        font.pixelSize: Theme.scaled(16)
-                        color: CaffeineService.active ? Theme.base : (caffeineMouse.containsMouse ? Theme.text : Theme.subtext1)
+                        font.pixelSize: Theme.scaled(15)
+                        color: CaffeineService.active ? Colors.on_primary : "#ffffff"
                     }
                     MouseArea { 
                         id: caffeineMouse
@@ -185,81 +206,81 @@ PanelWindow {
                 id: contentStack
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                currentIndex: ["Default", "Pomodoro", "Wallpaper", "Keybinds"].indexOf(CenterState.activeTab)
+                currentIndex: ["Default", "Pomodoro", "Wallpaper"].indexOf(CenterState.activeTab)
 
                 // Default Tab
                 GridLayout {
                     columns: (Theme.isSmallScreen && Theme.isPortrait) ? 1 : 2
-                    columnSpacing: Theme.scaled(20)
-                    rowSpacing: Theme.scaled(20)
+                    columnSpacing: Theme.scaled(14)
+                    rowSpacing: Theme.scaled(14)
 
-                    // 1. Notifications
+                    // 1. Notifications Bubble Card
                     Rectangle {
                         Layout.fillWidth: true; Layout.fillHeight: true; Layout.rowSpan: (Theme.isSmallScreen && Theme.isPortrait) ? 1 : 2
-                        color: Qt.rgba(0,0,0,0.2); radius: Theme.scaled(24); border.color: Theme.glassBorder; clip: true
+                        color: Qt.rgba(0,0,0,0.3); radius: Theme.cardRadius; border.width: 0; clip: true
                         
                         ColumnLayout {
-                            anchors.fill: parent; anchors.margins: Theme.scaled(15); spacing: Theme.scaled(10)
+                            anchors.fill: parent; anchors.margins: Theme.scaled(14); spacing: Theme.scaled(8)
                             
                             RowLayout {
                                 Layout.fillWidth: true; spacing: Theme.scaled(8)
-                                Text { text: "󰂚"; font.family: Theme.iconFont; color: Theme.blue; font.pixelSize: Theme.scaled(14) }
-                                Text { text: "NOTIFICATIONS"; color: Theme.subtext1; font.pixelSize: Theme.scaled(9); font.weight: Font.Black; font.letterSpacing: 1 }
+                                Text { text: "󰂚"; font.family: Theme.iconFont; color: Theme.accentColor; font.pixelSize: Theme.scaled(14) }
+                                Text { text: "NOTIFICATIONS"; color: Theme.subtext0; font.pixelSize: Theme.scaled(9); font.weight: Font.Black; font.letterSpacing: 1 }
                                 Rectangle {
-                                       width: Theme.scaled(22); height: Theme.scaled(22); radius: Theme.scaled(6)
-                                       color: Theme.surface1
-                                       Label {
-                                           anchors.centerIn: parent
-                                           text: NotificationService.notifications.count
-                                           color: Theme.blue
-                                           font.pixelSize: Theme.scaled(11); font.bold: true
-                                       }
-                                   }
+                                    width: Theme.scaled(22); height: Theme.scaled(22); radius: 999
+                                    color: Theme.surface1
+                                    Label {
+                                        anchors.centerIn: parent
+                                        text: NotificationService.notifications.count
+                                        color: Theme.accentColor
+                                        font.pixelSize: Theme.scaled(11); font.bold: true
+                                    }
+                                }
 
                                 Item { Layout.fillWidth: true }
                                 
-                            Button {
-                                id: fullscreenBtn
-                                flat: true
-                                padding: Theme.scaled(4)
-                                visible: !Theme.isSmallScreen
-                                contentItem: RowLayout {
-                                    spacing: 4
-                                    Text {
-                                        text: NotificationSettings.fullscreenNotification ? "󰊓" : "󰊔"
-                                        font.family: Theme.iconFont
-                                        color: NotificationSettings.fullscreenNotification ? Theme.blue : Theme.surface2
-                                        font.pixelSize: 12
+                                Button {
+                                    id: fullscreenBtn
+                                    flat: true
+                                    padding: Theme.scaled(3)
+                                    visible: !Theme.isSmallScreen
+                                    contentItem: RowLayout {
+                                        spacing: 4
+                                        Text {
+                                            text: NotificationSettings.fullscreenNotification ? "󰊓" : "󰊔"
+                                            font.family: Theme.iconFont
+                                            color: NotificationSettings.fullscreenNotification ? Theme.accentColor : "#ffffff"
+                                            font.pixelSize: 11
+                                        }
+                                        Text { text: "NOTIFY"; font.pixelSize: 8; font.weight: Font.Black; color: "#ffffff" }
                                     }
-                                    Text { text: "NOTIFY"; font.pixelSize: 8; font.weight: Font.Black; color: Theme.subtext1 }
+                                    background: Rectangle { color: fullscreenBtn.hovered ? Qt.rgba(255,255,255,0.1) : "transparent"; radius: 999 }
+                                    onClicked: NotificationSettings.fullscreenNotification = !NotificationSettings.fullscreenNotification
                                 }
-                                background: Rectangle { color: fullscreenBtn.hovered ? Theme.surface0 : "transparent"; radius: 6 }
-                                onClicked: NotificationSettings.fullscreenNotification = !NotificationSettings.fullscreenNotification
-                            }
-                            Button {
-                                id: osdFullscreenBtn
-                                flat: true
-                                padding: Theme.scaled(4)
-                                visible: !Theme.isSmallScreen
-                                contentItem: RowLayout {
-                                    spacing: 4
-                                    Text {
-                                        text: NotificationSettings.fullscreenOSD ? "󰊓" : "󰊔"
-                                        font.family: Theme.iconFont
-                                        color: NotificationSettings.fullscreenOSD ? Theme.blue : Theme.surface2
-                                        font.pixelSize: 12
+                                Button {
+                                    id: osdFullscreenBtn
+                                    flat: true
+                                    padding: Theme.scaled(3)
+                                    visible: !Theme.isSmallScreen
+                                    contentItem: RowLayout {
+                                        spacing: 4
+                                        Text {
+                                            text: NotificationSettings.fullscreenOSD ? "󰊓" : "󰊔"
+                                            font.family: Theme.iconFont
+                                            color: NotificationSettings.fullscreenOSD ? Theme.accentColor : "#ffffff"
+                                            font.pixelSize: 11
+                                        }
+                                        Text { text: "OSD"; font.pixelSize: 8; font.weight: Font.Black; color: "#ffffff" }
                                     }
-                                    Text { text: "OSD"; font.pixelSize: 8; font.weight: Font.Black; color: Theme.subtext1 }
+                                    background: Rectangle { color: osdFullscreenBtn.hovered ? Qt.rgba(255,255,255,0.1) : "transparent"; radius: 999 }
+                                    onClicked: NotificationSettings.fullscreenOSD = !NotificationSettings.fullscreenOSD
                                 }
-                                background: Rectangle { color: osdFullscreenBtn.hovered ? Theme.surface0 : "transparent"; radius: 6 }
-                                onClicked: NotificationSettings.fullscreenOSD = !NotificationSettings.fullscreenOSD
-                            }
                                 Button {
                                     id: clearBtn
                                     flat: true
-                                    padding: Theme.scaled(4)
-                                    contentItem: Text { text: "󰃢"; font.family: Theme.iconFont; color: Theme.subtext1; font.pixelSize: Theme.scaled(14) }
-                                    background: Rectangle { color: clearBtn.hovered ? Theme.surface0 : "transparent"; radius: 6 }
+                                    padding: Theme.scaled(3)
+                                    contentItem: Text { text: "󰃢"; font.family: Theme.iconFont; color: "#ffffff"; font.pixelSize: Theme.scaled(13) }
+                                    background: Rectangle { color: clearBtn.hovered ? Qt.rgba(255,255,255,0.1) : "transparent"; radius: 999 }
                                     onClicked: NotificationService.clearAll()
                                 }
                             }
@@ -274,33 +295,33 @@ PanelWindow {
                         }
                     }
 
-                    // 2. Calendar
+                    // 2. Calendar Bubble Card
                     Rectangle {
                         Layout.fillWidth: true; Layout.fillHeight: true
                         visible: !Theme.isSmallScreen || !Theme.isPortrait
-                        color: Qt.rgba(0,0,0,0.2); radius: Theme.scaled(24); border.color: Theme.glassBorder
+                        color: Qt.rgba(0,0,0,0.3); radius: Theme.cardRadius; border.width: 0
                         ColumnLayout {
-                            anchors.fill: parent; anchors.margins: Theme.scaled(15)
+                            anchors.fill: parent; anchors.margins: Theme.scaled(14)
                             RowLayout {
                                 spacing: Theme.scaled(8)
-                                Text { text: "󰃭"; font.family: Theme.iconFont; color: Theme.blue; font.pixelSize: Theme.scaled(14) }
-                                Text { text: "CALENDAR"; color: Theme.subtext1; font.pixelSize: Theme.scaled(9); font.weight: Font.Black; font.letterSpacing: 1 }
+                                Text { text: "󰃭"; font.family: Theme.iconFont; color: Theme.accentColor; font.pixelSize: Theme.scaled(14) }
+                                Text { text: "CALENDAR"; color: Theme.subtext0; font.pixelSize: Theme.scaled(9); font.weight: Font.Black; font.letterSpacing: 1 }
                             }
                             CalendarWidget { Layout.fillWidth: true; Layout.fillHeight: true }
                         }
                     }
 
-                    // 3. Weather
+                    // 3. Weather Bubble Card
                     Rectangle {
                         Layout.fillWidth: true; Layout.fillHeight: true
                         visible: (!Theme.isSmallScreen || !Theme.isPortrait) && WidgetSettings.enableWeather
-                        color: Qt.rgba(0,0,0,0.2); radius: Theme.scaled(24); border.color: Theme.glassBorder
+                        color: Qt.rgba(0,0,0,0.3); radius: Theme.cardRadius; border.width: 0
                         ColumnLayout {
-                            anchors.fill: parent; anchors.margins: Theme.scaled(15)
+                            anchors.fill: parent; anchors.margins: Theme.scaled(14)
                             RowLayout {
                                 spacing: Theme.scaled(8)
-                                Text { text: "󰖐"; font.family: Theme.iconFont; color: Theme.blue; font.pixelSize: Theme.scaled(14) }
-                                Text { text: "WEATHER"; color: Theme.subtext1; font.pixelSize: Theme.scaled(9); font.weight: Font.Black; font.letterSpacing: 1 }
+                                Text { text: "󰖐"; font.family: Theme.iconFont; color: Theme.accentColor; font.pixelSize: Theme.scaled(14) }
+                                Text { text: "WEATHER"; color: Theme.subtext0; font.pixelSize: Theme.scaled(9); font.weight: Font.Black; font.letterSpacing: 1 }
                             }
                             WeatherWidget {
                                 Layout.fillWidth: true; Layout.fillHeight: true
@@ -319,15 +340,10 @@ PanelWindow {
                     id: wallpaperContent
                     Layout.fillWidth: true; Layout.fillHeight: true
                 }
-
-                // Keybinds Tab
-                KeybindsContent {
-                    Layout.fillWidth: true; Layout.fillHeight: true
-                }
             }
         }
     }
-    // Forward keys when Wallpaper tab is active
+
     Connections {
         target: CenterState
         function onActiveTabChanged() {
@@ -345,5 +361,3 @@ PanelWindow {
         }
     }
 }
-
-

@@ -7,7 +7,6 @@ import "bar"
 import "bar/Menu"
 import "bar/Menu/components"
 import "services"
-import "windows" as Windows
 import "Settings"
 
 Scope {
@@ -15,11 +14,8 @@ Scope {
     readonly property var _battery: BatteryService
     readonly property var _media: MediaPlayerService
     readonly property var _productivity: ProductivityService
-    readonly property var _userService: UserService
-    readonly property var _overview: OverviewService
-    readonly property var _settings: SettingsService
 
-// --- INSTANT IPC VIA NAMED PIPE (FIFO) ---
+    // --- INSTANT IPC VIA NAMED PIPE (FIFO) ---
     property string cmdPath: Quickshell.env("HOME") + "/.cache/zenith_command"
     
     Process {
@@ -28,7 +24,6 @@ Scope {
         running: true
         
         stdout: SplitParser {
-            // splitMarker defaults to "\n"
             onRead: (data) => {
                 let cmd = data.trim();
                 if (cmd !== "") {
@@ -43,21 +38,19 @@ Scope {
         let action = parts[0];
         let arg = parts.length > 1 ? parts[1] : "";
 
-        if (action === "dashboard") {
+        if (action === "dashboard" || action === "toggle_dashboard" || action === "ActionLauncher") {
             let tab = "Default";
             let lowerArg = arg.toLowerCase();
             
             if (lowerArg === "pomodoro") tab = "Pomodoro";
             else if (lowerArg === "wallpaper" || lowerArg === "wallpapers") tab = "Wallpaper";
-            else if (lowerArg === "keybinds") tab = "Keybinds";
-            else if (lowerArg === "user") tab = "User";
             
             if (CenterState.qsVisible && CenterState.activeTab === tab) {
                 CenterState.close();
             } else {
                 CenterState.open(tab);
             }
-        } else if (action === "quicksettings") {
+        } else if (action === "quicksettings" || action === "toggle_quicksettings") {
             if (QuickSettingsService.qsVisible && QuickSettingsService.activeTab === arg) {
                 QuickSettingsService.close();
             } else {
@@ -65,26 +58,6 @@ Scope {
             }
         } else if (action === "close_all") {
             MenuService.closeAll();
-        } else if (action === "toggle_dashboard") {
-            CenterState.toggle();
-        } else if (action === "Overview") {
-            OverviewService.toggle();
-        } else if (action === "Settings") {
-            SettingsService.toggle();
-        } else if (action === "Keybinds") {
-            if (CenterState.qsVisible && CenterState.activeTab === "Keybinds") {
-                CenterState.close();
-            } else {
-                CenterState.open("Keybinds");
-            }
-        } else if (action === "ActionLauncher") {
-            if (CenterState.qsVisible && CenterState.activeTab === "Default") {
-                CenterState.close();
-            } else {
-                CenterState.open("Default");
-            }
-        } else if (action === "toggle_quicksettings") {
-            QuickSettingsService.toggle(arg || "network");
         }
     }
 

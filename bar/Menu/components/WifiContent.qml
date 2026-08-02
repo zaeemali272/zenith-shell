@@ -9,9 +9,6 @@ import "../../../services"
 Item {
     id: root
     
-    // Ensure FirewallService is available via singleton/import
-    property var firewallSvc: FirewallService
-    
     // Explicit sizing for ScrollView integration
     Layout.fillWidth: true
     Layout.fillHeight: true
@@ -22,10 +19,13 @@ Item {
     }
 
     property var wifiSvc: WifiService
-    property bool isAirplane: false
+    readonly property bool isAirplane: wifiSvc.isAirplane
     property string selectedSsid: ""
+    onSelectedSsidChanged: {
+        WifiService.isUserTyping = (selectedSsid !== "");
+    }
     property string lastFailedSsid: ""
-    
+
     // Track if any password input is active
     property bool isInputActive: selectedSsid !== "" && !wifiSvc.knownNetworks[selectedSsid]
 
@@ -64,35 +64,12 @@ Item {
                 Layout.fillWidth: true; spacing: Theme.scaled(15)
                 ColumnLayout {
                     spacing: Theme.scaled(2); Layout.fillWidth: true
-                    Text { text: "NETWORKS"; color: Theme.blue; font.pixelSize: Theme.scaled(14); font.letterSpacing: 2; font.weight: Font.Black; opacity: 0.8 }
+                    Text { text: "NETWORKS"; color: Theme.accentColor; font.pixelSize: Theme.scaled(14); font.letterSpacing: 2; font.weight: Font.Black }
                     Text {
                         text: root.isAirplane ? "AIRPLANE MODE" : (wifiSvc.networks.length + " IN RANGE")
-                        color: Theme.surface2; font.pixelSize: Theme.scaled(10); font.weight: Font.Bold; font.letterSpacing: 1
+                        color: Theme.subtext0; font.pixelSize: Theme.scaled(10); font.weight: Font.Bold; font.letterSpacing: 1
                     }
                 }
-
-                // Firewall Toggle
-                Rectangle {
-                    width: Theme.scaled(120); height: Theme.scaled(44); radius: Theme.scaled(22)
-                    color: FirewallService.enabled ? Theme.green : Theme.surface1
-                    border.color: FirewallService.enabled ? Theme.green : Theme.glassBorder
-                    
-                    RowLayout {
-                        anchors.centerIn: parent; spacing: Theme.scaled(6)
-                        Text { 
-                            text: FirewallService.enabled ? "󰦝" : "󰦞"
-                            font.family: Theme.iconFont; font.pixelSize: Theme.scaled(16)
-                            color: FirewallService.enabled ? Theme.base : Theme.text
-                        }
-                        Text { 
-                            text: FirewallService.enabled ? "ON" : "OFF"
-                            color: FirewallService.enabled ? Theme.base : Theme.text
-                            font.pixelSize: Theme.scaled(10); font.weight: Font.Black; font.letterSpacing: 1
-                        }
-                    }
-                    MouseArea { anchors.fill: parent; onClicked: FirewallService.toggle(!FirewallService.enabled) }
-                }
-
 
                 // Speed Test
                 Rectangle {
@@ -100,10 +77,10 @@ Item {
                     Behavior on color { ColorAnimation { duration: 200 } }
                     RowLayout {
                         anchors.centerIn: parent; spacing: 5
-                        Text { text: wifiSvc.isTesting ? "󱐋" : "󰓅"; font.family: Theme.iconFont; color: wifiSvc.isTesting ? Theme.powerYellow : Theme.blue; font.pixelSize: Theme.scaled(16) }
+                        Text { text: wifiSvc.isTesting ? "󱐋" : "󰓅"; font.family: Theme.iconFont; color: wifiSvc.isTesting ? Theme.powerYellow : Theme.accentColor; font.pixelSize: Theme.scaled(16) }
                         Text { 
                             text: wifiSvc.isTesting ? "TESTING" : (wifiSvc.currentSpeed === "0.0 Mbps" ? "SPEED" : wifiSvc.currentSpeed.replace(" Mbps", " MB/s").toUpperCase())
-                            color: Theme.text; font.pixelSize: Theme.scaled(9); font.weight: Font.Black 
+                            color: "#ffffff"; font.pixelSize: Theme.scaled(9); font.weight: Font.Black 
                         }
                     }
                     MouseArea { id: speedMouse; anchors.fill: parent; hoverEnabled: true; onClicked: wifiSvc.runMaxSpeedTest() }
@@ -126,21 +103,17 @@ Item {
                 Rectangle {
                     width: Theme.scaled(44); height: Theme.scaled(44); radius: Theme.scaled(22); color: (airplaneMouse.containsMouse ? Qt.rgba(1,1,1,0.05) : "transparent"); border.color: root.isAirplane ? Theme.powerRed : Theme.glassBorder; clip: true
                     Behavior on color { ColorAnimation { duration: 200 } }
-                    Text { anchors.centerIn: parent; text: "󰀝"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(20); color: root.isAirplane ? Theme.powerRed : Theme.text }
+                    Text { anchors.centerIn: parent; text: "󰀝"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(20); color: root.isAirplane ? Theme.powerRed : "#ffffff" }
                     MouseArea {
                         id: airplaneMouse; anchors.fill: parent; hoverEnabled: true
-                        onClicked: {
-                            root.isAirplane = !root.isAirplane;
-                            rfkillProc.command = ["rfkill", root.isAirplane ? "block" : "unblock", "wifi"];
-                            rfkillProc.running = true;
-                        }
+                        onClicked: wifiSvc.toggleAirplane(!wifiSvc.isAirplane)
                     }
                 }
             }
             
             // Current Connection Detailed Info
             Rectangle {
-                Layout.fillWidth: true; height: Theme.scaled(60); color: Qt.rgba(0,0,0,0.2); radius: Theme.scaled(16); visible: wifiSvc.currentSsid !== ""
+                Layout.fillWidth: true; height: Theme.scaled(60); color: Qt.rgba(0,0,0,0.25); radius: Theme.scaled(16); visible: wifiSvc.currentSsid !== ""
                 border.color: Theme.glassBorder
                 RowLayout {
                     anchors.fill: parent; anchors.margins: Theme.scaled(12); spacing: Theme.scaled(15)
@@ -148,15 +121,15 @@ Item {
                         Text { anchors.centerIn: parent; text: "󰤨"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(18); color: Theme.powerGreen }
                     }
                     ColumnLayout { spacing: 0; Layout.fillWidth: true
-                        Text { text: wifiSvc.currentSsid; color: Theme.text; font.weight: Font.Bold; font.pixelSize: Theme.scaled(13); elide: Text.ElideRight }
+                        Text { text: wifiSvc.currentSsid; color: "#ffffff"; font.weight: Font.Bold; font.pixelSize: Theme.scaled(13); elide: Text.ElideRight }
                         Text { 
                             text: wifiSvc.ipv4Address ? wifiSvc.ipv4Address : "Connecting..."
-                            color: Theme.surface2; font.pixelSize: Theme.scaled(10); font.weight: Font.Bold 
+                            color: Theme.subtext0; font.pixelSize: Theme.scaled(10); font.weight: Font.Bold 
                         }
                     }
                     ColumnLayout { spacing: 0; Layout.alignment: Qt.AlignRight
                         Text { text: wifiSvc.rssi; color: Theme.powerYellow; font.pixelSize: Theme.scaled(10); font.weight: Font.Black; horizontalAlignment: Text.AlignRight }
-                        Text { text: wifiSvc.txBitrate ? (parseInt(wifiSvc.txBitrate)/1000).toFixed(0) + " MB/S" : ""; color: Theme.surface2; font.pixelSize: Theme.scaled(9); font.weight: Font.Black; horizontalAlignment: Text.AlignRight }
+                        Text { text: wifiSvc.txBitrate ? (parseInt(wifiSvc.txBitrate)/1000).toFixed(0) + " MB/S" : ""; color: Theme.subtext0; font.pixelSize: Theme.scaled(9); font.weight: Font.Black; horizontalAlignment: Text.AlignRight }
                     }
                 }
             }
@@ -166,12 +139,10 @@ Item {
         ListView {
             id: list
             Layout.fillWidth: true
-            // Use contentHeight for dynamic expansion
             Layout.preferredHeight: contentHeight
             model: wifiSvc.networks; spacing: Theme.scaled(10); clip: true
             interactive: false
 
-            
             delegate: FocusScope {
                 id: delegateRoot
                 width: list.width
@@ -179,7 +150,6 @@ Item {
                 property bool isKnown: !!(modelData && wifiSvc.knownNetworks[modelData.ssid])
                 property bool showSecrets: false
                 
-                // Height expands if selected AND (!known OR user wants to see secrets)
                 height: (selectedSsid === modelData.ssid && (!isKnown || showSecrets)) ? (isKnown ? Theme.scaled(130) : Theme.scaled(140)) : Theme.scaled(65)
                 
                 Behavior on height { NumberAnimation { duration: 300; easing.type: Easing.OutQuint } }
@@ -187,9 +157,9 @@ Item {
                 Rectangle {
                     id: backgroundRect
                     anchors.fill: parent
-                    color: modelData.connected ? Qt.rgba(Theme.blue.r, Theme.blue.g, Theme.blue.b, 0.1) : (delegateMouse.containsMouse ? Qt.rgba(1,1,1,0.05) : Qt.rgba(0,0,0,0.15))
+                    color: modelData.connected ? Qt.rgba(Theme.blue.r, Theme.blue.g, Theme.blue.b, 0.1) : (delegateMouse.containsMouse ? Qt.rgba(1,1,1,0.05) : Qt.rgba(0,0,0,0.2))
                     radius: Theme.scaled(18)
-                    border.color: modelData.connected ? Theme.powerGreen : (selectedSsid === modelData.ssid ? Theme.blue : Theme.glassBorder)
+                    border.color: modelData.connected ? Theme.powerGreen : (selectedSsid === modelData.ssid ? Theme.accentColor : Theme.glassBorder)
                     border.width: 1
                     clip: true
                     
@@ -214,19 +184,18 @@ Item {
                                     anchors.centerIn: parent
                                     text: modelData.connected ? "󰤨" : (modelData.signal >= 4 ? "󰤨" : (modelData.signal >= 3 ? "󰤥" : (modelData.signal >= 2 ? "󰤢" : (modelData.signal >= 1 ? "󰤟" : "󰤯"))))
                                     font.family: Theme.iconFont; font.pixelSize: Theme.scaled(18)
-                                    color: modelData.connected ? Theme.powerGreen : Theme.text 
+                                    color: modelData.connected ? Theme.powerGreen : "#ffffff" 
                                 }
                             }
                             ColumnLayout { spacing: 0; Layout.fillWidth: true
-                                Text { text: modelData.ssid; color: Theme.text; font.weight: Font.Bold; font.pixelSize: Theme.scaled(13); elide: Text.ElideRight }
+                                Text { text: modelData.ssid; color: "#ffffff"; font.weight: Font.Bold; font.pixelSize: Theme.scaled(13); elide: Text.ElideRight }
                                 Text { 
                                     text: modelData.connected ? "ACTIVE" : (isKnown ? "SAVED" : "AVAILABLE")
-                                    color: modelData.connected ? Theme.powerGreen : Theme.surface2
+                                    color: modelData.connected ? Theme.powerGreen : Theme.subtext0
                                     font.pixelSize: Theme.scaled(9); font.weight: Font.Black 
                                 }
                             }
                             RowLayout { spacing: Theme.scaled(6)
-                                // Disconnect Button (Only if connected)
                                 Rectangle {
                                     visible: !!(modelData && modelData.connected)
                                     width: Theme.scaled(32); height: Theme.scaled(32); radius: Theme.scaled(8); color: Qt.rgba(1,0.5,0,0.1)
@@ -234,7 +203,6 @@ Item {
                                     MouseArea { id: disconnectMouse; anchors.fill: parent; onClicked: wifiSvc.disconnect() }
                                 }
                                 
-                                // Forget Button (Only if known)
                                 Rectangle {
                                     visible: isKnown
                                     width: Theme.scaled(32); height: Theme.scaled(32); radius: Theme.scaled(8); color: Qt.rgba(1,0,0,0.1)
@@ -242,27 +210,24 @@ Item {
                                     MouseArea { id: forgetMouse; anchors.fill: parent; onClicked: wifiSvc.forgetNetwork(modelData.ssid) }
                                 }
 
-                                // Show Secrets Toggle (Only if known)
                                 Rectangle {
                                     visible: isKnown
-                                    width: Theme.scaled(32); height: Theme.scaled(32); radius: Theme.scaled(8); color: delegateRoot.showSecrets ? Theme.blue : Qt.rgba(1,1,1,0.05)
-                                    Text { anchors.centerIn: parent; text: delegateRoot.showSecrets ? "󰈈" : "󰈉"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(14); color: delegateRoot.showSecrets ? "black" : Theme.text }
+                                    width: Theme.scaled(32); height: Theme.scaled(32); radius: Theme.scaled(8); color: delegateRoot.showSecrets ? Theme.accentColor : Qt.rgba(1,1,1,0.05)
+                                    Text { anchors.centerIn: parent; text: delegateRoot.showSecrets ? "󰈈" : "󰈉"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(14); color: delegateRoot.showSecrets ? Colors.on_primary : "#ffffff" }
                                     MouseArea { anchors.fill: parent; onClicked: { delegateRoot.showSecrets = !delegateRoot.showSecrets; selectedSsid = modelData.ssid; } }
                                 }
 
-                                // Connect Button (If not connected but known)
                                 Rectangle {
                                     visible: isKnown && !(modelData && modelData.connected)
-                                    width: Theme.scaled(65); height: Theme.scaled(32); radius: Theme.scaled(8); color: Theme.blue
-                                    Text { anchors.centerIn: parent; text: "CONNECT"; font.pixelSize: Theme.scaled(9); font.weight: Font.Black; color: "black" }
+                                    width: Theme.scaled(65); height: Theme.scaled(32); radius: Theme.scaled(8); color: Theme.accentColor
+                                    Text { anchors.centerIn: parent; text: "CONNECT"; font.pixelSize: Theme.scaled(9); font.weight: Font.Black; color: Colors.on_primary }
                                     MouseArea { anchors.fill: parent; onClicked: wifiSvc.connect(modelData.ssid, "") }
                                 }
 
-                                // Selection Arrow (If not connected and not known)
                                 Rectangle {
                                     visible: !isKnown && !(modelData && modelData.connected)
                                     width: Theme.scaled(32); height: Theme.scaled(32); radius: Theme.scaled(8); color: Qt.rgba(1,1,1,0.05)
-                                    Text { anchors.centerIn: parent; text: "󰅂"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(14); color: Theme.text }
+                                    Text { anchors.centerIn: parent; text: "󰅂"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(14); color: "#ffffff" }
                                     MouseArea { anchors.fill: parent; onClicked: selectedSsid = (selectedSsid === modelData.ssid) ? "" : modelData.ssid }
                                 }
                             }
@@ -281,20 +246,20 @@ Item {
                                 Layout.fillWidth: true; spacing: Theme.scaled(8)
                                 Rectangle { 
                                     Layout.fillWidth: true; height: Theme.scaled(38); color: Qt.rgba(0,0,0,0.2); radius: Theme.scaled(10); 
-                                    border.color: lastFailedSsid === modelData.ssid ? Theme.powerRed : (passInput.activeFocus ? Theme.blue : Theme.glassBorder)
+                                    border.color: lastFailedSsid === modelData.ssid ? Theme.powerRed : (passInput.activeFocus ? Theme.accentColor : Theme.glassBorder)
                                     RowLayout {
                                         anchors.fill: parent; anchors.margins: Theme.scaled(8)
                                         TextInput { 
-                                            id: passInput; Layout.fillWidth: true; color: Theme.text; echoMode: delegateRoot.showSecrets ? TextInput.Normal : TextInput.Password; font.pixelSize: Theme.scaled(13)
+                                            id: passInput; Layout.fillWidth: true; color: "#ffffff"; echoMode: delegateRoot.showSecrets ? TextInput.Normal : TextInput.Password; font.pixelSize: Theme.scaled(13)
                                             selectByMouse: true
                                             text: wifiSvc.savedSecrets[modelData.ssid] || ""
-                                            Text { text: "Password..."; color: Theme.surface2; visible: !passInput.text && !passInput.activeFocus }
+                                            Text { text: "Password..."; color: Theme.subtext0; visible: !passInput.text && !passInput.activeFocus }
                                             onAccepted: { wifiSvc.connect(modelData.ssid, passInput.text); selectedSsid = ""; }
                                             Keys.onEscapePressed: { selectedSsid = ""; }
                                         }
                                         Text {
                                             text: delegateRoot.showSecrets ? "󰈈" : "󰈉"
-                                            font.family: Theme.iconFont; font.pixelSize: Theme.scaled(14); color: delegateRoot.showSecrets ? Theme.blue : Theme.surface2
+                                            font.family: Theme.iconFont; font.pixelSize: Theme.scaled(14); color: delegateRoot.showSecrets ? Theme.accentColor : Theme.subtext0
                                             MouseArea { anchors.fill: parent; onClicked: delegateRoot.showSecrets = !delegateRoot.showSecrets }
                                         }
                                     }
@@ -302,8 +267,8 @@ Item {
                                 
                                 Rectangle { 
                                     visible: !isKnown || (selectedSsid === modelData.ssid && !showSecrets)
-                                    width: Theme.scaled(100); height: Theme.scaled(38); color: Theme.blue; radius: Theme.scaled(10)
-                                    Text { anchors.centerIn: parent; text: "JOIN"; color: "black"; font.weight: Font.Black; font.pixelSize: Theme.scaled(10) }
+                                    width: Theme.scaled(100); height: Theme.scaled(38); color: Theme.accentColor; radius: Theme.scaled(10)
+                                    Text { anchors.centerIn: parent; text: "JOIN"; color: Colors.on_primary; font.weight: Font.Black; font.pixelSize: Theme.scaled(10) }
                                     MouseArea { anchors.fill: parent; onClicked: { wifiSvc.connect(modelData.ssid, passInput.text); } }
                                 }
                             }

@@ -1,5 +1,3 @@
-singleton AccentService AccentService.qml
-singleton IconsFetcher IconsFetcher.qml
 singleton NotificationService NotificationService.qml
 singleton CenterState CenterState.qml
 singleton BatteryService BatteryService.qml
@@ -10,12 +8,8 @@ singleton PowerProfileService PowerProfileService.qml
 singleton QuickSettingsService QuickSettingsService.qml
 singleton MediaPlayerService MediaPlayerService.qml
 singleton WallpaperService WallpaperService.qml
-singleton UserService UserService.qml
 singleton CaffeineService CaffeineService.qml
 singleton MenuService MenuService.qml
 singleton ProductivityService ProductivityService.qml
-singleton FirewallService FirewallService.qml
-singleton AppUsageService AppUsageService.qml
-singleton OverviewService OverviewService.qml
-singleton SettingsService SettingsService.qml
-
+singleton ResourceService ResourceService.qml
+singleton HyprlandService HyprlandService.qml

@@ -1,64 +1,52 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# System Info
-cpu_model=$(grep "model name" /proc/cpuinfo | head -n1 | cut -d':' -f2 | xargs)
-max_freq=$(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq 2>/dev/null || echo "0")
-max_freq_ghz=$(echo "scale=2; $max_freq / 1000000" | bc -l)
-curr_freq=$(grep "cpu MHz" /proc/cpuinfo | head -n1 | cut -d':' -f2 | xargs)
-curr_freq_ghz=$(echo "scale=2; $curr_freq / 1000" | bc -l)
+exec awk '
+BEGIN {
+    prev_file = "/tmp/zenith_proc_stat.txt"
+    while ((getline line < prev_file) > 0) {
+        split(line, f, " ")
+        prev_idle[f[1]] = f[2]
+        prev_total[f[1]] = f[3]
+    }
+    close(prev_file)
 
-arch=$(grep PRETTY_NAME /etc/os-release | cut -d'"' -f2)
-kernel=$(uname -r)
-ip=$(ip addr show | grep 'inet ' | grep -v '127.0.0.1' | head -n1 | awk '{print $2}')
+    while ((getline line < "/proc/stat") > 0) {
+        if (line ~ /^cpu /) {
+            n = split(line, f, " ")
+            idle = f[5] + f[6]
+            total = 0
+            for (i=2; i<=n; i++) total += f[i]
+            curr_idle["cpu"] = idle
+            curr_total["cpu"] = total
+            print "cpu", idle, total > prev_file
+            break
+        }
+    }
+    close("/proc/stat")
+    close(prev_file)
 
-# Usage
-cpu=$(LC_ALL=C top -bn1 | grep "Cpu(s)" | sed 's/[:,]/ /g' | awk '{print int($2 + $4)}')
-mem=$(free | awk '/Mem:/ {printf "%d", $3/$2 * 100}')
-load=$(awk '{print $1}' /proc/loadavg)
-cores=$(nproc)
-load_perc=$(awk -v cores="$cores" '{printf "%d", ($1/cores)*100}' /proc/loadavg)
+    t_diff = curr_total["cpu"] - prev_total["cpu"]
+    i_diff = curr_idle["cpu"] - prev_idle["cpu"]
+    cpu_overall = (t_diff > 0) ? int(0.5 + 100 * (t_diff - i_diff) / t_diff) : 0
+    if (cpu_overall < 0) cpu_overall = 0
+    if (cpu_overall > 100) cpu_overall = 100
 
-# Per Core Usage (numeric)
-core_usages=$(LC_ALL=C top -bn1 -1 | grep "^%Cpu[0-9]" | sed 's/[:,]/ /g' | awk '{print int($2 + $4)}' | jq -s .)
+    mem_total = 0; mem_avail = 0
+    while ((getline line < "/proc/meminfo") > 0) {
+        if (line ~ /^MemTotal:/) mem_total = $2
+        else if (line ~ /^MemAvailable:/) mem_avail = $2
+    }
+    close("/proc/meminfo")
+    mem_perc = (mem_total > 0) ? int(0.5 + 100 * (mem_total - mem_avail) / mem_total) : 0
 
-# Temperature
-temp=$(sensors | awk '/Package id 0:/ {print int($4)}' | head -n1 | tr -d '+°C')
-[ -z "$temp" ] && temp=$(sensors | awk '/Tdie/ {print int($2)}' | head -n1 | tr -d '+°C')
-[ -z "$temp" ] && temp=$(sensors | awk '/temp1/ {print int($2)}' | head -n1 | tr -d '+°C')
-[ -z "$temp" ] && temp=0
+    max_temp = 0
+    cmd = "cat /sys/class/hwmon/hwmon*/temp*_input /sys/class/thermal/thermal_zone*/temp 2>/dev/null"
+    while ((cmd | getline line) > 0) {
+        t = line + 0
+        if (t >= 10000 && t <= 115000) t = int(t / 1000)
+        if (t > max_temp && t <= 115) max_temp = t
+    }
+    close(cmd)
 
-# Per Core Temps (numeric)
-core_temps=$(sensors | awk '/Core [0-9]:/ {print int($3)}' | jq -s .)
-
-# Filesystem
-fs=$(df -h / | awk 'NR==2 {print $5}' | tr -d '%')
-
-jq -n \
-  --arg cpu "$cpu" \
-  --arg mem "$mem" \
-  --arg temp "$temp" \
-  --arg load "$load" \
-  --arg load_perc "$load_perc" \
-  --arg fs "$fs" \
-  --arg cpu_model "$cpu_model" \
-  --arg freq "${curr_freq_ghz}/${max_freq_ghz}GHz" \
-  --arg arch "$arch" \
-  --arg kernel "$kernel" \
-  --arg ip "$ip" \
-  --argjson core_usages "$core_usages" \
-  --argjson core_temps "$core_temps" \
-  '{
-    cpu: ($cpu|tonumber),
-    mem: ($mem|tonumber),
-    temp: ($temp|tonumber),
-    load: ($load|tonumber),
-    load_perc: ($load_perc|tonumber),
-    fs: ($fs|tonumber),
-    cpu_model: $cpu_model,
-    freq: $freq,
-    arch: $arch,
-    kernel: $kernel,
-    ip: $ip,
-    core_usages: $core_usages,
-    core_temps: $core_temps
-  }'
+    printf "{\"cpu\": %d, \"mem\": %d, \"temp\": %d}\n", cpu_overall, mem_perc, max_temp
+}'

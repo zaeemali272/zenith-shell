@@ -2,6 +2,7 @@ import "../.."
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Io
 import Quickshell.Services.SystemTray
 import Quickshell.Hyprland
 import "../../services"
@@ -21,7 +22,6 @@ PopupWindow {
     visible: false
     color: "transparent"
 
-    // Increased implicit width for a more "desktop" feel
     implicitWidth: menuSurface.implicitWidth
     implicitHeight: menuSurface.implicitHeight + Theme.scaled(10)
 
@@ -35,6 +35,11 @@ PopupWindow {
             root.visible = false;
             if (parentMenu) parentMenu.visible = false;
         }
+    }
+
+    Process {
+        id: elementFocusProc
+        command: ["sh", "-c", "hyprctl dispatch focuswindow class:^(element|Element|element-desktop)$ || element-desktop &"]
     }
 
     function openFor(item, visualParent, edges) {
@@ -64,14 +69,12 @@ PopupWindow {
         color: Theme.glassBackground
         border.color: Theme.glassBorder
         border.width: 1
-        radius: Theme.scaled(12)
+        radius: Theme.scaled(14)
         focus: true
         Keys.onPressed: (event) => {
             if (event.key === Qt.Key_Escape) root.closeAll()
         }
 
-        // --- WIDTH FIX ---
-        // Increased min-width to 220 for better readability
         implicitWidth: Math.max(Theme.scaled(220), menuContent.implicitWidth + Theme.scaled(30))
         implicitHeight: menuContent.implicitHeight + Theme.scaled(20)
 
@@ -96,8 +99,7 @@ PopupWindow {
                 delegate: Rectangle {
                     id: menuItem
                     Layout.fillWidth: true
-                    // Slightly taller items for a premium touch
-                    implicitHeight: modelData.isSeparator ? Theme.scaled(13) : Theme.scaled(38)
+                    implicitHeight: modelData.isSeparator ? Theme.scaled(13) : Theme.scaled(36)
                     radius: Theme.scaled(8)
 
                     color: (modelData.isSeparator) ? "transparent" : ((itemMouse.containsMouse || (subMenuLoader.active && subMenuLoader.item.currentItem === modelData)) ? Theme.surface1 : "transparent")
@@ -117,12 +119,11 @@ PopupWindow {
                         spacing: Theme.scaled(12)
 
                         Text {
-                            text: modelData.text
+                            text: modelData.text || ""
                             Layout.fillWidth: true
-                            color: itemMouse.containsMouse ? Theme.blue : Theme.subtext1
+                            color: itemMouse.containsMouse ? Theme.accentColor : "#ffffff"
                             font.pixelSize: Theme.scaled(12)
                             font.weight: Font.Medium
-                            // Prevent text from looking cramped
                             elide: Text.ElideRight
                         }
 
@@ -130,7 +131,7 @@ PopupWindow {
                             text: "󰅂"
                             font.family: Theme.iconFont
                             font.pixelSize: Theme.scaled(14)
-                            color: Theme.overlay1
+                            color: Theme.subtext0
                             visible: modelData.hasChildren
                         }
                     }
@@ -143,7 +144,24 @@ PopupWindow {
                             if (modelData.hasChildren) {
                                 openSub();
                             } else {
-                                modelData.triggered();
+                                // Multi-strategy activation for Electron / libappindicator DBusMenu items
+                                try { if (typeof modelData.activate === "function") modelData.activate(0, 0); } catch(e1) {}
+                                try { if (typeof modelData.activate === "function") modelData.activate(); } catch(e2) {}
+                                try { if (typeof modelData.trigger === "function") modelData.trigger(); } catch(e3) {}
+                                try { if (typeof modelData.triggered === "function") modelData.triggered(); } catch(e4) {}
+                                
+                                // Direct Element-Desktop Hyprland window focus + single-instance unhide fallback
+                                let itemStr = "";
+                                if (root.currentItem) {
+                                    itemStr = String(root.currentItem.id || root.currentItem.title || root.currentItem.icon || "").toLowerCase();
+                                    try { if (typeof root.currentItem.activate === "function") root.currentItem.activate(0, 0); } catch(e5) {}
+                                }
+                                let menuText = String(modelData.text || "").toLowerCase();
+                                if (itemStr.includes("element") || menuText.includes("show") || menuText.includes("open") || menuText.includes("toggle")) {
+                                    elementFocusProc.running = false;
+                                    elementFocusProc.running = true;
+                                }
+
                                 root.closeAll();
                             }
                         }

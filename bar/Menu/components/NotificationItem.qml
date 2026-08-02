@@ -17,7 +17,7 @@ Rectangle {
     property bool realHovered: false
     Timer {
         id: unhoverTimer
-        interval: 250 // Increased for better stability during expansion
+        interval: 250
         onTriggered: {
             if (!mainMouseArea.containsMouse && !dismissMouse.containsMouse) {
                 root.realHovered = false;
@@ -30,8 +30,8 @@ Rectangle {
 
     // --- ZENITH THEMEING ---
     color: Theme.menuBackground
-    radius: Theme.scaled(14)
-    border.color: Theme.surface1
+    radius: Theme.cardRadius
+    border.color: Theme.glassBorder
     border.width: 1
     clip: true
 
@@ -40,19 +40,18 @@ Rectangle {
 
     // --- ANIMATIONS ---
     opacity: 0
-    scale: 0.90
-    transform: Translate { id: trans; x: 60 }
+    scale: 0.92
+    transform: Translate { id: trans; x: 50 }
 
     Component.onCompleted: appearAnim.start()
 
     ParallelAnimation {
         id: appearAnim
-        NumberAnimation { target: root; property: "opacity"; to: 1; duration: 300; easing.type: Easing.OutCubic }
-        NumberAnimation { target: root; property: "scale"; to: 1.0; duration: 200; easing.type: Easing.OutBack }
-        NumberAnimation { target: trans; property: "x"; to: 0; duration: 500; easing.type: Easing.OutExpo }
+        NumberAnimation { target: root; property: "opacity"; to: 1; duration: Theme.animNormal; easing.type: Theme.animEasing }
+        NumberAnimation { target: root; property: "scale"; to: 1.0; duration: Theme.animNormal; easing.type: Theme.elasticEasing }
+        NumberAnimation { target: trans; property: "x"; to: 0; duration: Theme.animSlow; easing.type: Theme.elasticEasing }
     }
 
-    // Behavior for smooth expansion
     Behavior on implicitHeight {
         enabled: root.animateHeight
         NumberAnimation { duration: 300; easing.type: Easing.OutExpo }
@@ -89,9 +88,8 @@ Rectangle {
     function updateCandidates() {
         if (!notification) return;
         
-        let candidates = [];
+        let candidates = notification.iconCandidates || [];
         
-        // Collect names to try
         let raw = (notification.rawIcon || "").toLowerCase();
         let desktop = (notification.desktopEntry || "").toLowerCase();
         let app = (notification.appName || "").toLowerCase();
@@ -101,9 +99,7 @@ Rectangle {
         
         let names = [raw, desktop, appDashed, appNoSpace, app, summary].filter((v, i, a) => v !== "" && a.indexOf(v) === i);
 
-        // System directories to scan
         let bases = [
-            "/usr/share/icons/OneUI/symbolic/status/",
             "/usr/share/icons/hicolor/scalable/apps/",
             "/usr/share/icons/hicolor/256x256/apps/",
             "/usr/share/icons/hicolor/128x128/apps/",
@@ -114,19 +110,12 @@ Rectangle {
             "/usr/share/icons/Adwaita/scalable/apps/",
             "/usr/share/icons/Adwaita/48x48/apps/",
             "/usr/share/icons/breeze/apps/48/",
-            "/usr/share/icons/breeze-dark/apps/48/",
-            "/usr/share/icons/hicolor/scalable/status/",
-            "/usr/share/icons/hicolor/48x48/status/",
-            "/usr/share/icons/OneUI/symbolic/actions/",
-            "/usr/share/icons/OneUI/24/actions/"
+            "/usr/share/icons/breeze-dark/apps/48/"
         ];
 
-        // 1. First try exactly what the service resolved
         if (notification.appIcon) candidates.push(notification.appIcon);
         
-        // 2. Try variations of names via Quickshell provider
         for (let name of names) {
-            // Only use Quickshell.iconPath for non-path names
             if (!name.includes("/")) {
                 candidates.push(Quickshell.iconPath(name));
                 if (!name.endsWith("-bin")) {
@@ -135,48 +124,17 @@ Rectangle {
             }
         }
 
-        // 3. Try manual file paths
         for (let name of names) {
-            if (name.includes("/")) continue; // Skip if it looks like a path
+            if (name.includes("/")) continue;
             for (let base of bases) {
                 candidates.push("file://" + base + name + ".svg");
                 candidates.push("file://" + base + name + ".png");
-                
-                // Specific battery naming variations for OneUI
-                if (name.startsWith("battery-")) {
-                    // Try to match both battery-level-080 and battery-080
-                    if (name.startsWith("battery-level-")) {
-                        let shortName = name.replace("battery-level-", "battery-");
-                        let match = name.match(/battery-level-(\d+)/);
-                        if (match) {
-                            let val = match[1].padStart(3, '0');
-                            let suffix = name.split(match[1])[1];
-                            candidates.push("file://" + base + "battery-" + val + suffix + ".svg");
-                        }
-                        candidates.push("file://" + base + shortName + ".svg");
-                    } else {
-                        // If it's battery-080, try battery-level-80
-                        let match = name.match(/battery-(\d+)/);
-                        if (match) {
-                            let val = parseInt(match[1]);
-                            let suffix = name.split(match[1])[1];
-                            candidates.push("file://" + base + "battery-level-" + val + suffix + ".svg");
-                        }
-                    }
-                }
-                
-                if (!name.endsWith("-bin")) {
-                    candidates.push("file://" + base + name + "-bin.png");
-                    candidates.push("file://" + base + name + "-bin.svg");
-                }
             }
         }
         
-        // Final generic fallbacks
         candidates.push(Quickshell.iconPath("dialog-information"));
         candidates.push(Quickshell.iconPath("application-x-executable"));
         
-        // Deduplicate and filter out empty
         iconCandidates = candidates.filter((v, i, a) => v && v !== "" && a.indexOf(v) === i);
         currentCandidateIndex = -1;
         tryNextIcon();
@@ -184,7 +142,7 @@ Rectangle {
 
     onNotificationChanged: updateCandidates()
 
-// --- Main layout ---
+    // --- Main layout ---
     RowLayout {
         id: layout
         anchors.fill: parent
@@ -206,13 +164,21 @@ Rectangle {
             border.color: Theme.surface1
             border.width: 1
 
+            Text {
+                anchors.centerIn: parent
+                visible: iconImg.status !== Image.Ready || (iconImg.implicitWidth === 100 && iconImg.implicitHeight === 100)
+                text: "󰂚"
+                font.family: Theme.iconFont
+                font.pixelSize: Theme.scaled(20)
+                color: Theme.accentColor
+            }
+
             Image {
                 id: iconImg
                 anchors.centerIn: parent
                 
-                // Fixed size for the image to avoid QSize(2, 2) warnings
-                width: Theme.scaled(35)
-                height: Theme.scaled(35)
+                width: Theme.scaled(32)
+                height: Theme.scaled(32)
                 
                 fillMode: Image.PreserveAspectFit
                 asynchronous: true
@@ -220,10 +186,8 @@ Rectangle {
                 
                 onStatusChanged: {
                     if (status === Image.Ready) {
-                         // Quickshell's icon provider returns a 100x100 checkerboard if not found
-                         if (iconImg.implicitWidth === 100 && iconImg.implicitHeight === 100 && source.toString().startsWith("image://icon/")) {
-                             tryNextIcon();
-                         } else if (iconImg.implicitWidth <= 2) {
+                         if ((iconImg.implicitWidth === 100 && iconImg.implicitHeight === 100) ||
+                             (iconImg.sourceSize.width === 100 && iconImg.sourceSize.height === 100)) {
                              tryNextIcon();
                          }
                     } else if (status === Image.Error) {
@@ -241,7 +205,7 @@ Rectangle {
 
             Label {
                 text: notification ? (notification.appName || "SYSTEM").toUpperCase() : ""
-                color: Theme.blue
+                color: Theme.accentColor
                 font.pixelSize: Theme.scaled(10)
                 font.weight: Font.Black
                 font.letterSpacing: 1.5
@@ -250,7 +214,7 @@ Rectangle {
 
             Label {
                 text: notification ? (notification.summary || "Notification") : ""
-                color: Theme.text
+                color: "#ffffff"
                 font.bold: true
                 font.pixelSize: Theme.scaled(13)
                 elide: root.realHovered ? Text.ElideNone : Text.ElideRight
@@ -269,7 +233,6 @@ Rectangle {
             }
         }
 
-        // Dynamic spacer to push text left when dismiss button appears
         Item {
             Layout.preferredWidth: root.realHovered ? Theme.scaled(42) : Theme.scaled(10)
             Layout.minimumWidth: Layout.preferredWidth
@@ -277,7 +240,6 @@ Rectangle {
     }
 
     // Main Hover & Click Area
-    // Positioned after the layout to be on top and more stable
     MouseArea {
         id: mainMouseArea
         anchors.fill: parent
@@ -315,7 +277,6 @@ Rectangle {
         Rectangle {
             anchors.fill: parent
             radius: Theme.scaled(8)
-            // Solid background highlight when hovering the button itself to obscure text
             color: dismissMouse.containsMouse ? Theme.surface0 : "transparent"
             border.color: dismissMouse.containsMouse ? Theme.surface1 : "transparent"
             border.width: 1
@@ -324,7 +285,7 @@ Rectangle {
             Text {
                 anchors.centerIn: parent
                 text: "󰅖"
-                color: dismissMouse.containsMouse ? Theme.powerRed : Theme.surface2
+                color: dismissMouse.containsMouse ? Theme.powerRed : Theme.subtext0
                 font.pixelSize: Theme.scaled(16)
             }
         }

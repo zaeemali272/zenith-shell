@@ -10,85 +10,56 @@ Item {
     property var menuRef: null
     property var mediaPopupRef: null
     property bool qsVisible: false
-    property bool isSticky: false
-    property bool isHoveringMenu: false
-    property string activeTab: "Default" // Options: Default, Pomodoro, Wallpaper, Keybinds
-    
-    property bool _toggleLocked: false
-
-    Timer {
-        id: debounceTimer
-        interval: 300
-        onTriggered: root._toggleLocked = false
-    }
+    property bool mediaVisible: false
+    property string activeTab: "Default"
+    property rect anchorRect: Qt.rect(0, 0, 0, 0)
 
     onQsVisibleChanged: {
         if (qsVisible) {
             if (typeof QuickSettingsService !== "undefined") QuickSettingsService.close();
+            mediaVisible = false;
+            if (mediaPopupRef) mediaPopupRef.visible = false;
         }
     }
 
-    onIsHoveringMenuChanged: {
-        if (!isHoveringMenu) startHideTimer();
-        else stopHideTimer();
-    }
-
-    Timer {
-        id: hideTimer
-        interval: GeneralSettings.hideTimerInterval
-        onTriggered: {
-            if (!isSticky && !isHoveringMenu) {
-                close();
-            }
-        }
-    }
-
-    function open(tab) {
-        isSticky = true;
-        if (tab) activeTab = tab;
+    function open(tab, rect) {
+        if (tab && tab !== "") activeTab = tab;
         else activeTab = "Default";
+        if (rect !== undefined) anchorRect = rect;
         
-        
-        // Ensure others are closed
         if (typeof QuickSettingsService !== "undefined") QuickSettingsService.close();
+        mediaVisible = false;
+        if (mediaPopupRef) mediaPopupRef.visible = false;
         
         if (menuRef) menuRef.visible = true;
         qsVisible = true;
     }
 
-    function hoverOpen() {
-        if (qsVisible || (typeof QuickSettingsService !== "undefined" && QuickSettingsService.qsVisible)) {
-            open();
-        }
-    }
-
-    function toggle() {
-        if (_toggleLocked) return;
-        _toggleLocked = true;
-        debounceTimer.restart();
-        
-        if (qsVisible) {
+    function toggleMedia(rect) {
+        if (mediaVisible) {
             close();
         } else {
-            open();
+            close();
+            if (typeof QuickSettingsService !== "undefined") QuickSettingsService.close();
+            if (rect !== undefined) anchorRect = rect;
+            if (mediaPopupRef) mediaPopupRef.visible = true;
+            mediaVisible = true;
         }
     }
 
-    function startHideTimer() {
-        if (!isSticky && qsVisible && !isHoveringMenu) {
-            hideTimer.restart();
+    function toggle(tab, rect) {
+        let targetTab = tab || "Default";
+        if (qsVisible && activeTab === targetTab) {
+            close();
+        } else {
+            open(targetTab, rect);
         }
-    }
-
-    function stopHideTimer() {
-        hideTimer.stop();
     }
 
     function close() {
         if (menuRef) menuRef.visible = false;
         if (mediaPopupRef) mediaPopupRef.visible = false;
-        isSticky = false;
         qsVisible = false;
-        hideTimer.stop();
+        mediaVisible = false;
     }
 }

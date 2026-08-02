@@ -3,6 +3,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Notifications
+
 pragma Singleton
 
 Item {
@@ -14,23 +15,6 @@ Item {
     signal notificationReceived(var notifData)
     signal notificationDismissed(real id)
     signal osdReceived(string type, real value)
-
-    // Helper to format icon names into various possible system paths
-    function getHardcodedPath(iconName) {
-        if (!iconName) return "";
-        if (iconName.startsWith("file://") || iconName.startsWith("image://"))
-            return iconName;
-            
-        if (iconName.startsWith("/"))
-            return "file://" + iconName;
-
-        // If it's a battery icon, we know where they are
-        if (iconName.startsWith("battery-")) {
-            return "file:///usr/share/icons/OneUI/symbolic/status/" + iconName + ".svg";
-        }
-
-        return iconName;
-    }
 
     function updateOSDValue(type, value) {
         let percent = Math.round(value * 100);
@@ -45,7 +29,7 @@ Item {
     function clearAll() {
         for (let i = 0; i < historyModel.count; i++) {
             let n = historyModel.get(i);
-            if (n.originalNotif)
+            if (n && n.originalNotif)
                 n.originalNotif.dismiss();
         }
         historyModel.clear();
@@ -97,7 +81,7 @@ Item {
                     let val = isMuted ? 0 : (parseInt(match[1]) / 100);
                     root.osdReceived(type, val);
                     notif.dismiss();
-                    return ;
+                    return;
                 }
             }
 
@@ -110,49 +94,53 @@ Item {
                     let item = historyModel.get(i);
                     if (item.summary === notif.summary && item.body === notif.body && item.appName === notif.appName) {
                         notif.dismiss();
-                        return ;
+                        return;
                     }
                 }
                 root.lastNotifKey = currentKey;
                 duplicateResetTimer.restart();
             }
 
-            // Icon Resolution via Unified IconsFetcher Pipeline
-            let finalIcon = "";
+            // Comprehensive Candidate Icon Construction
             let rawIcon = notif.appIcon || "";
-            
-            // If appIcon is empty but image is an image://icon URL, extract the name
-            if (rawIcon === "" && notif.image && notif.image.startsWith("image://icon/")) {
-                rawIcon = notif.image.substring(13);
+            let rawImg = notif.image || "";
+            let candidates = [];
+
+            if (rawImg !== "") {
+                candidates.push(rawImg.startsWith("/") ? "file://" + rawImg : rawImg);
             }
 
-            // Priority 1: Raw image or direct file path payload
-            if (notif.image && notif.image !== "") {
-                if (notif.image.startsWith("/") || notif.image.startsWith("file://")) {
-                    finalIcon = notif.image.startsWith("file://") ? notif.image : "file://" + notif.image;
+            if (rawIcon !== "") {
+                if (rawIcon.startsWith("/") || rawIcon.startsWith("file://") || rawIcon.startsWith("image://")) {
+                    candidates.push(rawIcon.startsWith("/") ? "file://" + rawIcon : rawIcon);
                 } else {
-                    finalIcon = notif.image;
-                }
-            } 
-            // Priority 2: Try explicit hardcoded mappings first (like status/battery icons)
-            else if (rawIcon !== "") {
-                let hardPath = root.getHardcodedPath(rawIcon);
-                if (hardPath !== rawIcon) {
-                    finalIcon = hardPath;
+                    candidates.push(Quickshell.iconPath(rawIcon));
+                    candidates.push("image://icon/" + rawIcon);
                 }
             }
 
-            // Priority 3: Fallback seamlessly to IconsFetcher mechanism
-            if (finalIcon === "") {
-                let lookupName = rawIcon !== "" ? rawIcon : (notif.appName || "dialog-information").toLowerCase().replace(/\s+/g, '-');
-                finalIcon = IconsFetcher.getValidIcon(notif.appName || "", notif.desktopEntry || "", lookupName);
+            if (notif.desktopEntry && notif.desktopEntry !== "") {
+                candidates.push(Quickshell.iconPath(notif.desktopEntry));
+                candidates.push("image://icon/" + notif.desktopEntry);
             }
+
+            if (notif.appName && notif.appName !== "") {
+                let appSlug = notif.appName.toLowerCase().replace(/\s+/g, '-');
+                candidates.push(Quickshell.iconPath(appSlug));
+                candidates.push("image://icon/" + appSlug);
+            }
+
+            candidates.push(Quickshell.iconPath("dialog-information"));
+            candidates.push("image://icon/dialog-information");
+
+            let validCandidates = candidates.filter((v, i, a) => v && v !== "" && a.indexOf(v) === i);
 
             let notifData = {
                 "id": Date.now() + Math.random(),
                 "summary": notif.summary || "",
                 "body": notif.body || "",
-                "appIcon": finalIcon,
+                "appIcon": validCandidates.length > 0 ? validCandidates[0] : "",
+                "iconCandidates": validCandidates,
                 "rawIcon": rawIcon,
                 "appName": notif.appName || "System",
                 "desktopEntry": notif.desktopEntry || "",

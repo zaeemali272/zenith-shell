@@ -8,7 +8,6 @@ import QtQuick.Controls
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
-import "./components"
 
 PanelWindow {
     id: root
@@ -29,7 +28,6 @@ PanelWindow {
     }
 
     onVisibleChanged: {
-
         if (visible) {
             MenuService.register(root);
             QuickSettingsService.qsVisible = true;
@@ -39,16 +37,34 @@ PanelWindow {
             MenuService.unregister(root);
             QuickSettingsService.qsVisible = false;
             mainContent.opacity = 0;
-            mainContent.scale = 0.95;
-            mainTranslate.y = 30;
+            mainContent.scale = 0.94;
+            mainTranslate.y = -6;
         }
     }
 
     ParallelAnimation {
         id: showAnim
-        NumberAnimation { target: mainContent; property: "opacity"; from: 0; to: 1; duration: 400; easing.type: Easing.OutQuint }
-        NumberAnimation { target: mainContent; property: "scale"; from: 0.95; to: 1.0; duration: 500; easing.type: Easing.OutBack }
-        NumberAnimation { target: mainTranslate; property: "y"; from: 30; to: 0; duration: 500; easing.type: Easing.OutBack }
+        NumberAnimation {
+            target: mainContent
+            property: "opacity"
+            from: 0; to: 1
+            duration: Theme.animNormal
+            easing.type: Theme.animEasing
+        }
+        NumberAnimation {
+            target: mainContent
+            property: "scale"
+            from: 0.94; to: 1.0
+            duration: Theme.animNormal
+            easing.type: Theme.animEasing
+        }
+        NumberAnimation {
+            target: mainTranslate
+            property: "y"
+            from: -6; to: 0
+            duration: Theme.animNormal
+            easing.type: Theme.animEasing
+        }
     }
 
     // --- DISMISS ON OUTER CLICK ---
@@ -58,105 +74,99 @@ PanelWindow {
         onClicked: QuickSettingsService.close()
     }
 
+    // Masterwork Material 3 Floating QuickSettings Card (Directly below bar)
     Rectangle {
         id: mainContent
-        
         anchors.top: parent.top
         anchors.right: parent.right
-        anchors.topMargin: Theme.barMarginTop + 4
-        anchors.rightMargin: Theme.isSmallScreen ? 5 : 10
+        anchors.topMargin: Theme.barMarginTop + Theme.barHeight + Theme.scaled(4)
+        anchors.rightMargin: Theme.isSmallScreen ? Theme.scaled(8) : Theme.scaled(14)
 
-        width: Math.min(Theme.scaled(650), (screen ? screen.width : Theme.screenWidth) - 20)
-        height: Math.min(Theme.scaled(600), (screen ? screen.height : Theme.screenHeight) - Theme.barHeight - 20)
+        // Production-ready responsive dimensions
+        width: Math.min(Theme.scaled(560), (screen ? screen.width : Theme.screenWidth) - Theme.scaled(20))
+        height: Math.min(Theme.scaled(500), (screen ? screen.height : Theme.screenHeight) - Theme.barHeight - Theme.scaled(20))
 
         focus: true
         Keys.onPressed: (event) => {
             if (event.key === Qt.Key_Escape) {
                 QuickSettingsService.close();
             } else {
-                // Forward to current content if it exists
                 let currentContent = contentStack.children[contentStack.currentIndex];
                 if (currentContent && typeof currentContent.handleKeys === 'function') {
                     currentContent.handleKeys(event);
-                } else {
                 }
             }
         }
+        
         color: Theme.glassBackground
-        radius: Theme.menuRadius
+        radius: Theme.cardRadius
         border.color: Theme.glassBorder
         border.width: 1
-        opacity: 0
-        scale: 0.95
-        
-        transform: Translate { id: mainTranslate; y: 30 }
 
-        // Glow Layer
-        Rectangle {
-            anchors.fill: parent
-            radius: parent.radius
-            color: "transparent"
-            border.color: Qt.rgba(1, 1, 1, 0.05)
-            border.width: 2
-            anchors.margins: 1
-        }
+        opacity: 0
+        scale: 0.94
+        transformOrigin: Item.TopRight
+        
+        transform: Translate { id: mainTranslate; y: -6 }
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: Theme.menuPadding
-            spacing: Theme.menuSpacing
+            anchors.margins: Theme.scaled(16)
+            spacing: Theme.scaled(14)
 
-            // --- MODERN TAB DASHBOARD ---
+            // --- MATERIAL 3 SEGMENTED TAB BAR ---
             Rectangle {
                 Layout.fillWidth: true
-                height: Theme.scaled(70)
-                color: Qt.rgba(0,0,0,0.3)
-                radius: Theme.scaled(20)
-                border.color: Theme.glassBorder
+                height: Theme.scaled(50)
+                color: Qt.rgba(0, 0, 0, 0.35)
+                radius: 999
+                border.width: 0
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.margins: Theme.scaled(8)
-                    spacing: Theme.isSmallScreen ? Theme.scaled(4) : Theme.scaled(8)
+                    anchors.margins: Theme.scaled(4)
+                    spacing: Theme.scaled(4)
                     
                     Repeater {
                         model: [
-                            { id: "network", icon: "󰤨", title: "NETWORK" },
-                            { id: "bluetooth", icon: "󰂯", title: "BLUETOOTH" },
+                            { id: "network", icon: "󰤨", title: "WIFI" },
+                            { id: "bluetooth", icon: "󰂯", title: "BT" },
                             { id: "volume", icon: "󰕾", title: "AUDIO" },
-                            { id: "powerprofile", icon: "󰍛", title: "PROFILE" },
-                            { id: "resources", icon: "󰘚", title: "SYSTEM" },
-                            { id: "battery", icon: "󰁹", title: "POWER" },
-                            { id: "power", icon: "󰐥", title: "SESSION" }
+                            { id: "powerprofile", icon: "󰍛", title: "PROF" },
+                            { id: "battery", icon: "󰁹", title: "PWR" },
+                            { id: "power", icon: "󰐥", title: "SYS" }
                         ]
 
                         delegate: Rectangle {
                             id: tabRect
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            radius: Theme.scaled(14)
-                            color: QuickSettingsService.activeTab === modelData.id ? Theme.accentColor : (tabMouse.containsMouse ? Qt.rgba(1,1,1,0.05) : "transparent")
+                            radius: 999
+                            color: QuickSettingsService.activeTab === modelData.id ? Theme.accentColor : (tabMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : "transparent")
                             
-                            scale: tabMouse.pressed ? 0.92 : (tabMouse.containsMouse ? 1.05 : 1.0)
+                            scale: tabMouse.pressed ? 0.94 : (tabMouse.containsMouse ? 1.03 : 1.0)
                             
-                            Behavior on color { ColorAnimation { duration: 200 } }
-                            Behavior on scale { NumberAnimation { duration: 300; easing.type: Theme.elasticEasing } }
+                            Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                            Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.animEasing } }
 
-                            ColumnLayout {
+                            RowLayout {
                                 anchors.centerIn: parent
-                                spacing: 2
+                                spacing: Theme.scaled(5)
                                 Text {
                                     text: modelData.icon
-                                    font.family: Theme.iconFont; font.pixelSize: Theme.scaled(20)
-                                    color: QuickSettingsService.activeTab === modelData.id ? Theme.base : (tabMouse.containsMouse ? Theme.text : Theme.subtext1)
-                                    Layout.alignment: Qt.AlignHCenter
+                                    font.family: Theme.iconFont
+                                    font.pixelSize: Theme.scaled(16)
+                                    color: QuickSettingsService.activeTab === modelData.id ? Colors.on_primary : "#ffffff"
+                                    Layout.alignment: Qt.AlignVCenter
                                 }
                                 Text {
                                     text: modelData.title
-                                    font.pixelSize: Theme.scaled(8); font.weight: Font.Black; font.letterSpacing: 1
-                                    visible: !Theme.isSmallScreen || QuickSettingsService.activeTab === modelData.id
-                                    color: QuickSettingsService.activeTab === modelData.id ? Theme.base : (tabMouse.containsMouse ? Theme.text : Theme.surface2)
-                                    Layout.alignment: Qt.AlignHCenter
+                                    font.pixelSize: Theme.scaled(9)
+                                    font.weight: Font.Bold
+                                    font.letterSpacing: 0.5
+                                    visible: QuickSettingsService.activeTab === modelData.id || !Theme.isSmallScreen
+                                    color: QuickSettingsService.activeTab === modelData.id ? Colors.on_primary : "#ffffff"
+                                    Layout.alignment: Qt.AlignVCenter
                                 }
                             }
 
@@ -170,7 +180,7 @@ PanelWindow {
                 }
             }
 
-            // --- CONTENT AREA WITH SCROLLING ---
+            // --- CONTENT AREA ---
             ScrollView {
                 id: scrollArea
                 Layout.fillWidth: true
@@ -185,23 +195,22 @@ PanelWindow {
                     anchors.bottom: scrollArea.bottom
                     anchors.right: scrollArea.right
                     policy: ScrollBar.AsNeeded
-                    width: 4
-                    contentItem: Rectangle { radius: 2; color: Theme.accentColor; opacity: 0.3 }
+                    width: 3
+                    contentItem: Rectangle { radius: 999; color: Theme.accentColor; opacity: 0.6 }
                 }
 
-                NumberAnimation { id: fadeAnim; target: contentStack; property: "opacity"; from: 0; to: 1; duration: 300 }
+                NumberAnimation { id: fadeAnim; target: contentStack; property: "opacity"; from: 0; to: 1; duration: Theme.animFast }
 
                 StackLayout {
                     id: contentStack
                     width: scrollArea.availableWidth
-                    // Calculate height dynamically based on the current child
                     height: {
                         if (currentIndex >= 0 && currentIndex < children.length && children[currentIndex]) {
-                            return children[currentIndex].implicitHeight || 500;
+                            return children[currentIndex].implicitHeight || 420;
                         }
-                        return 500;
+                        return 420;
                     }
-                    currentIndex: ["network", "bluetooth", "volume", "powerprofile", "resources", "battery", "power"].indexOf(QuickSettingsService.activeTab)
+                    currentIndex: ["network", "bluetooth", "volume", "powerprofile", "battery", "power"].indexOf(QuickSettingsService.activeTab)
 
                     onCurrentIndexChanged: fadeAnim.restart()
 
@@ -209,7 +218,6 @@ PanelWindow {
                     BluetoothContent { }
                     VolumeContent { }
                     PowerProfileContent { }
-                    ResourcesContent { }
                     BatteryContent { }
                     PowerContent { 
                         id: powerContent
