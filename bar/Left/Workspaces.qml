@@ -1,6 +1,7 @@
 import ".."
 import "../.."
 import "../../Settings"
+import "../../services"
 import QtQuick
 import QtQuick.Controls
 import Quickshell
@@ -40,7 +41,7 @@ Item {
 
                 // --- CALIBRATED ELEMENT SIZING ---
                 // Sizing handled explicitly via properties to keep layouts stable
-                width: visible ? (isCurrentActive ? (WorkspaceSettings.displayStyle === "numbers" ? Theme.scaled(44) : Theme.scaled(36)) : Theme.scaled(20)) : 0
+                width: visible ? (isCurrentActive ? (WorkspaceSettings.displayStyle === "numbers" ? Theme.scaled(44) : Theme.scaled(36)) : Theme.scaled(22)) : 0
                 height: Theme.scaled ? Theme.scaled(20) : 20
                 radius: height / 2
                 smooth: true
@@ -50,10 +51,10 @@ Item {
                 readonly property bool isCurrentActive: (Hyprland.focusedWorkspace && modelData) ? (Hyprland.focusedWorkspace.id === modelData.id) : false
 
                 color: isCurrentActive
-                       ? (Theme.wsActiveColor ? Theme.wsActiveColor : "#ffb48a")
-                       : (isOccupied ? (Theme.wsOccupiedColor ? Theme.wsOccupiedColor : "#444b6a") : "#292e42")
+                       ? (Theme.wsActiveColor ? Theme.wsActiveColor : Theme.accentColor)
+                       : (isOccupied ? (Theme.wsOccupiedColor ? Theme.wsOccupiedColor : Theme.surface2) : Theme.surface1)
 
-                opacity: isCurrentActive ? 1.0 : (isOccupied ? 0.75 : 0.4)
+                opacity: isCurrentActive ? 1.0 : (isOccupied ? 0.85 : 0.6)
 
                 Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutQuint } }
                 Behavior on color { ColorAnimation { duration: 150 } }
@@ -80,8 +81,8 @@ Item {
                     text: modelData ? modelData.id.toString() : ""
                     font.pixelSize: Theme.scaled ? Theme.scaled(11) : 11
                     font.bold: true
-                    color: "#1a1b26"
-                    opacity: isCurrentActive ? 1.0 : 0.0
+                    color: isCurrentActive ? Colors.on_primary : "#ffffff"
+                    opacity: isCurrentActive ? 1.0 : 0.75
 
                     Behavior on opacity { NumberAnimation { duration: 120 } }
                 }
@@ -92,9 +93,9 @@ Item {
     WheelHandler {
         onWheel: (event) => {
             if (event.angleDelta.y < 0) {
-                Hyprland.dispatch("hl.dsp.focus({ workspace = 'r+1' })")
+                Hyprland.dispatch("workspace e+1");
             } else if (event.angleDelta.y > 0) {
-                Hyprland.dispatch("hl.dsp.focus({ workspace = 'r-1' })")
+                Hyprland.dispatch("workspace e-1");
             }
         }
         acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
