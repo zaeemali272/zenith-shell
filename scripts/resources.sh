@@ -1,64 +1,31 @@
 #!/usr/bin/env bash
 
 python3 -c '
-import json, os, glob, time, subprocess
+import json, os, glob, time, socket
 
 def get_stats():
-    prev_stat_file = "/tmp/zenith_proc_stat.json"
-    prev_stat = {}
-    if os.path.exists(prev_stat_file):
+    def read_cpu():
         try:
-            with open(prev_stat_file, "r") as f:
-                prev_stat = json.load(f)
-        except Exception:
-            pass
-
-    curr_stat = {}
-    with open("/proc/stat", "r") as f:
-        for line in f:
-            if line.startswith("cpu"):
-                parts = line.split()
-                name = parts[0]
-                vals = [int(x) for x in parts[1:]]
+            with open("/proc/stat", "r") as f:
+                line = f.readline()
+                parts = line.split()[1:]
+                vals = [int(x) for x in parts]
                 idle = vals[3] + (vals[4] if len(vals) > 4 else 0)
-                total = sum(vals)
-                curr_stat[name] = {"idle": idle, "total": total}
+                return sum(vals), idle
+        except Exception:
+            return 0, 0
 
-    try:
-        with open(prev_stat_file, "w") as f:
-            json.dump(curr_stat, f)
-    except Exception:
-        pass
-
-    if not prev_stat:
-        time.sleep(0.1)
-        with open("/proc/stat", "r") as f:
-            for line in f:
-                if line.startswith("cpu"):
-                    parts = line.split()
-                    name = parts[0]
-                    vals = [int(x) for x in parts[1:]]
-                    idle = vals[3] + (vals[4] if len(vals) > 4 else 0)
-                    total = sum(vals)
-                    curr_stat[name] = {"idle": idle, "total": total}
-        prev_stat = curr_stat
-
-    def calc_perc(curr, prev):
-        total_diff = curr.get("total", 0) - prev.get("total", 0)
-        idle_diff = curr.get("idle", 0) - prev.get("idle", 0)
-        if total_diff <= 0:
-            return 0
-        usage = int(round(100.0 * (total_diff - idle_diff) / total_diff))
-        return max(0, min(100, usage))
-
-    cpu_overall = calc_perc(curr_stat.get("cpu", {}), prev_stat.get("cpu", {}))
+    t1, i1 = read_cpu()
+    time.sleep(0.1)
+    t2, i2 = read_cpu()
     
-    core_usages = []
-    core_idx = 0
-    while f"cpu{core_idx}" in curr_stat:
-        name = f"cpu{core_idx}"
-        core_usages.append(calc_perc(curr_stat[name], prev_stat.get(name, {})))
-        core_idx += 1
+    total_diff = t2 - t1
+    idle_diff = i2 - i1
+    if total_diff > 0:
+        cpu_overall = int(round(100.0 * (total_diff - idle_diff) / total_diff))
+        cpu_overall = max(0, min(100, cpu_overall))
+    else:
+        cpu_overall = 0
 
     mem_total, mem_avail = 0, 0
     with open("/proc/meminfo", "r") as f:
@@ -82,12 +49,9 @@ def get_stats():
             pass
     cpu_temp = max(temps) if temps else 0
 
-    core_temps = [cpu_temp] * len(core_usages)
-
     with open("/proc/loadavg", "r") as f:
         load = float(f.read().split()[0])
-    num_cores = len(core_usages) or 1
-    load_perc = int(round((load / num_cores) * 100))
+    load_perc = int(round(load * 10))
 
     cpu_model = ""
     curr_freq_mhz = 0
@@ -112,24 +76,18 @@ def get_stats():
 
     ip_addr = ""
     try:
-        out = subprocess.check_output(["ip", "addr", "show"], text=True)
-        for line in out.splitlines():
-            line = line.strip()
-            if line.startswith("inet ") and not line.startswith("inet 127."):
-                ip_addr = line.split()[1]
-                break
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("1.1.1.1", 80))
+        ip_addr = s.getsockname()[0]
+        s.close()
     except Exception:
         pass
 
     fs_perc = 0
     try:
-        out = subprocess.check_output(["df", "-P", "/home", "/nix/store", "/"], text=True)
-        for line in out.splitlines():
-            if not line.startswith("Filesystem") and "tmpfs" not in line:
-                parts = line.split()
-                if len(parts) >= 5 and parts[4].endswith("%"):
-                    fs_perc = int(parts[4].rstrip("%"))
-                    break
+        st = os.statvfs("/")
+        if st.f_blocks > 0:
+            fs_perc = int(round(100.0 * (1.0 - (st.f_bavail / st.f_blocks))))
     except Exception:
         pass
 
@@ -145,8 +103,8 @@ def get_stats():
         "arch": os_name,
         "kernel": kernel,
         "ip": ip_addr,
-        "core_usages": core_usages,
-        "core_temps": core_temps
+        "core_usages": [],
+        "core_temps": []
     }
 
 print(json.dumps(get_stats()))

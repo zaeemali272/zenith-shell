@@ -37,17 +37,18 @@ Item {
     }
 
     function _performUpdate() {
-        volExec.running = false;
-        volExec.running = true;
-        appVolExec.running = false;
-        appVolExec.running = true;
-        devExec.running = false;
-        devExec.running = true;
+        if (!volExec.running) {
+            volExec.running = true;
+        }
+        if (Variables.quickSettingsOpen || Variables.controlCenterOpen) {
+            if (!appVolExec.running) appVolExec.running = true;
+            if (!devExec.running) devExec.running = true;
+        }
     }
 
     Timer {
         id: updateTimer
-        interval: 150
+        interval: 400
         onTriggered: _performUpdate()
     }
 
@@ -167,7 +168,7 @@ Item {
 
     Process {
         id: volExec
-        command: ["sh", "-c", "echo \"SINK=$(wpctl get-volume @DEFAULT_AUDIO_SINK@)\"; echo \"SRC=$(wpctl get-volume @DEFAULT_AUDIO_SOURCE@)\"; python3 -c 'import json, subprocess; print(\"MIC_ACTIVE=1\" if any(o.get(\"info\",{}).get(\"props\",{}).get(\"media.class\")==\"Stream/Input/Audio\" for o in json.loads(subprocess.check_output([\"pw-dump\"])) if o.get(\"type\")==\"PipeWire:Interface:Node\") else \"MIC_ACTIVE=0\")'; wpctl inspect @DEFAULT_AUDIO_SINK@ 2>/dev/null | grep -q -i \"bluez\" && echo \"BT_ACTIVE=1\" || echo \"BT_ACTIVE=0\""]
+        command: ["sh", "-c", "echo \"SINK=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null)\"; echo \"SRC=$(wpctl get-volume @DEFAULT_AUDIO_SOURCE@ 2>/dev/null)\"; wpctl status 2>/dev/null | grep -A 15 \"Streams:\" | grep -q -i \"Input\" && echo \"MIC_ACTIVE=1\" || echo \"MIC_ACTIVE=0\"; wpctl inspect @DEFAULT_AUDIO_SINK@ 2>/dev/null | grep -q -i \"bluez\" && echo \"BT_ACTIVE=1\" || echo \"BT_ACTIVE=0\""]
         stdout: StdioCollector {
             onStreamFinished: {
                 if (!text) return;
@@ -207,4 +208,3 @@ Item {
         }
     }
 }
-

@@ -56,7 +56,7 @@ Item {
     }
 
     Timer {
-        interval: Variables.activeMenuOpen ? Variables.fastInterval : Variables.mediumInterval
+        interval: Variables.controlCenterOpen ? Variables.fastInterval : Variables.slowInterval
         repeat: true
         running: true
         triggeredOnStart: true

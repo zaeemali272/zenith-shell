@@ -70,10 +70,7 @@ Item {
 
     Process {
         id: netExec
-        command: ["sh", "-c",
-            `IFACE=$(ip route | awk '/default/ {print $5; exit}'); ` +
-            `[ -n "$IFACE" ] && awk -v iface="$IFACE" '$1 ~ iface":" {print "SPEED", $2, $10}' /proc/net/dev`
-        ]
+        command: ["awk", "/:/ && $1 !~ /lo/ && $2 > 0 {gsub(/:/,\"\"); print \"SPEED\", $2, $10; exit}", "/proc/net/dev"]
 
         stdout: StdioCollector {
             onStreamFinished: {

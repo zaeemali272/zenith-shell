@@ -49,10 +49,10 @@ Item {
                 property int frameCount: 0
                 interval: {
                     switch (currentProfile) {
-                        case "performance": return 1000 / 12; // 12 frames/sec
-                        case "powersave": return 1000 / 4;   // 4 frames/sec
-                        case "balanced": return 1000 / 8;    // 8 frames/sec
-                        case "turbo": return 1000 / 16;      // 16 frames/sec
+                        case "performance": return 80;
+                        case "powersave": return 220;
+                        case "balanced": return 150;
+                        case "turbo": return 50;
                         default: return 250;
                     }
                 }

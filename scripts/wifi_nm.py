@@ -29,7 +29,7 @@ def run_cmd(args):
     except Exception:
         return ""
 
-def get_wifi_state():
+def get_wifi_state(do_scan=True):
     radio = run_cmd(["nmcli", "radio", "wifi"])
     is_airplane = (radio.lower() == "disabled")
     
@@ -71,7 +71,7 @@ def get_wifi_state():
 
     # Get IP address of wifi device if connected
     ipv4_address = ""
-    if wifi_dev:
+    if wifi_dev and current_state == "connected":
         show_lines = run_cmd(["nmcli", "-t", "-f", "IP4.ADDRESS", "dev", "show", wifi_dev]).split("\n")
         for line in show_lines:
             if ":" in line:
@@ -80,60 +80,61 @@ def get_wifi_state():
                     ipv4_address = val
                     break
 
-    # Scan WiFi list
-    scan_lines = run_cmd(["nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY,IN-USE", "dev", "wifi", "list"]).split("\n")
     networks = []
-    seen = {}
-    for line in scan_lines:
-        if not line:
-            continue
-        parts = split_terse(line)
-        if len(parts) >= 4:
-            ssid = parts[0].strip()
-            if not ssid or ssid in seen:
+    if do_scan:
+        # Scan WiFi list
+        scan_lines = run_cmd(["nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY,IN-USE", "dev", "wifi", "list"]).split("\n")
+        seen = {}
+        for line in scan_lines:
+            if not line:
                 continue
-            seen[ssid] = True
-            
-            try:
-                signal_pct = int(parts[1])
-            except ValueError:
-                signal_pct = 0
+            parts = split_terse(line)
+            if len(parts) >= 4:
+                ssid = parts[0].strip()
+                if not ssid or ssid in seen:
+                    continue
+                seen[ssid] = True
                 
-            if signal_pct >= 75:
-                signal_level = 4
-            elif signal_pct >= 50:
-                signal_level = 3
-            elif signal_pct >= 25:
-                signal_level = 2
-            elif signal_pct > 0:
-                signal_level = 1
-            else:
-                signal_level = 0
+                try:
+                    signal_pct = int(parts[1])
+                except ValueError:
+                    signal_pct = 0
+                    
+                if signal_pct >= 75:
+                    signal_level = 4
+                elif signal_pct >= 50:
+                    signal_level = 3
+                elif signal_pct >= 25:
+                    signal_level = 2
+                elif signal_pct > 0:
+                    signal_level = 1
+                else:
+                    signal_level = 0
+                    
+                security = parts[2].strip().lower()
+                is_active = (parts[3].strip() == "*")
+                is_known = bool(known_dict.get(ssid, False))
                 
-            security = parts[2].strip().lower()
-            is_active = (parts[3].strip() == "*")
-            is_known = bool(known_dict.get(ssid, False))
-            
-            if is_active:
-                current_ssid = ssid
-                current_state = "connected"
+                if is_active:
+                    current_ssid = ssid
+                    current_state = "connected"
 
-            networks.append({
-                "ssid": ssid,
-                "signalPct": signal_pct,
-                "signal": signal_level,
-                "security": security,
-                "connected": is_active,
-                "isKnown": is_known
-            })
+                networks.append({
+                    "ssid": ssid,
+                    "signalPct": signal_pct,
+                    "signal": signal_level,
+                    "security": security,
+                    "connected": is_active,
+                    "isKnown": is_known
+                })
 
-    # Sort networks: active first, then known, then signal strength, then name
-    networks.sort(key=lambda x: (
-        not x["connected"],
-        not x["isKnown"],
-        -x["signalPct"],
-        x["ssid"].lower()
-    ))
+        # Sort networks: active first, then known, then signal strength, then name
+        networks.sort(key=lambda x: (
+            not x["connected"],
+            not x["isKnown"],
+            -x["signalPct"],
+            x["ssid"].lower()
+        ))
 
     return {
         "isAirplane": is_airplane,
@@ -146,9 +147,12 @@ def get_wifi_state():
     }
 
 def main():
+    do_scan = True
     if len(sys.argv) > 1:
         cmd = sys.argv[1].lower()
-        if cmd == "connect" and len(sys.argv) >= 3:
+        if cmd == "status" or cmd == "fast":
+            do_scan = False
+        elif cmd == "connect" and len(sys.argv) >= 3:
             ssid = sys.argv[2]
             password = sys.argv[3] if len(sys.argv) >= 4 else ""
             if password:
@@ -175,7 +179,7 @@ def main():
             print(res)
             return
 
-    data = get_wifi_state()
+    data = get_wifi_state(do_scan=do_scan)
     print(json.dumps(data, indent=2))
 
 if __name__ == "__main__":

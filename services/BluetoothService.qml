@@ -45,7 +45,7 @@ Item {
         deviceRefresh.running = false;
         deviceRefresh.running = true;
 
-        if (powered) {
+        if (powered && Variables.quickSettingsOpen) {
             startScan();
         }
     }

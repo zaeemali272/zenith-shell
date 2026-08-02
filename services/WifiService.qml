@@ -30,7 +30,9 @@ Item {
 
     readonly property string helperScript: Quickshell.env("HOME") + "/.config/quickshell/scripts/wifi_nm.py"
 
-    function refresh() {
+    function refresh(fullScan) {
+        let doScan = (fullScan !== undefined) ? fullScan : Variables.quickSettingsOpen;
+        stateProc.command = ["python3", helperScript, doScan ? "json" : "status"];
         if (!stateProc.running) {
             stateProc.running = true;
         }
@@ -138,6 +140,6 @@ Item {
         interval: Variables.quickSettingsOpen ? Variables.mediumInterval : Variables.slowInterval
         running: !service.isUserTyping
         repeat: true
-        onTriggered: service.refresh()
+        onTriggered: service.refresh(Variables.quickSettingsOpen)
     }
 }
