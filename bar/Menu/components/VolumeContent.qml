@@ -47,13 +47,18 @@ ColumnLayout {
             id: outputCard
             Layout.fillWidth: true
             property bool dropdownOpen: false
-            height: dropdownOpen ? (Theme.scaled(165) + Math.max(Theme.scaled(76), VolumeService.sinks.length * Theme.scaled(36))) : Theme.scaled(165)
+            property int targetHeight: dropdownOpen ? (Theme.scaled(165) + Math.max(Theme.scaled(76), VolumeService.sinks.length * Theme.scaled(36))) : Theme.scaled(165)
+            implicitHeight: targetHeight
+            Layout.preferredHeight: targetHeight
+            height: targetHeight
             color: Theme.surfaceContainerLow
             radius: Theme.bubbleRadiusLarge
             border.color: Theme.glassBorder
             border.width: 1
             clip: true
 
+            Behavior on Layout.preferredHeight { NumberAnimation { duration: Theme.animNormal; easing.type: Theme.animEasing } }
+            Behavior on implicitHeight { NumberAnimation { duration: Theme.animNormal; easing.type: Theme.animEasing } }
             Behavior on height { NumberAnimation { duration: Theme.animNormal; easing.type: Theme.animEasing } }
 
             ColumnLayout {
@@ -66,11 +71,7 @@ ColumnLayout {
                     icon: VolumeService.muted ? "󰝟" : (VolumeService.btActive ? "󰓃" : "󰕾")
                     value: VolumeService.outputVolume
                     sliderColor: Theme.accentColor
-                    onChange: (v) => { 
-                        setOut.command = ["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", (v / 100).toFixed(2)]; 
-                        setOut.running = false;
-                        setOut.running = true; 
-                    }
+                    onChange: (v) => VolumeService.setOutputVolume(v)
                 }
 
                 RowLayout {
@@ -143,11 +144,7 @@ ColumnLayout {
 
                         MouseArea {
                             anchors.fill: parent
-                            onClicked: {
-                                muteProc.command = ["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"]; 
-                                muteProc.running = false;
-                                muteProc.running = true; 
-                            }
+                            onClicked: VolumeService.toggleMute()
                         }
                     }
                 }
@@ -208,13 +205,18 @@ ColumnLayout {
             id: inputCard
             Layout.fillWidth: true
             property bool dropdownOpen: false
-            height: dropdownOpen ? (Theme.scaled(165) + Math.max(Theme.scaled(76), VolumeService.sources.length * Theme.scaled(36))) : Theme.scaled(165)
+            property int targetHeight: dropdownOpen ? (Theme.scaled(165) + Math.max(Theme.scaled(76), VolumeService.sources.length * Theme.scaled(36))) : Theme.scaled(165)
+            implicitHeight: targetHeight
+            Layout.preferredHeight: targetHeight
+            height: targetHeight
             color: Theme.surfaceContainerLow
             radius: Theme.bubbleRadiusLarge
             border.color: Theme.glassBorder
             border.width: 1
             clip: true
 
+            Behavior on Layout.preferredHeight { NumberAnimation { duration: Theme.animNormal; easing.type: Theme.animEasing } }
+            Behavior on implicitHeight { NumberAnimation { duration: Theme.animNormal; easing.type: Theme.animEasing } }
             Behavior on height { NumberAnimation { duration: Theme.animNormal; easing.type: Theme.animEasing } }
 
             ColumnLayout {
@@ -227,11 +229,7 @@ ColumnLayout {
                     icon: VolumeService.micMuted ? "󰍭" : "󰍬"
                     value: VolumeService.micVolume
                     sliderColor: Theme.accentColor
-                    onChange: (v) => { 
-                        setMic.command = ["wpctl", "set-volume", "@DEFAULT_AUDIO_SOURCE@", (v / 100).toFixed(2)]; 
-                        setMic.running = false;
-                        setMic.running = true; 
-                    }
+                    onChange: (v) => VolumeService.setMicVolume(v)
                 }
 
                 RowLayout {
@@ -304,11 +302,7 @@ ColumnLayout {
 
                         MouseArea {
                             anchors.fill: parent
-                            onClicked: {
-                                setMicMute.command = ["wpctl", "set-mute", "@DEFAULT_AUDIO_SOURCE@", "toggle"];
-                                setMicMute.running = false;
-                                setMicMute.running = true;
-                            }
+                            onClicked: VolumeService.toggleMicMute()
                         }
                     }
                 }
@@ -423,10 +417,4 @@ ColumnLayout {
     }
 
     Item { Layout.fillHeight: true }
-
-    // --- Backend Processes ---
-    Process { id: muteProc }
-    Process { id: setMicMute }
-    Process { id: setOut }
-    Process { id: setMic }
 }

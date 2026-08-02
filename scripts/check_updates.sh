@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Define paths relative to HOME
 if [ -d "$HOME/Documents/Dots/zenith/.git" ]; then

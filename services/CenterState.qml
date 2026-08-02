@@ -1,3 +1,4 @@
+// services/CenterState.qml
 import QtQuick
 import Quickshell
 import "../Settings"
@@ -7,10 +8,10 @@ pragma Singleton
 Item {
     id: root
 
-    property var menuRef: null
-    property var mediaPopupRef: null
     property bool qsVisible: false
     property bool mediaVisible: false
+    property var menuRef: null
+    property var mediaPopupRef: null
     property string activeTab: "Default"
     property rect anchorRect: Qt.rect(0, 0, 0, 0)
 
@@ -23,16 +24,16 @@ Item {
     }
 
     function open(tab, rect) {
-        if (tab && tab !== "") activeTab = tab;
-        else activeTab = "Default";
+        let targetTab = (tab && tab !== "") ? tab : "Default";
+        activeTab = targetTab;
         if (rect !== undefined) anchorRect = rect;
         
         if (typeof QuickSettingsService !== "undefined") QuickSettingsService.close();
         mediaVisible = false;
         if (mediaPopupRef) mediaPopupRef.visible = false;
         
-        if (menuRef) menuRef.visible = true;
         qsVisible = true;
+        if (menuRef) menuRef.visible = true;
     }
 
     function toggleMedia(rect) {
@@ -48,7 +49,7 @@ Item {
     }
 
     function toggle(tab, rect) {
-        let targetTab = tab || "Default";
+        let targetTab = (tab && tab !== "") ? tab : "Default";
         if (qsVisible && activeTab === targetTab) {
             close();
         } else {
@@ -57,9 +58,9 @@ Item {
     }
 
     function close() {
-        if (menuRef) menuRef.visible = false;
-        if (mediaPopupRef) mediaPopupRef.visible = false;
         qsVisible = false;
         mediaVisible = false;
+        if (menuRef) menuRef.visible = false;
+        if (mediaPopupRef) mediaPopupRef.visible = false;
     }
 }

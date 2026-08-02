@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 ZENITH_DIR="$HOME/zenith"
 ZENITH_REPO="https://github.com/zaeemali272/zenith.git"

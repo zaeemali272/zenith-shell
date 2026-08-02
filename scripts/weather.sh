@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Fetches weather from Open-Meteo with caching, transformed to wttr.in-like format.
 # Supports automatic IP-based location or manual location via argument.
 

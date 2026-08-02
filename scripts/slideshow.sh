@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Path: $HOME/.config/quickshell/scripts/slideshow.sh
 
 LIST="$HOME/.cache/zenith_wallpaper_list"

@@ -72,7 +72,7 @@ PanelWindow {
         id: mainContent
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top
-        anchors.topMargin: Theme.barMarginTop + Theme.barHeight + Theme.scaled(4)
+        anchors.topMargin: Theme.barMarginTop + Theme.scaled(4)
 
         // Production-ready responsive dimensions
         width: Math.min(Theme.scaled(840), (screen ? screen.width : Theme.screenWidth) - Theme.scaled(20))
@@ -188,10 +188,9 @@ PanelWindow {
 
                     Text {
                         anchors.centerIn: parent
-                        text: "☕"
-                        font.family: "Font Awesome 6 Free"
-                        font.weight: Font.Black
-                        font.pixelSize: Theme.scaled(15)
+                        text: CaffeineService.active ? "󰅶" : "󰛊"
+                        font.family: Theme.iconFont
+                        font.pixelSize: Theme.scaled(16)
                         color: CaffeineService.active ? Colors.on_primary : "#ffffff"
                     }
                     MouseArea { 

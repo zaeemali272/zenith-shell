@@ -31,10 +31,37 @@ Item {
         setDevProc.running = true;
     }
 
-    Process {
-        id: setDevProc
-        onExited: service.update()
+    function toggleMute() {
+        setMuteProc.command = ["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"];
+        setMuteProc.running = false;
+        setMuteProc.running = true;
     }
+
+    function setOutputVolume(val) {
+        let pct = Math.max(0, Math.min(150, val));
+        setOutVolProc.command = ["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", (pct / 100).toFixed(2)];
+        setOutVolProc.running = false;
+        setOutVolProc.running = true;
+    }
+
+    function toggleMicMute() {
+        setMicMuteProc.command = ["wpctl", "set-mute", "@DEFAULT_AUDIO_SOURCE@", "toggle"];
+        setMicMuteProc.running = false;
+        setMicMuteProc.running = true;
+    }
+
+    function setMicVolume(val) {
+        let pct = Math.max(0, Math.min(150, val));
+        setMicVolProc.command = ["wpctl", "set-volume", "@DEFAULT_AUDIO_SOURCE@", (pct / 100).toFixed(2)];
+        setMicVolProc.running = false;
+        setMicVolProc.running = true;
+    }
+
+    Process { id: setDevProc; onExited: service.update() }
+    Process { id: setMuteProc; onExited: service.update() }
+    Process { id: setOutVolProc; onExited: service.update() }
+    Process { id: setMicMuteProc; onExited: service.update() }
+    Process { id: setMicVolProc; onExited: service.update() }
 
     function _performUpdate() {
         if (!volExec.running) {
@@ -48,7 +75,7 @@ Item {
 
     Timer {
         id: updateTimer
-        interval: 400
+        interval: 300
         onTriggered: _performUpdate()
     }
 
@@ -73,8 +100,7 @@ Item {
                         return;
                     }
                     processData(data);
-                } catch (e) {
-                }
+                } catch (e) {}
             }
         }
     }
@@ -100,8 +126,7 @@ Item {
                             }
                         }
                     }
-                } catch (err) {
-                }
+                } catch (err) {}
             }
             
             let name = "Unknown App";
@@ -193,7 +218,82 @@ Item {
 
     Process {
         id: devExec
-        command: ["python3", "-c", "import subprocess, re, json\ndef get_info():\n    try: out = subprocess.check_output(['wpctl', 'status'], text=True)\n    except Exception: out = ''\n    sinks_raw, sources_raw = [], []\n    active_sink, active_source = -1, -1\n    in_sinks, in_sources = False, False\n    for line in out.split('\\n'):\n        if 'Sinks:' in line: in_sinks, in_sources = True, False; continue\n        elif 'Sources:' in line: in_sources, in_sinks = True, False; continue\n        elif line.strip().startswith('├─') or line.strip().startswith('└─'):\n            if any(k in line for k in ['Filters:', 'Streams:', 'Settings', 'Video']): in_sinks = in_sources = False\n        m = re.search(r'(\\*?\\s*)(\\d+)\\.\\s+(.*?)\\s*(\\[|$)', line)\n        if m and (in_sinks or in_sources):\n            is_def = '*' in m.group(1)\n            dev_id = int(m.group(2))\n            dev_name = m.group(3).strip()\n            item = {'id': dev_id, 'name': dev_name, 'isDefault': is_def}\n            if in_sinks:\n                sinks_raw.append(item)\n                if is_def: active_sink = dev_id\n            elif in_sources:\n                sources_raw.append(item)\n                if is_def: active_source = dev_id\n    try:\n        data = json.loads(subprocess.check_output(['pw-dump']))\n        for obj in data:\n            if obj.get('type') == 'PipeWire:Interface:Node':\n                props = obj.get('info', {}).get('props', {})\n                media_class = props.get('media.class', '')\n                node_id = obj.get('id')\n                desc = props.get('node.description') or props.get('node.nick') or props.get('node.name')\n                name = props.get('node.name', '')\n                if ('Audio/Sink' in media_class) and not any(s['id'] == node_id for s in sinks_raw):\n                    sinks_raw.append({'id': node_id, 'name': desc, 'isDefault': (node_id == active_sink)})\n                elif ('Audio/Source' in media_class or 'Input/Audio' in media_class) and not name.endswith('.monitor') and not any(s['id'] == node_id for s in sources_raw):\n                    sources_raw.append({'id': node_id, 'name': desc, 'isDefault': (node_id == active_source)})\n    except Exception: pass\n    def dedupe(lst):\n        seen = set()\n        res = []\n        for d in lst:\n            if d['name'] not in seen:\n                seen.add(d['name'])\n                res.append(d)\n        return res\n    return {'sinks': dedupe(sinks_raw), 'sources': dedupe(sources_raw), 'activeSinkId': active_sink, 'activeSourceId': active_source}\nprint(json.dumps(get_info()))"]
+        command: ["python3", "-c", `
+import subprocess, re, json
+
+def get_desc(dev_id):
+    try:
+        out = subprocess.check_output(['wpctl', 'inspect', str(dev_id)], text=True, timeout=1)
+        for line in out.splitlines():
+            if 'node.description' in line:
+                m = re.search(r'node\\.description\\s*=\\s*"(.*)"', line)
+                if m: return m.group(1)
+    except: pass
+    return ''
+
+def get_devices():
+    try: out = subprocess.check_output(['wpctl', 'status'], text=True, timeout=2)
+    except Exception: out = ''
+
+    sinks, sources = [], []
+    active_sink, active_source = -1, -1
+
+    in_sinks = False
+    in_sources = False
+
+    for line in out.splitlines():
+        if 'Sinks:' in line:
+            in_sinks = True
+            in_sources = False
+            continue
+        elif 'Sources:' in line:
+            in_sources = True
+            in_sinks = False
+            continue
+        elif any(k in line for k in ['Filters:', 'Streams:', 'Settings', 'Video']):
+            in_sinks = False
+            in_sources = False
+
+        m = re.search(r'(\\*?\\s*)(\\d+)\\.\\s+(.*?)\\s*(\\[|$)', line)
+        if m and (in_sinks or in_sources):
+            is_def = '*' in m.group(1)
+            dev_id = int(m.group(2))
+            dev_name = m.group(3).strip()
+
+            if not dev_name or dev_name == '(null)' or 'camera' in dev_name.lower():
+                continue
+
+            if dev_name.startswith('Built-in Audio'):
+                dev_name = 'Built-in Microphone' if in_sources else 'Built-in Speaker'
+            elif dev_name.startswith('bluez_'):
+                real_desc = get_desc(dev_id)
+                if real_desc: dev_name = real_desc
+
+            item = {'id': dev_id, 'name': dev_name, 'isDefault': is_def}
+            if in_sinks:
+                sinks.append(item)
+                if is_def: active_sink = dev_id
+            elif in_sources:
+                sources.append(item)
+                if is_def: active_source = dev_id
+
+    if not any('bluez' in s['name'].lower() or 'bluetooth' in s['name'].lower() or 'yopod' in s['name'].lower() for s in sources):
+        for line in out.splitlines():
+            if '[Audio/Source]' in line and ('bluez' in line or 'bluetooth' in line):
+                m = re.search(r'(\\*?\\s*)(\\d+)\\.\\s+(.*?)\\s*\\[Audio/Source\\]', line)
+                if m:
+                    is_def = '*' in m.group(1)
+                    dev_id = int(m.group(2))
+                    real_desc = get_desc(dev_id)
+                    dev_name = real_desc if real_desc else 'Bluetooth Microphone'
+                    item = {'id': dev_id, 'name': dev_name, 'isDefault': is_def}
+                    sources.append(item)
+                    if is_def: active_source = dev_id
+
+    return {'sinks': sinks, 'sources': sources, 'activeSinkId': active_sink, 'activeSourceId': active_source}
+
+print(json.dumps(get_devices()))
+`]
         stdout: StdioCollector {
             onStreamFinished: {
                 if (!text || text.trim() === "") return;

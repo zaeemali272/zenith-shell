@@ -80,7 +80,7 @@ PanelWindow {
         id: mainContent
         anchors.top: parent.top
         anchors.right: parent.right
-        anchors.topMargin: Theme.barMarginTop + Theme.barHeight + Theme.scaled(4)
+        anchors.topMargin: Theme.barMarginTop + Theme.scaled(4)
         anchors.rightMargin: Theme.isSmallScreen ? Theme.scaled(8) : Theme.scaled(14)
 
         // Production-ready responsive dimensions

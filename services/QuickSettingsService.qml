@@ -1,3 +1,4 @@
+// services/QuickSettingsService.qml
 import QtQuick
 import Quickshell
 import "./"
@@ -8,8 +9,8 @@ Item {
     id: service
 
     property bool qsVisible: false
-    property string activeTab: "network"
     property var menuRef: null
+    property string activeTab: "network"
     property rect lastRect: Qt.rect(0, 0, 0, 0)
 
     onQsVisibleChanged: Variables.quickSettingsOpen = qsVisible
@@ -27,24 +28,25 @@ Item {
             lastRect = rect;
         }
 
+        qsVisible = true;
         if (menuRef) {
             menuRef.visible = true;
         }
-        qsVisible = true;
     }
 
     function toggle(tab, rect) {
-        if (qsVisible && activeTab === tab) {
+        let targetTab = (tab && tab !== "") ? tab : "network";
+        if (qsVisible && activeTab === targetTab) {
             close();
         } else {
-            open(tab, rect);
+            open(targetTab, rect);
         }
     }
 
     function close() {
+        qsVisible = false;
         if (menuRef) {
             menuRef.visible = false;
         }
-        qsVisible = false;
     }
 }

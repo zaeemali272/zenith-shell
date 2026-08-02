@@ -20,7 +20,7 @@ Scope {
     
     Process {
         id: ipcReader
-        command: ["tail", "-f", cmdPath]
+        command: ["stdbuf", "-oL", "tail", "-n", "0", "-f", cmdPath]
         running: true
         
         stdout: SplitParser {
@@ -35,28 +35,36 @@ Scope {
 
     function handleCommand(cmd) {
         let parts = cmd.split(":");
-        let action = parts[0];
-        let arg = parts.length > 1 ? parts[1] : "";
+        let action = parts[0].trim();
+        let lowerAction = action.toLowerCase();
+        let arg = parts.length > 1 ? parts[1].trim() : "";
+        let lowerArg = arg.toLowerCase();
 
-        if (action === "dashboard" || action === "toggle_dashboard" || action === "ActionLauncher") {
+        if (lowerAction === "dashboard" || lowerAction === "toggle_dashboard" || lowerAction === "actionlauncher" || lowerAction === "overview") {
             let tab = "Default";
-            let lowerArg = arg.toLowerCase();
-            
             if (lowerArg === "pomodoro") tab = "Pomodoro";
             else if (lowerArg === "wallpaper" || lowerArg === "wallpapers") tab = "Wallpaper";
-            
-            if (CenterState.qsVisible && CenterState.activeTab === tab) {
-                CenterState.close();
-            } else {
-                CenterState.open(tab);
-            }
-        } else if (action === "quicksettings" || action === "toggle_quicksettings") {
-            if (QuickSettingsService.qsVisible && QuickSettingsService.activeTab === arg) {
-                QuickSettingsService.close();
-            } else {
-                QuickSettingsService.open(arg || "network");
-            }
-        } else if (action === "close_all") {
+            CenterState.toggle(tab);
+        } else if (lowerAction === "quicksettings" || lowerAction === "toggle_quicksettings") {
+            let tab = arg || "network";
+            QuickSettingsService.toggle(tab);
+        } else if (lowerAction === "wallpaper" || lowerAction === "wallpapers") {
+            CenterState.toggle("Wallpaper");
+        } else if (lowerAction === "pomodoro") {
+            CenterState.toggle("Pomodoro");
+        } else if (lowerAction === "wifi" || lowerAction === "network") {
+            QuickSettingsService.toggle("network");
+        } else if (lowerAction === "bluetooth" || lowerAction === "bt") {
+            QuickSettingsService.toggle("bluetooth");
+        } else if (lowerAction === "volume" || lowerAction === "audio") {
+            QuickSettingsService.toggle("volume");
+        } else if (lowerAction === "powerprofile" || lowerAction === "prof") {
+            QuickSettingsService.toggle("powerprofile");
+        } else if (lowerAction === "battery" || lowerAction === "pwr") {
+            QuickSettingsService.toggle("battery");
+        } else if (lowerAction === "power" || lowerAction === "sys") {
+            QuickSettingsService.toggle("power");
+        } else if (lowerAction === "close" || lowerAction === "close_all") {
             MenuService.closeAll();
         }
     }
