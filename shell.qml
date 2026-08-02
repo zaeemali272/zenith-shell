@@ -16,11 +16,11 @@ Scope {
     readonly property var _productivity: ProductivityService
 
     // --- INSTANT IPC VIA NAMED PIPE (FIFO) ---
-    property string cmdPath: Quickshell.env("HOME") + "/.cache/zenith_command"
+    property string cmdPath: Quickshell.env("HOME") + "/.cache/zenith_fifo"
     
     Process {
         id: ipcReader
-        command: ["stdbuf", "-oL", "tail", "-n", "0", "-f", cmdPath]
+        command: ["sh", "-c", "mkdir -p $HOME/.cache && (rm -f " + cmdPath + " 2>/dev/null; mkfifo " + cmdPath + " 2>/dev/null || true) && while true; do cat " + cmdPath + " 2>/dev/null || sleep 0.1; done"]
         running: true
         
         stdout: SplitParser {

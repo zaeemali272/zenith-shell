@@ -6,11 +6,16 @@ export ZENITH_ROOT="$SHELL_DIR"
 export QML_IMPORT_PATH="$SHELL_DIR"
 export QML2_IMPORT_PATH="$SHELL_DIR"
 
-FIFO_FILE="$HOME/.cache/zenith_command"
+FIFO_FILE="$HOME/.cache/zenith_fifo"
 
 # Ensure FIFO file directory exists
 if [ ! -d "$HOME/.cache" ]; then
     mkdir -p "$HOME/.cache"
+fi
+
+if [ ! -p "$FIFO_FILE" ]; then
+    rm -f "$FIFO_FILE"
+    mkfifo "$FIFO_FILE" 2>/dev/null || touch "$FIFO_FILE"
 fi
 
 is_running() {
@@ -24,7 +29,7 @@ send_cmd() {
         quickshell -d -p "$SHELL_DIR" &
         sleep 0.6
     fi
-    echo "$cmd" > "$FIFO_FILE" 2>/dev/null || echo "$cmd" >> "$FIFO_FILE"
+    echo "$cmd" > "$FIFO_FILE" 2>/dev/null
 }
 
 show_usage() {
