@@ -191,7 +191,7 @@ ColumnLayout {
                                 id: thumbComponent
                                 Image {
                                     anchors.fill: parent; anchors.margins: 2
-                                    source: "file://" + Quickshell.env("HOME") + "/.cache/wallpaper_thumbs/" + fileName.substring(0, fileName.lastIndexOf('.')) + ".png"
+                                    source: (fileName && fileName.lastIndexOf('.') > 0) ? ("file://" + Quickshell.env("HOME") + "/.cache/wallpaper_thumbs/" + fileName.substring(0, fileName.lastIndexOf('.')) + ".png") : ""
                                     fillMode: Image.PreserveAspectCrop; cache: false; asynchronous: true
                                     opacity: status === Image.Ready ? 1.0 : 0.0
                                     Behavior on opacity { NumberAnimation { duration: 400 } }
@@ -218,6 +218,33 @@ ColumnLayout {
                                 color: parent.containsMouse ? Qt.rgba(1,1,1,0.1) : "transparent"
                             }
                         }                    }
+                }
+            }
+
+            // Empty state placeholder for Wallpapers / Slideshow
+            ColumnLayout {
+                anchors.centerIn: parent
+                spacing: Theme.scaled(10)
+                visible: wallFolderModel.count === 0 && !thumbGen.running
+                Text {
+                    text: "󰉏"
+                    font.family: Theme.iconFont
+                    font.pixelSize: Theme.scaled(48)
+                    color: Theme.surface2
+                    Layout.alignment: Qt.AlignHCenter
+                }
+                Text {
+                    text: "Directory is empty"
+                    font.pixelSize: Theme.scaled(14)
+                    font.weight: Font.Bold
+                    color: Theme.subtext1
+                    Layout.alignment: Qt.AlignHCenter
+                }
+                Text {
+                    text: "~/Pictures/Wallpapers"
+                    font.pixelSize: Theme.scaled(11)
+                    color: Theme.surface2
+                    Layout.alignment: Qt.AlignHCenter
                 }
             }
         }
@@ -259,7 +286,7 @@ ColumnLayout {
                                 id: animThumbComponent
                                 Image {
                                     anchors.fill: parent; anchors.margins: 2
-                                    source: "file://" + Quickshell.env("HOME") + "/.cache/animation_thumbs/" + fileName.substring(0, fileName.lastIndexOf('.')) + ".png"
+                                    source: (fileName && fileName.lastIndexOf('.') > 0) ? ("file://" + Quickshell.env("HOME") + "/.cache/animation_thumbs/" + fileName.substring(0, fileName.lastIndexOf('.')) + ".png") : ""
                                     fillMode: Image.PreserveAspectCrop; cache: false; asynchronous: true
                                     opacity: status === Image.Ready ? 1.0 : 0.0
                                     Behavior on opacity { NumberAnimation { duration: 400 } }
@@ -272,6 +299,33 @@ ColumnLayout {
                             onClicked: applyVideo(fileUrl.toString())
                         }
                     }
+                }
+            }
+
+            // Empty state placeholder for Animated Videos
+            ColumnLayout {
+                anchors.centerIn: parent
+                spacing: Theme.scaled(10)
+                visible: animFolderModel.count === 0 && !thumbGen.running
+                Text {
+                    text: "󰕧"
+                    font.family: Theme.iconFont
+                    font.pixelSize: Theme.scaled(48)
+                    color: Theme.surface2
+                    Layout.alignment: Qt.AlignHCenter
+                }
+                Text {
+                    text: "Directory is empty"
+                    font.pixelSize: Theme.scaled(14)
+                    font.weight: Font.Bold
+                    color: Theme.subtext1
+                    Layout.alignment: Qt.AlignHCenter
+                }
+                Text {
+                    text: "~/Videos/Animations"
+                    font.pixelSize: Theme.scaled(11)
+                    color: Theme.surface2
+                    Layout.alignment: Qt.AlignHCenter
                 }
             }
         }

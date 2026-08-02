@@ -196,6 +196,18 @@ Item {
         }
     }
 
+    property bool isUserTyping: false
+
+    function isSameNetworks(arr1, arr2) {
+        if (arr1.length !== arr2.length) return false;
+        for (let i = 0; i < arr1.length; i++) {
+            if (arr1[i].ssid !== arr2[i].ssid ||
+                arr1[i].connected !== arr2[i].connected ||
+                arr1[i].signal !== arr2[i].signal) return false;
+        }
+        return true;
+    }
+
     Process {
         id: listProcess
         command: ["sh", "-c", "iwctl station $(ls /sys/class/net | grep ^wl | head -n1) get-networks | sed 's/\\x1b\\[[0-9;]*m//g'"]
@@ -208,9 +220,7 @@ Item {
                     let trimmed = line.trim();
                     if (!trimmed || trimmed.startsWith('Network name') || trimmed.startsWith('---') || trimmed.includes('Available networks')) continue;
                     
-                    // The indicator part usually contains '>' for the connected network
                     let isConnected = rawLine.trim().startsWith('>');
-                    
                     let contentPart = isConnected ? rawLine.trim().substring(1).trim() : rawLine.trim();
                     let parts = contentPart.split(/\s{2,}/);
                     
@@ -232,7 +242,6 @@ Item {
                         });
                     }
                 }
-                // Sort: Connected first, then known networks, then by signal strength
                 temp.sort((a, b) => {
                     if (a.connected !== b.connected) return a.connected ? -1 : 1;
                     let aKnown = service.knownNetworks[a.ssid] ? 1 : 0;
@@ -241,7 +250,9 @@ Item {
                     if (a.signal !== b.signal) return b.signal - a.signal;
                     return a.ssid.localeCompare(b.ssid);
                 });
-                service.networks = temp;
+                if (!service.isUserTyping && !isSameNetworks(service.networks, temp)) {
+                    service.networks = temp;
+                }
             }
         }
     }

@@ -3,7 +3,6 @@ BluetoothContent BluetoothContent.qml
 CalendarWidget CalendarWidget.qml
 DismissOverlay DismissOverlay.qml
 HoverButton HoverButton.qml
-KeybindsContent KeybindsContent.qml
 UserContent UserContent.qml
 MprisPlayer MprisPlayer.qml
 NotificationItem NotificationItem.qml
@@ -15,8 +14,6 @@ TimerContent TimerContent.qml
 TodoContent TodoContent.qml
 PowerContent PowerContent.qml
 PowerProfileContent PowerProfileContent.qml
-ResourcesContent ResourcesContent.qml
-TodoList TodoList.qml
 VolumeContent VolumeContent.qml
 VolumeSlider VolumeSlider.qml
 WallpaperContent WallpaperContent.qml

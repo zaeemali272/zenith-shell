@@ -16,25 +16,19 @@ show_usage() {
     echo ""
     echo "Commands:"
     echo "  settings          Toggle the Settings GUI."
-    echo "  keybinds          Toggle the Keybinds tab in Dashboard."
     echo "  cmd <action>      Send a command to the main shell instance."
     echo ""
     echo "Available Cmd Actions:"
     echo "  Overview              Toggle the Overview window."
-    echo "  Keybinds              Toggle Keybinds tab in Dashboard."
     echo "  ActionLauncher        Toggle Dashboard (Default)."
-    echo "  dashboard:<tab>       Toggle dashboard (tabs: Default, Pomodoro, Wallpaper, Keybinds)."
+    echo "  dashboard:<tab>       Toggle dashboard (tabs: Default, Pomodoro, Wallpaper)."
     echo "  quicksettings:<tab>   Toggle quicksettings (tabs: network, bluetooth, volume, etc)."
     echo ""
     echo "Examples:"
-    echo "  $0 keybinds"
     echo "  $0 cmd Overview"
 }
 
 case "$1" in
-    keybinds)
-        echo "Keybinds" > "$HOME/.cache/zenith_command"
-        ;;
 
     settings)
         echo "Settings" > "$HOME/.cache/zenith_command"

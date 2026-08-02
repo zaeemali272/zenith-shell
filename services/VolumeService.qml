@@ -150,7 +150,7 @@ Singleton {
 
     Process {
         id: volExec
-        command: ["sh", "-c", "echo \"SINK=$(wpctl get-volume @DEFAULT_AUDIO_SINK@)\"; echo \"SRC=$(wpctl get-volume @DEFAULT_AUDIO_SOURCE@)\"; pw-link -i | grep -q ':input_' && echo 'MIC_ACTIVE=1' || echo 'MIC_ACTIVE=0'; wpctl status | grep -A 5 \"Default Configured Devices:\" | grep -q \"bluez\" && echo \"BT_ACTIVE=1\" || echo \"BT_ACTIVE=0\""]
+        command: ["sh", "-c", "echo \"SINK=$(wpctl get-volume @DEFAULT_AUDIO_SINK@)\"; echo \"SRC=$(wpctl get-volume @DEFAULT_AUDIO_SOURCE@)\"; wpctl inspect @DEFAULT_AUDIO_SINK@ 2>/dev/null | grep -q \"bluez\" && echo \"BT_ACTIVE=1\" || echo \"BT_ACTIVE=0\"; python3 -c 'import json, subprocess; data=json.loads(subprocess.check_output([\"pw-dump\"])); print(\"MIC_ACTIVE=1\" if any(o.get(\"type\")==\"PipeWire:Interface:Node\" and o.get(\"info\",{}).get(\"props\",{}).get(\"media.class\")==\"Stream/Input/Audio\" and o.get(\"info\",{}).get(\"state\")==\"running\" for o in data) else \"MIC_ACTIVE=0\")'"]
         stdout: StdioCollector {
             onStreamFinished: {
                 if (!text) return;

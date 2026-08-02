@@ -42,7 +42,7 @@ Item {
         
         onClicked: (mouse) => {
             if (mouse.button === Qt.LeftButton)
-                QuickSettingsService.toggle("resources");
+                QuickSettingsService.toggle("powerprofile");
         }
 
         Behavior on color { ColorAnimation { duration: 300 } }

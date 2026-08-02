@@ -290,10 +290,36 @@ Item {
 
     Process { id: notifyProc }
 
+    Process {
+        id: udevMonitor
+        command: ["udevadm", "monitor", "--subsystem-match=power_supply"]
+        running: true
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (udevMonitor.running) return;
+                udevDelay.start();
+            }
+        }
+        onExited: udevDelay.start()
+    }
+
+    Timer {
+        id: udevDelay
+        interval: 2000
+        onTriggered: udevMonitor.running = true
+    }
+
+    Connections {
+        target: udevMonitor.stdout
+        function onTextChanged() {
+            service.update();
+        }
+    }
+
     Timer {
         id: pollTimer
-        interval: 2000 
-        running: false
+        interval: 15000
+        running: true
         repeat: true
         onTriggered: service.update()
     }

@@ -28,6 +28,7 @@ Item {
 
     // Track if any password input is active
     property bool isInputActive: selectedSsid !== "" && !wifiSvc.knownNetworks[selectedSsid]
+    onIsInputActiveChanged: WifiService.isUserTyping = isInputActive
 
     Connections {
         target: WifiService
