@@ -102,6 +102,56 @@ exec-once = ~/.config/quickshell/launch.sh start
 
 ---
 
+### ❄️ NixOS & Home Manager (Flakes)
+
+Zenith Shell includes a `flake.nix` with Home Manager module support.
+
+#### 1. Add as a Flake Input
+In your NixOS system or Home Manager `flake.nix`:
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    zenith-shell.url = "github:zaeemali272/zenith-shell"; # or "git+file:///path/to/local/zenith-shell"
+  };
+
+  outputs = { self, nixpkgs, zenith-shell, ... }: {
+    homeConfigurations."user" = home-manager.lib.homeManagerConfiguration {
+      modules = [
+        zenith-shell.homeManagerModules.default
+        {
+          programs.zenith-shell.enable = true;
+        }
+      ];
+    };
+  };
+}
+```
+
+#### 2. Automatic Updates on `nixos-rebuild`
+
+To automatically fetch and apply updates to Zenith Shell whenever you run `nixos-rebuild`:
+
+- **Updating Remote Flake**: Pass `--update-input` to `nixos-rebuild`:
+  ```bash
+  sudo nixos-rebuild switch --flake . --update-input zenith-shell
+  ```
+  *or update lock file explicitly:*
+  ```bash
+  nix flake update zenith-shell
+  sudo nixos-rebuild switch --flake .
+  ```
+
+- **Live Local Development**: Point your input to your local git repository:
+  ```nix
+  zenith-shell.url = "git+file:///home/zaeem/.config/quickshell";
+  ```
+  Every time you commit changes locally and run `sudo nixos-rebuild switch --flake .`, Nix automatically builds and applies your latest version.
+
+
+---
+
 <h2><sub><img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Symbols/Input%20Latin%20Uppercase.png" alt="Keyboard" width="25" height="25" /></sub> How to Open Menus & IPC Commands</h2>
 
 Zenith Shell comes with a built-in launcher script (`launch.sh`) that communicates directly with the running shell via IPC. You can bind these commands to Hyprland keybindings or run them from terminal.
