@@ -13,6 +13,14 @@
   <sub><sup><img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Telegram-Animated-Emojis/main/Activity/Sparkles.webp" alt="Sparkles" width="25" height="25"/></sup></sub>
 </p>
 
+<div align=center>
+
+![GitHub last commit](https://img.shields.io/github/last-commit/zaeemali272/zenith-shell?style=for-the-badge&labelColor=101418&color=9ccbfb)
+![GitHub Repo stars](https://img.shields.io/github/stars/zaeemali272/zenith-shell?style=for-the-badge&labelColor=101418&color=b9c8da)
+![GitHub repo size](https://img.shields.io/github/repo-size/zaeemali272/zenith-shell?style=for-the-badge&labelColor=101418&color=d3bfe6)
+
+</div>
+
 ---
 
 # 🌌 Zenith Shell
@@ -37,7 +45,7 @@
 
 ---
 
-<h2><sub><img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Tech/Laptop.png" alt="Technology Stack" width="25" height="25" /></sub> Technology Stack & Architecture</h2>
+<h2>Technology Stack & Architecture</h2>
 
 Zenith Shell leverages native Wayland protocols and modular QML singletons for near-zero idle resource utilization:
 
