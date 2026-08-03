@@ -9,82 +9,111 @@ import Quickshell.Hyprland
 
 Item {
     id: workspaceBar
-    // Clean dynamic bounds scaling alongside inner element rows
-    implicitWidth: row.implicitWidth + (Theme.scaled ? Theme.scaled(28) : 28)
-    implicitHeight: Theme.pillHeight ? Theme.pillHeight : (Theme.scaled ? Theme.scaled(32) : 32)
+
+    implicitWidth: mainPill.width
+    implicitHeight: Theme.pillHeight
 
     readonly property HyprlandMonitor monitor: QsWindow.window ? QsWindow.window.monitor : null
 
-    // Balanced Solid Capsule Background Track
+    // Floating Bubble Pill Container
     Rectangle {
-        anchors.fill: parent
-        color: Theme.pillColor
-        radius: Theme.pillRadius ? Theme.pillRadius : height / 2
-        opacity: 1.0
-        visible: true
-        z: -1
-    }
-
-    Row {
-        id: row
-        // Well proportioned gap spacing to prevent overlapping
-        spacing: Theme.scaled ? Theme.scaled(8) : 8
+        id: mainPill
         anchors.centerIn: parent
+        height: Theme.pillHeight
+        width: row.implicitWidth + Theme.scaled(20)
+        color: pillHoverArea.containsMouse ? Theme.pillHoverColor : Theme.pillColor
+        radius: height / 2
 
-        Repeater {
-            model: Hyprland.workspaces
+        Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.OutBack } }
+        Behavior on color { ColorAnimation { duration: Theme.animFast } }
 
-            delegate: Rectangle {
-                id: wsDelegate
+        MouseArea {
+            id: pillHoverArea
+            anchors.fill: parent
+            hoverEnabled: true
+            acceptedButtons: Qt.NoButton
+        }
 
-                visible: modelData && modelData.id > 0
+        Row {
+            id: row
+            anchors.centerIn: parent
+            spacing: Theme.scaled(8)
 
-                // --- CALIBRATED ELEMENT SIZING ---
-                // Sizing handled explicitly via properties to keep layouts stable
-                width: visible ? (isCurrentActive ? (WorkspaceSettings.displayStyle === "numbers" ? Theme.scaled(44) : Theme.scaled(36)) : Theme.scaled(22)) : 0
-                height: Theme.scaled ? Theme.scaled(20) : 20
-                radius: height / 2
-                smooth: true
-                anchors.verticalCenter: parent.verticalCenter
+            Repeater {
+                model: Hyprland.workspaces
 
-                readonly property bool isOccupied: modelData ? (modelData.toplevels.count > 0) : false
-                readonly property bool isCurrentActive: (Hyprland.focusedWorkspace && modelData) ? (Hyprland.focusedWorkspace.id === modelData.id) : false
+                delegate: Rectangle {
+                    id: wsBubble
 
-                color: isCurrentActive
-                       ? (Theme.wsActiveColor ? Theme.wsActiveColor : Theme.accentColor)
-                       : (isOccupied ? (Theme.wsOccupiedColor ? Theme.wsOccupiedColor : Theme.surface2) : Theme.surface1)
+                    visible: modelData && modelData.id > 0
 
-                opacity: isCurrentActive ? 1.0 : (isOccupied ? 0.85 : 0.6)
+                    readonly property bool isOccupied: modelData ? (modelData.toplevels.count > 0) : false
+                    readonly property bool isCurrentActive: (Hyprland.focusedWorkspace && modelData) ? (Hyprland.focusedWorkspace.id === modelData.id) : false
 
-                Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutQuint } }
-                Behavior on color { ColorAnimation { duration: 150 } }
-                Behavior on opacity { NumberAnimation { duration: 150 } }
+                    // Bubble & Ball Dimensions:
+                    // Active = Expanded Pill Bubble (28-34dp width, 22dp height)
+                    // Occupied = Circular Ball Bubble (18dp diameter)
+                    // Empty = Small Ball Bubble (12dp diameter)
+                    height: isCurrentActive ? Theme.scaled(22) : (isOccupied ? Theme.scaled(18) : Theme.scaled(12))
+                    width: isCurrentActive ? (WorkspaceSettings.displayStyle === "numbers" ? Theme.scaled(34) : Theme.scaled(28)) : height
+                    radius: height / 2
+                    anchors.verticalCenter: parent.verticalCenter
 
-                // Kept at 1.0 default baseline to stop parent overflow clipping
-                scale: wsMouse.containsMouse ? 1.15 : 1.0
-                Behavior on scale { NumberAnimation { duration: 100; easing.type: Easing.OutCubic } }
+                    color: isCurrentActive
+                           ? Theme.accentColor
+                           : (isOccupied ? Theme.surfaceContainerHigh : Qt.rgba(255, 255, 255, 0.12))
 
-                MouseArea {
-                    id: wsMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        if (modelData) {
-                            Hyprland.dispatch(`hl.dsp.focus({ workspace = "${modelData.id}" })`)
+                    border.width: isCurrentActive ? 0 : 1
+                    border.color: isCurrentActive ? "transparent" : (isOccupied ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.35) : Theme.glassBorder)
+
+                    // Bouncy Morphing Animations
+                    Behavior on width { NumberAnimation { duration: 250; easing.type: Easing.OutBack } }
+                    Behavior on height { NumberAnimation { duration: 250; easing.type: Easing.OutBack } }
+                    Behavior on color { ColorAnimation { duration: 200 } }
+                    Behavior on radius { NumberAnimation { duration: 200 } }
+
+                    // Elastic Bubble Bounce on Hover & Click
+                    scale: wsMouse.pressed ? 0.8 : (wsMouse.containsMouse ? 1.25 : 1.0)
+                    Behavior on scale { NumberAnimation { duration: 180; easing.type: Theme.elasticEasing } }
+
+                    MouseArea {
+                        id: wsMouse
+                        anchors.fill: parent
+                        anchors.margins: -Theme.scaled(4)
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (modelData) {
+                                Hyprland.dispatch("workspace " + modelData.id);
+                            }
                         }
                     }
-                }
 
-                Text {
-                    anchors.centerIn: parent
-                    text: modelData ? modelData.id.toString() : ""
-                    font.pixelSize: Theme.scaled ? Theme.scaled(11) : 11
-                    font.bold: true
-                    color: isCurrentActive ? Colors.on_primary : "#ffffff"
-                    opacity: isCurrentActive ? 1.0 : 0.75
+                    // Inner Glow Sphere for Active / Occupied Balls
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: isCurrentActive ? 0 : (isOccupied ? Theme.scaled(6) : 0)
+                        height: width
+                        radius: width / 2
+                        color: Theme.accentColor
+                        opacity: isOccupied ? 0.9 : 0.0
 
-                    Behavior on opacity { NumberAnimation { duration: 120 } }
+                        Behavior on opacity { NumberAnimation { duration: 150 } }
+                        Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutBack } }
+                    }
+
+                    // Workspace Number Text for Active Bubble
+                    Text {
+                        anchors.centerIn: parent
+                        text: modelData ? modelData.id.toString() : ""
+                        font.pixelSize: Theme.scaled(10)
+                        font.weight: Font.Black
+                        color: Colors.on_primary
+                        visible: isCurrentActive && WorkspaceSettings.displayStyle === "numbers"
+                        opacity: isCurrentActive ? 1.0 : 0.0
+
+                        Behavior on opacity { NumberAnimation { duration: 150 } }
+                    }
                 }
             }
         }

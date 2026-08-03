@@ -1,3 +1,5 @@
 
 wifi_secrets.json
 zenith.log
+__pycache__/
+*.pyc

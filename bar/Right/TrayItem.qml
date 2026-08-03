@@ -1,6 +1,9 @@
 // bar/Right/TrayItem.qml
 import "../.."
 import QtQuick
+import QtQuick.Layouts
+import QtQuick.Controls
+import Quickshell
 import Quickshell.Io
 import Quickshell.Services.SystemTray
 
@@ -10,42 +13,55 @@ MouseArea {
     property var item
     property var menuRef
 
-    visible: root.item !== undefined && root.item !== null && root.item.status !== Status.Passive
-    implicitWidth: visible ? Theme.iconSize + 2 : 0
+    visible: root.item !== undefined && root.item !== null
+    implicitWidth: visible ? Theme.iconSize + Theme.scaled(4) : 0
     implicitHeight: visible ? Theme.pillHeight : 0
-    acceptedButtons: Qt.LeftButton | Qt.RightButton
+    acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+    hoverEnabled: true
+
+    scale: root.pressed ? 0.88 : (root.containsMouse ? 1.2 : 1.0)
+    Behavior on scale { NumberAnimation { duration: 180; easing.type: Theme.elasticEasing } }
+
+    readonly property string trayScript: Quickshell.env("HOME") + "/.config/quickshell/scripts/tray_focus.py"
 
     Process {
-        id: elementFocusProc
-        command: ["sh", "-c", "hyprctl dispatch focuswindow class:^(element|Element|element-desktop)$ || element-desktop &"]
+        id: focusProc
+        property string itemStr: ""
+        property string titleStr: ""
+        property string iconStr: ""
+
+        command: [
+            "python3",
+            root.trayScript,
+            focusProc.itemStr,
+            focusProc.titleStr,
+            focusProc.iconStr
+        ]
     }
 
     onClicked: (mouse) => {
-        if (!root.item)
-            return;
+        if (!root.item) return;
 
-        let itemStr = String(root.item.id || root.item.title || root.item.icon || "").toLowerCase();
+        let itemIdStr = String(root.item.id || "");
+        let itemTitleStr = String(root.item.title || "");
+        let itemIconStr = String(root.item.icon || "");
 
         if (mouse.button === Qt.LeftButton) {
-            try { if (typeof root.item.activate === "function") root.item.activate(0, 0); } catch(e1) {}
-            try { if (typeof root.item.activate === "function") root.item.activate(); } catch(e2) {}
-            
-            if (itemStr.includes("element")) {
-                elementFocusProc.running = false;
-                elementFocusProc.running = true;
-            }
+            try { if (typeof root.item.activate === "function") root.item.activate(); } catch(e1) {}
+
+            focusProc.command = ["python3", root.trayScript, itemIdStr, itemTitleStr, itemIconStr];
+            focusProc.running = false;
+            focusProc.running = true;
         } else if (mouse.button === Qt.RightButton) {
             if (root.item.hasMenu && menuRef) {
                 menuRef.openFor(root.item, root);
             } else {
-                try { if (typeof root.item.secondaryActivate === "function") root.item.secondaryActivate(0, 0); } catch(e1) {}
-                try { if (typeof root.item.secondaryActivate === "function") root.item.secondaryActivate(); } catch(e2) {}
-                try { if (typeof root.item.contextMenu === "function") root.item.contextMenu(0, 0); } catch(e3) {}
-                
-                if (itemStr.includes("element")) {
-                    elementFocusProc.running = false;
-                    elementFocusProc.running = true;
-                }
+                try { if (typeof root.item.secondaryActivate === "function") root.item.secondaryActivate(); } catch(e1) {}
+                try { if (typeof root.item.contextMenu === "function") root.item.contextMenu(0, 0); } catch(e2) {}
+
+                focusProc.command = ["python3", root.trayScript, itemIdStr, itemTitleStr, itemIconStr];
+                focusProc.running = false;
+                focusProc.running = true;
             }
         }
     }
@@ -59,7 +75,7 @@ MouseArea {
         fillMode: Image.PreserveAspectFit
         asynchronous: true
         smooth: true
-        
+
         source: {
             if (!root.item) return "";
 
@@ -82,28 +98,31 @@ MouseArea {
 
             return "";
         }
-        
+
         onStatusChanged: {
             if (status === Image.Error) {
                 let iconName = String(root.item && root.item.icon ? root.item.icon : "");
-                if (iconName && !iconName.includes("://") && !iconName.startsWith("/") && !iconName.startsWith("image://")) {
+                if (iconName && !iconName.includes("://") && !iconName.startsWith("/")) {
                     let quickshellSource = Quickshell.iconPath(iconName);
-                    if (source.toString() !== quickshellSource) {
+                    if (source.toString() !== quickshellSource && quickshellSource !== "") {
                         source = quickshellSource;
                         return;
                     }
                 }
-                if (source.toString() !== Quickshell.iconPath("dialog-information")) {
-                    source = Quickshell.iconPath("dialog-information");
+                let genericApp = Quickshell.iconPath("application-x-executable");
+                if (genericApp && source.toString() !== genericApp) {
+                    source = genericApp;
                 }
             }
         }
     }
 
-    Rectangle {
-        anchors.fill: trayIcon
-        color: "red"
-        opacity: 0.3
-        visible: trayIcon.status === Image.Error
+    Text {
+        anchors.centerIn: parent
+        text: "󰏤"
+        font.family: Theme.iconFont
+        font.pixelSize: Theme.iconSize
+        color: Theme.accentColor
+        visible: trayIcon.status === Image.Error && trayIcon.source.toString() === ""
     }
 }

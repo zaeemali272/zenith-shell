@@ -1,6 +1,7 @@
 import "../.."
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.SystemTray
@@ -29,17 +30,26 @@ PopupWindow {
 
     HyprlandFocusGrab {
         id: grab
-        active: root.visible && !subMenuLoader.active
-        windows: [root, subMenuLoader.item, notificationPopup, osdPopup]
-        onCleared: {
-            root.visible = false;
-            if (parentMenu) parentMenu.visible = false;
-        }
+        active: root.visible
+        windows: [root, notificationPopup, osdPopup]
+        onCleared: root.closeAll()
     }
 
+    readonly property string trayScript: Quickshell.env("HOME") + "/.config/quickshell/scripts/tray_focus.py"
+
     Process {
-        id: elementFocusProc
-        command: ["sh", "-c", "hyprctl dispatch focuswindow class:^(element|Element|element-desktop)$ || element-desktop &"]
+        id: windowFocusProc
+        property string itemStr: ""
+        property string titleStr: ""
+        property string iconStr: ""
+
+        command: [
+            "python3",
+            root.trayScript,
+            windowFocusProc.itemStr,
+            windowFocusProc.titleStr,
+            windowFocusProc.iconStr
+        ]
     }
 
     function openFor(item, visualParent, edges) {
@@ -59,8 +69,14 @@ PopupWindow {
         root.anchor.edges = edges || Edges.Bottom;
         root.anchor.gravity = edges || Edges.Bottom;
 
+        stackView.replace(subMenuComp, { handle: handle, isSubMenu: false });
+
         root.visible = true;
         menuSurface.forceActiveFocus();
+    }
+
+    function closeAll() {
+        root.visible = false;
     }
 
     Rectangle {
@@ -72,129 +88,190 @@ PopupWindow {
         radius: Theme.scaled(20)
         clip: true
         focus: true
+
         Keys.onPressed: (event) => {
-            if (event.key === Qt.Key_Escape) root.closeAll()
-        }
-
-        implicitWidth: Math.max(Theme.scaled(220), menuContent.implicitWidth + Theme.scaled(30))
-        implicitHeight: menuContent.implicitHeight + Theme.scaled(20)
-
-        MouseArea {
-            anchors.fill: parent
-            onPressed: (mouse) => {
-                mouse.accepted = true;
-                menuSurface.forceActiveFocus();
+            if (event.key === Qt.Key_Escape) {
+                if (stackView.depth > 1) stackView.pop();
+                else root.closeAll();
             }
         }
 
-        QsMenuOpener { id: menuOpener; menu: root.menuHandle }
+        implicitWidth: Math.max(Theme.scaled(220), stackView.implicitWidth)
+        implicitHeight: stackView.implicitHeight + Theme.scaled(16)
 
-        ColumnLayout {
-            id: menuContent
+        StackView {
+            id: stackView
             anchors.fill: parent
-            anchors.margins: Theme.scaled(12)
-            spacing: Theme.scaled(6)
+            anchors.margins: Theme.scaled(8)
 
-            Repeater {
-                model: menuOpener.children
-                delegate: Rectangle {
-                    id: menuItem
+            implicitWidth: currentItem ? currentItem.implicitWidth : Theme.scaled(220)
+            implicitHeight: currentItem ? currentItem.implicitHeight : Theme.scaled(100)
+
+            pushEnter: Transition { NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 150 } }
+            pushExit: Transition { NumberAnimation { property: "opacity"; from: 1; to: 0; duration: 150 } }
+            popEnter: Transition { NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 150 } }
+            popExit: Transition { NumberAnimation { property: "opacity"; from: 1; to: 0; duration: 150 } }
+        }
+
+        Component {
+            id: subMenuComp
+
+            ColumnLayout {
+                id: menuColumn
+                property var handle: null
+                property bool isSubMenu: false
+
+                spacing: Theme.scaled(4)
+                implicitWidth: Math.max(Theme.scaled(200), menuRepeaterLayout.implicitWidth)
+                implicitHeight: menuRepeaterLayout.implicitHeight + (isSubMenu ? backBtn.implicitHeight + Theme.scaled(8) : 0)
+
+                QsMenuOpener {
+                    id: menuOpener
+                    menu: menuColumn.handle
+                }
+
+                Rectangle {
+                    id: backBtn
+                    visible: menuColumn.isSubMenu
                     Layout.fillWidth: true
-                    implicitHeight: modelData.isSeparator ? Theme.scaled(13) : Theme.scaled(36)
-                    radius: Theme.scaled(8)
-
-                    color: (modelData.isSeparator) ? "transparent" : ((itemMouse.containsMouse || (subMenuLoader.active && subMenuLoader.item.currentItem === modelData)) ? Theme.surface1 : "transparent")
-
-                    Rectangle {
-                        anchors.centerIn: parent
-                        width: parent.width - Theme.scaled(10); height: 1
-                        color: Theme.menuBorder
-                        visible: modelData.isSeparator
-                    }
+                    implicitHeight: Theme.scaled(32)
+                    radius: Theme.scaled(10)
+                    color: backMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.15) : Qt.rgba(255, 255, 255, 0.08)
 
                     RowLayout {
                         anchors.fill: parent
-                        anchors.leftMargin: Theme.scaled(12)
-                        anchors.rightMargin: Theme.scaled(12)
-                        visible: !modelData.isSeparator
-                        spacing: Theme.scaled(12)
+                        anchors.leftMargin: Theme.scaled(10)
+                        anchors.rightMargin: Theme.scaled(10)
+                        spacing: Theme.scaled(6)
 
                         Text {
-                            text: modelData.text || ""
-                            Layout.fillWidth: true
-                            color: itemMouse.containsMouse ? Theme.accentColor : "#ffffff"
-                            font.pixelSize: Theme.scaled(12)
-                            font.weight: Font.Medium
-                            elide: Text.ElideRight
-                        }
-
-                        Text {
-                            text: "󰅂"
+                            text: "󰅁"
                             font.family: Theme.iconFont
                             font.pixelSize: Theme.scaled(14)
-                            color: Theme.subtext0
-                            visible: modelData.hasChildren
+                            color: Theme.accentColor
+                        }
+                        Text {
+                            text: "Back"
+                            font.pixelSize: Theme.scaled(11)
+                            font.weight: Font.Bold
+                            color: Theme.text
                         }
                     }
 
                     MouseArea {
-                        id: itemMouse
+                        id: backMouse
                         anchors.fill: parent
                         hoverEnabled: true
-                        onClicked: {
-                            if (modelData.hasChildren) {
-                                openSub();
-                            } else {
-                                // Multi-strategy activation for Electron / libappindicator DBusMenu items
-                                try { if (typeof modelData.activate === "function") modelData.activate(0, 0); } catch(e1) {}
-                                try { if (typeof modelData.activate === "function") modelData.activate(); } catch(e2) {}
-                                try { if (typeof modelData.trigger === "function") modelData.trigger(); } catch(e3) {}
-                                try { if (typeof modelData.triggered === "function") modelData.triggered(); } catch(e4) {}
-                                
-                                // Direct Element-Desktop Hyprland window focus + single-instance unhide fallback
-                                let itemStr = "";
-                                if (root.currentItem) {
-                                    itemStr = String(root.currentItem.id || root.currentItem.title || root.currentItem.icon || "").toLowerCase();
-                                    try { if (typeof root.currentItem.activate === "function") root.currentItem.activate(0, 0); } catch(e5) {}
-                                }
-                                let menuText = String(modelData.text || "").toLowerCase();
-                                if (itemStr.includes("element") || menuText.includes("show") || menuText.includes("open") || menuText.includes("toggle")) {
-                                    elementFocusProc.running = false;
-                                    elementFocusProc.running = true;
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: stackView.pop()
+                    }
+                }
+
+                ColumnLayout {
+                    id: menuRepeaterLayout
+                    Layout.fillWidth: true
+                    spacing: Theme.scaled(3)
+
+                    Repeater {
+                        model: menuOpener.children
+
+                        delegate: Rectangle {
+                            id: itemRect
+                            readonly property var entry: modelData
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: entry.isSeparator ? Theme.scaled(11) : Theme.scaled(34)
+                            radius: Theme.scaled(10)
+                            color: entry.isSeparator ? "transparent" : (itemMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : "transparent")
+
+                            Behavior on color { ColorAnimation { duration: 120 } }
+
+                            Rectangle {
+                                anchors.centerIn: parent
+                                width: parent.width - Theme.scaled(10)
+                                height: 1
+                                color: Theme.glassBorder
+                                visible: entry.isSeparator
+                            }
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: Theme.scaled(10)
+                                anchors.rightMargin: Theme.scaled(10)
+                                visible: !entry.isSeparator
+                                spacing: Theme.scaled(8)
+
+                                Image {
+                                    id: entryIcon
+                                    visible: entry.icon !== ""
+                                    source: entry.icon ? (entry.icon.startsWith("/") || entry.icon.startsWith("file://") || entry.icon.startsWith("image://") ? entry.icon : "image://icon/" + entry.icon) : ""
+                                    Layout.preferredWidth: Theme.scaled(16)
+                                    Layout.preferredHeight: Theme.scaled(16)
+                                    fillMode: Image.PreserveAspectFit
+                                    Layout.alignment: Qt.AlignVCenter
                                 }
 
-                                root.closeAll();
+                                Text {
+                                    text: entry.checkState === Qt.Checked ? "󰄬" : (entry.isCheckable ? "󰄱" : "")
+                                    font.family: Theme.iconFont
+                                    font.pixelSize: Theme.scaled(11)
+                                    color: Theme.accentColor
+                                    visible: entry.isCheckable || entry.checkState !== undefined
+                                    Layout.alignment: Qt.AlignVCenter
+                                }
+
+                                Text {
+                                    text: entry.text || ""
+                                    Layout.fillWidth: true
+                                    color: entry.enabled ? (itemMouse.containsMouse ? Theme.accentColor : Theme.fontColor) : Theme.subtext0
+                                    font.pixelSize: Theme.scaled(11)
+                                    font.weight: itemMouse.containsMouse ? Font.Bold : Font.Normal
+                                    elide: Text.ElideRight
+                                    Layout.alignment: Qt.AlignVCenter
+                                }
+
+                                Text {
+                                    text: "󰅂"
+                                    font.family: Theme.iconFont
+                                    font.pixelSize: Theme.scaled(12)
+                                    color: Theme.subtext0
+                                    visible: entry.hasChildren
+                                    Layout.alignment: Qt.AlignVCenter
+                                }
+                            }
+
+                            MouseArea {
+                                id: itemMouse
+                                anchors.fill: parent
+                                hoverEnabled: entry.enabled && !entry.isSeparator
+                                enabled: entry.enabled && !entry.isSeparator
+                                cursorShape: Qt.PointingHandCursor
+
+                                onClicked: {
+                                    if (entry.hasChildren) {
+                                        stackView.push(subMenuComp, { handle: entry, isSubMenu: true });
+                                    } else {
+                                        try { entry.triggered(); } catch(e1) {}
+                                        try { if (typeof entry.activate === "function") entry.activate(); } catch(e2) {}
+                                        try { if (typeof entry.trigger === "function") entry.trigger(); } catch(e3) {}
+
+                                        if (root.currentItem) {
+                                            let itemIdStr = String(root.currentItem.id || "");
+                                            let itemTitleStr = String(root.currentItem.title || "");
+                                            let itemIconStr = String(root.currentItem.icon || "");
+
+                                            windowFocusProc.command = ["python3", root.trayScript, itemIdStr, itemTitleStr, itemIconStr];
+                                            windowFocusProc.running = false;
+                                            windowFocusProc.running = true;
+                                        }
+
+                                        root.closeAll();
+                                    }
+                                }
                             }
                         }
-                        onEntered: {
-                            if (modelData.hasChildren) subMenuTimer.start();
-                            else subMenuLoader.active = false;
-                        }
-                        onExited: subMenuTimer.stop()
-                    }
-
-                    Timer { id: subMenuTimer; interval: 200; onTriggered: openSub() }
-
-                    function openSub() {
-                        subMenuLoader.active = true;
-                        subMenuLoader.item.openFor(modelData, menuItem, Edges.Right);
                     }
                 }
             }
         }
-    }
-
-    Loader {
-        id: subMenuLoader
-        active: false
-        source: "TrayMenu.qml"
-        onLoaded: {
-            item.parentMenu = root;
-        }
-    }
-
-    function closeAll() {
-        root.visible = false;
-        if (parentMenu) parentMenu.closeAll();
     }
 }

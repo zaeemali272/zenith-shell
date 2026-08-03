@@ -2,7 +2,6 @@ BatteryContent BatteryContent.qml
 BluetoothContent BluetoothContent.qml
 CalendarWidget CalendarWidget.qml
 DismissOverlay DismissOverlay.qml
-HoverButton HoverButton.qml
 UserContent UserContent.qml
 MprisPlayer MprisPlayer.qml
 NotificationItem NotificationItem.qml
