@@ -48,6 +48,23 @@ Singleton {
         return title.trim() || "Media";
     }
 
+    function formatMediaMetadata(fullText, limit, overflowThreshold) {
+        if (!fullText) return "";
+        let lim = limit || 34;
+        let thresh = (overflowThreshold !== undefined) ? overflowThreshold : 5;
+        
+        if (fullText.length <= lim + thresh) {
+            return fullText;
+        }
+        
+        let target = fullText.substring(0, lim);
+        let lastSpace = target.lastIndexOf(" ");
+        if (lastSpace > 8) {
+            return target.substring(0, lastSpace) + "...";
+        }
+        return target.substring(0, lim - 3) + "...";
+    }
+
     function isFickle(player) {
         if (!player) return false;
         let id = player.identity.toLowerCase();

@@ -21,10 +21,7 @@ ColumnLayout {
         NumberAnimation { target: root; property: "scale"; to: 1; duration: 500; easing.type: Theme.elasticEasing }
     }
 
-    // Matches the .toLowerCase() and .trim() in your new Service
     readonly property bool isLimitActive: (BatteryService.status === "not charging" || BatteryService.status === "full") && BatteryService.acOnline
-    
-    // Correcting raw sysfs units: microvolts/microwatts -> standard units (V and W)
     readonly property real displayVoltage: BatteryService.voltage > 1000 ? BatteryService.voltage / 1000000 : BatteryService.voltage
     readonly property real displayWatts: BatteryService.energyRate > 1000 ? BatteryService.energyRate / 1000000 : BatteryService.energyRate
 
@@ -105,7 +102,8 @@ ColumnLayout {
             Text { text: label; color: Theme.subtext1; font.pixelSize: 8; font.weight: Font.Black; Layout.alignment: Qt.AlignHCenter }
         }
     }
-// Bottom Detailed Grid (Horizontally Aligned & Justified)
+
+    // Bottom Detailed Grid
     Rectangle {
         Layout.fillWidth: true
         Layout.preferredHeight: Theme.scaled(60) 
@@ -119,8 +117,6 @@ ColumnLayout {
             anchors.rightMargin: Theme.scaled(20)
             spacing: 0
 
-            // Helper component-like logic for horizontal pairs
-            // Section 1: Voltage
             RowLayout {
                 Layout.alignment: Qt.AlignVCenter
                 spacing: Theme.scaled(8)
@@ -128,9 +124,8 @@ ColumnLayout {
                 Text { text: root.displayVoltage.toFixed(1) + "V"; color: Theme.text; font.bold: true; font.pixelSize: Theme.scaled(16) }
             }
 
-            Item { Layout.fillWidth: true } // Spacer
+            Item { Layout.fillWidth: true }
 
-            // Section 2: Wattage
             RowLayout {
                 Layout.alignment: Qt.AlignVCenter
                 spacing: Theme.scaled(8)
@@ -138,34 +133,28 @@ ColumnLayout {
                 Text { text: root.displayWatts.toFixed(1) + "W"; color: Theme.text; font.bold: true; font.pixelSize: Theme.scaled(16) }
             }
 
-            Item { Layout.fillWidth: true } // Spacer
+            Item { Layout.fillWidth: true }
 
-// Section 3: Health (Calculated from Full / Design Energy)
             RowLayout {
                 Layout.alignment: Qt.AlignVCenter
                 spacing: Theme.scaled(8)
                 Text { text: "Health:"; color: Theme.subtext1; font.pixelSize: Theme.scaled(13) }
                 Text { 
-                    // Displays health as a percentage (e.g., 94%)
                     text: BatteryService.health.toFixed(0) + "%" 
-                    // Dynamic coloring: Green for healthy, Yellow for worn, Red for critical
                     color: BatteryService.health > 80 ? Theme.powerGreen : (BatteryService.health > 50 ? Theme.powerYellow : Theme.powerRed)
                     font.bold: true
                     font.pixelSize: Theme.scaled(16) 
                 }
             }
 
-            Item { Layout.fillWidth: true } // Spacer
+            Item { Layout.fillWidth: true }
 
-            // Section 4: Temp (Live sensor data)
             RowLayout {
                 Layout.alignment: Qt.AlignVCenter
                 spacing: Theme.scaled(8)
                 Text { text: "Temp:"; color: Theme.subtext1; font.pixelSize: Theme.scaled(13) }
                 Text { 
-                    // Checks if temp is valid, otherwise defaults to a baseline
                     text: (BatteryService.temp > 0 ? BatteryService.temp.toFixed(1) : "35.0") + "°C"
-                    // Turns red if the battery gets toastier than 45°C
                     color: BatteryService.temp > 45 ? Theme.powerRed : Theme.text
                     font.bold: true
                     font.pixelSize: Theme.scaled(16) 

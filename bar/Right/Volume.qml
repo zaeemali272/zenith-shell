@@ -84,6 +84,7 @@ Item {
             }
 
             Text {
+                visible: !root.btActive
                 text: volumeIcon(root.volume, root.muted)
                 font.family: Theme.iconFont
                 font.pixelSize: Theme.iconSize

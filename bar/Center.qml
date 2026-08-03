@@ -105,15 +105,47 @@ RowLayout {
 
                 // Active Playing Media Section
                 RowLayout {
+                    id: mediaSection
                     spacing: Theme.scaled(6)
                     visible: MediaPlayerService.trackedPlayer && MediaPlayerService.isActuallyPlaying
 
                     Text {
+                        id: mediaIconText
                         font.family: Theme.iconFont
                         font.pixelSize: Theme.scaled(13)
                         text: "󰎆"
                         color: Theme.accentColor
                         Layout.alignment: Qt.AlignVCenter
+
+                        property bool isPulse: false
+                        property real breathScale: 1.0
+
+                        scale: isPulse ? 1.28 : breathScale
+
+                        Behavior on scale {
+                            NumberAnimation { duration: 180; easing.type: Easing.OutBack }
+                        }
+
+                        Connections {
+                            target: MediaPlayerService
+                            function onIsActuallyPlayingChanged() {
+                                mediaIconText.isPulse = true;
+                                pulseTimer.restart();
+                            }
+                        }
+
+                        Timer {
+                            id: pulseTimer
+                            interval: 220
+                            onTriggered: mediaIconText.isPulse = false
+                        }
+
+                        SequentialAnimation {
+                            running: MediaPlayerService.isActuallyPlaying
+                            loops: Animation.Infinite
+                            NumberAnimation { target: mediaIconText; property: "breathScale"; from: 1.0; to: 1.15; duration: 800; easing.type: Easing.InOutQuad }
+                            NumberAnimation { target: mediaIconText; property: "breathScale"; from: 1.15; to: 1.0; duration: 800; easing.type: Easing.InOutQuad }
+                        }
                     }
 
                     Text {
@@ -124,7 +156,7 @@ RowLayout {
                             let artist = String(p.trackArtist || "");
                             let full = (artist && artist !== "" && artist !== "undefined") ? title + " • " + artist : title;
                             let limit = Theme.isSmallScreen ? 18 : 34;
-                            return full.length > limit ? full.substring(0, limit - 3) + "..." : full;
+                            return MediaPlayerService.formatMediaMetadata(full, limit, 5);
                         }
                         color: Theme.accentColor
                         font.pixelSize: Theme.fontSize
@@ -164,12 +196,19 @@ RowLayout {
                     }
                 }
 
-                // Subtle Vertical Glass Divider Line
+                // Elegant Vertical Glass Separator
                 Rectangle {
                     width: 1
+                    implicitWidth: 1
                     height: Theme.scaled(14)
-                    color: Qt.rgba(255, 255, 255, 0.25)
                     Layout.alignment: Qt.AlignVCenter
+                    Layout.leftMargin: Theme.scaled(2)
+                    Layout.rightMargin: Theme.scaled(2)
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: Qt.rgba(255, 255, 255, 0.0) }
+                        GradientStop { position: 0.5; color: Qt.rgba(255, 255, 255, 0.35) }
+                        GradientStop { position: 1.0; color: Qt.rgba(255, 255, 255, 0.0) }
+                    }
                 }
             }
 
@@ -179,19 +218,47 @@ RowLayout {
                 Layout.alignment: Qt.AlignVCenter
 
                 Text {
+                    font.family: Theme.iconFont
+                    font.pixelSize: Theme.scaled(13)
+                    text: "󰥔"
+                    color: Theme.subtext0
+                    Layout.alignment: Qt.AlignVCenter
+                }
+
+                Text {
+                    visible: ClockSettings.showDate
                     color: Theme.fontColor
                     font.pixelSize: Theme.fontSize
-                    font.weight: Font.Bold
+                    font.weight: Font.Normal
+                    Layout.alignment: Qt.AlignVCenter
+                    text: Qt.formatDateTime(systemClock.date, ClockSettings.dateFormat)
+                }
+
+                // Elegant Vertical Glass Separator
+                Rectangle {
+                    visible: ClockSettings.showDate && ClockSettings.showClock
+                    width: 1
+                    implicitWidth: 1
+                    height: Theme.scaled(14)
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.leftMargin: Theme.scaled(2)
+                    Layout.rightMargin: Theme.scaled(2)
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: Qt.rgba(255, 255, 255, 0.0) }
+                        GradientStop { position: 0.5; color: Qt.rgba(255, 255, 255, 0.35) }
+                        GradientStop { position: 1.0; color: Qt.rgba(255, 255, 255, 0.0) }
+                    }
+                }
+
+                Text {
+                    visible: ClockSettings.showClock
+                    color: Theme.fontColor
+                    font.pixelSize: Theme.fontSize
+                    font.weight: Font.Normal
                     Layout.alignment: Qt.AlignVCenter
                     text: {
-                        let parts = [];
-                        if (ClockSettings.showDate)
-                            parts.push(Qt.formatDateTime(systemClock.date, ClockSettings.dateFormat));
-                        if (ClockSettings.showClock) {
-                            let timeFmt = ClockSettings.use24Hour ? ClockSettings.timeFormat24h : ClockSettings.timeFormat12h;
-                            parts.push(Qt.formatDateTime(systemClock.date, timeFmt));
-                        }
-                        return parts.join(" | ");
+                        let timeFmt = ClockSettings.use24Hour ? ClockSettings.timeFormat24h : ClockSettings.timeFormat12h;
+                        return Qt.formatDateTime(systemClock.date, timeFmt);
                     }
                 }
             }

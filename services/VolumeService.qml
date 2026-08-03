@@ -193,25 +193,53 @@ Item {
 
     Process {
         id: volExec
-        command: ["sh", "-c", "echo \"SINK=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null)\"; echo \"SRC=$(wpctl get-volume @DEFAULT_AUDIO_SOURCE@ 2>/dev/null)\"; wpctl status 2>/dev/null | grep -A 15 \"Streams:\" | grep -q -i \"Input\" && echo \"MIC_ACTIVE=1\" || echo \"MIC_ACTIVE=0\"; wpctl inspect @DEFAULT_AUDIO_SINK@ 2>/dev/null | grep -q -i \"bluez\" && echo \"BT_ACTIVE=1\" || echo \"BT_ACTIVE=0\""]
+        command: ["python3", "-c", `
+import json, subprocess, re
+
+res = {"outputVolume": 0, "muted": False, "micVolume": 0, "micMuted": False, "micActive": False, "btActive": False}
+
+try:
+    out = subprocess.check_output(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"], text=True, stderr=subprocess.DEVNULL)
+    res["muted"] = "[MUTED]" in out
+    m = re.search(r"([0-9]+\.?[0-9]*)", out)
+    if m: res["outputVolume"] = round(float(m.group(1)) * 100)
+except Exception: pass
+
+try:
+    out = subprocess.check_output(["wpctl", "get-volume", "@DEFAULT_AUDIO_SOURCE@"], text=True, stderr=subprocess.DEVNULL)
+    res["micMuted"] = "[MUTED]" in out
+    m = re.search(r"([0-9]+\.?[0-9]*)", out)
+    if m: res["micVolume"] = round(float(m.group(1)) * 100)
+except Exception: pass
+
+try:
+    insp = subprocess.check_output(["wpctl", "inspect", "@DEFAULT_AUDIO_SINK@"], text=True, stderr=subprocess.DEVNULL)
+    res["btActive"] = "bluez" in insp.lower()
+except Exception: pass
+
+try:
+    dump = json.loads(subprocess.check_output(["pw-dump"], stderr=subprocess.DEVNULL))
+    res["micActive"] = any(
+        obj.get("type") == "PipeWire:Interface:Node" and 
+        obj.get("info", {}).get("props", {}).get("media.class") == "Stream/Input/Audio"
+        for obj in dump
+    )
+except Exception: pass
+
+print(json.dumps(res))
+`]
         stdout: StdioCollector {
             onStreamFinished: {
-                if (!text) return;
-                const lines = text.trim().split("\n");
-                service.micActive = text.includes("MIC_ACTIVE=1");
-                service.btActive = text.includes("BT_ACTIVE=1");
-                for (let l of lines) {
-                    if (l.includes("SINK")) {
-                        service.muted = l.includes("[MUTED]");
-                        let m = l.match(/[0-9]\.[0-9]+/);
-                        if (m) service.outputVolume = Math.round(parseFloat(m[0]) * 100);
-                    }
-                    if (l.includes("SRC")) {
-                        service.micMuted = l.includes("[MUTED]");
-                        let m = l.match(/[0-9]\.[0-9]+/);
-                        if (m) service.micVolume = Math.round(parseFloat(m[0]) * 100);
-                    }
-                }
+                if (!text || text.trim() === "") return;
+                try {
+                    const data = JSON.parse(text);
+                    if (data.outputVolume !== undefined) service.outputVolume = data.outputVolume;
+                    if (data.muted !== undefined) service.muted = data.muted;
+                    if (data.micVolume !== undefined) service.micVolume = data.micVolume;
+                    if (data.micMuted !== undefined) service.micMuted = data.micMuted;
+                    if (data.micActive !== undefined) service.micActive = data.micActive;
+                    if (data.btActive !== undefined) service.btActive = data.btActive;
+                } catch (e) {}
             }
         }
     }
