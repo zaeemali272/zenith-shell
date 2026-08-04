@@ -93,17 +93,6 @@ case "$1" in
     settings)
         send_cmd "settings"
         ;;
-    cmd)
-        if [ -n "$2" ]; then
-            case "$2" in
-                Overview|ActionLauncher) send_cmd "dashboard:Default" ;;
-                *) send_cmd "$2" ;;
-            esac
-        else
-            show_usage
-            exit 1
-        fi
-        ;;
     start)
         if is_running; then
             echo "Quickshell is already running."
@@ -121,6 +110,14 @@ case "$1" in
         pkill -f quickshell
         sleep 0.3
         quickshell -d -p "$SHELL_DIR" &
+        ;;
+    launcher)
+        # Close launcher if it is running; otherwise do nothing
+        if pgrep -f "quickshell -d -p $SHELL_DIR/windows/launcher.qml" > /dev/null; then
+            pkill -f "quickshell -d -p $SHELL_DIR/windows/launcher.qml"
+        else
+            quickshell -d -p $SHELL_DIR/windows/launcher.qml &
+        fi
         ;;
     "")
         show_usage
