@@ -40,6 +40,7 @@ show_usage() {
     echo "Actions:"
     echo "  launcher | applauncher     Toggle App Launcher"
     echo "  clipboard | clip | cliphist Toggle Clipboard Manager"
+    echo "  emoji | emojis             Toggle Emoji Selector"
     echo "  dashboard | overview      Toggle Dashboard"
     echo "  wallpaper                 Toggle Wallpaper tab"
     echo "  pomodoro                  Toggle Pomodoro tab"
@@ -90,6 +91,15 @@ case "$1" in
             send_cmd "clipboard"
         else
             quickshell -d -p "$SHELL_DIR/windows/clipboard.qml" &
+        fi
+        ;;
+    emoji|emojis|emojiselector|Emoji)
+        if pgrep -f "[w]indows/emoji.qml" >/dev/null 2>&1; then
+            pkill -f "[w]indows/emoji.qml"
+        elif is_running; then
+            send_cmd "emoji"
+        else
+            quickshell -d -p "$SHELL_DIR/windows/emoji.qml" &
         fi
         ;;
     pomodoro)

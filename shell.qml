@@ -45,6 +45,8 @@ Scope {
             launcherWindow.toggle();
         } else if (lowerAction === "clipboard" || lowerAction === "toggle_clipboard" || lowerAction === "clip" || lowerAction === "cliphist") {
             clipboardWindow.toggle();
+        } else if (lowerAction === "emoji" || lowerAction === "toggle_emoji" || lowerAction === "emojis" || lowerAction === "emojiselector") {
+            emojiWindow.toggle();
         } else if (lowerAction === "dashboard" || lowerAction === "toggle_dashboard" || lowerAction === "actionlauncher" || lowerAction === "overview") {
             let tab = "Default";
             if (lowerArg === "pomodoro") tab = "Pomodoro";
@@ -118,5 +120,9 @@ Scope {
 
     Clipboard {
         id: clipboardWindow
+    }
+
+    Emoji {
+        id: emojiWindow
     }
 }
