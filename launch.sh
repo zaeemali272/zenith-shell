@@ -38,6 +38,8 @@ show_usage() {
     echo "Usage: $0 [command/action]"
     echo ""
     echo "Actions:"
+    echo "  launcher | applauncher     Toggle App Launcher"
+    echo "  clipboard | clip | cliphist Toggle Clipboard Manager"
     echo "  dashboard | overview      Toggle Dashboard"
     echo "  wallpaper                 Toggle Wallpaper tab"
     echo "  pomodoro                  Toggle Pomodoro tab"
@@ -79,6 +81,15 @@ case "$1" in
             send_cmd "launcher"
         else
             quickshell -d -p "$SHELL_DIR/windows/launcher.qml" &
+        fi
+        ;;
+    clipboard|clip|cliphist|Clipboard)
+        if pgrep -f "[w]indows/clipboard.qml" >/dev/null 2>&1; then
+            pkill -f "[w]indows/clipboard.qml"
+        elif is_running; then
+            send_cmd "clipboard"
+        else
+            quickshell -d -p "$SHELL_DIR/windows/clipboard.qml" &
         fi
         ;;
     pomodoro)

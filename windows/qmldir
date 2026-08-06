@@ -1,3 +1,4 @@
 Overview Overview.qml
 singleton IconsFetcher IconsFetcher.qml
 Launcher launcher.qml
+Clipboard clipboard.qml
