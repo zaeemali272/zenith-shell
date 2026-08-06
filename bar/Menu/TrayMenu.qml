@@ -35,23 +35,6 @@ PopupWindow {
         onCleared: root.closeAll()
     }
 
-    readonly property string trayScript: Quickshell.env("HOME") + "/.config/quickshell/scripts/tray_focus.py"
-
-    Process {
-        id: windowFocusProc
-        property string itemStr: ""
-        property string titleStr: ""
-        property string iconStr: ""
-
-        command: [
-            "python3",
-            root.trayScript,
-            windowFocusProc.itemStr,
-            windowFocusProc.titleStr,
-            windowFocusProc.iconStr
-        ]
-    }
-
     function openFor(item, visualParent, edges) {
         if (!item) return;
         let handle = item.menu !== undefined ? item.menu : item;
@@ -85,7 +68,7 @@ PopupWindow {
         color: Theme.glassBackground
         border.color: Theme.glassBorder
         border.width: 1
-        radius: Theme.scaled(20)
+        radius: Theme.scaled(16)
         clip: true
         focus: true
 
@@ -107,10 +90,10 @@ PopupWindow {
             implicitWidth: currentItem ? currentItem.implicitWidth : Theme.scaled(220)
             implicitHeight: currentItem ? currentItem.implicitHeight : Theme.scaled(100)
 
-            pushEnter: Transition { NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 150 } }
-            pushExit: Transition { NumberAnimation { property: "opacity"; from: 1; to: 0; duration: 150 } }
-            popEnter: Transition { NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 150 } }
-            popExit: Transition { NumberAnimation { property: "opacity"; from: 1; to: 0; duration: 150 } }
+            pushEnter: Transition { NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 120 } }
+            pushExit: Transition { NumberAnimation { property: "opacity"; from: 1; to: 0; duration: 120 } }
+            popEnter: Transition { NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 120 } }
+            popExit: Transition { NumberAnimation { property: "opacity"; from: 1; to: 0; duration: 120 } }
         }
 
         Component {
@@ -183,8 +166,6 @@ PopupWindow {
                             radius: Theme.scaled(10)
                             color: entry.isSeparator ? "transparent" : (itemMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : "transparent")
 
-                            Behavior on color { ColorAnimation { duration: 120 } }
-
                             Rectangle {
                                 anchors.centerIn: parent
                                 width: parent.width - Theme.scaled(10)
@@ -250,20 +231,9 @@ PopupWindow {
                                     if (entry.hasChildren) {
                                         stackView.push(subMenuComp, { handle: entry, isSubMenu: true });
                                     } else {
-                                        try { entry.triggered(); } catch(e1) {}
-                                        try { if (typeof entry.activate === "function") entry.activate(); } catch(e2) {}
-                                        try { if (typeof entry.trigger === "function") entry.trigger(); } catch(e3) {}
-
-                                        if (root.currentItem) {
-                                            let itemIdStr = String(root.currentItem.id || "");
-                                            let itemTitleStr = String(root.currentItem.title || "");
-                                            let itemIconStr = String(root.currentItem.icon || "");
-
-                                            windowFocusProc.command = ["python3", root.trayScript, itemIdStr, itemTitleStr, itemIconStr];
-                                            windowFocusProc.running = false;
-                                            windowFocusProc.running = true;
-                                        }
-
+                                        try { if (typeof entry.triggered === "function") entry.triggered(); } catch(e1) {}
+                                        try { if (typeof entry.trigger === "function") entry.trigger(); } catch(e2) {}
+                                        try { if (typeof entry.activate === "function") entry.activate(0, 0); } catch(e3) {}
                                         root.closeAll();
                                     }
                                 }

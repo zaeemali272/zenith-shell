@@ -150,6 +150,11 @@ ColumnLayout {
                     }
                     
                     // Disconnect Button
+                    ColumnLayout { spacing: 0; Layout.alignment: Qt.AlignRight; visible: BluetoothService.connectedBattery !== -1
+                        Text { text: BluetoothService.connectedBattery + "%"; color: Theme.powerGreen; font.pixelSize: Theme.scaled(10); font.weight: Font.Black; horizontalAlignment: Text.AlignRight }
+                        Text { text: "BATTERY"; color: Theme.surface2; font.pixelSize: Theme.scaled(8); font.weight: Font.Black; horizontalAlignment: Text.AlignRight }
+                    }
+                    
                     Rectangle {
                         width: Theme.scaled(32); height: Theme.scaled(32); radius: Theme.scaled(8); color: Qt.rgba(1,0,0,0.1); border.color: Theme.powerRed; border.width: 1
                         visible: BluetoothService.connectedAddress !== ""
@@ -157,10 +162,6 @@ ColumnLayout {
                         MouseArea { anchors.fill: parent; onClicked: BluetoothService.action("disconnect", BluetoothService.connectedAddress) }
                     }
 
-                    ColumnLayout { spacing: 0; Layout.alignment: Qt.AlignRight; visible: BluetoothService.connectedBattery !== -1
-                        Text { text: BluetoothService.connectedBattery + "%"; color: Theme.powerGreen; font.pixelSize: Theme.scaled(10); font.weight: Font.Black; horizontalAlignment: Text.AlignRight }
-                        Text { text: "BATTERY"; color: Theme.surface2; font.pixelSize: Theme.scaled(8); font.weight: Font.Black; horizontalAlignment: Text.AlignRight }
-                    }
                 }
             }
         }
@@ -217,7 +218,7 @@ ColumnLayout {
                         }
                     }
 
-                    // --- Action Buttons (Right Aligned) ---
+                    // --- Action Buttons & Battery (Right Aligned) ---
                     RowLayout {
                         Layout.alignment: Qt.AlignRight
                         spacing: Theme.scaled(8)

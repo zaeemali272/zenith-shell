@@ -8,6 +8,7 @@ import "bar/Menu"
 import "bar/Menu/components"
 import "services"
 import "Settings"
+import "windows"
 
 Scope {
     readonly property var _notifications: NotificationService
@@ -40,7 +41,9 @@ Scope {
         let arg = parts.length > 1 ? parts[1].trim() : "";
         let lowerArg = arg.toLowerCase();
 
-        if (lowerAction === "dashboard" || lowerAction === "toggle_dashboard" || lowerAction === "actionlauncher" || lowerAction === "overview") {
+        if (lowerAction === "launcher" || lowerAction === "toggle_launcher" || lowerAction === "applauncher") {
+            launcherWindow.toggle();
+        } else if (lowerAction === "dashboard" || lowerAction === "toggle_dashboard" || lowerAction === "actionlauncher" || lowerAction === "overview") {
             let tab = "Default";
             if (lowerArg === "pomodoro") tab = "Pomodoro";
             else if (lowerArg === "wallpaper" || lowerArg === "wallpapers") tab = "Wallpaper";
@@ -105,5 +108,9 @@ Scope {
 
     OsdPopup {
         id: osdPopup
+    }
+
+    Launcher {
+        id: launcherWindow
     }
 }

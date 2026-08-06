@@ -19,7 +19,7 @@ if [ ! -p "$FIFO_FILE" ]; then
 fi
 
 is_running() {
-    pidof quickshell >/dev/null 2>&1 || pgrep -f "quickshell" >/dev/null 2>&1
+    pgrep -x "quickshell" >/dev/null 2>&1 || pgrep -x ".quickshell-wra" >/dev/null 2>&1 || pgrep -f "quickshell" >/dev/null 2>&1
 }
 
 send_cmd() {
@@ -29,7 +29,7 @@ send_cmd() {
         quickshell -d -p "$SHELL_DIR" &
         sleep 0.6
     fi
-    echo "$cmd" > "$FIFO_FILE" 2>/dev/null
+    python3 -c "import os, sys; p=sys.argv[1]; c=sys.argv[2]; f=os.open(p, os.O_WRONLY|os.O_NONBLOCK); os.write(f, (c+'\n').encode()); os.close(f)" "$FIFO_FILE" "$cmd" 2>/dev/null || (echo "$cmd" > "$FIFO_FILE" 2>/dev/null &)
 }
 
 show_usage() {
@@ -46,25 +46,40 @@ show_usage() {
     echo "  volume | audio            Toggle Volume QuickSettings"
     echo "  powerprofile | prof       Toggle Power Profile QuickSettings"
     echo "  battery | pwr             Toggle Battery QuickSettings"
-    echo "  power | sys               Toggle Power System QuickSettings"
-    echo "  close                     Close all open menus/popups"
-    echo "  cmd <raw_cmd>             Send raw IPC command"
-    echo ""
-    echo "Process Control:"
-    echo "  start                     Start Quickshell in background"
-    echo "  stop | kill               Terminate Quickshell"
+    echo "  power | sys               Toggle Power Menu"
+    echo "  close | close_all         Close all active menus"
     echo "  restart | reload          Restart Quickshell"
+    echo "  stop                      Stop Quickshell"
+    echo ""
 }
 
 case "$1" in
-    help|-h|--help)
-        show_usage
+    start)
+        if ! is_running; then
+            echo "Starting Quickshell..."
+            quickshell -d -p "$SHELL_DIR" &
+        else
+            echo "Quickshell is already running."
+        fi
         ;;
-    dashboard|overview|ActionLauncher|Overview)
-        send_cmd "dashboard:Default"
+    stop)
+        echo "Stopping Quickshell..."
+        pkill -f quickshell
         ;;
-    wallpaper|wallpapers)
-        send_cmd "wallpaper"
+    restart|reload)
+        echo "Restarting Quickshell..."
+        pkill -f quickshell
+        sleep 0.3
+        quickshell -d -p "$SHELL_DIR" &
+        ;;
+    launcher|applauncher|Launcher)
+        if pgrep -f "[w]indows/launcher.qml" >/dev/null 2>&1; then
+            pkill -f "[w]indows/launcher.qml"
+        elif is_running; then
+            send_cmd "launcher"
+        else
+            quickshell -d -p "$SHELL_DIR/windows/launcher.qml" &
+        fi
         ;;
     pomodoro)
         send_cmd "pomodoro"
@@ -111,13 +126,8 @@ case "$1" in
         sleep 0.3
         quickshell -d -p "$SHELL_DIR" &
         ;;
-    launcher)
-        # Close launcher if it is running; otherwise do nothing
-        if pgrep -f "quickshell -d -p $SHELL_DIR/windows/launcher.qml" > /dev/null; then
-            pkill -f "quickshell -d -p $SHELL_DIR/windows/launcher.qml"
-        else
-            quickshell -d -p $SHELL_DIR/windows/launcher.qml &
-        fi
+    launcher|applauncher|Launcher)
+        send_cmd "launcher"
         ;;
     "")
         show_usage

@@ -15,7 +15,7 @@ Item {
     property bool scanning: false
     property bool serviceActive: true
     property bool isServiceEnabled: false
-    property string state: "Idle" // Idle, Scanning, Connecting, Disconnecting, Powering
+    property string state: "Idle"
     
     readonly property bool isPerformingAction: actionExec.running || powerExec.running || scanExec.running || oneShotScan.running || _actionInProgress || startupToggleExec.running
     readonly property bool isRefreshing: statusExec.running
@@ -82,22 +82,39 @@ conn_icon = 'bluetooth'
 
 if connected_addrs:
     first_conn = list(connected_addrs)[0]
-    info_raw = run(['bluetoothctl', 'info', first_conn])
-    for line in info_raw.splitlines():
-        l = line.strip()
-        if l.startswith('Name: '): conn_name = l[6:]
-        elif l.startswith('Icon: '): conn_icon = l[6:]
-        elif 'Battery Percentage:' in l:
-            b_match = re.search(r'\((\d+)\)', l) or re.search(r':\s+(\d+)', l)
-            if b_match: conn_battery = int(b_match.group(1))
-
-    conn_addr = first_conn
-    for d in devices:
-        if d['address'] == first_conn:
-            d['battery'] = conn_battery
-            d['icon'] = conn_icon
-            if not d['name'] or d['name'] == first_conn:
-                d['name'] = conn_name
+    
+    for c_addr in connected_addrs:
+        info_raw = run(['bluetoothctl', 'info', c_addr])
+        c_name = ''
+        c_icon = 'bluetooth'
+        c_batt = -1
+        
+        for line in info_raw.splitlines():
+            l = line.strip()
+            if l.startswith('Name: '): c_name = l[6:]
+            elif l.startswith('Icon: '): c_icon = l[6:]
+            elif l.startswith('Battery Percentage:'):
+                try:
+                    # Safely parse strings like "Battery Percentage: 0x0a (10)" or "Battery Percentage: 100"
+                    if '(' in l and ')' in l:
+                        c_batt = int(l.split('(')[1].split(')')[0])
+                    else:
+                        c_batt = int(l.split(':')[-1].strip())
+                except:
+                    pass
+        
+        if c_addr == first_conn:
+            conn_addr = c_addr
+            conn_name = c_name
+            conn_icon = c_icon
+            conn_battery = c_batt
+            
+        for d in devices:
+            if d['address'] == c_addr:
+                d['battery'] = c_batt
+                d['icon'] = c_icon
+                if c_name and (not d['name'] or d['name'] == c_addr):
+                    d['name'] = c_name
 
 service_active = run(['systemctl', 'is-active', 'bluetooth.service']) == 'active'
 is_enabled = run(['systemctl', 'is-enabled', 'bluetooth.service']) == 'enabled'

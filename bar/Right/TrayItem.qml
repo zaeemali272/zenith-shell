@@ -47,7 +47,12 @@ MouseArea {
         let itemIconStr = String(root.item.icon || "");
 
         if (mouse.button === Qt.LeftButton) {
-            try { if (typeof root.item.activate === "function") root.item.activate(); } catch(e1) {}
+            // Pass (0, 0) arguments as required by Qt C++ StatusNotifierItem::activate(int x, int y)
+            try {
+                if (typeof root.item.activate === "function") {
+                    root.item.activate(0, 0);
+                }
+            } catch(e1) {}
 
             focusProc.command = ["python3", root.trayScript, itemIdStr, itemTitleStr, itemIconStr];
             focusProc.running = false;
@@ -56,12 +61,8 @@ MouseArea {
             if (root.item.hasMenu && menuRef) {
                 menuRef.openFor(root.item, root);
             } else {
-                try { if (typeof root.item.secondaryActivate === "function") root.item.secondaryActivate(); } catch(e1) {}
+                try { if (typeof root.item.secondaryActivate === "function") root.item.secondaryActivate(0, 0); } catch(e1) {}
                 try { if (typeof root.item.contextMenu === "function") root.item.contextMenu(0, 0); } catch(e2) {}
-
-                focusProc.command = ["python3", root.trayScript, itemIdStr, itemTitleStr, itemIconStr];
-                focusProc.running = false;
-                focusProc.running = true;
             }
         }
     }
