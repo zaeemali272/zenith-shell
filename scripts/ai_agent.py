@@ -5,10 +5,11 @@ import json
 import urllib.request
 import urllib.error
 import ssl
-import threading
+import subprocess
 
 CONFIG_DIR = os.path.expanduser("~/.config/zenith")
 KEYS_FILE = os.path.join(CONFIG_DIR, "ai_keys.json")
+HISTORY_FILE = os.path.join(CONFIG_DIR, "ai_history.json")
 
 def ensure_config_dir():
     os.makedirs(CONFIG_DIR, exist_ok=True)
@@ -36,7 +37,6 @@ def get_api_key(provider):
     if p_lower in keys and keys[p_lower]:
         return keys[p_lower]
     
-    # Fallback to environment variables
     env_vars = {
         "gemini": "GEMINI_API_KEY",
         "claude": "ANTHROPIC_API_KEY",
@@ -74,6 +74,122 @@ def check_keys():
                groq=bool(groq_key),
                ollama=ollama_available,
                keys_file=KEYS_FILE)
+
+def get_system_context():
+    info_lines = ["💻 **Desktop & System Metrics**"]
+
+    # Active Window via Hyprland
+    try:
+        res = subprocess.run(["hyprctl", "activewindow", "-j"], capture_output=True, text=True, timeout=1.5)
+        if res.returncode == 0 and res.stdout.strip():
+            win = json.loads(res.stdout)
+            title = win.get("title", "Unknown")
+            w_class = win.get("class", "Unknown")
+            ws = win.get("workspace", {}).get("name", "1")
+            info_lines.append(f"• **Active Window**: `{title}` (`{w_class}`) on Workspace `{ws}`")
+    except Exception:
+        pass
+
+    # RAM Usage
+    try:
+        with open("/proc/meminfo", "r") as f:
+            lines = f.readlines()
+        mem_total = 0
+        mem_free = 0
+        mem_avail = 0
+        for line in lines:
+            if line.startswith("MemTotal:"):
+                mem_total = int(line.split()[1]) // 1024
+            elif line.startswith("MemAvailable:"):
+                mem_avail = int(line.split()[1]) // 1024
+        if mem_total > 0:
+            used = mem_total - mem_avail
+            pct = int((used / mem_total) * 100)
+            info_lines.append(f"• **Memory Usage**: {used} MB / {mem_total} MB ({pct}%)")
+    except Exception:
+        pass
+
+    # Uptime
+    try:
+        res = subprocess.run(["uptime", "-p"], capture_output=True, text=True, timeout=1.5)
+        if res.returncode == 0:
+            info_lines.append(f"• **Uptime**: {res.stdout.strip()}")
+    except Exception:
+        pass
+
+    # Host & User
+    try:
+        user = os.environ.get("USER", "user")
+        host = subprocess.run(["hostname"], capture_output=True, text=True, timeout=1.0).stdout.strip()
+        info_lines.append(f"• **Environment**: `{user}@{host}`")
+    except Exception:
+        pass
+
+    return "\n".join(info_lines)
+
+def execute_shell(cmd_str):
+    if not cmd_str.strip():
+        return "No command provided."
+
+    try:
+        res = subprocess.run(["sh", "-c", cmd_str], capture_output=True, text=True, timeout=25)
+        out = res.stdout.strip()
+        err = res.stderr.strip()
+        
+        output_parts = [f"```bash\n$ {cmd_str}\n```"]
+        if out:
+            output_parts.append(f"**Output**:\n```text\n{out}\n```")
+        if err:
+            output_parts.append(f"**Stderr**:\n```text\n{err}\n```")
+        if not out and not err:
+            output_parts.append("*Command completed with no output.*")
+            
+        output_parts.append(f"*(Exit code: {res.returncode})*")
+        return "\n\n".join(output_parts)
+    except subprocess.TimeoutExpired:
+        return f"⚠️ Command execution timed out after 25s: `{cmd_str}`"
+    except Exception as e:
+        return f"⚠️ Command execution error: {str(e)}"
+
+def save_chat_history(messages):
+    ensure_config_dir()
+    try:
+        with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+            json.dump(messages, f, indent=2)
+        return True
+    except Exception:
+        return False
+
+def load_chat_history():
+    if os.path.exists(HISTORY_FILE):
+        try:
+            with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+                history = json.load(f)
+                emit_event("history_loaded", history=history)
+                return
+        except Exception:
+            pass
+    emit_event("history_loaded", history=[])
+
+def export_chat_markdown(messages, target_file=None):
+    if not target_file:
+        doc_dir = os.path.expanduser("~/Documents")
+        os.makedirs(doc_dir, exist_ok=True)
+        target_file = os.path.join(doc_dir, "zenith_ai_chat.md")
+
+    lines = ["# Zenith AI Conversation Export\n\n"]
+    for msg in messages:
+        role = "User" if msg.get("role") == "user" else (msg.get("modelTag") or "Assistant")
+        content = msg.get("content", "")
+        ts = msg.get("timestamp", "")
+        lines.append(f"### 👤 {role} ({ts})\n\n{content}\n\n---\n")
+
+    try:
+        with open(target_file, "w", encoding="utf-8") as f:
+            f.write("\n".join(lines))
+        return target_file
+    except Exception as e:
+        return None
 
 def process_file_attachments(content):
     words = content.split()
@@ -115,7 +231,6 @@ def stream_gemini(messages, system_prompt="", specific_model=None):
         emit_event("error", message="GEMINI_API_KEY is not configured.\nUse `/key gemini <YOUR_API_KEY>` or set GEMINI_API_KEY environment variable.")
         return
 
-    # Dynamic model candidates order: latest / pro / flash fallbacks
     if specific_model:
         models_to_try = [specific_model]
     else:
@@ -180,17 +295,15 @@ def stream_gemini(messages, system_prompt="", specific_model=None):
         except urllib.error.HTTPError as e:
             err_body = e.read().decode("utf-8", errors="ignore")
             last_err = f"HTTP {e.code}"
-            # If 429 (quota) or 404 (not found), try next fallback model
             if e.code in (429, 404) and len(models_to_try) > 1 and model_name != models_to_try[-1]:
                 continue
             else:
-                # Parse human friendly error message
                 friendly_msg = f"Gemini API Error ({model_name}): HTTP {e.code}"
                 try:
                     err_json = json.loads(err_body)
                     msg_text = err_json.get("error", {}).get("message", "")
                     if "Quota exceeded" in msg_text or e.code == 429:
-                        friendly_msg = f"⚠️ Gemini API Quota Exceeded (429) on `{model_name}`.\nIf using free tier, rate limit was reached. Check billing/plan or use `/key gemini <PRO_API_KEY>`."
+                        friendly_msg = f"⚠️ Gemini API Quota Exceeded (429) on `{model_name}`.\nCheck plan billing or use `/key gemini <PRO_API_KEY>`."
                     else:
                         friendly_msg = f"⚠️ Gemini Error on `{model_name}`: {msg_text}"
                 except Exception:
@@ -204,7 +317,7 @@ def stream_gemini(messages, system_prompt="", specific_model=None):
             emit_event("error", message=f"Gemini API Error ({model_name}): {str(e)}")
             return
 
-    emit_event("error", message=f"Gemini API Error: Rate limit/Quota reached across all models. ({last_err})")
+    emit_event("error", message=f"Gemini API Error: Quota reached across models. ({last_err})")
 
 def stream_claude(messages, system_prompt=""):
     api_key = get_api_key("claude")
@@ -260,7 +373,6 @@ def stream_claude(messages, system_prompt=""):
                         pass
         emit_event("done")
     except urllib.error.HTTPError as e:
-        err_msg = e.read().decode("utf-8", errors="ignore")
         emit_event("error", message=f"Claude API Error: HTTP {e.code}")
     except Exception as e:
         emit_event("error", message=f"Claude API Error: {str(e)}")
@@ -317,7 +429,6 @@ def stream_groq(messages, system_prompt=""):
                         pass
         emit_event("done")
     except urllib.error.HTTPError as e:
-        err_msg = e.read().decode("utf-8", errors="ignore")
         emit_event("error", message=f"Groq API Error: HTTP {e.code}")
     except Exception as e:
         emit_event("error", message=f"Groq API Error: {str(e)}")
@@ -363,7 +474,6 @@ def stream_ollama(messages, system_prompt=""):
                     pass
         emit_event("done")
     except urllib.error.HTTPError as e:
-        err_msg = e.read().decode("utf-8", errors="ignore")
         emit_event("error", message=f"Ollama HTTP Error {e.code}")
     except Exception as e:
         emit_event("error", message=f"Ollama Error (Make sure Ollama is running): {str(e)}")
@@ -394,9 +504,41 @@ def process_command(raw_input):
         emit_event("done")
         return
 
+    if action == "sys_info":
+        sys_text = get_system_context()
+        emit_event("token", content=sys_text)
+        emit_event("done")
+        return
+
+    if action == "exec":
+        cmd_str = cmd.get("command", "").strip()
+        exec_out = execute_shell(cmd_str)
+        emit_event("token", content=exec_out)
+        emit_event("done")
+        return
+
+    if action == "save_history":
+        msgs = cmd.get("messages", [])
+        save_chat_history(msgs)
+        return
+
+    if action == "load_history":
+        load_chat_history()
+        return
+
+    if action == "export":
+        msgs = cmd.get("messages", [])
+        exp_file = export_chat_markdown(msgs)
+        if exp_file:
+            emit_event("token", content=f"📄 Chat exported successfully to `{exp_file}`!")
+        else:
+            emit_event("error", message="Failed to export chat.")
+        emit_event("done")
+        return
+
     model = cmd.get("model", "gemini").lower()
     messages = cmd.get("messages", [])
-    system_prompt = cmd.get("system_prompt", "You are a helpful AI assistant integrated into a Linux desktop shell control center.")
+    system_prompt = cmd.get("system_prompt", "You are a helpful desktop AI assistant integrated into the Zenith Linux desktop shell control center. Provide clear markdown answers.")
 
     if model.startswith("gemini"):
         specific = None
@@ -419,6 +561,8 @@ def main():
         arg = sys.argv[1]
         if arg == "--check-keys":
             check_keys()
+        elif arg == "--load-history":
+            load_chat_history()
         else:
             process_command(arg)
         return

@@ -408,6 +408,9 @@ PanelWindow {
         function onActiveTabChanged() {
             if (CenterState.activeTab === "Wallpaper") {
                 mainContent.Keys.forwardTo = [wallpaperContent];
+            } else if (CenterState.activeTab === "AI Agent") {
+                mainContent.Keys.forwardTo = [aiAgentContent];
+                aiAgentContent.focusInput();
             } else {
                 mainContent.Keys.forwardTo = [];
             }
@@ -417,6 +420,8 @@ PanelWindow {
     function updateFocusForTab(tab) {
         if (tab === "Wallpaper") {
             wallpaperContent.forceActiveFocus();
+        } else if (tab === "AI Agent") {
+            aiAgentContent.focusInput();
         }
     }
 }
