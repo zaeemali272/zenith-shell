@@ -100,19 +100,20 @@ Item {
                 // Assistant action bar (Copy & Quick Run Command buttons)
                 RowLayout {
                     Layout.alignment: Qt.AlignRight
-                    spacing: Theme.scaled(6)
+                    spacing: Theme.scaled(8)
                     visible: rootDelegate.msgRole === "assistant" && rootDelegate.msgContent !== ""
 
                     Rectangle {
-                        height: Theme.scaled(22)
-                        implicitWidth: runBtnText.implicitWidth + Theme.scaled(12)
+                        height: Theme.scaled(24)
+                        implicitWidth: runBtnRow.implicitWidth + Theme.scaled(16)
                         radius: 999
                         color: runBtnMouse.containsMouse ? Theme.accentColor : Qt.rgba(1, 1, 1, 0.1)
                         visible: rootDelegate.msgContent.indexOf("```bash") !== -1 || rootDelegate.msgContent.indexOf("```sh") !== -1
 
                         RowLayout {
+                            id: runBtnRow
                             anchors.centerIn: parent
-                            spacing: 4
+                            spacing: Theme.scaled(4)
                             Text {
                                 text: "󰆍"
                                 font.family: Theme.iconFont
@@ -150,7 +151,7 @@ Item {
                     }
 
                     Rectangle {
-                        width: Theme.scaled(22); height: Theme.scaled(22)
+                        width: Theme.scaled(24); height: Theme.scaled(24)
                         radius: 999
                         color: copyBtnMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.15) : "transparent"
 

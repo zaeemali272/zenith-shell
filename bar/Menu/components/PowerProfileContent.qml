@@ -146,7 +146,7 @@ ColumnLayout {
     // Dynamic Hardware Battery Conservation Mode Card
     Rectangle {
         id: consCard
-        visible: PowerProfileService.conservativeSupported
+        visible: Boolean(PowerProfileService.conservativeSupported)
         Layout.fillWidth: true
         height: Theme.scaled(82)
         radius: Theme.scaled(18)
@@ -186,7 +186,7 @@ ColumnLayout {
                     spacing: Theme.scaled(6)
 
                     Text {
-                        text: PowerProfileService.conservativeLabel
+                        text: PowerProfileService.conservativeLabel || "Battery Care"
                         font.pixelSize: Theme.scaled(11)
                         font.weight: Font.Black
                         color: Theme.text

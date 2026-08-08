@@ -24,6 +24,10 @@ Rectangle {
 
     ListModel { id: chatModel }
 
+    function focusInput() {
+        inputBar.focusInput();
+    }
+
     Component.onCompleted: {
         root.loadHistory();
         root.refreshKeys();
@@ -119,22 +123,45 @@ Rectangle {
         onExited: (code) => { root.isStreaming = false; }
     }
 
+    Process {
+        id: dynamicSuggestProc
+        running: false
+        stdout: SplitParser {
+            onRead: (dataStr) => {
+                try {
+                    let res = JSON.parse(dataStr.trim());
+                    if (res.type === "dir_suggestions" && Array.isArray(res.suggestions)) {
+                        inputBar.suggestions = res.suggestions;
+                    } else if (res.type === "model_suggestions" && Array.isArray(res.suggestions)) {
+                        inputBar.suggestions = res.suggestions;
+                    }
+                } catch (e) {}
+            }
+        }
+    }
+
     Process { id: copyProc }
 
     function getSuggestions(text) {
         if (!text) return [];
-        let trimText = text.trimStart();
+        let trimText = text.replace(/^\s+/, "");
         if (!trimText) return [];
 
-        let allModels = ["gemini", "gemini-pro", "claude", "groq", "ollama"];
+        let currentProvider = (root.currentModel || "gemini").toLowerCase();
+        let subModels = {
+            "gemini": ["/models gemini 2.5 Flash", "/models gemini 1.5 Pro", "/models gemini 2.0 Flash"],
+            "gemini-pro": ["/models gemini 1.5 Pro", "/models gemini 2.5 Flash"],
+            "claude": ["/models claude 3.5 Sonnet", "/models claude 3 Opus", "/models claude 3 Haiku"],
+            "groq": ["/models groq Llama 3.3 70B", "/models groq Mixtral 8x7b"],
+            "ollama": ["/models ollama llama3", "/models ollama mistral", "/models ollama codellama"]
+        };
         let keyProviders = ["gemini", "claude", "groq"];
         let lower = trimText.toLowerCase();
 
-        if (lower.startsWith("/models") || lower.startsWith("/model") || lower.startsWith("model")) {
-            let parts = lower.split(" ");
-            let prefix = parts.length > 1 ? parts[1] : "";
-            let matches = allModels.filter(m => m.startsWith(prefix));
-            return matches.map(m => "/models " + m);
+        if (lower.startsWith("/models") || lower.startsWith("/model") || lower.startsWith("model") || lower.startsWith("/m")) {
+            let activeModels = subModels[currentProvider] || subModels["gemini"];
+            let matches = activeModels.filter(m => m.toLowerCase().startsWith(lower));
+            return matches.length > 0 ? matches : activeModels;
         }
 
         if (lower.startsWith("/key") || lower.startsWith("key")) {
@@ -170,7 +197,17 @@ Rectangle {
         }
 
         if (lower.startsWith("@") || lower.startsWith("file")) {
-            return ["@file /path/to/file"];
+            let pathPrefix = lower.replace("@file", "").replace("@", "").trim();
+            let baseFiles = [
+                "@file /home/zaeem/zenith-shell/Theme.qml",
+                "@file /home/zaeem/zenith-shell/Colors.qml",
+                "@file /home/zaeem/zenith-shell/scripts/ai_agent.py",
+                "@file /home/zaeem/zenith-shell/bar/Menu/ControlCenter.qml",
+                "@file /home/zaeem/.config/hypr/hyprland.conf"
+            ];
+            if (!pathPrefix) return baseFiles;
+            let matches = baseFiles.filter(f => f.toLowerCase().indexOf(pathPrefix) !== -1);
+            return matches.length > 0 ? matches : baseFiles;
         }
 
         return [];
@@ -569,11 +606,27 @@ Rectangle {
             id: inputBar
             Layout.fillWidth: true
             isStreaming: root.isStreaming
-            suggestions: root.getSuggestions(root.promptText)
-
+            currentModel: root.currentModel
+            
             onTextChangedSignal: (txt) => {
                 root.promptText = txt;
                 inputBar.suggestionIndex = 0;
+                let lower = txt.trim().toLowerCase();
+
+                if (lower.startsWith("@")) {
+                    dynamicSuggestProc.running = false;
+                    dynamicSuggestProc.command = ["python3", "-u", root.scriptPath, "--scan-dir", txt];
+                    dynamicSuggestProc.running = true;
+                } else if (lower.startsWith("/m") || lower.startsWith("/model")) {
+                    dynamicSuggestProc.running = false;
+                    dynamicSuggestProc.command = ["python3", "-u", root.scriptPath, "--get-models", root.currentModel];
+                    dynamicSuggestProc.running = true;
+                } else if (lower.startsWith("/")) {
+                    let baseCmds = ["/exec", "/sys", "/export", "/key", "/models", "/help", "/clear"];
+                    inputBar.suggestions = baseCmds.filter(c => c.startsWith(lower));
+                } else {
+                    inputBar.suggestions = [];
+                }
             }
             onSendPromptRequested: (prompt) => root.processSendPrompt(prompt)
             onStopStreamingRequested: root.stopStreaming()

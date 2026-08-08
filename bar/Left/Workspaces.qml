@@ -13,7 +13,7 @@ Item {
     implicitWidth: mainPill.width
     implicitHeight: Theme.pillHeight
 
-    readonly property HyprlandMonitor monitor: QsWindow.window ? QsWindow.window.monitor : null
+    readonly property HyprlandMonitor monitor: (QsWindow.window && QsWindow.window.monitor) ? QsWindow.window.monitor : null
 
     // Floating Bubble Pill Container
     Rectangle {
@@ -84,7 +84,11 @@ Item {
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
                             if (modelData) {
-                                Hyprland.dispatch("workspace " + modelData.id);
+                                if (typeof modelData.activate === "function") {
+                                    modelData.activate();
+                                } else {
+                                    Hyprland.dispatch("workspace " + modelData.id);
+                                }
                             }
                         }
                     }
@@ -122,9 +126,9 @@ Item {
     WheelHandler {
         onWheel: (event) => {
             if (event.angleDelta.y < 0) {
-                Hyprland.dispatch("workspace e+1");
+                Hyprland.dispatch("workspace", "e+1");
             } else if (event.angleDelta.y > 0) {
-                Hyprland.dispatch("workspace e-1");
+                Hyprland.dispatch("workspace", "e-1");
             }
         }
         acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad

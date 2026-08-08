@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls 2.15
 import QtQuick.Layouts
+import Quickshell
 import "../../../.."
 
 Rectangle {
@@ -15,8 +16,9 @@ Rectangle {
     Behavior on border.color { ColorAnimation { duration: Theme.animFast } }
 
     property bool isStreaming: false
-    property var suggestions: []
+    property string currentModel: "gemini"
     property int suggestionIndex: 0
+    property var suggestions: []
 
     signal sendPromptRequested(string prompt)
     signal stopStreamingRequested()
@@ -33,111 +35,252 @@ Rectangle {
         inputArea.cursorPosition = inputArea.text.length;
     }
 
+    function getModelIcon(mKey) {
+        if (!mKey) return "✦";
+        let k = mKey.toLowerCase();
+        if (k.indexOf("claude") !== -1) return "󰘦";
+        if (k.indexOf("groq") !== -1) return "⚡";
+        if (k.indexOf("ollama") !== -1) return "🦙";
+        return "✦";
+    }
+
+    function getModelDisplayName(mKey) {
+        if (!mKey) return "Gemini 2.5 Flash";
+        let k = mKey.toLowerCase();
+        if (k === "gemini") return "Gemini 2.5 Flash";
+        if (k === "gemini-pro") return "Gemini 1.5 Pro";
+        if (k === "claude") return "Claude 3.5 Sonnet";
+        if (k === "groq") return "Groq Llama 3.3";
+        if (k === "ollama") return "Ollama Local";
+        return mKey.toUpperCase();
+    }
+
+    // FLOATING PREDICTIVE SELECTION POPUP MENU (Dark Glass Matching Chat Container)
+    Rectangle {
+        id: popupMenu
+        anchors.bottom: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottomMargin: Theme.scaled(6)
+        implicitHeight: popupCol.implicitHeight + Theme.scaled(12)
+        visible: rootInput.suggestions && rootInput.suggestions.length > 0 && inputArea.activeFocus
+        color: Colors.surface_container_high ? Colors.surface_container_high : Qt.rgba(0, 0, 0, 0.88)
+        radius: Theme.bubbleRadiusMedium
+        border.color: Theme.glassBorder
+        border.width: 1
+
+        ColumnLayout {
+            id: popupCol
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.margins: Theme.scaled(8)
+            spacing: Theme.scaled(4)
+
+            RowLayout {
+                spacing: Theme.scaled(6)
+                Text {
+                    text: "⚡"
+                    font.pixelSize: Theme.scaled(10)
+                    color: Theme.accentColor
+                }
+                Text {
+                    text: "SUGGESTIONS [Tab / Right Arrow]:"
+                    font.pixelSize: Theme.scaled(9)
+                    font.weight: Font.Black
+                    color: Qt.rgba(1, 1, 1, 0.7)
+                }
+            }
+
+            Repeater {
+                model: rootInput.suggestions
+
+                delegate: Rectangle {
+                    Layout.fillWidth: true
+                    height: Theme.scaled(26)
+                    radius: Theme.bubbleRadiusSmall
+                    color: index === (rootInput.suggestionIndex % rootInput.suggestions.length)
+                        ? Theme.accentColor 
+                        : (itemMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.15) : "transparent")
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: Theme.scaled(8)
+                        anchors.rightMargin: Theme.scaled(8)
+                        spacing: Theme.scaled(6)
+
+                        Text {
+                            text: modelData.startsWith("@") ? "📁" : "⚡"
+                            font.pixelSize: Theme.scaled(11)
+                            color: index === (rootInput.suggestionIndex % rootInput.suggestions.length) 
+                                ? Colors.on_primary 
+                                : Theme.accentColor
+                        }
+
+                        Text {
+                            Layout.fillWidth: true
+                            text: modelData
+                            font.pixelSize: Theme.scaled(10.5)
+                            font.weight: index === (rootInput.suggestionIndex % rootInput.suggestions.length) ? Font.Bold : Font.Normal
+                            color: index === (rootInput.suggestionIndex % rootInput.suggestions.length) 
+                                ? Colors.on_primary 
+                                : "#ffffff"
+                            elide: Text.ElideRight
+                        }
+
+                        Text {
+                            text: index === (rootInput.suggestionIndex % rootInput.suggestions.length) ? "[Tab to select]" : ""
+                            font.pixelSize: Theme.scaled(9)
+                            font.weight: Font.Bold
+                            color: Colors.on_primary
+                            visible: index === (rootInput.suggestionIndex % rootInput.suggestions.length)
+                        }
+                    }
+
+                    MouseArea {
+                        id: itemMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: {
+                            rootInput.suggestionAccepted(modelData);
+                            rootInput.focusInput();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     ColumnLayout {
         id: inputCol
         anchors.fill: parent
         anchors.margins: Theme.scaled(8)
         spacing: Theme.scaled(6)
 
-        // EMBEDDED SUGGESTION CHIPS BAR (100% Guaranteed Visible)
-        Rectangle {
-            Layout.fillWidth: true
-            height: Theme.scaled(28)
-            color: Qt.rgba(1, 1, 1, 0.06)
-            radius: Theme.bubbleRadiusSmall
-            visible: rootInput.suggestions && rootInput.suggestions.length > 0
-
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: Theme.scaled(8)
-                anchors.rightMargin: Theme.scaled(8)
-                spacing: Theme.scaled(6)
-
-                Text {
-                    text: "SUGGESTIONS [Tab]:"
-                    font.pixelSize: Theme.scaled(9)
-                    font.weight: Font.Black
-                    color: Theme.accentColor
-                }
-
-                Repeater {
-                    model: rootInput.suggestions
-
-                    delegate: Rectangle {
-                        height: Theme.scaled(20)
-                        implicitWidth: chipText.implicitWidth + Theme.scaled(16)
-                        radius: 999
-                        color: index === (rootInput.suggestionIndex > 0 ? (rootInput.suggestionIndex - 1 + rootInput.suggestions.length) % rootInput.suggestions.length : 0)
-                            ? Theme.accentColor 
-                            : (chipMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.25) : Qt.rgba(1, 1, 1, 0.12))
-
-                        border.color: index === (rootInput.suggestionIndex > 0 ? (rootInput.suggestionIndex - 1 + rootInput.suggestions.length) % rootInput.suggestions.length : 0) ? Qt.rgba(1, 1, 1, 0.6) : "transparent"
-                        border.width: 1
-
-                        Text {
-                            id: chipText
-                            anchors.centerIn: parent
-                            text: (index === (rootInput.suggestionIndex > 0 ? (rootInput.suggestionIndex - 1 + rootInput.suggestions.length) % rootInput.suggestions.length : 0) ? "󰌒 " : "") + modelData
-                            font.pixelSize: Theme.scaled(9.5)
-                            font.weight: index === (rootInput.suggestionIndex > 0 ? (rootInput.suggestionIndex - 1 + rootInput.suggestions.length) % rootInput.suggestions.length : 0) ? Font.Bold : Font.Normal
-                            color: index === (rootInput.suggestionIndex > 0 ? (rootInput.suggestionIndex - 1 + rootInput.suggestions.length) % rootInput.suggestions.length : 0) ? Colors.on_primary : "#ffffff"
-                        }
-
-                        MouseArea {
-                            id: chipMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            onClicked: {
-                                rootInput.suggestionAccepted(modelData);
-                                rootInput.focusInput();
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
         // TEXTAREA AND BUTTON ROW
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.scaled(8)
+
+            // ACTIVE RUNNING MODEL INDICATOR BADGE
+            Rectangle {
+                height: Theme.scaled(24)
+                implicitWidth: modelBadgeRow.implicitWidth + Theme.scaled(12)
+                radius: 999
+                color: Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.18)
+                border.color: Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.4)
+                border.width: 1
+
+                RowLayout {
+                    id: modelBadgeRow
+                    anchors.centerIn: parent
+                    spacing: Theme.scaled(4)
+
+                    Text {
+                        text: rootInput.getModelIcon(rootInput.currentModel)
+                        font.pixelSize: Theme.scaled(10)
+                        color: Theme.accentColor
+                    }
+
+                    Text {
+                        text: rootInput.getModelDisplayName(rootInput.currentModel).toUpperCase()
+                        font.pixelSize: Theme.scaled(9)
+                        font.weight: Font.Black
+                        color: Colors.on_surface
+                    }
+                }
+
+                ToolTip.visible: badgeMouse.containsMouse
+                ToolTip.text: "Active AI Model Engine: " + rootInput.getModelDisplayName(rootInput.currentModel)
+
+                MouseArea {
+                    id: badgeMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                }
+            }
 
             ScrollView {
                 Layout.fillWidth: true
                 implicitHeight: Math.max(Theme.scaled(36), Math.min(Theme.scaled(90), inputArea.contentHeight))
                 clip: true
 
-                TextArea {
-                    id: inputArea
-                    placeholderText: "Ask AI or type /exec, /sys, /key, /models, /export, @file..."
-                    placeholderTextColor: Qt.rgba(1, 1, 1, 0.4)
-                    color: "#ffffff"
-                    font.pixelSize: Theme.scaled(12)
-                    wrapMode: TextEdit.Wrap
-                    selectByMouse: true
-                    background: null
+                Item {
+                    anchors.fill: parent
 
-                    onTextChanged: {
-                        rootInput.textChangedSignal(inputArea.text);
-                    }
-
-                    Keys.onTabPressed: (event) => {
-                        event.accepted = true;
-                        if (rootInput.suggestions && rootInput.suggestions.length > 0) {
-                            let idx = rootInput.suggestionIndex % rootInput.suggestions.length;
-                            let choice = rootInput.suggestions[idx];
-                            rootInput.suggestionAccepted(choice);
-                            rootInput.suggestionIndex = (idx + 1) % rootInput.suggestions.length;
+                    // INLINE GHOST PREDICTION OVERLAY TEXT
+                    Text {
+                        id: ghostTextOverlay
+                        anchors.fill: parent
+                        leftPadding: inputArea.leftPadding
+                        topPadding: inputArea.topPadding
+                        rightPadding: inputArea.rightPadding
+                        bottomPadding: inputArea.bottomPadding
+                        font: inputArea.font
+                        color: Qt.rgba(1, 1, 1, 0.35)
+                        wrapMode: TextEdit.Wrap
+                        text: {
+                            if (!rootInput.suggestions || rootInput.suggestions.length === 0) return "";
+                            let activeIdx = rootInput.suggestionIndex % rootInput.suggestions.length;
+                            let topSug = rootInput.suggestions[activeIdx];
+                            let current = inputArea.text;
+                            if (current.length > 0 && topSug.toLowerCase().startsWith(current.toLowerCase())) {
+                                return current + topSug.substring(current.length);
+                            }
+                            return "";
                         }
                     }
 
-                    Keys.onPressed: (event) => {
-                        if (event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab) {
+                    TextArea {
+                        id: inputArea
+                        anchors.fill: parent
+                        placeholderText: "Ask AI or type /exec, /sys, /key, /models, /export, @file..."
+                        placeholderTextColor: Qt.rgba(1, 1, 1, 0.4)
+                        color: "#ffffff"
+                        font.pixelSize: Theme.scaled(12)
+                        wrapMode: TextEdit.Wrap
+                        selectByMouse: true
+                        background: null
+
+                        onTextChanged: {
+                            rootInput.suggestionIndex = 0;
+                            rootInput.textChangedSignal(inputArea.text);
+                        }
+
+                        Keys.onTabPressed: (event) => {
                             event.accepted = true;
-                        } else if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter) && !(event.modifiers & Qt.ShiftModifier)) {
-                            event.accepted = true;
-                            if (inputArea.text.trim() !== "") {
-                                rootInput.sendPromptRequested(inputArea.text);
+                            if (rootInput.suggestions && rootInput.suggestions.length > 0) {
+                                let idx = rootInput.suggestionIndex % rootInput.suggestions.length;
+                                let choice = rootInput.suggestions[idx];
+                                rootInput.suggestionAccepted(choice);
+                                rootInput.suggestionIndex = (idx + 1) % rootInput.suggestions.length;
+                            }
+                        }
+
+                        Keys.onPressed: (event) => {
+                            if (event.key === Qt.Key_Right && inputArea.cursorPosition === inputArea.text.length) {
+                                if (rootInput.suggestions && rootInput.suggestions.length > 0) {
+                                    event.accepted = true;
+                                    let idx = rootInput.suggestionIndex % rootInput.suggestions.length;
+                                    rootInput.suggestionAccepted(rootInput.suggestions[idx]);
+                                }
+                            } else if (event.key === Qt.Key_Down) {
+                                if (rootInput.suggestions && rootInput.suggestions.length > 0) {
+                                    event.accepted = true;
+                                    rootInput.suggestionIndex = (rootInput.suggestionIndex + 1) % rootInput.suggestions.length;
+                                }
+                            } else if (event.key === Qt.Key_Up) {
+                                if (rootInput.suggestions && rootInput.suggestions.length > 0) {
+                                    event.accepted = true;
+                                    rootInput.suggestionIndex = (rootInput.suggestionIndex - 1 + rootInput.suggestions.length) % rootInput.suggestions.length;
+                                }
+                            } else if (event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab) {
+                                event.accepted = true;
+                            } else if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter) && !(event.modifiers & Qt.ShiftModifier)) {
+                                event.accepted = true;
+                                if (inputArea.text.trim() !== "") {
+                                    rootInput.sendPromptRequested(inputArea.text);
+                                }
                             }
                         }
                     }
