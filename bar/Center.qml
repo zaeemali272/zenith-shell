@@ -87,7 +87,7 @@ RowLayout {
         Layout.alignment: Qt.AlignVCenter
         clip: true
 
-        scale: pillMouse.pressed ? 0.97 : (pillMouse.containsMouse ? 1.015 : 1.0)
+        scale: pillMouse.pressed ? 0.95 : (pillMouse.containsMouse ? 1.04 : 1.0)
 
         Behavior on width { NumberAnimation { duration: 350; easing.type: Easing.OutExpo } }
         Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.animEasing } }

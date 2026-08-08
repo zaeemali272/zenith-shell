@@ -28,6 +28,9 @@ Rectangle {
     clip: true
     implicitWidth: Math.max(fallback.implicitWidth, contentItem.childrenRect.width) + Theme.pillPadding * 2
 
+    scale: mouseArea.pressed ? 0.95 : (mouseArea.containsMouse ? 1.04 : 1.0)
+    Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.animEasing } }
+
     Item {
         id: contentItem
 

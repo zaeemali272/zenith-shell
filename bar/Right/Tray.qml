@@ -16,9 +16,10 @@ Rectangle {
     radius: Theme.pillRadius
     border.color: Theme.glassBorder
     border.width: 1
-    Layout.alignment: Qt.AlignVCenter
+    scale: trayHoverArea.pressed ? 0.95 : (trayHoverArea.containsMouse ? 1.04 : 1.0)
 
     Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.OutExpo } }
+    Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.animEasing } }
     Behavior on color { ColorAnimation { duration: Theme.animFast } }
 
     MouseArea {

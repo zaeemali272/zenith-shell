@@ -39,11 +39,11 @@ QtObject {
     readonly property real glassBlur: AppearanceSettings.glassBlur
     
     // ===== Animation Defaults =====
-    readonly property int animFast: 150
-    readonly property int animNormal: 300
-    readonly property int animSlow: 500
-    readonly property int animEasing: Easing.OutQuint
-    readonly property int elasticEasing: Easing.OutBack
+    readonly property int animFast: 220
+    readonly property int animNormal: 420
+    readonly property int animSlow: 650
+    readonly property int animEasing: Easing.OutExpo
+    readonly property int elasticEasing: Easing.OutCubic
 
     // ===== Material 3 Expressive & Bubble Tokens =====
     readonly property int bubbleRadiusSmall: scaled(12)

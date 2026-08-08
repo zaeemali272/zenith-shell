@@ -70,16 +70,16 @@ PanelWindow {
             property: "opacity"
             from: 0
             to: 1
-            duration: 180
-            easing.type: Easing.OutQuint
+            duration: Shell.Theme.animNormal
+            easing.type: Shell.Theme.animEasing
         }
         NumberAnimation {
             target: mainContent
             property: "scale"
-            from: 0.95
+            from: 0.96
             to: 1.0
-            duration: 180
-            easing.type: Easing.OutBack
+            duration: Shell.Theme.animNormal
+            easing.type: Shell.Theme.animEasing
         }
     }
 
