@@ -16,9 +16,9 @@ Rectangle {
     radius: Theme.pillRadius
     border.color: Theme.glassBorder
     border.width: 1
-    scale: trayHoverArea.pressed ? 0.95 : (trayHoverArea.containsMouse ? 1.04 : 1.0)
+    scale: trayHoverArea.pressed ? 0.96 : (trayHoverArea.containsMouse ? 1.02 : 1.0)
 
-    Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.OutExpo } }
+    Behavior on width { NumberAnimation { duration: 250; easing.type: Easing.OutExpo } }
     Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.animEasing } }
     Behavior on color { ColorAnimation { duration: Theme.animFast } }
 
@@ -31,9 +31,8 @@ Rectangle {
 
     RowLayout {
         id: trayRow
-
         anchors.centerIn: parent
-        spacing: Theme.scaled(6)
+        spacing: Theme.scaled(4)
 
         Repeater {
             model: SystemTray.items
@@ -44,7 +43,7 @@ Rectangle {
             }
         }
 
-        // Minimalist Empty State Indicator
+        // Minimalist empty-state indicator
         Text {
             text: "󰇄"
             visible: SystemTray.items.length === 0

@@ -10,7 +10,7 @@ import "../../services"
 
 PopupWindow {
     id: root
-    
+
     onVisibleChanged: {
         if (visible) MenuService.register(root)
         else MenuService.unregister(root)
@@ -26,12 +26,12 @@ PopupWindow {
     implicitWidth: menuSurface.implicitWidth
     implicitHeight: menuSurface.implicitHeight + Theme.scaled(10)
 
-    grabFocus: false 
+    grabFocus: false
 
     HyprlandFocusGrab {
         id: grab
         active: root.visible
-        windows: [root, notificationPopup, osdPopup]
+        windows: [root]
         onCleared: root.closeAll()
     }
 
@@ -68,7 +68,7 @@ PopupWindow {
         color: Theme.glassBackground
         border.color: Theme.glassBorder
         border.width: 1
-        radius: Theme.scaled(16)
+        radius: Theme.scaled(14)
         clip: true
         focus: true
 
@@ -183,8 +183,14 @@ PopupWindow {
 
                                 Image {
                                     id: entryIcon
-                                    visible: entry.icon !== ""
-                                    source: entry.icon ? (entry.icon.startsWith("/") || entry.icon.startsWith("file://") || entry.icon.startsWith("image://") ? entry.icon : "image://icon/" + entry.icon) : ""
+                                    visible: entry.icon !== "" && entry.icon !== undefined && entry.icon !== null
+                                    source: {
+                                        if (!entry.icon) return "";
+                                        var iconStr = String(entry.icon);
+                                        if (iconStr.startsWith("/") || iconStr.startsWith("file://") || iconStr.startsWith("image://"))
+                                            return iconStr;
+                                        return "image://icon/" + iconStr;
+                                    }
                                     Layout.preferredWidth: Theme.scaled(16)
                                     Layout.preferredHeight: Theme.scaled(16)
                                     fillMode: Image.PreserveAspectFit
@@ -192,18 +198,18 @@ PopupWindow {
                                 }
 
                                 Text {
-                                    text: entry.checkState === Qt.Checked ? "󰄬" : (entry.isCheckable ? "󰄱" : "")
+                                    text: (entry.checkState === Qt.Checked || entry.checked) ? "󰄬" : (entry.isCheckable ? "󰄱" : "")
                                     font.family: Theme.iconFont
                                     font.pixelSize: Theme.scaled(11)
                                     color: Theme.accentColor
-                                    visible: entry.isCheckable || entry.checkState !== undefined
+                                    visible: entry.isCheckable || entry.checkState !== undefined || entry.checked !== undefined
                                     Layout.alignment: Qt.AlignVCenter
                                 }
 
                                 Text {
-                                    text: entry.text || ""
+                                    text: String(entry.text || "").replace(/&/g, "")
                                     Layout.fillWidth: true
-                                    color: entry.enabled ? (itemMouse.containsMouse ? Theme.accentColor : Theme.fontColor) : Theme.subtext0
+                                    color: entry.enabled ? (itemMouse.containsMouse ? Theme.accentColor : Theme.text) : Theme.subtext0
                                     font.pixelSize: Theme.scaled(11)
                                     font.weight: itemMouse.containsMouse ? Font.Bold : Font.Normal
                                     elide: Text.ElideRight
@@ -231,9 +237,15 @@ PopupWindow {
                                     if (entry.hasChildren) {
                                         stackView.push(subMenuComp, { handle: entry, isSubMenu: true });
                                     } else {
-                                        try { if (typeof entry.triggered === "function") entry.triggered(); } catch(e1) {}
-                                        try { if (typeof entry.trigger === "function") entry.trigger(); } catch(e2) {}
-                                        try { if (typeof entry.activate === "function") entry.activate(0, 0); } catch(e3) {}
+                                        try {
+                                            if (typeof entry.triggered === "function") {
+                                                entry.triggered();
+                                            } else if (typeof entry.activate === "function") {
+                                                entry.activate();
+                                            } else if (typeof entry.trigger === "function") {
+                                                entry.trigger();
+                                            }
+                                        } catch(e1) {}
                                         root.closeAll();
                                     }
                                 }

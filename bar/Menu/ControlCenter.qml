@@ -134,10 +134,10 @@ PanelWindow {
                         spacing: Theme.scaled(4)
 
                         Repeater {
-                            model: ["Default", "Pomodoro", "Wallpaper"]
+                            model: ["Default", "Pomodoro", "Wallpaper", "AI Agent"]
                             delegate: Rectangle {
                                 id: tabRect
-                                width: Theme.scaled(88)
+                                width: Math.max(Theme.scaled(82), tabText.implicitWidth + Theme.scaled(18))
                                 height: Theme.scaled(30)
                                 radius: 999
                                 color: CenterState.activeTab === modelData ? Theme.accentColor : (tabMouse.containsMouse ? Qt.rgba(255,255,255,0.12) : "transparent")
@@ -147,6 +147,7 @@ PanelWindow {
                                 Behavior on color { ColorAnimation { duration: Theme.animFast } }
 
                                 Text {
+                                    id: tabText
                                     anchors.centerIn: parent
                                     text: modelData
                                     font.pixelSize: Theme.scaled(11)
@@ -226,7 +227,7 @@ PanelWindow {
                 id: contentStack
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                currentIndex: ["Default", "Pomodoro", "Wallpaper"].indexOf(CenterState.activeTab)
+                currentIndex: ["Default", "Pomodoro", "Wallpaper", "AI Agent"].indexOf(CenterState.activeTab)
 
                 // Default Tab
                 GridLayout {
@@ -390,6 +391,12 @@ PanelWindow {
                 // Wallpaper Tab
                 WallpaperContent {
                     id: wallpaperContent
+                    Layout.fillWidth: true; Layout.fillHeight: true
+                }
+
+                // AI Agent Tab
+                AiAgentContent {
+                    id: aiAgentContent
                     Layout.fillWidth: true; Layout.fillHeight: true
                 }
             }

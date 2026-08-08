@@ -1,10 +1,21 @@
 // bar/Right/TrayItem.qml
+//
+// Design note: this deliberately does NOT try to move windows between
+// Hyprland workspaces to fake show/hide. That fights Electron/Chromium's
+// own window lifecycle and is unreliable across apps. Instead it always
+// calls the StatusNotifierItem's Activate()/SecondaryActivate() methods,
+// which is the actual protocol signal apps use to know "become visible /
+// toggle visibility now". Well-behaved tray apps (including most Electron
+// apps, when the app itself implements tray support properly) handle this
+// correctly on their own. Apps that don't (e.g. plain Discord on Linux)
+// need to be fixed at the app level (see the settings note below), not
+// papered over here.
+
 import "../.."
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
 import Quickshell
-import Quickshell.Io
 import Quickshell.Services.SystemTray
 
 MouseArea {
@@ -14,116 +25,179 @@ MouseArea {
     property var menuRef
 
     visible: root.item !== undefined && root.item !== null
-    implicitWidth: visible ? Theme.iconSize + Theme.scaled(4) : 0
+    implicitWidth: visible ? Theme.iconSize + Theme.scaled(8) : 0
     implicitHeight: visible ? Theme.pillHeight : 0
     acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
     hoverEnabled: true
+    cursorShape: Qt.PointingHandCursor
 
-    scale: root.pressed ? 0.88 : (root.containsMouse ? 1.2 : 1.0)
-    Behavior on scale { NumberAnimation { duration: 180; easing.type: Theme.elasticEasing } }
-
-    readonly property string trayScript: Quickshell.env("HOME") + "/.config/quickshell/scripts/tray_focus.py"
-
-    Process {
-        id: focusProc
-        property string itemStr: ""
-        property string titleStr: ""
-        property string iconStr: ""
-
-        command: [
-            "python3",
-            root.trayScript,
-            focusProc.itemStr,
-            focusProc.titleStr,
-            focusProc.iconStr
-        ]
-    }
+    scale: root.pressed ? 0.90 : (root.containsMouse ? 1.15 : 1.0)
+    Behavior on scale { NumberAnimation { duration: 160; easing.type: Theme.elasticEasing } }
 
     onClicked: (mouse) => {
         if (!root.item) return;
 
-        let itemIdStr = String(root.item.id || "");
-        let itemTitleStr = String(root.item.title || "");
-        let itemIconStr = String(root.item.icon || "");
-
         if (mouse.button === Qt.LeftButton) {
-            // Pass (0, 0) arguments as required by Qt C++ StatusNotifierItem::activate(int x, int y)
             try {
                 if (typeof root.item.activate === "function") {
-                    root.item.activate(0, 0);
+                    root.item.activate();
                 }
-            } catch(e1) {}
-
-            focusProc.command = ["python3", root.trayScript, itemIdStr, itemTitleStr, itemIconStr];
-            focusProc.running = false;
-            focusProc.running = true;
+            } catch (e) {
+                console.warn("Tray activate error:", e);
+            }
         } else if (mouse.button === Qt.RightButton) {
             if (root.item.hasMenu && menuRef) {
                 menuRef.openFor(root.item, root);
             } else {
-                try { if (typeof root.item.secondaryActivate === "function") root.item.secondaryActivate(0, 0); } catch(e1) {}
-                try { if (typeof root.item.contextMenu === "function") root.item.contextMenu(0, 0); } catch(e2) {}
+                try {
+                    if (typeof root.item.contextMenu === "function") {
+                        root.item.contextMenu(0, 0);
+                    } else if (typeof root.item.secondaryActivate === "function") {
+                        root.item.secondaryActivate();
+                    }
+                } catch (e) {
+                    console.warn("Tray contextMenu error:", e);
+                }
+            }
+        } else if (mouse.button === Qt.MiddleButton) {
+            try {
+                if (typeof root.item.secondaryActivate === "function") {
+                    root.item.secondaryActivate();
+                }
+            } catch (e) {
+                console.warn("Tray secondaryActivate error:", e);
             }
         }
     }
 
-    Image {
-        id: trayIcon
-
+    // Icon Container
+    Item {
         anchors.centerIn: parent
         width: Theme.iconSize
         height: Theme.iconSize
-        fillMode: Image.PreserveAspectFit
-        asynchronous: true
-        smooth: true
 
-        source: {
-            if (!root.item) return "";
+        Image {
+            id: trayIcon
 
-            var icon = root.item.icon;
-            var iconName = "";
+            anchors.fill: parent
+            fillMode: Image.PreserveAspectFit
+            asynchronous: true
+            smooth: true
 
-            if (icon !== null && icon !== undefined) {
-                iconName = String(icon);
-                if (iconName.startsWith("image://") || iconName.startsWith("/") || iconName.startsWith("file://"))
-                    return iconName;
+            source: {
+                if (!root.item) return "";
+
+                var icon = root.item.icon;
+                var iconName = "";
+
+                if (icon !== null && icon !== undefined) {
+                    iconName = String(icon);
+                    if (iconName.startsWith("image://") || iconName.startsWith("/") || iconName.startsWith("file://"))
+                        return iconName;
+                }
+
+                if (root.item.iconPixmap && !iconName) {
+                    return "image://qspixmap/" + root.item.id;
+                }
+
+                if (iconName) {
+                    return "image://icon/" + iconName;
+                }
+
+                return "";
             }
 
-            if (root.item.iconPixmap && !iconName) {
-                return "image://qspixmap/" + root.item.id;
-            }
-
-            if (iconName) {
-                return "image://icon/" + iconName;
-            }
-
-            return "";
-        }
-
-        onStatusChanged: {
-            if (status === Image.Error) {
-                let iconName = String(root.item && root.item.icon ? root.item.icon : "");
-                if (iconName && !iconName.includes("://") && !iconName.startsWith("/")) {
-                    let quickshellSource = Quickshell.iconPath(iconName);
-                    if (source.toString() !== quickshellSource && quickshellSource !== "") {
-                        source = quickshellSource;
-                        return;
+            onStatusChanged: {
+                if (status === Image.Error) {
+                    let iconName = String(root.item && root.item.icon ? root.item.icon : "");
+                    if (iconName && !iconName.includes("://") && !iconName.startsWith("/")) {
+                        let quickshellSource = Quickshell.iconPath(iconName);
+                        if (quickshellSource && source.toString() !== quickshellSource) {
+                            source = quickshellSource;
+                            return;
+                        }
+                    }
+                    let genericApp = Quickshell.iconPath("application-x-executable");
+                    if (genericApp && source.toString() !== genericApp) {
+                        source = genericApp;
                     }
                 }
-                let genericApp = Quickshell.iconPath("application-x-executable");
-                if (genericApp && source.toString() !== genericApp) {
-                    source = genericApp;
-                }
             }
+        }
+
+        // Fallback text glyph if image fails completely
+        Text {
+            anchors.centerIn: parent
+            text: "󰏤"
+            font.family: Theme.iconFont
+            font.pixelSize: Theme.iconSize
+            color: Theme.accentColor
+            visible: trayIcon.status === Image.Error && trayIcon.source.toString() === ""
         }
     }
 
-    Text {
-        anchors.centerIn: parent
-        text: "󰏤"
-        font.family: Theme.iconFont
-        font.pixelSize: Theme.iconSize
-        color: Theme.accentColor
-        visible: trayIcon.status === Image.Error && trayIcon.source.toString() === ""
+    // Attention indicator dot (NeedsAttention status)
+    Rectangle {
+        anchors.top: parent.top
+        anchors.topMargin: Theme.scaled(3)
+        anchors.right: parent.right
+        anchors.rightMargin: Theme.scaled(2)
+        width: Theme.scaled(6)
+        height: Theme.scaled(6)
+        radius: width / 2
+        color: Theme.red
+        border.color: Theme.surface0
+        border.width: 1
+        visible: root.item !== undefined && root.item !== null && (root.item.status === Status.NeedsAttention || root.item.status === 2)
+
+        SequentialAnimation on opacity {
+            running: parent.visible
+            loops: Animation.Infinite
+            NumberAnimation { from: 1.0; to: 0.3; duration: 600; easing.type: Easing.InOutSine }
+            NumberAnimation { from: 0.3; to: 1.0; duration: 600; easing.type: Easing.InOutSine }
+        }
+    }
+
+    // Custom Glassmorphic Tooltip
+    PopupWindow {
+        id: tooltipPopup
+
+        anchor.window: root.QsWindow.window
+        anchor.rect: root.mapToItem(null, 0, 0, root.width, root.height)
+        anchor.edges: Edges.Bottom
+        anchor.gravity: Edges.Bottom
+
+        visible: root.containsMouse && tooltipText.text !== ""
+        color: "transparent"
+
+        implicitWidth: tooltipRect.implicitWidth
+        implicitHeight: tooltipRect.implicitHeight + Theme.scaled(10)
+
+        Rectangle {
+            id: tooltipRect
+            y: Theme.scaled(6)
+            color: Theme.tooltipBackground || Theme.glassBackground
+            border.color: Theme.glassBorder
+            border.width: 1
+            radius: Theme.scaled(8)
+
+            implicitWidth: tooltipText.implicitWidth + Theme.scaled(16)
+            implicitHeight: tooltipText.implicitHeight + Theme.scaled(10)
+
+            Text {
+                id: tooltipText
+                anchors.centerIn: parent
+                text: {
+                    if (!root.item) return "";
+                    var title = String(root.item.title || "").trim();
+                    var tooltip = String(root.item.tooltip || "").trim();
+                    var itemId = String(root.item.id || "").trim();
+                    return title ? title : (tooltip ? tooltip : itemId);
+                }
+                color: Theme.text
+                font.pixelSize: Theme.scaled(10)
+                font.weight: Font.Medium
+            }
+        }
     }
 }

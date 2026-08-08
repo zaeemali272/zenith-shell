@@ -1,3 +1,4 @@
+AiAgentContent AiAgentContent.qml
 BatteryContent BatteryContent.qml
 BluetoothContent BluetoothContent.qml
 CalendarWidget CalendarWidget.qml
