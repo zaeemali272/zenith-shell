@@ -15,7 +15,7 @@ PanelWindow {
 
     property var controlCenterMenuRef: null
 
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: DynamicIslandService.active ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.exclusionMode: ExclusionMode.Auto
     WlrLayershell.margins {

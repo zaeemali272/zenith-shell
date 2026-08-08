@@ -3,3 +3,4 @@ singleton IconsFetcher IconsFetcher.qml
 Launcher launcher.qml
 Clipboard clipboard.qml
 Emoji emoji.qml
+DynamicIslandOverlay DynamicIslandOverlay.qml

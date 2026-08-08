@@ -42,11 +42,11 @@ Scope {
         let lowerArg = arg.toLowerCase();
 
         if (lowerAction === "launcher" || lowerAction === "toggle_launcher" || lowerAction === "applauncher") {
-            launcherWindow.toggle();
+            DynamicIslandService.toggle("launcher");
         } else if (lowerAction === "clipboard" || lowerAction === "toggle_clipboard" || lowerAction === "clip" || lowerAction === "cliphist") {
-            clipboardWindow.toggle();
+            DynamicIslandService.toggle("clipboard");
         } else if (lowerAction === "emoji" || lowerAction === "toggle_emoji" || lowerAction === "emojis" || lowerAction === "emojiselector") {
-            emojiWindow.toggle();
+            DynamicIslandService.toggle("emoji");
         } else if (lowerAction === "dashboard" || lowerAction === "toggle_dashboard" || lowerAction === "actionlauncher" || lowerAction === "overview") {
             let tab = "Default";
             if (lowerArg === "pomodoro") tab = "Pomodoro";
@@ -73,6 +73,7 @@ Scope {
             QuickSettingsService.toggle("power");
         } else if (lowerAction === "close" || lowerAction === "close_all") {
             MenuService.closeAll();
+            DynamicIslandService.close();
         }
     }
 
@@ -85,6 +86,7 @@ Scope {
         function onIsFullscreenChanged() {
             if (HyprlandService.isFullscreen) {
                 MenuService.closeAll();
+                DynamicIslandService.close();
             }
         }
     }
@@ -112,6 +114,10 @@ Scope {
 
     OsdPopup {
         id: osdPopup
+    }
+
+    DynamicIslandOverlay {
+        id: dynamicIslandOverlay
     }
 
     Launcher {

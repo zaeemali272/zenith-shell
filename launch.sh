@@ -76,31 +76,13 @@ case "$1" in
         quickshell -d -p "$SHELL_DIR" &
         ;;
     launcher|applauncher|Launcher)
-        if pgrep -f "[w]indows/launcher.qml" >/dev/null 2>&1; then
-            pkill -f "[w]indows/launcher.qml"
-        elif is_running; then
-            send_cmd "launcher"
-        else
-            quickshell -d -p "$SHELL_DIR/windows/launcher.qml" &
-        fi
+        send_cmd "launcher"
         ;;
     clipboard|clip|cliphist|Clipboard)
-        if pgrep -f "[w]indows/clipboard.qml" >/dev/null 2>&1; then
-            pkill -f "[w]indows/clipboard.qml"
-        elif is_running; then
-            send_cmd "clipboard"
-        else
-            quickshell -d -p "$SHELL_DIR/windows/clipboard.qml" &
-        fi
+        send_cmd "clipboard"
         ;;
     emoji|emojis|emojiselector|Emoji)
-        if pgrep -f "[w]indows/emoji.qml" >/dev/null 2>&1; then
-            pkill -f "[w]indows/emoji.qml"
-        elif is_running; then
-            send_cmd "emoji"
-        else
-            quickshell -d -p "$SHELL_DIR/windows/emoji.qml" &
-        fi
+        send_cmd "emoji"
         ;;
     pomodoro)
         send_cmd "pomodoro"
