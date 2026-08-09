@@ -94,8 +94,11 @@
           config = lib.mkIf cfg.enable {
             home.packages = [ cfg.package ];
             
-            # Symlink Zenith Shell files into ~/.config/quickshell
-            xdg.configFile."quickshell".source = "${cfg.package}/share/zenith-shell";
+            # Automatically copy/sync zenith-shell files to ~/.config/quickshell
+            home.activation.copyZenithShell = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+              $DRY_RUN_CMD mkdir -p $HOME/.config/quickshell
+              $DRY_RUN_CMD cp -rL --no-preserve=mode ${cfg.package}/share/zenith-shell/* $HOME/.config/quickshell/
+            '';
           };
         };
     };
