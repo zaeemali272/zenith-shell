@@ -119,9 +119,9 @@ Item {
                 }
             }
 
-            // Dot Separator for RAM (Visible when RAM > 60%)
+            // Dot Separator before RAM (Visible ONLY if RAM is shown AND either Cat or CPU precedes it)
             Text {
-                visible: root.showMem
+                visible: root.showMem && root.showCpu
                 text: "•"
                 color: Theme.glassBorder
                 font.pixelSize: Theme.scaled(10)
@@ -152,9 +152,9 @@ Item {
                 }
             }
 
-            // Dot Separator for Temp (Visible when Temp > 90°C)
+            // Dot Separator before Temp (Visible ONLY if Temp is shown AND preceding stat exists)
             Text {
-                visible: root.showTemp
+                visible: root.showTemp && (root.showCpu || root.showMem)
                 text: "•"
                 color: Theme.glassBorder
                 font.pixelSize: Theme.scaled(10)
