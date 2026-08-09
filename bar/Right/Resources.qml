@@ -14,7 +14,8 @@ Item {
     readonly property int temp: ResourceService.temp
     readonly property string currentProfile: PowerProfileService.currentProfile
 
-    // Dynamic thresholds: RAM visible > 60%, Temp visible > 90°C
+    // Dynamic thresholds: CPU visible > 30%, RAM visible > 60%, Temp visible > 90°C
+    readonly property bool showCpu: cpu > 30
     readonly property bool showMem: mem > 60
     readonly property bool showTemp: temp > 90
 
@@ -85,16 +86,18 @@ Item {
                 }
             }
 
-            // Dot Separator after Cat Avatar
+            // Dot Separator after Cat Avatar (Visible if CPU, RAM, or Temp is shown)
             Text {
+                visible: root.showCpu || root.showMem || root.showTemp
                 text: "•"
                 color: Theme.glassBorder
                 font.pixelSize: Theme.scaled(10)
                 Layout.alignment: Qt.AlignVCenter
             }
 
-            // CPU Stats (Always visible)
+            // CPU Stats (Only visible when > 30%)
             RowLayout {
+                visible: root.showCpu
                 spacing: Theme.scaled(4)
                 Layout.alignment: Qt.AlignVCenter
 

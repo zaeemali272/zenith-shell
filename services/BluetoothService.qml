@@ -274,20 +274,21 @@ print(json.dumps({
     Process { id: scanExec; onExited: { root.state = "Idle"; postActionPoll.trigger(); } }
     Process { id: actionExec; onExited: { root.state = "Idle"; postActionPoll.trigger(); } }
 
-    Timer {
-        id: scanUpdateTimer
-        interval: 2500
-        repeat: true
-        running: (oneShotScan.running || scanExec.running) && Variables.quickSettingsOpen
-        onTriggered: refresh(true)
+    // Event-driven Bluetooth Monitor
+    Process {
+        id: btMonitor
+        command: ["bluetoothctl", "monitor"]
+        running: true
+        stdout: SplitParser {
+            onRead: (data) => root.refresh(Variables.quickSettingsOpen)
+        }
+        onExited: restartBtMon.start()
     }
 
     Timer {
-        id: pollTimer
-        interval: Variables.mediumInterval
-        repeat: true
-        running: Variables.quickSettingsOpen
-        onTriggered: refresh(true)
+        id: restartBtMon
+        interval: 3000
+        onTriggered: btMonitor.running = true
     }
 
     Component.onCompleted: refresh(false)

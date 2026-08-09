@@ -306,11 +306,4 @@ print(json.dumps({
         onTriggered: udevMonitor.running = true
     }
 
-    Timer {
-        id: pollTimer
-        interval: Variables.slowInterval
-        running: true
-        repeat: true
-        onTriggered: service.update()
-    }
 }

@@ -24,19 +24,16 @@ Item {
 
     readonly property string scriptPath: Quickshell.env("HOME") + "/.config/quickshell/scripts/resources.sh"
 
-    function refresh() {
-        if (!proc.running) {
-            proc.running = true;
-        }
-    }
-
+    // Continuous streaming daemon process (Zero polling timers)
     Process {
         id: proc
         command: ["bash", scriptPath]
-        stdout: StdioCollector {
-            onStreamFinished: {
+        running: true
+        stdout: SplitParser {
+            onRead: (line) => {
+                if (!line || line.trim() === "") return;
                 try {
-                    const data = JSON.parse(text);
+                    const data = JSON.parse(line);
                     service.cpu = data.cpu ?? 0;
                     service.mem = data.mem ?? 0;
                     service.temp = data.temp ?? 0;
@@ -48,18 +45,15 @@ Item {
                     service.arch = data.arch ?? "";
                     service.kernel = data.kernel ?? "";
                     service.ip = data.ip ?? "";
-                    service.coreUsages = data.core_usages ?? [];
-                    service.coreTemps = data.core_temps ?? [];
                 } catch (e) {}
             }
         }
+        onExited: restartTimer.start()
     }
 
     Timer {
-        interval: Variables.controlCenterOpen ? Variables.fastInterval : Variables.slowInterval
-        repeat: true
-        running: true
-        triggeredOnStart: true
-        onTriggered: service.refresh()
+        id: restartTimer
+        interval: 3000
+        onTriggered: proc.running = true
     }
 }

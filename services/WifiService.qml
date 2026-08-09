@@ -132,14 +132,22 @@ Item {
         }
     }
 
-    Component.onCompleted: service.refresh()
-
-    // Event-driven Task Scheduler Timer
-    Timer {
-        id: statusPollTimer
-        interval: Variables.mediumInterval
-        running: Variables.quickSettingsOpen && !service.isUserTyping
-        repeat: true
-        onTriggered: service.refresh(true)
+    // Instant NetworkManager Event Monitor
+    Process {
+        id: nmMonitor
+        command: ["nmcli", "monitor"]
+        running: true
+        stdout: SplitParser {
+            onRead: (data) => service.refresh(Variables.quickSettingsOpen)
+        }
+        onExited: restartNmMon.start()
     }
+
+    Timer {
+        id: restartNmMon
+        interval: 3000
+        onTriggered: nmMonitor.running = true
+    }
+
+    Component.onCompleted: service.refresh()
 }
