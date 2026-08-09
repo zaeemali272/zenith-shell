@@ -44,6 +44,7 @@ show_usage() {
     echo "  dashboard | overview      Toggle Dashboard"
     echo "  wallpaper                 Toggle Wallpaper tab"
     echo "  pomodoro                  Toggle Pomodoro tab"
+    echo "  ai | aiagent | agent      Toggle AI Agent tab"
     echo "  wifi | network            Toggle Wi-Fi QuickSettings"
     echo "  bluetooth | bt            Toggle Bluetooth QuickSettings"
     echo "  volume | audio            Toggle Volume QuickSettings"
@@ -86,6 +87,9 @@ case "$1" in
         ;;
     pomodoro)
         send_cmd "pomodoro"
+        ;;
+    ai|aiagent|agent)
+        send_cmd "ai"
         ;;
     wifi|network)
         send_cmd "wifi"

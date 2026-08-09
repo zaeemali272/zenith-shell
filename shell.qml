@@ -52,6 +52,7 @@ Scope {
             let tab = "Default";
             if (lowerArg === "pomodoro") tab = "Pomodoro";
             else if (lowerArg === "wallpaper" || lowerArg === "wallpapers") tab = "Wallpaper";
+            else if (lowerArg === "ai" || lowerArg === "aiagent" || lowerArg === "agent") tab = "AI Agent";
             CenterState.toggle(tab);
         } else if (lowerAction === "quicksettings" || lowerAction === "toggle_quicksettings") {
             let tab = arg || "network";
@@ -60,6 +61,8 @@ Scope {
             CenterState.toggle("Wallpaper");
         } else if (lowerAction === "pomodoro") {
             CenterState.toggle("Pomodoro");
+        } else if (lowerAction === "ai" || lowerAction === "aiagent" || lowerAction === "agent") {
+            CenterState.toggle("AI Agent");
         } else if (lowerAction === "wifi" || lowerAction === "network") {
             QuickSettingsService.toggle("network");
         } else if (lowerAction === "bluetooth" || lowerAction === "bt") {
