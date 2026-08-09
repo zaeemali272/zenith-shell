@@ -39,7 +39,6 @@ Rectangle {
         if (!mKey) return "✦";
         let k = mKey.toLowerCase();
         if (k.indexOf("claude") !== -1) return "󰘦";
-        if (k.indexOf("groq") !== -1) return "⚡";
         if (k.indexOf("ollama") !== -1) return "🦙";
         return "✦";
     }
@@ -50,7 +49,6 @@ Rectangle {
         if (k === "gemini") return "Gemini 2.5 Flash";
         if (k === "gemini-pro") return "Gemini 1.5 Pro";
         if (k === "claude") return "Claude 3.5 Sonnet";
-        if (k === "groq") return "Groq Llama 3.3";
         if (k === "ollama") return "Ollama Local";
         return mKey.toUpperCase();
     }

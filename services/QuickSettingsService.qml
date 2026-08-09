@@ -19,6 +19,9 @@ Item {
         if (typeof CenterState !== "undefined") {
             CenterState.close();
         }
+        if (typeof DynamicIslandService !== "undefined") {
+            DynamicIslandService.close();
+        }
 
         if (tab && tab !== "") {
             activeTab = tab;

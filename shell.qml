@@ -1,4 +1,5 @@
 //@ pragma UseQApplication
+import QtQuick
 import QtQml 2.15
 import Quickshell
 import Quickshell.Hyprland
@@ -93,19 +94,29 @@ Scope {
 
     Bar {
         id: bar
-        controlCenterMenuRef: controlCenter
+        controlCenterMenuRef: controlCenterLoader.item
     }
 
-    ControlCenter {
-        id: controlCenter
-        parentWindow: bar
-        Component.onCompleted: CenterState.menuRef = controlCenter
+    Loader {
+        id: controlCenterLoader
+        active: CenterState.qsVisible
+        sourceComponent: Component {
+            ControlCenter {
+                parentWindow: bar
+                Component.onCompleted: CenterState.menuRef = this
+            }
+        }
     }
 
-    QuickSettingsMenu {
-        id: quickSettingsMenu
-        parentWindow: bar
-        Component.onCompleted: QuickSettingsService.menuRef = quickSettingsMenu
+    Loader {
+        id: quickSettingsLoader
+        active: QuickSettingsService.qsVisible
+        sourceComponent: Component {
+            QuickSettingsMenu {
+                parentWindow: bar
+                Component.onCompleted: QuickSettingsService.menuRef = this
+            }
+        }
     }
 
     NotificationPopup {
@@ -116,19 +127,11 @@ Scope {
         id: osdPopup
     }
 
-    DynamicIslandOverlay {
-        id: dynamicIslandOverlay
-    }
-
-    Launcher {
-        id: launcherWindow
-    }
-
-    Clipboard {
-        id: clipboardWindow
-    }
-
-    Emoji {
-        id: emojiWindow
+    Loader {
+        id: dynamicIslandOverlayLoader
+        active: DynamicIslandService.active
+        sourceComponent: Component {
+            DynamicIslandOverlay {}
+        }
     }
 }

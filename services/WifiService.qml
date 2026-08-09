@@ -134,12 +134,12 @@ Item {
 
     Component.onCompleted: service.refresh()
 
-    // Adaptive Recurring Task Scheduler Timer
+    // Event-driven Task Scheduler Timer
     Timer {
         id: statusPollTimer
-        interval: Variables.quickSettingsOpen ? Variables.mediumInterval : Variables.slowInterval
-        running: !service.isUserTyping
+        interval: Variables.mediumInterval
+        running: Variables.quickSettingsOpen && !service.isUserTyping
         repeat: true
-        onTriggered: service.refresh(Variables.quickSettingsOpen)
+        onTriggered: service.refresh(true)
     }
 }

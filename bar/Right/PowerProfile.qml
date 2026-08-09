@@ -13,7 +13,10 @@ Item {
     property var menuRef: null
     readonly property string currentProfile: PowerProfileService.currentProfile
 
+    height: Theme.pillHeight
     implicitHeight: Theme.pillHeight
+    Layout.preferredHeight: Theme.pillHeight
+    Layout.alignment: Qt.AlignVCenter
     implicitWidth: pill.implicitWidth
 
     Pill {
@@ -39,8 +42,8 @@ Item {
                 source: "../../assets/cat_f" + Math.floor(frameTimer.frameCount % 4) + ".png"
                 width: Theme.iconSize
                 height: Theme.iconSize
-                Layout.preferredWidth: Theme.iconSize + 30
-                Layout.preferredHeight: Theme.iconSize + 30
+                Layout.preferredWidth: Theme.iconSize + Theme.scaled(25)
+                Layout.preferredHeight: Theme.iconSize + Theme.scaled(25)
                 fillMode: Image.PreserveAspectFit
             }
 

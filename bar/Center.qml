@@ -9,6 +9,10 @@ RowLayout {
     id: root
     property var controlCenterMenuRef: null
 
+    height: Theme.pillHeight
+    implicitHeight: Theme.pillHeight
+    Layout.preferredHeight: Theme.pillHeight
+    Layout.alignment: Qt.AlignVCenter
     spacing: Theme.pillSpacing
 
     // --- PRODUCTIVITY / POMODORO COUNTDOWN WIDGET ---
@@ -82,13 +86,14 @@ RowLayout {
             ? Theme.surfaceContainerHigh
             : (pillMouse.containsMouse ? Theme.pillHoverColor : Theme.pillColor)
         border.color: DynamicIslandService.active ? Theme.accentColor : Theme.glassBorder
-        border.width: DynamicIslandService.active ? 2 : 1
+        height: Theme.pillHeight
         implicitHeight: Theme.pillHeight
+        Layout.preferredHeight: Theme.pillHeight
+        Layout.alignment: Qt.AlignVCenter
         width: DynamicIslandService.active
             ? Theme.scaled(480)
             : (centerContent.implicitWidth + Theme.pillPadding + Theme.extraPillPadding)
         implicitWidth: width
-        Layout.alignment: Qt.AlignVCenter
         clip: true
 
         scale: DynamicIslandService.active ? 1.0 : (pillMouse.pressed ? 0.95 : (pillMouse.containsMouse ? 1.04 : 1.0))
@@ -387,19 +392,13 @@ RowLayout {
                     font.pixelSize: Theme.fontSize
                     color: Theme.text
                     selectByMouse: true
+                    text: DynamicIslandService.query
                     focus: DynamicIslandService.active
 
                     Connections {
                         target: DynamicIslandService
                         function onActiveChanged() {
                             if (DynamicIslandService.active) {
-                                searchInput.text = DynamicIslandService.query;
-                                Qt.callLater(() => searchInput.forceActiveFocus());
-                            }
-                        }
-                        function onActiveModeChanged() {
-                            if (DynamicIslandService.active) {
-                                searchInput.text = DynamicIslandService.query;
                                 Qt.callLater(() => searchInput.forceActiveFocus());
                             }
                         }

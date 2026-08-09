@@ -104,6 +104,9 @@ QtObject {
             validMode = "launcher";
         }
         
+        if (typeof CenterState !== "undefined") CenterState.close();
+        if (typeof QuickSettingsService !== "undefined") QuickSettingsService.close();
+
         query = "";
         selectedIndex = 0;
         selectedCategory = "All";
@@ -392,13 +395,15 @@ QtObject {
         let cache = [];
         for (let i = 0; i < rawList.length; i++) {
             let item = rawList[i];
-            if (!item || !item.emoji) continue;
+            if (!item) continue;
+            let emojiChar = item.char || item.emoji || "";
+            if (!emojiChar) continue;
             let name = item.name || "";
-            let category = item.category || "All";
-            let keywords = Array.isArray(item.keywords) ? item.keywords.join(" ") : (item.keywords || "");
+            let category = item.cat || item.category || "All";
+            let keywords = Array.isArray(item.tags || item.keywords) ? (item.tags || item.keywords).join(" ") : (item.tags || item.keywords || "");
 
             cache.push({
-                emoji: item.emoji,
+                emoji: emojiChar,
                 name: name,
                 category: category,
                 keywords: keywords,
@@ -424,7 +429,7 @@ QtObject {
             }
         }
 
-        displayedEmojis = results.slice(0, 48);
+        displayedEmojis = results.slice(0, 120);
     }
 
     function copyEmoji(emojiChar) {

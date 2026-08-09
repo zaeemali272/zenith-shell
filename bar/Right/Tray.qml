@@ -9,7 +9,10 @@ Rectangle {
 
     property var menuRef
 
+    height: Theme.pillHeight
     implicitHeight: Theme.pillHeight
+    Layout.preferredHeight: Theme.pillHeight
+    Layout.alignment: Qt.AlignVCenter
     width: trayRow.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
     implicitWidth: width
     color: trayHoverArea.containsMouse ? Theme.pillHoverColor : Theme.pillColor

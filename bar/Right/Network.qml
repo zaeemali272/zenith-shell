@@ -26,12 +26,16 @@ Item {
         return (kb / 1024).toFixed(1) + " MB/s";
     }
 
+    height: Theme.pillHeight
     implicitHeight: Theme.pillHeight
+    Layout.preferredHeight: Theme.pillHeight
+    Layout.alignment: Qt.AlignVCenter
     implicitWidth: pill.width
 
     Pill {
         id: pill
 
+        height: Theme.pillHeight
         implicitHeight: Theme.pillHeight
         width: content.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
 

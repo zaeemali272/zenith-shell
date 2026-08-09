@@ -25,8 +25,10 @@ PanelWindow {
 
     onVisibleChanged: {
         if (visible) {
+            MenuService.register(overlayRoot);
             showAnim.restart();
         } else {
+            MenuService.unregister(overlayRoot);
             mainCard.opacity = 0;
             mainCard.scale = 0.95;
         }
@@ -64,7 +66,7 @@ PanelWindow {
         id: mainCard
         anchors.horizontalCenter: parent.horizontalCenter
         y: (Shell.Theme.barHeight || 40) + (Shell.Theme.barMarginTop || 8) + Shell.Theme.scaled(8)
-        width: Shell.Theme.scaled(560)
+        width: Shell.Theme.scaled(593)
         height: cardColumn.implicitHeight
         opacity: 0
         scale: 0.95
@@ -314,7 +316,7 @@ PanelWindow {
             // --- EMOJI RESULTS VIEW ---
             Rectangle {
                 width: parent.width
-                height: Math.min(380, Math.max(80, emojiColumn.implicitHeight + 16))
+                height: 320
                 radius: Shell.Theme.scaled(14)
                 visible: DynamicIslandService.activeMode === "emoji"
                 color: (Shell.Colors && Shell.Colors.surface_container_low) ? Shell.Colors.surface_container_low : "#221a15"
@@ -340,7 +342,8 @@ PanelWindow {
                         height: 30
                         contentHeight: 30
                         clip: true
-                        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                        ScrollBar.vertical.policy: ScrollBar.AlwaysOff
+                        ScrollBar.horizontal.policy: ScrollBar.AsNeeded
 
                         Row {
                             spacing: 6
@@ -350,7 +353,7 @@ PanelWindow {
                                 model: DynamicIslandService.emojiCategories
                                 delegate: Rectangle {
                                     height: 24
-                                    width: catText.implicitWidth + 14
+                                    width: catText.implicitWidth + 15
                                     radius: 12
                                     color: DynamicIslandService.selectedCategory === modelData
                                         ? Shell.Theme.accentColor
@@ -389,8 +392,8 @@ PanelWindow {
                         GridView {
                             id: emojiGrid
                             anchors.fill: parent
-                            cellWidth: 44
-                            cellHeight: 44
+                            cellWidth: 48
+                            cellHeight: 48
                             clip: true
                             model: DynamicIslandService.displayedEmojis
                             currentIndex: DynamicIslandService.selectedIndex
@@ -399,8 +402,8 @@ PanelWindow {
 
                             delegate: Rectangle {
                                 id: emojiDelegate
-                                width: 40
-                                height: 40
+                                width: 44
+                                height: 44
                                 radius: 8
 
                                 required property var modelData
@@ -415,7 +418,7 @@ PanelWindow {
                                 Text {
                                     anchors.centerIn: parent
                                     text: (emojiDelegate.modelData && emojiDelegate.modelData.emoji) ? emojiDelegate.modelData.emoji : ""
-                                    font.pixelSize: 22
+                                    font.pixelSize: 26
                                 }
 
                                 MouseArea {

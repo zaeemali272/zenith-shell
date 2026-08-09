@@ -31,13 +31,17 @@ Item {
         return Theme.volLow;
     }
 
+    height: Theme.pillHeight
     implicitHeight: Theme.pillHeight
+    Layout.preferredHeight: Theme.pillHeight
+    Layout.alignment: Qt.AlignVCenter
     implicitWidth: pill.width
 
     Pill {
         id: pill
 
-        height: parent.height
+        height: Theme.pillHeight
+        implicitHeight: Theme.pillHeight
         width: volumeContent.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
         
         onClicked: (mouse) => {

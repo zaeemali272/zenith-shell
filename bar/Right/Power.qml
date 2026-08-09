@@ -2,17 +2,23 @@ import ".."
 import "../.."
 import "../../services"
 import QtQuick
+import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 
 Item {
     id: root
 
+    height: Theme.pillHeight
     implicitHeight: Theme.pillHeight
+    Layout.preferredHeight: Theme.pillHeight
+    Layout.alignment: Qt.AlignVCenter
     implicitWidth: pill.implicitWidth
-    
+
     Pill {
         id: pill
+        height: Theme.pillHeight
+        implicitHeight: Theme.pillHeight
 
         icon: " "
         text: ""

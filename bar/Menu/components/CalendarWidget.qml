@@ -30,8 +30,6 @@ Rectangle {
         fetchProcess.running = true;
     }
 
-    onViewDateChanged: fetchEvents()
-
     Process {
         id: fetchProcess
         command: ['bash', PathSettings.scriptsDir + '/fetch_events.sh', root.today.getFullYear().toString(), root.countryCode]

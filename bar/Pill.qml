@@ -23,7 +23,10 @@ Rectangle {
     signal entered()
 
     radius: Theme.pillRadius
+    height: Theme.pillHeight
     implicitHeight: Theme.pillHeight
+    Layout.preferredHeight: Theme.pillHeight
+    Layout.alignment: Qt.AlignVCenter
     color: normalColor
     clip: true
     implicitWidth: Math.max(fallback.implicitWidth, contentItem.childrenRect.width) + Theme.pillPadding * 2

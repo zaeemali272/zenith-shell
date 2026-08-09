@@ -3,8 +3,8 @@ import "."
 import QtQuick
 
 QtObject {
-    property int height: 28
-    property int radius: 14
+    property int height: 30
+    property int radius: 15
     property int padding: 16
     property int extraPadding: 5
     property int spacing: 4

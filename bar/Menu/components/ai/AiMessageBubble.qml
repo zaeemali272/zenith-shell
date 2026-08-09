@@ -56,11 +56,11 @@ Item {
             height: implicitHeight
 
             color: rootDelegate.msgRole === "user" 
-                ? Colors.primary_container 
-                : Colors.surface_container_high
+                ? Qt.rgba(0.2, 0.12, 0.08, 0.65) 
+                : Qt.rgba(0, 0, 0, 0.45)
 
             radius: Theme.bubbleRadiusMedium
-            border.color: rootDelegate.msgRole === "user" ? Qt.rgba(1, 0.71, 0.55, 0.3) : Colors.outline_variant
+            border.color: rootDelegate.msgRole === "user" ? Qt.rgba(1, 0.71, 0.55, 0.35) : Theme.glassBorder
             border.width: 1
 
             Text {

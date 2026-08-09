@@ -12,11 +12,15 @@ Item {
     readonly property int mem: ResourceService.mem
     readonly property int temp: ResourceService.temp
 
+    height: Theme.pillHeight
     implicitHeight: Theme.pillHeight
+    Layout.preferredHeight: Theme.pillHeight
+    Layout.alignment: Qt.AlignVCenter
     implicitWidth: pill.width
 
     Pill {
         id: pill
+        height: Theme.pillHeight
         implicitHeight: Theme.pillHeight
         width: content.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
         

@@ -84,7 +84,7 @@ Item {
     Process { id: saveCache }
 
     Timer {
-        interval: Variables.idleInterval
+        interval: 1800000 // 30 minutes
         running: true
         repeat: true
         onTriggered: service.refresh()

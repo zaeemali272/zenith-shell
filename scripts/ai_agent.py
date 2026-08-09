@@ -50,8 +50,7 @@ def get_api_key(provider):
     env_map = {
         "gemini": "GEMINI_API_KEY",
         "gemini-pro": "GEMINI_API_KEY",
-        "claude": "ANTHROPIC_API_KEY",
-        "groq": "GROQ_API_KEY"
+        "claude": "ANTHROPIC_API_KEY"
     }
     env_name = env_map.get(p)
     if env_name and os.environ.get(env_name):
@@ -62,12 +61,11 @@ def check_keys_status():
     keys = load_keys()
     gemini_key = keys.get("gemini") or os.environ.get("GEMINI_API_KEY", "")
     claude_key = keys.get("claude") or os.environ.get("ANTHROPIC_API_KEY", "")
-    groq_key = keys.get("groq") or os.environ.get("GROQ_API_KEY", "")
     
     ollama_ok = False
     try:
         req = urllib.request.Request("http://localhost:11434/api/tags", headers={"User-Agent": "ZenithAI"})
-        with urllib.request.urlopen(req, timeout=1.5) as resp:
+        with urllib.request.urlopen(req, timeout=0.8) as resp:
             if resp.status == 200:
                 ollama_ok = True
     except Exception:
@@ -77,7 +75,6 @@ def check_keys_status():
         "type": "keys_status",
         "gemini": bool(gemini_key),
         "claude": bool(claude_key),
-        "groq": bool(groq_key),
         "ollama": ollama_ok,
         "keys_file": str(KEYS_FILE)
     }
@@ -172,26 +169,6 @@ def fetch_dynamic_models(provider_key):
             models = ["/models ollama llama3", "/models ollama mistral", "/models ollama codellama"]
         return models
 
-    if "groq" in p:
-        api_key = get_api_key("groq")
-        if api_key:
-            try:
-                url = "https://api.groq.com/openai/v1/models"
-                req = urllib.request.Request(url, headers={"Authorization": f"Bearer {api_key}"})
-                with urllib.request.urlopen(req, timeout=3.0) as resp:
-                    if resp.status == 200:
-                        data = json.loads(resp.read().decode("utf-8"))
-                        m_list = [f"/models groq {item['id']}" for item in data.get("data", []) if "llama" in item['id'] or "mixtral" in item['id']]
-                        if m_list:
-                            return m_list[:6]
-            except Exception:
-                pass
-        return [
-            "/models groq llama-3.3-70b-versatile",
-            "/models groq mixtral-8x7b-32768",
-            "/models groq gemma2-9b-it"
-        ]
-
     if "gemini" in p:
         api_key = get_api_key("gemini")
         if api_key:
@@ -223,7 +200,6 @@ def fetch_dynamic_models(provider_key):
     return [
         "/models gemini 2.5-flash",
         "/models claude 3.5-sonnet",
-        "/models groq llama-3.3-70b-versatile",
         "/models ollama llama3"
     ]
 
@@ -432,160 +408,10 @@ def stream_claude(messages, system_prompt):
     except Exception as e:
         send_event({"type": "error", "message": f"Claude API failed: {e}"})
 
-def stream_groq(messages, system_prompt):
-    api_key = get_api_key("groq")
-    if not api_key:
-        send_event({"type": "error", "message": "Groq API Key missing! Set it using `/key groq gsk_...`"})
-        return
-
-    url = "https://api.groq.com/openai/v1/chat/completions"
-    formatted_msgs = [{"role": "system", "content": system_prompt}]
-    for m in messages:
-        role = "user" if m.get("role") == "user" else "assistant"
-        content_text = m.get("content", "")
-        if role == "user" and "@file" in content_text:
-            content_text = ingest_file_context(content_text)
-        formatted_msgs.append({"role": role, "content": content_text})
-
-    payload = {
-        "model": "llama-3.3-70b-versatile",
-        "messages": formatted_msgs,
-        "stream": True
-    }
-
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}"
-        },
-        method="POST"
-    )
-
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            for line in resp:
-                line_str = line.decode("utf-8").strip()
-                if line_str.startswith("data:") and not line_str.endswith("[DONE]"):
-                    json_str = line_str[5:].strip()
-                    if json_str:
-                        try:
-                            chunk = json.loads(json_str)
-                            choices = chunk.get("choices", [])
-                            if choices:
-                                text = choices[0].get("delta", {}).get("content", "")
-                                if text:
-                                    send_event({"type": "token", "content": text})
-                        except Exception:
-                            pass
-        send_event({"type": "done"})
-    except Exception as e:
-        send_event({"type": "error", "message": f"Groq API failed: {e}"})
-
-def stream_ollama(messages, system_prompt):
-    url = "http://localhost:11434/api/chat"
-    formatted_msgs = [{"role": "system", "content": system_prompt}]
-    for m in messages:
-        role = "user" if m.get("role") == "user" else "assistant"
-        content_text = m.get("content", "")
-        if role == "user" and "@file" in content_text:
-            content_text = ingest_file_context(content_text)
-        formatted_msgs.append({"role": role, "content": content_text})
-
-    payload = {
-        "model": "llama3",
-        "messages": formatted_msgs,
-        "stream": True
-    }
-
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST"
-    )
-
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            for line in resp:
-                line_str = line.decode("utf-8").strip()
-                if line_str:
-                    try:
-                        chunk = json.loads(line_str)
-                        text = chunk.get("message", {}).get("content", "")
-                        if text:
-                            send_event({"type": "token", "content": text})
-                    except Exception:
-                        pass
-        send_event({"type": "done"})
-    except Exception as e:
-        send_event({"type": "error", "message": f"Ollama local server unreachable: {e}"})
-
-def handle_request(req):
-    action = req.get("action")
-    
-    if action == "check_keys":
-        send_event(check_keys_status())
-        return
-
-    if action == "scan_dir":
-        text = req.get("text", "")
-        suggestions = dynamic_scan_dir(text)
-        send_event({"type": "dir_suggestions", "suggestions": suggestions})
-        return
-
-    if action == "get_models":
-        provider = req.get("provider", "gemini")
-        models = fetch_dynamic_models(provider)
-        send_event({"type": "model_suggestions", "suggestions": models})
-        return
-
-    if action == "save_key":
-        provider = req.get("provider", "")
-        key_val = req.get("key", "")
-        if provider and key_val:
-            save_key_to_file(provider, key_val)
-            send_event({"type": "token", "content": f"✅ API Key for **{provider.upper()}** saved successfully in `{KEYS_FILE}`!"})
-            send_event({"type": "done"})
-        else:
-            send_event({"type": "error", "message": "Invalid provider or key value."})
-        return
-
-    if action == "load_history":
-        send_event(load_history())
-        return
-
-    if action == "save_history":
-        messages = req.get("messages", [])
-        send_event(save_history(messages))
-        return
-
-    if action == "export":
-        messages = req.get("messages", [])
-        export_chat(messages)
-        return
-
-    if action == "exec":
-        command = req.get("command", "")
-        execute_shell(command)
-        return
-
-    if action == "sys_info":
-        fetch_sys_metrics()
-        return
-
-    if action == "prompt":
-        model = req.get("model", "gemini")
-        messages = req.get("messages", [])
-        system_prompt = req.get("system_prompt", "You are Antigravity Desktop AI Agent integrated into Zenith Linux Desktop Shell.")
-
         if "gemini" in model:
             stream_gemini(model, messages, system_prompt)
         elif "claude" in model:
             stream_claude(messages, system_prompt)
-        elif "groq" in model:
-            stream_groq(messages, system_prompt)
         elif "ollama" in model:
             stream_ollama(messages, system_prompt)
         else:

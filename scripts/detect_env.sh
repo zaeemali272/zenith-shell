@@ -62,11 +62,6 @@ if [ -z "$COUNTRY_CODE" ] && [ -n "$TIMEZONE" ]; then
     esac
 fi
 
-# Fast curl geoip fallback if country code is still empty
-if [ -z "$COUNTRY_CODE" ]; then
-    COUNTRY_CODE="$(curl -sL --connect-timeout 2 https://ipapi.co/country/ 2>/dev/null)"
-fi
-
 COUNTRY_CODE="${COUNTRY_CODE:-US}"
 
 case "$COUNTRY_CODE" in

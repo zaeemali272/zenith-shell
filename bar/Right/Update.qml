@@ -12,7 +12,10 @@ Item {
     property int totalUpdates: (updateMenu.zenithData?.updates || 0) + (updateMenu.shellData?.updates || 0)
     
     visible: totalUpdates > 0
+    height: Theme.pillHeight
     implicitHeight: Theme.pillHeight
+    Layout.preferredHeight: Theme.pillHeight
+    Layout.alignment: Qt.AlignVCenter
     implicitWidth: pill.width
 
     UpdateMenu {
@@ -21,6 +24,8 @@ Item {
 
     Pill {
         id: pill
+        height: Theme.pillHeight
+        implicitHeight: Theme.pillHeight
         anchors.fill: parent
         z: 999
         icon: "󰚰"

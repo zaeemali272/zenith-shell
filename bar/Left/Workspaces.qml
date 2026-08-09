@@ -4,14 +4,18 @@ import "../../Settings"
 import "../../services"
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
 import Quickshell
 import Quickshell.Hyprland
 
 Item {
     id: workspaceBar
 
-    implicitWidth: mainPill.width
+    height: Theme.pillHeight
     implicitHeight: Theme.pillHeight
+    Layout.preferredHeight: Theme.pillHeight
+    Layout.alignment: Qt.AlignVCenter
+    implicitWidth: mainPill.width
 
     readonly property HyprlandMonitor monitor: (QsWindow.window && QsWindow.window.monitor) ? QsWindow.window.monitor : null
 
@@ -20,6 +24,7 @@ Item {
         id: mainPill
         anchors.centerIn: parent
         height: Theme.pillHeight
+        implicitHeight: Theme.pillHeight
         width: row.implicitWidth + Theme.scaled(20)
         color: pillHoverArea.containsMouse ? Theme.pillHoverColor : Theme.pillColor
         radius: height / 2

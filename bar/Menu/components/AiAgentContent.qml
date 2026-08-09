@@ -18,7 +18,6 @@ Rectangle {
 
     property bool statusGemini: false
     property bool statusClaude: false
-    property bool statusGroq: false
     property bool statusOllama: false
     property string keysFilePath: ""
 
@@ -527,7 +526,6 @@ Rectangle {
             currentModel: root.currentModel
             statusGemini: root.statusGemini
             statusClaude: root.statusClaude
-            statusGroq: root.statusGroq
             statusOllama: root.statusOllama
 
             onSelectModel: (mId) => root.currentModel = mId

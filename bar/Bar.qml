@@ -34,6 +34,7 @@ PanelWindow {
     implicitHeight: Theme.barHeight
     implicitWidth: screen ? screen.width : Theme.screenWidth
     color: "transparent"
+    visible: !HyprlandService.isFullscreen
 
     Rectangle {
         id: barVisual
@@ -97,6 +98,7 @@ PanelWindow {
             anchors.left: parent.left
             anchors.leftMargin: Theme.barMarginLeft
             anchors.verticalCenter: parent.verticalCenter
+            height: Theme.pillHeight
             opacity: BarSettings.entryAnimation ? 0 : 1
         }
 
@@ -105,6 +107,7 @@ PanelWindow {
             id: centerSide
             anchors.verticalCenter: parent.verticalCenter
             controlCenterMenuRef: bar.controlCenterMenuRef
+            height: Theme.pillHeight
             opacity: BarSettings.entryAnimation ? 0 : 1
             
             x: {
@@ -137,6 +140,7 @@ PanelWindow {
             anchors.right: parent.right
             anchors.rightMargin: Theme.barMarginRight
             anchors.verticalCenter: parent.verticalCenter
+            height: Theme.pillHeight
             spacing: Theme.pillSpacing
             opacity: GeneralSettings.barEntryAnimation ? 0 : 1
 
@@ -144,28 +148,22 @@ PanelWindow {
 
             Update { 
                 id: updateWidget
-                visible: !Theme.isSmallScreen && totalUpdates > 0 && !HyprlandService.isFullscreen
+                visible: !Theme.isSmallScreen && totalUpdates > 0
             }
             
             Network { 
                 id: wifiWidget 
-                visible: WidgetSettings.enableResources && !HyprlandService.isFullscreen
+                visible: WidgetSettings.enableResources
             }
             
             PowerProfile { 
                 id: powerProfileWidget 
-                visible: WidgetSettings.enablePowerProfiles && !Theme.isSmallScreen && !HyprlandService.isFullscreen
+                visible: WidgetSettings.enablePowerProfiles && !Theme.isSmallScreen
             }
             
             Resources { 
-                visible: WidgetSettings.enableResources && !Theme.isSmallScreen && !HyprlandService.isFullscreen
+                visible: WidgetSettings.enableResources && !Theme.isSmallScreen
             }
-            
-            // TodoList widget (if one exists in the tray/bar area)
-            // Assuming TodoList is in the bar, add similar visibility check:
-            // TodoList {
-            //    visible: WidgetSettings.enableTodoList && !HyprlandService.isFullscreen
-            // }
             
             Volume { 
                 id: volumeWidget 
@@ -177,7 +175,7 @@ PanelWindow {
             
             Battery { 
                 id: batteryWidget 
-                visible: WidgetSettings.enableBattery && !HyprlandService.isFullscreen
+                visible: WidgetSettings.enableBattery
             }
             
             Power { }

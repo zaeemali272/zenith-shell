@@ -10,7 +10,6 @@ ColumnLayout {
     property string currentModel: "gemini"
     property bool statusGemini: false
     property bool statusClaude: false
-    property bool statusGroq: false
     property bool statusOllama: false
 
     signal selectModel(string modelId)
@@ -22,7 +21,6 @@ ColumnLayout {
     function isKeyAvailable(modelKey) {
         if (modelKey === "gemini" || modelKey === "gemini-pro") return statusGemini;
         if (modelKey === "claude") return statusClaude;
-        if (modelKey === "groq") return statusGroq;
         if (modelKey === "ollama") return statusOllama;
         return false;
     }
@@ -66,7 +64,6 @@ ColumnLayout {
                     model: [
                         { id: "gemini", label: "Gemini", icon: "✦" },
                         { id: "claude", label: "Claude", icon: "󰘦" },
-                        { id: "groq", label: "Groq Free", icon: "⚡" },
                         { id: "ollama", label: "Ollama", icon: "🦙" }
                     ]
 

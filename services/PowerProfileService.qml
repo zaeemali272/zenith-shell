@@ -67,8 +67,8 @@ Item {
     }
 
     Timer {
-        interval: Variables.quickSettingsOpen ? Variables.slowInterval : Variables.lazyInterval
-        running: service.available
+        interval: Variables.slowInterval
+        running: service.available && Variables.quickSettingsOpen
         repeat: true
         onTriggered: service.update()
     }

@@ -28,6 +28,7 @@ Item {
         activeTab = targetTab;
         if (rect !== undefined) anchorRect = rect;
         
+        if (typeof DynamicIslandService !== "undefined") DynamicIslandService.close();
         if (typeof QuickSettingsService !== "undefined") QuickSettingsService.close();
         mediaVisible = false;
         if (mediaPopupRef) mediaPopupRef.visible = false;

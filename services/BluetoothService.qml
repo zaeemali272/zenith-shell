@@ -284,10 +284,10 @@ print(json.dumps({
 
     Timer {
         id: pollTimer
-        interval: Variables.slowInterval
+        interval: Variables.mediumInterval
         repeat: true
-        running: true
-        onTriggered: refresh(Variables.quickSettingsOpen)
+        running: Variables.quickSettingsOpen
+        onTriggered: refresh(true)
     }
 
     Component.onCompleted: refresh(false)
