@@ -26,10 +26,13 @@
             pythonEnv
             bash
             coreutils
+            curl
+            git
             jq
             gnugrep
             gawk
             procps
+            psmisc
             findutils
             ffmpeg
             playerctl
@@ -37,6 +40,7 @@
             networkmanager
             bluez
             libnotify
+            xdg-user-dirs
           ];
         in
         {
