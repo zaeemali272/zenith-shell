@@ -156,29 +156,14 @@ PanelWindow {
                 visible: WidgetSettings.enableResources
             }
             
-            PowerProfile { 
-                id: powerProfileWidget 
-                visible: WidgetSettings.enablePowerProfiles && !Theme.isSmallScreen
-            }
-            
             Resources { 
+                id: resourcesWidget
                 visible: WidgetSettings.enableResources && !Theme.isSmallScreen
             }
             
-            Volume { 
-                id: volumeWidget 
+            QuickSettingsCluster {
+                id: quickSettingsCluster
             }
-            
-            Bluetooth { 
-                id: bluetoothWidget 
-            }
-            
-            Battery { 
-                id: batteryWidget 
-                visible: WidgetSettings.enableBattery
-            }
-            
-            Power { }
         }
     }
 

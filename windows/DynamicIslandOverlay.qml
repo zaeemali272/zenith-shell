@@ -34,7 +34,7 @@ PanelWindow {
         }
     }
 
-    // Smooth entrance animation
+    // Ultra-smooth spring entrance animation
     ParallelAnimation {
         id: showAnim
         NumberAnimation {
@@ -42,16 +42,25 @@ PanelWindow {
             property: "opacity"
             from: 0
             to: 1
-            duration: Shell.Theme.animNormal
-            easing.type: Shell.Theme.animEasing
+            duration: 320
+            easing.type: Easing.OutCubic
         }
         NumberAnimation {
             target: mainCard
             property: "scale"
-            from: 0.96
+            from: 0.92
             to: 1.0
-            duration: Shell.Theme.animNormal
-            easing.type: Shell.Theme.animEasing
+            duration: 450
+            easing.type: Easing.OutBack
+            easing.overshoot: 1.2
+        }
+        NumberAnimation {
+            target: mainCard
+            property: "y"
+            from: (Shell.Theme.barHeight || 40) - 10
+            to: (Shell.Theme.barHeight || 40) + (Shell.Theme.barMarginTop || 8) + Shell.Theme.scaled(8)
+            duration: 400
+            easing.type: Easing.OutExpo
         }
     }
 

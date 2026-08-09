@@ -1,3 +1,4 @@
+// bar/Right/Network.qml
 import ".."
 import "../.."
 import "../../services"
@@ -30,29 +31,39 @@ Item {
     implicitHeight: Theme.pillHeight
     Layout.preferredHeight: Theme.pillHeight
     Layout.alignment: Qt.AlignVCenter
-    implicitWidth: pill.width
+    implicitWidth: outerContainer.width
 
-    Pill {
-        id: pill
-
+    // Outer Glass Container matching Resources & QuickSettingsCluster exactly
+    Rectangle {
+        id: outerContainer
         height: Theme.pillHeight
         implicitHeight: Theme.pillHeight
-        width: content.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
+        width: content.implicitWidth + Theme.scaled(20)
+        implicitWidth: width
+        radius: height / 2
+        color: Theme.pillColor
+        border.color: Theme.glassBorder
+        border.width: 1
+        clip: true
 
-        onClicked: (mouse) => {
-            if (mouse.button === Qt.RightButton)
-                showUpload = !showUpload;
-            else if (mouse.button === Qt.LeftButton)
-                QuickSettingsService.toggle("network"); 
+        MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+
+            onClicked: (mouse) => {
+                if (mouse.button === Qt.RightButton)
+                    showUpload = !showUpload;
+                else if (mouse.button === Qt.LeftButton)
+                    QuickSettingsService.toggle("network"); 
+            }
         }
-
-        Behavior on color { ColorAnimation { duration: 300 } }
 
         RowLayout {
             id: content
-
             anchors.centerIn: parent
-            spacing: Theme.pillGap
+            spacing: Theme.scaled(6)
 
             Text {
                 text: airplaneMode ? "󰀞" : (!wifiConnected ? "󰤮" : (showUpload ? Theme.netUpIcon : Theme.netDownIcon))
@@ -63,9 +74,10 @@ Item {
             }
 
             Text {
-                text: airplaneMode ? "OFF" : (!wifiConnected ? "DISC" : (pill.containsMouse ? (wifiSSID ? wifiSSID : "Connected") : formatSpeed(showUpload ? upSpeed : downSpeed)))
+                text: airplaneMode ? "OFF" : (!wifiConnected ? "DISC" : (outerContainer.containsMouse ? (wifiSSID ? wifiSSID : "Connected") : formatSpeed(showUpload ? upSpeed : downSpeed)))
                 font.pixelSize: Theme.fontSize
-                font.weight: (airplaneMode || !wifiConnected) ? Font.Bold : Font.Normal
+                font.family: "JetBrains Mono"
+                font.weight: (airplaneMode || !wifiConnected) ? Font.Bold : Font.DemiBold
                 color: airplaneMode ? Theme.powerRed : (!wifiConnected ? Theme.powerRed : Theme.fontColor)
                 Layout.alignment: Qt.AlignVCenter
             }
@@ -97,14 +109,12 @@ Item {
 
     Timer {
         id: refreshTimer
-        interval: (pill.containsMouse || Variables.quickSettingsOpen) ? Variables.fastInterval : Variables.mediumInterval
+        interval: (outerContainer.containsMouse || Variables.quickSettingsOpen) ? Variables.fastInterval : Variables.mediumInterval
         running: true
         repeat: true
-        triggeredOnStart: true
         onTriggered: {
-            if (!netExec.running) {
-                netExec.running = true;
-            }
+            netExec.running = false;
+            netExec.running = true;
         }
     }
 }
