@@ -115,27 +115,6 @@ case "$1" in
     settings)
         send_cmd "settings"
         ;;
-    start)
-        if is_running; then
-            echo "Quickshell is already running."
-        else
-            echo "Starting Quickshell..."
-            quickshell -d -p "$SHELL_DIR" &
-        fi
-        ;;
-    stop|kill)
-        echo "Stopping Quickshell..."
-        pkill -f quickshell
-        ;;
-    restart|reload)
-        echo "Restarting Quickshell..."
-        pkill -f quickshell
-        sleep 0.3
-        quickshell -d -p "$SHELL_DIR" &
-        ;;
-    launcher|applauncher|Launcher)
-        send_cmd "launcher"
-        ;;
     "")
         show_usage
         ;;

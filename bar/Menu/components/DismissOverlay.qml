@@ -28,8 +28,6 @@ PanelWindow {
         
         onPressed: (mouse) => {
             MenuService.closeAll();
-            // Don't accept the event so it can pass through to what's beneath
-            mouse.accepted = false; 
         }
     }
 }
