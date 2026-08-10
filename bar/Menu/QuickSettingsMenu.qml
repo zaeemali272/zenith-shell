@@ -27,6 +27,10 @@ PanelWindow {
         right: true
     }
 
+    mask: Region {
+        item: mainContent
+    }
+
     onVisibleChanged: {
         Variables.quickSettingsOpen = visible;
         if (visible) {

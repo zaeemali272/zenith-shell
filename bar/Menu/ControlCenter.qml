@@ -26,6 +26,10 @@ PanelWindow {
         right: true
     }
 
+    mask: Region {
+        item: mainContent
+    }
+
     onVisibleChanged: {
         Variables.controlCenterOpen = visible;
         if (visible) {

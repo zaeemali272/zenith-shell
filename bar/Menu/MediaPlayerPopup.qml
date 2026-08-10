@@ -25,6 +25,10 @@ PanelWindow {
         right: true
     }
 
+    mask: Region {
+        item: mainContent
+    }
+
     onVisibleChanged: {
         if (visible) {
             MenuService.register(root);

@@ -23,6 +23,10 @@ PanelWindow {
         right: true
     }
 
+    mask: Region {
+        item: mainCard
+    }
+
     onVisibleChanged: {
         if (visible) {
             MenuService.register(overlayRoot);
