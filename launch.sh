@@ -18,12 +18,35 @@ if [ ! -p "$FIFO_FILE" ]; then
     mkfifo "$FIFO_FILE" 2>/dev/null || touch "$FIFO_FILE"
 fi
 
+COMBO_FILE="$HOME/.cache/zenith_last_combo"
+
+mark_combo() {
+    python3 -c "import time; print(int(time.time()*1000))" > "$COMBO_FILE" 2>/dev/null || date +%s%3N > "$COMBO_FILE" 2>/dev/null || true
+}
+
+is_recent_combo() {
+    if [ -f "$COMBO_FILE" ]; then
+        local last_time
+        last_time=$(cat "$COMBO_FILE" 2>/dev/null || echo 0)
+        local now
+        now=$(python3 -c "import time; print(int(time.time()*1000))" 2>/dev/null || date +%s%3N 2>/dev/null || echo 0)
+        local diff=$((now - last_time))
+        if [ "$diff" -ge 0 ] && [ "$diff" -lt 550 ]; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
 is_running() {
     pgrep -x "quickshell" >/dev/null 2>&1 || pgrep -x ".quickshell-wra" >/dev/null 2>&1 || pgrep -f "quickshell" >/dev/null 2>&1
 }
 
 send_cmd() {
     local cmd="$1"
+    if [ "$cmd" != "launcher" ]; then
+        mark_combo
+    fi
     if ! is_running; then
         echo "Starting Quickshell..."
         quickshell -d -p "$SHELL_DIR" &
@@ -31,6 +54,7 @@ send_cmd() {
     fi
     python3 -c "import os, sys; p=sys.argv[1]; c=sys.argv[2]; f=os.open(p, os.O_WRONLY|os.O_NONBLOCK); os.write(f, (c+'\n').encode()); os.close(f)" "$FIFO_FILE" "$cmd" 2>/dev/null || (echo "$cmd" > "$FIFO_FILE" 2>/dev/null &)
 }
+
 
 show_usage() {
     echo "Zenith Shell CLI & IPC Launch Script"
@@ -77,8 +101,15 @@ case "$1" in
         quickshell -d -p "$SHELL_DIR" &
         ;;
     launcher|applauncher|Launcher)
+        if is_recent_combo; then
+            exit 0
+        fi
         send_cmd "launcher"
         ;;
+    mark_combo|combo)
+        mark_combo
+        ;;
+
     clipboard|clip|cliphist|Clipboard)
         send_cmd "clipboard"
         ;;

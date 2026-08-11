@@ -16,6 +16,7 @@ QtObject {
     }
 
     function unregister(menu) {
+        if (!menu) return;
         let index = openMenus.indexOf(menu);
         if (index !== -1) {
             let newMenus = [...openMenus];
@@ -26,11 +27,23 @@ QtObject {
 
     function closeAll() {
         let menusToClose = [...openMenus];
+        openMenus = [];
         for (let menu of menusToClose) {
-            if (menu && menu.visible) {
-                menu.visible = false;
+            if (menu) {
+                try {
+                    menu.visible = false;
+                } catch(e) {}
             }
         }
-        openMenus = [];
+        if (typeof DynamicIslandService !== "undefined") {
+            DynamicIslandService.close();
+        }
+        if (typeof CenterState !== "undefined") {
+            CenterState.close();
+        }
+        if (typeof QuickSettingsService !== "undefined") {
+            QuickSettingsService.close();
+        }
     }
 }
+

@@ -24,8 +24,13 @@ PanelWindow {
     }
 
     mask: Region {
-        item: mainCard
+        item: backdropMouseArea
     }
+
+
+    Component.onDestruction: MenuService.unregister(overlayRoot)
+
+
 
     onVisibleChanged: {
         if (visible) {
@@ -37,6 +42,7 @@ PanelWindow {
             mainCard.scale = 0.95;
         }
     }
+
 
     // Ultra-smooth spring entrance animation
     ParallelAnimation {
@@ -70,9 +76,11 @@ PanelWindow {
 
     // Dismiss overlay backdrop click
     MouseArea {
+        id: backdropMouseArea
         anchors.fill: parent
         onClicked: DynamicIslandService.close()
     }
+
 
     // Centered Results Container below the Top Bar Center Widget
     Item {

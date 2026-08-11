@@ -31,6 +31,8 @@ PanelWindow {
         item: mainContent
     }
 
+    Component.onDestruction: MenuService.unregister(root)
+
     onVisibleChanged: {
         Variables.quickSettingsOpen = visible;
         if (visible) {
@@ -46,6 +48,7 @@ PanelWindow {
             mainTranslate.y = -6;
         }
     }
+
 
     ParallelAnimation {
         id: showAnim

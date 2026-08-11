@@ -20,6 +20,18 @@ Scope {
     // --- INSTANT IPC VIA NAMED PIPE (FIFO) ---
     property string cmdPath: Quickshell.env("HOME") + "/.cache/zenith_fifo"
     
+    // --- NATIVE HYPRLAND GLOBAL SHORTCUTS ---
+    GlobalShortcut { appid: "zenith"; name: "launcher"; onPressed: handleCommand("launcher") }
+    GlobalShortcut { appid: "zenith"; name: "dashboard"; onPressed: handleCommand("dashboard") }
+    GlobalShortcut { appid: "zenith"; name: "wallpaper"; onPressed: handleCommand("wallpaper") }
+    GlobalShortcut { appid: "zenith"; name: "ai"; onPressed: handleCommand("ai") }
+    GlobalShortcut { appid: "zenith"; name: "pomodoro"; onPressed: handleCommand("pomodoro") }
+    GlobalShortcut { appid: "zenith"; name: "volume"; onPressed: handleCommand("volume") }
+    GlobalShortcut { appid: "zenith"; name: "close"; onPressed: handleCommand("close") }
+    GlobalShortcut { appid: "zenith"; name: "clipboard"; onPressed: handleCommand("clipboard") }
+    GlobalShortcut { appid: "zenith"; name: "emoji"; onPressed: handleCommand("emoji") }
+    GlobalShortcut { appid: "zenith"; name: "power"; onPressed: handleCommand("power") }
+    
     Process {
         id: ipcReader
         command: ["sh", "-c", "mkdir -p $HOME/.cache && (rm -f " + cmdPath + " 2>/dev/null; mkfifo " + cmdPath + " 2>/dev/null || true) && while true; do cat " + cmdPath + " 2>/dev/null || sleep 0.1; done"]

@@ -11,12 +11,15 @@ import "../../services"
 PopupWindow {
     id: menuRoot
     
+    Component.onDestruction: MenuService.unregister(menuRoot)
+
     onVisibleChanged: {
         if (visible) MenuService.register(menuRoot)
         else MenuService.unregister(menuRoot)
     }
 
     property var anchorItem: null
+
 
     visible: false
     color: "transparent"

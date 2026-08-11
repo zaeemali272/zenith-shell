@@ -29,6 +29,8 @@ PanelWindow {
         item: mainContent
     }
 
+    Component.onDestruction: MenuService.unregister(root)
+
     onVisibleChanged: {
         if (visible) {
             MenuService.register(root);
@@ -41,6 +43,7 @@ PanelWindow {
             mainTranslate.y = -6;
         }
     }
+
 
     ParallelAnimation {
         id: showAnim

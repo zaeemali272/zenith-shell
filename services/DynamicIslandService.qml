@@ -434,8 +434,10 @@ QtObject {
 
     function copyEmoji(emojiChar) {
         if (!emojiChar) return;
-        execProc.command = ["sh", "-c", "echo -n '" + emojiChar + "' | wl-copy"];
+        let safeEmoji = emojiChar.replace(/'/g, "'\\''");
+        execProc.command = ["sh", "-c", "printf '%s' '" + safeEmoji + "' | wl-copy"];
         execProc.running = true;
         close();
     }
 }
+

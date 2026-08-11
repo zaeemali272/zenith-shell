@@ -418,33 +418,56 @@ RowLayout {
                         event.accepted = true;
                     }
 
-                    Keys.onDownPressed: {
-                        let maxIdx = 0;
-                        if (DynamicIslandService.activeMode === "launcher") {
-                            maxIdx = DynamicIslandService.displayedApps.length - 1;
-                        } else if (DynamicIslandService.activeMode === "clipboard") {
-                            maxIdx = DynamicIslandService.displayedClips.length - 1;
-                        } else if (DynamicIslandService.activeMode === "emoji") {
-                            maxIdx = DynamicIslandService.displayedEmojis.length - 1;
-                        }
-                        if (maxIdx >= 0) {
-                            DynamicIslandService.selectedIndex = Math.min(maxIdx, DynamicIslandService.selectedIndex + 1);
+                    Keys.onLeftPressed: (event) => {
+                        if (DynamicIslandService.activeMode === "emoji") {
+                            let maxIdx = DynamicIslandService.displayedEmojis.length - 1;
+                            if (maxIdx >= 0) {
+                                DynamicIslandService.selectedIndex = Math.max(0, DynamicIslandService.selectedIndex - 1);
+                                event.accepted = true;
+                            }
                         }
                     }
 
-                    Keys.onUpPressed: {
+                    Keys.onRightPressed: (event) => {
+                        if (DynamicIslandService.activeMode === "emoji") {
+                            let maxIdx = DynamicIslandService.displayedEmojis.length - 1;
+                            if (maxIdx >= 0) {
+                                DynamicIslandService.selectedIndex = Math.min(maxIdx, DynamicIslandService.selectedIndex + 1);
+                                event.accepted = true;
+                            }
+                        }
+                    }
+
+                    Keys.onDownPressed: (event) => {
                         let maxIdx = 0;
                         if (DynamicIslandService.activeMode === "launcher") {
                             maxIdx = DynamicIslandService.displayedApps.length - 1;
+                            if (maxIdx >= 0) DynamicIslandService.selectedIndex = Math.min(maxIdx, DynamicIslandService.selectedIndex + 1);
                         } else if (DynamicIslandService.activeMode === "clipboard") {
                             maxIdx = DynamicIslandService.displayedClips.length - 1;
+                            if (maxIdx >= 0) DynamicIslandService.selectedIndex = Math.min(maxIdx, DynamicIslandService.selectedIndex + 1);
                         } else if (DynamicIslandService.activeMode === "emoji") {
                             maxIdx = DynamicIslandService.displayedEmojis.length - 1;
+                            if (maxIdx >= 0) DynamicIslandService.selectedIndex = Math.min(maxIdx, DynamicIslandService.selectedIndex + 12);
                         }
-                        if (maxIdx >= 0) {
-                            DynamicIslandService.selectedIndex = Math.max(0, DynamicIslandService.selectedIndex - 1);
-                        }
+                        if (event) event.accepted = true;
                     }
+
+                    Keys.onUpPressed: (event) => {
+                        let maxIdx = 0;
+                        if (DynamicIslandService.activeMode === "launcher") {
+                            maxIdx = DynamicIslandService.displayedApps.length - 1;
+                            if (maxIdx >= 0) DynamicIslandService.selectedIndex = Math.max(0, DynamicIslandService.selectedIndex - 1);
+                        } else if (DynamicIslandService.activeMode === "clipboard") {
+                            maxIdx = DynamicIslandService.displayedClips.length - 1;
+                            if (maxIdx >= 0) DynamicIslandService.selectedIndex = Math.max(0, DynamicIslandService.selectedIndex - 1);
+                        } else if (DynamicIslandService.activeMode === "emoji") {
+                            maxIdx = DynamicIslandService.displayedEmojis.length - 1;
+                            if (maxIdx >= 0) DynamicIslandService.selectedIndex = Math.max(0, DynamicIslandService.selectedIndex - 12);
+                        }
+                        if (event) event.accepted = true;
+                    }
+
 
                     Keys.onReturnPressed: handleEnter()
                     Keys.onEnterPressed: handleEnter()

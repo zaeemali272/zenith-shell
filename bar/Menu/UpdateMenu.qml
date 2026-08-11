@@ -6,10 +6,21 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
 
+import "../../services"
+
 PopupWindow {
     id: root
 
+    Component.onDestruction: MenuService.unregister(root)
+
+    onVisibleChanged: {
+        if (visible) MenuService.register(root);
+        else MenuService.unregister(root);
+    }
+
+
     property var zenithData: ({exists: false, updates: 0, commits: []})
+
     property var shellData: ({exists: false, updates: 0, commits: []})
     
     visible: false

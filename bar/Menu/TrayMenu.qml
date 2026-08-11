@@ -11,12 +11,15 @@ import "../../services"
 PopupWindow {
     id: root
 
+    Component.onDestruction: MenuService.unregister(root)
+
     onVisibleChanged: {
         if (visible) MenuService.register(root)
         else MenuService.unregister(root)
     }
 
     property var menuHandle: null
+
     property var currentItem: null
     property var parentMenu: null
 

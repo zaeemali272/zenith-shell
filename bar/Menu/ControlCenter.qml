@@ -30,6 +30,8 @@ PanelWindow {
         item: mainContent
     }
 
+    Component.onDestruction: MenuService.unregister(root)
+
     onVisibleChanged: {
         Variables.controlCenterOpen = visible;
         if (visible) {
@@ -48,6 +50,7 @@ PanelWindow {
             mainTranslate.y = -6;
         }
     }
+
 
     ParallelAnimation {
         id: showAnim
