@@ -45,6 +45,7 @@ is_running() {
 send_cmd() {
     local cmd="$1"
     if [ "$cmd" != "launcher" ]; then
+        "$SHELL_DIR/scripts/super_launcher.sh" mark_combo 2>/dev/null || true
         mark_combo
     fi
     if ! is_running; then
@@ -52,7 +53,10 @@ send_cmd() {
         quickshell -d -p "$SHELL_DIR" &
         sleep 0.6
     fi
-    python3 -c "import os, sys; p=sys.argv[1]; c=sys.argv[2]; f=os.open(p, os.O_WRONLY|os.O_NONBLOCK); os.write(f, (c+'\n').encode()); os.close(f)" "$FIFO_FILE" "$cmd" 2>/dev/null || (echo "$cmd" > "$FIFO_FILE" 2>/dev/null &)
+    quickshell ipc -p "$SHELL_DIR" call zenith:menu toggle "$cmd" 2>/dev/null || \
+    quickshell ipc call zenith:menu toggle "$cmd" 2>/dev/null || \
+    python3 -c "import os, sys; p=sys.argv[1]; c=sys.argv[2]; f=os.open(p, os.O_WRONLY|os.O_NONBLOCK); os.write(f, (c+'\n').encode()); os.close(f)" "$FIFO_FILE" "$cmd" 2>/dev/null || \
+    (echo "$cmd" > "$FIFO_FILE" 2>/dev/null &)
 }
 
 

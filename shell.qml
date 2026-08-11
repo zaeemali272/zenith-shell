@@ -17,6 +17,26 @@ Scope {
     readonly property var _media: MediaPlayerService
     readonly property var _productivity: ProductivityService
 
+    // --- IPC HANDLER FOR ZENITH:MENU ---
+    IpcHandler {
+        target: "zenith:menu"
+
+        function toggle(drawer: string): void {
+            handleCommand(drawer);
+        }
+
+        function launcher(): void { handleCommand("launcher"); }
+        function dashboard(): void { handleCommand("dashboard"); }
+        function wallpaper(): void { handleCommand("wallpaper"); }
+        function ai(): void { handleCommand("ai"); }
+        function pomodoro(): void { handleCommand("pomodoro"); }
+        function volume(): void { handleCommand("volume"); }
+        function clipboard(): void { handleCommand("clipboard"); }
+        function emoji(): void { handleCommand("emoji"); }
+        function power(): void { handleCommand("power"); }
+        function close(): void { handleCommand("close"); }
+    }
+
     // --- INSTANT IPC VIA NAMED PIPE (FIFO) ---
     property string cmdPath: Quickshell.env("HOME") + "/.cache/zenith_fifo"
     
