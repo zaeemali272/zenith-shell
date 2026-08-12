@@ -11,5 +11,5 @@ QtObject {
     property int marginBottom: 0
     property real opacity: 0.92
     property bool entryAnimation: true
-    property int animationDuration: 800
+    property int animationDuration: 350
 }

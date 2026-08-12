@@ -40,7 +40,14 @@ Item {
 
     Component.onCompleted: {
         loadCache.running = true;
-        refresh();
+    }
+
+    Timer {
+        id: weatherStartupTimer
+        interval: 1200
+        running: true
+        repeat: false
+        onTriggered: refresh()
     }
 
     Process {

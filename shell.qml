@@ -135,29 +135,21 @@ Scope {
 
     Bar {
         id: bar
-        controlCenterMenuRef: controlCenterLoader.item
+        controlCenterMenuRef: controlCenterMenu
     }
 
-    Loader {
-        id: controlCenterLoader
-        active: CenterState.qsVisible
-        sourceComponent: Component {
-            ControlCenter {
-                parentWindow: bar
-                Component.onCompleted: CenterState.menuRef = this
-            }
-        }
+    ControlCenter {
+        id: controlCenterMenu
+        parentWindow: bar
+        visible: CenterState.qsVisible
+        Component.onCompleted: CenterState.menuRef = this
     }
 
-    Loader {
-        id: quickSettingsLoader
-        active: QuickSettingsService.qsVisible
-        sourceComponent: Component {
-            QuickSettingsMenu {
-                parentWindow: bar
-                Component.onCompleted: QuickSettingsService.menuRef = this
-            }
-        }
+    QuickSettingsMenu {
+        id: quickSettingsMenu
+        parentWindow: bar
+        visible: QuickSettingsService.qsVisible
+        Component.onCompleted: QuickSettingsService.menuRef = this
     }
 
     NotificationPopup {
@@ -168,12 +160,9 @@ Scope {
         id: osdPopup
     }
 
-    Loader {
-        id: dynamicIslandOverlayLoader
-        active: DynamicIslandService.active
-        sourceComponent: Component {
-            DynamicIslandOverlay {}
-        }
+    DynamicIslandOverlay {
+        id: dynamicIslandOverlay
+        visible: DynamicIslandService.active
     }
 
     Loader {

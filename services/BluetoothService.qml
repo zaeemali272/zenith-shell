@@ -291,5 +291,11 @@ print(json.dumps({
         onTriggered: btMonitor.running = true
     }
 
-    Component.onCompleted: refresh(false)
+    Timer {
+        id: btStartupTimer
+        interval: 800
+        running: true
+        repeat: false
+        onTriggered: root.refresh(false)
+    }
 }

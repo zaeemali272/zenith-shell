@@ -56,21 +56,21 @@ PanelWindow {
             target: mainContent
             property: "opacity"
             from: 0; to: 1
-            duration: Theme.animNormal
+            duration: Theme.animFast
             easing.type: Theme.animEasing
         }
         NumberAnimation {
             target: mainContent
             property: "scale"
             from: 0.94; to: 1.0
-            duration: Theme.animNormal
+            duration: Theme.animFast
             easing.type: Theme.animEasing
         }
         NumberAnimation {
             target: mainTranslate
             property: "y"
             from: -6; to: 0
-            duration: Theme.animNormal
+            duration: Theme.animFast
             easing.type: Theme.animEasing
         }
     }
@@ -208,11 +208,16 @@ PanelWindow {
                     contentItem: Rectangle { radius: 999; color: Theme.accentColor; opacity: 0.6 }
                 }
 
-                NumberAnimation { id: fadeAnim; target: contentStack; property: "opacity"; from: 0; to: 1; duration: Theme.animFast }
+                ParallelAnimation {
+                    id: transitionAnim
+                    NumberAnimation { target: contentStack; property: "opacity"; from: 0; to: 1; duration: 250; easing.type: Easing.OutQuad }
+                    NumberAnimation { target: contentTranslate; property: "y"; from: 8; to: 0; duration: 250; easing.type: Easing.OutQuad }
+                }
 
                 StackLayout {
                     id: contentStack
                     width: scrollArea.availableWidth
+                    transform: Translate { id: contentTranslate }
                     height: {
                         if (currentIndex >= 0 && currentIndex < children.length && children[currentIndex]) {
                             return children[currentIndex].implicitHeight || 420;
@@ -221,7 +226,7 @@ PanelWindow {
                     }
                     currentIndex: ["network", "bluetooth", "volume", "powerprofile", "battery", "power"].indexOf(QuickSettingsService.activeTab)
 
-                    onCurrentIndexChanged: fadeAnim.restart()
+                    onCurrentIndexChanged: transitionAnim.restart()
 
                     WifiContent { id: wifiContent }
                     BluetoothContent { }

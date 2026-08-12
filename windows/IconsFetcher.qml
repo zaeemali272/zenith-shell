@@ -127,6 +127,13 @@ QtObject {
     }
 
     function getValidIcon(appName, desktopEntry, iconName) {
+        let raw = (iconName || "").trim();
+        if (raw !== "" && !raw.startsWith("/") && !raw.startsWith("file://")) {
+            if (Quickshell.hasThemeIcon(raw)) {
+                return "image://icon/" + raw;
+            }
+        }
+
         let candidates = getIconCandidates(appName, desktopEntry, iconName);
         
         for (let cand of candidates) {

@@ -54,9 +54,9 @@ PanelWindow {
 
     ParallelAnimation {
         id: showAnim
-        NumberAnimation { target: mainContent; property: "opacity"; from: 0; to: 1; duration: Theme.animNormal; easing.type: Theme.animEasing }
-        NumberAnimation { target: mainContent; property: "scale"; from: 0.94; to: 1.0; duration: Theme.animNormal; easing.type: Theme.animEasing }
-        NumberAnimation { target: mainTranslate; property: "y"; from: -6; to: 0; duration: Theme.animNormal; easing.type: Theme.animEasing }
+        NumberAnimation { target: mainContent; property: "opacity"; from: 0; to: 1; duration: Theme.animFast; easing.type: Theme.animEasing }
+        NumberAnimation { target: mainContent; property: "scale"; from: 0.94; to: 1.0; duration: Theme.animFast; easing.type: Theme.animEasing }
+        NumberAnimation { target: mainTranslate; property: "y"; from: -6; to: 0; duration: Theme.animFast; easing.type: Theme.animEasing }
     }
 
     // --- DISMISS ON OUTER CLICK ---
@@ -229,12 +229,20 @@ PanelWindow {
                 }
             }
 
+            ParallelAnimation {
+                id: fadeAnim
+                NumberAnimation { target: contentStack; property: "opacity"; from: 0; to: 1; duration: 250; easing.type: Easing.OutQuad }
+                NumberAnimation { target: contentTranslate; property: "y"; from: 8; to: 0; duration: 250; easing.type: Easing.OutQuad }
+            }
+
             // --- CONTENT AREA ---
             StackLayout {
                 id: contentStack
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 currentIndex: ["Default", "Pomodoro", "Wallpaper", "AI Agent"].indexOf(CenterState.activeTab)
+                transform: Translate { id: contentTranslate }
+                onCurrentIndexChanged: fadeAnim.restart()
 
                 // Default Tab
                 GridLayout {

@@ -407,7 +407,11 @@ RowLayout {
                     onTextChanged: {
                         if (DynamicIslandService.active && text !== DynamicIslandService.query) {
                             DynamicIslandService.query = text;
-                            DynamicIslandService.rebuildFiltered();
+                            Qt.callLater(() => {
+                                if (text === DynamicIslandService.query) {
+                                    DynamicIslandService.rebuildFiltered();
+                                }
+                            });
                         }
                     }
 

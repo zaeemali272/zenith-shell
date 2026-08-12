@@ -149,5 +149,11 @@ Item {
         onTriggered: nmMonitor.running = true
     }
 
-    Component.onCompleted: service.refresh()
+    Timer {
+        id: wifiStartupTimer
+        interval: 600
+        running: true
+        repeat: false
+        onTriggered: service.refresh()
+    }
 }

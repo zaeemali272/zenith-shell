@@ -52,7 +52,7 @@ PanelWindow {
             property: "opacity"
             from: 0
             to: 1
-            duration: 320
+            duration: 180
             easing.type: Easing.OutCubic
         }
         NumberAnimation {
@@ -60,16 +60,16 @@ PanelWindow {
             property: "scale"
             from: 0.92
             to: 1.0
-            duration: 450
+            duration: 220
             easing.type: Easing.OutBack
-            easing.overshoot: 1.2
+            easing.overshoot: 1.15
         }
         NumberAnimation {
             target: mainCard
             property: "y"
-            from: (Shell.Theme.barHeight || 40) - 10
+            from: (Shell.Theme.barHeight || 40) - 8
             to: (Shell.Theme.barHeight || 40) + (Shell.Theme.barMarginTop || 8) + Shell.Theme.scaled(8)
-            duration: 400
+            duration: 200
             easing.type: Easing.OutExpo
         }
     }

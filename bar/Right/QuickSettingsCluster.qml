@@ -29,8 +29,8 @@ Item {
     readonly property int batPercent: Math.max(0, Math.min(100, BatteryService.percentage))
     readonly property string batState: BatteryService.status
     readonly property bool acOnline: BatteryService.acOnline
-    readonly property color batFillCol: batPercent <= 15 ? "#ef4444" : Qt.rgba(1, 1, 1, 0.35)
-    readonly property color batBorderCol: batPercent <= 15 ? "#ef4444" : Qt.rgba(1, 1, 1, 0.6)
+    readonly property color batFillCol: batPercent <= 15 ? "#ef4444" : Qt.rgba(1, 1, 1, 0.22)
+    readonly property color batBorderCol: batPercent <= 15 ? "#ef4444" : "#ffffff"
 
     function batteryIcon(p, state, ac) {
         const isLimitActive = (state === "not charging" || state === "full" || state === "idle") && ac;
@@ -45,8 +45,9 @@ Item {
     }
 
     function batteryColor(p, state, ac) {
-        if (p <= 15) return "#ef4444";
-        return "#ffffff";
+        if (state === "charging") return Theme.powerGreen;
+        if (p <= 15) return Theme.red;
+        return Theme.fontColor;
     }
 
     // Outer Glass Container (No line spacers, clean rounded pills layout)
@@ -54,7 +55,7 @@ Item {
         id: outerContainer
         height: Theme.pillHeight
         implicitHeight: Theme.pillHeight
-        width: clusterRow.implicitWidth + Theme.scaled(12)
+        width: clusterRow.implicitWidth + Theme.scaled(8) + Theme.scaled(14)
         implicitWidth: width
         radius: height / 2
         color: Theme.pillColor
@@ -64,14 +65,16 @@ Item {
 
         Behavior on width {
             NumberAnimation {
-                duration: 250
-                easing.type: Easing.OutCubic
+                duration: 350
+                easing.type: Easing.OutExpo
             }
         }
 
         RowLayout {
             id: clusterRow
-            anchors.centerIn: parent
+            anchors.left: parent.left
+            anchors.leftMargin: Theme.scaled(8)
+            anchors.verticalCenter: parent.verticalCenter
             spacing: Theme.scaled(4)
 
             // ================= MICROPHONE SUB-WIDGET =================
@@ -101,7 +104,7 @@ Item {
                     Text {
                         text: VolumeService.micMuted ? "\uf131" : "\uf130"
                         font.family: Theme.iconFont
-                        font.pixelSize: Theme.iconSize
+                        font.pixelSize: Theme.scaled(Theme.iconSize + 1)
                         color: VolumeService.micMuted ? Theme.red : Theme.accentColor
                         Layout.alignment: Qt.AlignVCenter
                     }
@@ -126,7 +129,7 @@ Item {
                 id: volSubBtn
                 height: Theme.scaled(28)
                 implicitHeight: Theme.scaled(28)
-                implicitWidth: volLayout.implicitWidth + Theme.scaled(14)
+                implicitWidth: volLayout.implicitWidth + Theme.scaled(10)
                 Layout.preferredWidth: implicitWidth
                 Layout.preferredHeight: implicitHeight
                 Layout.alignment: Qt.AlignVCenter
@@ -168,7 +171,7 @@ Item {
                     Text {
                         text: root.volumeIcon(VolumeService.outputVolume, VolumeService.muted)
                         font.family: Theme.iconFont
-                        font.pixelSize: Theme.iconSize
+                        font.pixelSize: Theme.scaled(Theme.iconSize + 1)
                         color: VolumeService.btActive ? Theme.bluetoothColor : Theme.fontColor
                         Layout.alignment: Qt.AlignVCenter
                     }
@@ -220,7 +223,7 @@ Item {
                 id: btSubBtn
                 height: Theme.scaled(28)
                 implicitHeight: Theme.scaled(28)
-                implicitWidth: btLayout.implicitWidth + Theme.scaled(14)
+                implicitWidth: btLayout.implicitWidth + Theme.scaled(10)
                 Layout.preferredWidth: implicitWidth
                 Layout.preferredHeight: implicitHeight
                 Layout.alignment: Qt.AlignVCenter
@@ -242,7 +245,7 @@ Item {
                     Text {
                         text: BluetoothService.powered ? Theme.btIcon : "󰂲"
                         font.family: Theme.iconFont
-                        font.pixelSize: Theme.iconSize
+                        font.pixelSize: Theme.scaled(Theme.iconSize + 1)
                         color: BluetoothService.connected ? Theme.bluetoothColor : (BluetoothService.powered ? Theme.fontColor : Theme.inactiveTextColor)
                         Layout.alignment: Qt.AlignVCenter
                     }
@@ -261,12 +264,12 @@ Item {
                 }
             }
 
-            // ================= REDESIGNED VIBRANT BATTERY SUB-WIDGET =================
+            // ================= BATTERY SUB-WIDGET =================
             Item {
                 id: batSubBtn
                 height: Theme.scaled(28)
                 implicitHeight: Theme.scaled(28)
-                implicitWidth: batLayout.implicitWidth + Theme.scaled(18)
+                implicitWidth: batLayout.implicitWidth + Theme.scaled(10)
                 Layout.preferredWidth: implicitWidth
                 Layout.preferredHeight: implicitHeight
                 Layout.alignment: Qt.AlignVCenter
@@ -276,7 +279,6 @@ Item {
                     anchors.fill: parent
                     radius: height / 2
                     color: batMouse.containsMouse ? Theme.surfaceContainerHigh : "transparent"
-                    border.width: 0
 
                     Behavior on color { ColorAnimation { duration: 150 } }
                 }
@@ -284,60 +286,32 @@ Item {
                 RowLayout {
                     id: batLayout
                     anchors.centerIn: parent
-                    spacing: 0
+                    spacing: Theme.scaled(4)
 
-                    // Main Battery Capsule Body
-                    Rectangle {
-                        id: batCapsule
-                        width: Theme.scaled(35)
-                        height: Theme.scaled(14)
-                        radius: Theme.scaled(3.5)
-                        color: Qt.rgba(0, 0, 0, 0.5)
-                        border.color: root.batBorderCol
-                        border.width: 1.2
+                    // Vertical Battery Icon matching other cluster icons
+                    Text {
+                        text: root.batteryIcon(root.batPercent, root.batState, root.acOnline)
+                        font.family: Theme.iconFont
+                        font.pixelSize: Theme.scaled(Theme.iconSize + 1)
+                        color: root.batteryColor(root.batPercent, root.batState, root.acOnline)
                         Layout.alignment: Qt.AlignVCenter
-                        clip: true
 
-                        // Battery Level Fill Bar (Translucent Grayish White, Red when Critical)
-                        Rectangle {
-                            anchors.left: parent.left
-                            anchors.top: parent.top
-                            anchors.bottom: parent.bottom
-                            anchors.margins: 1.2
-                            width: Math.max(0, (parent.width - 2.4) * (root.batPercent / 100))
-                            radius: Theme.scaled(2)
-                            color: root.batFillCol
-
-                            Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
-                            Behavior on color { ColorAnimation { duration: 300 } }
-                        }
-
-                        // Percentage & State Text Centered Directly Inside Battery Capsule Icon (Pure White Text)
-                        Text {
-                            anchors.centerIn: parent
-                            text: (root.batState === "charging" ? "⚡" : "") + (root.batPercent >= 0 ? root.batPercent : 0) + "%"
-                            color: "#ffffff"
-                            font.pixelSize: Theme.scaled(9.5)
-                            font.weight: Font.Black
-                            font.family: "JetBrains Mono"
-                            style: Text.Outline
-                            styleColor: "#000000"
-
-                            SequentialAnimation on opacity {
-                                running: root.batState === "charging"
-                                loops: Animation.Infinite
-                                NumberAnimation { from: 1.0; to: 0.4; duration: 600 }
-                                NumberAnimation { from: 0.4; to: 1.0; duration: 600 }
-                            }
+                        SequentialAnimation on opacity {
+                            running: root.batState === "charging"
+                            loops: Animation.Infinite
+                            NumberAnimation { from: 1.0; to: 0.4; duration: 600 }
+                            NumberAnimation { from: 0.4; to: 1.0; duration: 600 }
                         }
                     }
 
-                    // Battery Terminal Nipple (Right Tip)
-                    Rectangle {
-                        width: Theme.scaled(1.8)
-                        height: Theme.scaled(5)
-                        radius: Theme.scaled(0.9)
-                        color: root.batBorderCol
+                    // Percentage Text (Shown ONLY when battery <= 20% or on mouse hover)
+                    Text {
+                        visible: root.batPercent <= 20 || batMouse.containsMouse
+                        text: (root.batPercent >= 0 ? root.batPercent : 0) + "%"
+                        font.pixelSize: Theme.fontSize
+                        font.family: "JetBrains Mono"
+                        font.weight: Font.Bold
+                        color: root.batteryColor(root.batPercent, root.batState, root.acOnline)
                         Layout.alignment: Qt.AlignVCenter
                     }
                 }
@@ -359,7 +333,7 @@ Item {
                 id: pwrSubBtn
                 height: Theme.scaled(28)
                 implicitHeight: Theme.scaled(28)
-                implicitWidth: Theme.scaled(28)
+                implicitWidth: Theme.scaled(24)
                 Layout.preferredWidth: implicitWidth
                 Layout.preferredHeight: implicitHeight
                 Layout.alignment: Qt.AlignVCenter
@@ -377,7 +351,7 @@ Item {
                     text: ""
                     color: pwrMouse.containsMouse ? Theme.powerRed : Theme.fontColor
                     font.family: Theme.iconFont
-                    font.pixelSize: Theme.iconSize
+                    font.pixelSize: Theme.scaled(Theme.iconSize + 1)
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
 

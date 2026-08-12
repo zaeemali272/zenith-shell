@@ -91,9 +91,16 @@ QtObject {
         }
     }
 
+    property var diStartupTimer: Timer {
+        id: diStartupTimer
+        interval: 300
+        running: true
+        repeat: false
+        onTriggered: loadUsage.running = true
+    }
+
     Component.onCompleted: {
         rebuildAppCache();
-        loadUsage.running = true;
     }
 
     // --- CONTROLS ---
@@ -196,7 +203,9 @@ QtObject {
             cache.push({
                 entry: entry,
                 id: appId,
+                idLower: appId.toLowerCase(),
                 name: name,
+                nameLower: name.toLowerCase(),
                 icon: entry.icon || "",
                 genericName: genericName,
                 comment: comment,
@@ -251,8 +260,8 @@ QtObject {
         // Filter pre-indexed apps
         for (let i = 0; i < allAppsCache.length; i++) {
             let app = allAppsCache[i];
-            let nameLower = app.name.toLowerCase();
-            let idLower = app.id.toLowerCase();
+            let nameLower = app.nameLower;
+            let idLower = app.idLower;
 
             if (app.searchKey.includes(q)) {
                 let usage = usageMap[app.id] || 0;
@@ -268,6 +277,7 @@ QtObject {
                     entry: app.entry,
                     id: app.id,
                     name: app.name,
+                    nameLower: nameLower,
                     icon: app.icon,
                     genericName: app.genericName,
                     comment: app.comment,
@@ -278,7 +288,9 @@ QtObject {
 
         results.sort((a, b) => {
             if (b.score !== a.score) return b.score - a.score;
-            return a.name.localeCompare(b.name);
+            let an = a.nameLower;
+            let bn = b.nameLower;
+            return an < bn ? -1 : (an > bn ? 1 : 0);
         });
 
         displayedApps = results.slice(0, 4);
