@@ -7,6 +7,7 @@ import Quickshell.Io
 import Quickshell.Hyprland
 
 import "../../services"
+import "../../Settings"
 
 PopupWindow {
     id: root
@@ -49,7 +50,7 @@ PopupWindow {
     function runUpdate(args) {
         logText.text = "Starting update for: " + args + "\n";
         
-        updateRunner.command = ["bash", "-c", Quickshell.env("HOME") + "/.config/quickshell/scripts/run_update.sh " + args];
+        updateRunner.command = ["bash", "-c", PathSettings.scriptsDir + "/run_update.sh " + args];
         updateRunner.running = true;
     }
 
@@ -244,7 +245,7 @@ PopupWindow {
 
     Process {
         id: updateProc
-        command: ["bash", Quickshell.env("HOME") + "/.config/quickshell/scripts/check_updates.sh"]
+        command: ["bash", PathSettings.scriptsDir + "/check_updates.sh"]
         stdout: StdioCollector {
             onStreamFinished: {
                 try {

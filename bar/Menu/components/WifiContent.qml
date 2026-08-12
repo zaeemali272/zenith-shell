@@ -142,9 +142,9 @@ Item {
 
                     RotationAnimation {
                         target: refreshIcon
-                        running: wifiSvc.isTesting
+                        running: wifiSvc.isRefreshing
                         from: 0; to: 360
-                        duration: 1000
+                        duration: 800
                         loops: Animation.Infinite
                     }
 
@@ -152,7 +152,7 @@ Item {
                         id: refreshMouse
                         anchors.fill: parent
                         hoverEnabled: true
-                        onClicked: wifiSvc.refresh()
+                        onClicked: wifiSvc.refresh(true)
                     }
                 }
 

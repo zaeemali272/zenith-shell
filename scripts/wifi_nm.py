@@ -83,7 +83,7 @@ def get_wifi_state(do_scan=True):
     networks = []
     if do_scan:
         # Scan WiFi list
-        scan_lines = run_cmd(["nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY,IN-USE", "dev", "wifi", "list"]).split("\n")
+        scan_lines = run_cmd(["nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY,IN-USE", "dev", "wifi", "list", "--rescan", "yes"]).split("\n")
         seen = {}
         for line in scan_lines:
             if not line:

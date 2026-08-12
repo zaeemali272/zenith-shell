@@ -3,7 +3,6 @@ singleton BluetoothService BluetoothService.qml
 singleton CaffeineService CaffeineService.qml
 singleton CenterState CenterState.qml
 singleton HyprlandService HyprlandService.qml
-singleton IconsFetcher IconsFetcher.qml
 singleton MediaPlayerService MediaPlayerService.qml
 singleton MenuService MenuService.qml
 singleton NotificationService NotificationService.qml

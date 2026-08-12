@@ -10,6 +10,7 @@ Item {
 
     readonly property string home: PathSettings.home
     readonly property string wallpaperDir: "file://" + home + "/Pictures/Wallpapers"
+    readonly property string animationDir: "file://" + home + "/Videos/Animated"
     readonly property string thumbDir: PathSettings.cacheDir + "/wallpaper_thumbs"
     readonly property string scriptPath: PathSettings.scriptsDir + "/generate_thumbnails.py"
 

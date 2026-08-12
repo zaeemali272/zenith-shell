@@ -4,9 +4,9 @@ import QtQuick.Layouts
 import QtQuick.Controls
 import QtQuick.Window
 import Quickshell
-import "./" as Shell
-import "./Settings" as Settings
-import "./windows/settings/tabs" as Tabs
+import "../" as Shell
+import "../Settings" as Settings
+import "./settings/tabs" as Tabs
 
 Window {
     id: win

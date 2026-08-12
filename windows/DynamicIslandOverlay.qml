@@ -24,7 +24,7 @@ PanelWindow {
     }
 
     mask: Region {
-        item: backdropMouseArea
+        item: mainCard
     }
 
 

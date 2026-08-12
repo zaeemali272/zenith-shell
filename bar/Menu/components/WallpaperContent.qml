@@ -151,7 +151,7 @@ ColumnLayout {
                     id: wallRepeater
                     model: FolderListModel {
                         id: wallFolderModel
-                        folder: "file://" + Quickshell.env("HOME") + "/Pictures/Wallpapers"
+                        folder: WallpaperService.wallpaperDir
                         nameFilters: ["*.jpg", "*.png", "*.jpeg", "*.webp"]
                         onCountChanged: if (root.visible) refreshThumbnails();
                     }
@@ -265,7 +265,7 @@ ColumnLayout {
                     id: animRepeater
                     model: FolderListModel {
                         id: animFolderModel
-                        folder: "file://" + Quickshell.env("HOME") + "/Videos/Animations"
+                        folder: WallpaperService.animationDir
                         nameFilters: ["*.mp4", "*.mkv", "*.webm"]
                         onCountChanged: if (root.visible) refreshThumbnails();
                     }
@@ -358,7 +358,7 @@ ColumnLayout {
         checkStatus.command = ["systemctl", "--user", "is-active", "--quiet", "zenith-slideshow.service"];
         checkStatus.running = true;
     }
-    Process { id: checkStatus; onExited: slideshowRunning = (exitCode === 0) }
+    Process { id: checkStatus; onExited: (exitCode, exitStatus) => slideshowRunning = (exitCode === 0) }
 
     // --- LOGIC FUNCTIONS ---
     function toggleSelection(path) {
@@ -400,7 +400,7 @@ ColumnLayout {
     }
     function log(msg) { logger.command = ["sh", "-c", "echo '[$(date +%T)] " + msg + "' >> " + logPath]; logger.running = true; }
 
-    Timer { id: wallDelay; property string wallPath: ""; interval: 600; onTriggered: { setWall.command = ["sh", "-c", "awww img --resize=crop '" + wallPath + "' --transition-type fade >> " + root.logPath + " 2>&1 && ~/.config/quickshell/scripts/zenith-theme.sh --autoselect"]; setWall.running = true; } }
+    Timer { id: wallDelay; property string wallPath: ""; interval: 600; onTriggered: { setWall.command = ["sh", "-c", "awww img --resize=crop '" + wallPath + "' --transition-type fade >> " + root.logPath + " 2>&1 && " + PathSettings.scriptsDir + "/zenith-theme.sh --autoselect"]; setWall.running = true; } }
     Timer { id: videoDelay; property string videoPath: ""; interval: 400; onTriggered: { mpvProcess.command = ["sh", "-c", "MONITOR=$(awww query | head -n1 | cut -d: -f1); if [ -z \"$MONITOR\" ]; then MONITOR=$(wlr-randr | head -n1 | awk '{print $1}'); fi; mpvpaper -vsf -o 'no-audio loop' $MONITOR '" + videoPath + "' >> " + root.logPath + " 2>&1"]; mpvProcess.running = true; CenterState.close(); } }
 
     Process { id: logger }

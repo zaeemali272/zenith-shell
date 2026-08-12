@@ -86,7 +86,7 @@ QtObject {
     ]
 
     property Process envDetector: Process {
-        command: ["bash", Quickshell.env("HOME") + "/.config/quickshell/scripts/detect_env.sh"]
+        command: ["bash", PathSettings.scriptsDir + "/detect_env.sh"]
         running: true
 
         stdout: SplitParser {

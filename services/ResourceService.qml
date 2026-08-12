@@ -22,7 +22,7 @@ Item {
     property var coreUsages: []
     property var coreTemps: []
 
-    readonly property string scriptPath: Quickshell.env("HOME") + "/.config/quickshell/scripts/resources.sh"
+    readonly property string scriptPath: PathSettings.scriptsDir + "/resources.sh"
 
     // Continuous streaming daemon process (Zero polling timers)
     Process {

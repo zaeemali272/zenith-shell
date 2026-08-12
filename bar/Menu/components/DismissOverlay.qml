@@ -17,6 +17,7 @@ PanelWindow {
     WlrLayershell.anchors.top: true
     WlrLayershell.anchors.bottom: true
     WlrLayershell.anchors.left: true
+    WlrLayershell.anchors.right: true
     color: "transparent"
     visible: MenuService.openMenus.length > 0 || (typeof DynamicIslandService !== "undefined" && DynamicIslandService.active)
 

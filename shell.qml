@@ -34,6 +34,7 @@ Scope {
         function clipboard(): void { handleCommand("clipboard"); }
         function emoji(): void { handleCommand("emoji"); }
         function power(): void { handleCommand("power"); }
+        function settings(): void { handleCommand("settings"); }
         function close(): void { handleCommand("close"); }
     }
 
@@ -51,6 +52,9 @@ Scope {
     GlobalShortcut { appid: "zenith"; name: "clipboard"; onPressed: handleCommand("clipboard") }
     GlobalShortcut { appid: "zenith"; name: "emoji"; onPressed: handleCommand("emoji") }
     GlobalShortcut { appid: "zenith"; name: "power"; onPressed: handleCommand("power") }
+    GlobalShortcut { appid: "zenith"; name: "settings"; onPressed: handleCommand("settings") }
+    
+    property bool settingsVisible: false
     
     Process {
         id: ipcReader
@@ -107,6 +111,8 @@ Scope {
             QuickSettingsService.toggle("battery");
         } else if (lowerAction === "power" || lowerAction === "sys") {
             QuickSettingsService.toggle("power");
+        } else if (lowerAction === "settings" || lowerAction === "config") {
+            settingsVisible = !settingsVisible;
         } else if (lowerAction === "close" || lowerAction === "close_all") {
             MenuService.closeAll();
             DynamicIslandService.close();
@@ -167,6 +173,19 @@ Scope {
         active: DynamicIslandService.active
         sourceComponent: Component {
             DynamicIslandOverlay {}
+        }
+    }
+
+    Loader {
+        id: settingsLoader
+        active: settingsVisible
+        sourceComponent: Component {
+            SettingsWindow {
+                Component.onCompleted: visible = true
+                onVisibleChanged: {
+                    if (!visible) settingsVisible = false;
+                }
+            }
         }
     }
 }

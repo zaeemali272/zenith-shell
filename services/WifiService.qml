@@ -24,18 +24,18 @@ Item {
     property string currentSpeed: "0.0 Mbps"
     property bool isTesting: false
     property bool isUserTyping: false
+    readonly property bool isRefreshing: stateProc.running
 
     signal connectionFailed(string ssid)
     signal connectionSuccess(string ssid)
 
-    readonly property string helperScript: Quickshell.env("HOME") + "/.config/quickshell/scripts/wifi_nm.py"
+    readonly property string helperScript: PathSettings.scriptsDir + "/wifi_nm.py"
 
     function refresh(fullScan) {
-        let doScan = (fullScan !== undefined) ? fullScan : Variables.quickSettingsOpen;
+        let doScan = (fullScan !== undefined) ? fullScan : (Variables.quickSettingsOpen || Variables.controlCenterOpen);
         stateProc.command = ["python3", helperScript, doScan ? "json" : "status"];
-        if (!stateProc.running) {
-            stateProc.running = true;
-        }
+        stateProc.running = false;
+        stateProc.running = true;
     }
 
     function toggleAirplane(block) {

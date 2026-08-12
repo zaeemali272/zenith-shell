@@ -2,6 +2,7 @@
 import ".."
 import "../.."
 import "../../services"
+import "../../Settings"
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -25,20 +26,27 @@ Item {
         return Theme.volLow;
     }
 
+    readonly property int batPercent: Math.max(0, Math.min(100, BatteryService.percentage))
+    readonly property string batState: BatteryService.status
+    readonly property bool acOnline: BatteryService.acOnline
+    readonly property color batFillCol: batPercent <= 15 ? "#ef4444" : Qt.rgba(1, 1, 1, 0.35)
+    readonly property color batBorderCol: batPercent <= 15 ? "#ef4444" : Qt.rgba(1, 1, 1, 0.6)
+
     function batteryIcon(p, state, ac) {
         const isLimitActive = (state === "not charging" || state === "full" || state === "idle") && ac;
         if (isLimitActive) return "";
-        if (state === "charging") return Theme.chargingIcon;
-        if (p >= Theme.high) return Theme.iconHigh;
-        if (p >= Theme.mid) return Theme.iconMid;
-        return Theme.iconLow;
+        if (state === "charging") return "󰂄";
+        if (p >= 90) return "󰁹";
+        if (p >= 75) return "󰂁";
+        if (p >= 60) return "󰁿";
+        if (p >= 40) return "󰁽";
+        if (p >= 20) return "󰁻";
+        return "󰂎";
     }
 
     function batteryColor(p, state, ac) {
-        if (ac && (state === "not charging" || state === "full")) return Theme.conserveColor;
-        if (state === "charging") return Theme.chargingColor;
-        if (p >= Theme.low) return Theme.midColor;
-        return Theme.criticalColor;
+        if (p <= 15) return "#ef4444";
+        return "#ffffff";
     }
 
     // Outer Glass Container (No line spacers, clean rounded pills layout)
@@ -253,12 +261,12 @@ Item {
                 }
             }
 
-            // ================= BATTERY SUB-WIDGET =================
+            // ================= REDESIGNED VIBRANT BATTERY SUB-WIDGET =================
             Item {
                 id: batSubBtn
                 height: Theme.scaled(28)
                 implicitHeight: Theme.scaled(28)
-                implicitWidth: batLayout.implicitWidth + Theme.scaled(16)
+                implicitWidth: batLayout.implicitWidth + Theme.scaled(18)
                 Layout.preferredWidth: implicitWidth
                 Layout.preferredHeight: implicitHeight
                 Layout.alignment: Qt.AlignVCenter
@@ -268,6 +276,7 @@ Item {
                     anchors.fill: parent
                     radius: height / 2
                     color: batMouse.containsMouse ? Theme.surfaceContainerHigh : "transparent"
+                    border.width: 0
 
                     Behavior on color { ColorAnimation { duration: 150 } }
                 }
@@ -275,24 +284,60 @@ Item {
                 RowLayout {
                     id: batLayout
                     anchors.centerIn: parent
-                    spacing: Theme.scaled(6)
+                    spacing: 0
 
-                    Text {
-                        text: root.batteryIcon(BatteryService.percentage, BatteryService.status, BatteryService.acOnline)
-                        font.family: Theme.iconFont
-                        font.pixelSize: Theme.iconSize
-                        color: root.batteryColor(BatteryService.percentage, BatteryService.status, BatteryService.acOnline)
+                    // Main Battery Capsule Body
+                    Rectangle {
+                        id: batCapsule
+                        width: Theme.scaled(35)
+                        height: Theme.scaled(14)
+                        radius: Theme.scaled(3.5)
+                        color: Qt.rgba(0, 0, 0, 0.5)
+                        border.color: root.batBorderCol
+                        border.width: 1.2
                         Layout.alignment: Qt.AlignVCenter
+                        clip: true
+
+                        // Battery Level Fill Bar (Translucent Grayish White, Red when Critical)
+                        Rectangle {
+                            anchors.left: parent.left
+                            anchors.top: parent.top
+                            anchors.bottom: parent.bottom
+                            anchors.margins: 1.2
+                            width: Math.max(0, (parent.width - 2.4) * (root.batPercent / 100))
+                            radius: Theme.scaled(2)
+                            color: root.batFillCol
+
+                            Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+                            Behavior on color { ColorAnimation { duration: 300 } }
+                        }
+
+                        // Percentage & State Text Centered Directly Inside Battery Capsule Icon (Pure White Text)
+                        Text {
+                            anchors.centerIn: parent
+                            text: (root.batState === "charging" ? "⚡" : "") + (root.batPercent >= 0 ? root.batPercent : 0) + "%"
+                            color: "#ffffff"
+                            font.pixelSize: Theme.scaled(9.5)
+                            font.weight: Font.Black
+                            font.family: "JetBrains Mono"
+                            style: Text.Outline
+                            styleColor: "#000000"
+
+                            SequentialAnimation on opacity {
+                                running: root.batState === "charging"
+                                loops: Animation.Infinite
+                                NumberAnimation { from: 1.0; to: 0.4; duration: 600 }
+                                NumberAnimation { from: 0.4; to: 1.0; duration: 600 }
+                            }
+                        }
                     }
 
-                    // Battery percentage text (Hidden when fully charged or conservative mode)
-                    Text {
-                        visible: !BatteryService.isFullyCharged && !BatteryService.isConservative
-                        text: BatteryService.percentage.toString().padStart(2, '0') + "%"
-                        color: root.batteryColor(BatteryService.percentage, BatteryService.status, BatteryService.acOnline)
-                        font.pixelSize: Theme.fontSize
-                        font.family: "JetBrains Mono"
-                        horizontalAlignment: Text.AlignHCenter
+                    // Battery Terminal Nipple (Right Tip)
+                    Rectangle {
+                        width: Theme.scaled(1.8)
+                        height: Theme.scaled(5)
+                        radius: Theme.scaled(0.9)
+                        color: root.batBorderCol
                         Layout.alignment: Qt.AlignVCenter
                     }
                 }
@@ -303,7 +348,7 @@ Item {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     acceptedButtons: Qt.LeftButton
-                    onClicked: (mouse) => {
+                    onClicked: {
                         QuickSettingsService.toggle("battery");
                     }
                 }

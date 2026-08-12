@@ -68,7 +68,7 @@ ColumnLayout {
                     Rectangle {
                         height: 22; width: pillText.implicitWidth + 30; radius: 11
                         color: BatteryService.acOnline ? Theme.powerGreen : Theme.surface1
-                        Text { id: pillText; anchors.centerIn: parent; text: BatteryService.acOnline ? "PLUGGED" : "DISCHARGING"; color: Colors.background; font.weight: Font.Black; font.pixelSize: 9 }
+                        Text { id: pillText; anchors.centerIn: parent; text: BatteryService.acOnline ? "PLUGGED" : "DISCHARGING"; color: BatteryService.acOnline ? Colors.background : Theme.text; font.weight: Font.Black; font.pixelSize: 9 }
                     }
                 }
                 Text { text: (root.isLimitActive ? "Conservative" : BatteryService.status).toUpperCase(); font.pixelSize: 10; font.weight: Font.Black; color: Theme.subtext1 }
@@ -77,7 +77,7 @@ ColumnLayout {
                     Layout.fillWidth: true; Layout.topMargin: 10; height: 8; radius: 4; color: Qt.rgba(1,1,1,0.1)
                     Rectangle {
                         width: parent.width * (BatteryService.percentage / 100); height: parent.height; radius: 4
-                        color: BatteryService.acOnline ? Theme.powerGreen : Theme.blue
+                        color: BatteryService.acOnline ? Theme.powerGreen : (BatteryService.percentage <= 20 ? Theme.red : Theme.accentColor)
                         Behavior on width { NumberAnimation { duration: 1000; easing.type: Easing.OutCubic } }
                     }
                 }

@@ -16,7 +16,18 @@ def get_xdg_dir(type_name, default_path):
 
 # Directories
 WALLPAPER_DIR = os.path.join(get_xdg_dir("PICTURES", "~/Pictures"), "Wallpapers")
-ANIMATION_DIR = os.path.join(get_xdg_dir("VIDEOS", "~/Videos"), "Animations")
+
+def get_anim_dir():
+    videos_base = get_xdg_dir("VIDEOS", "~/Videos")
+    for name in ["Animated", "Animations", "animation", "animations"]:
+        candidate = os.path.join(videos_base, name)
+        if os.path.isdir(candidate):
+            return candidate
+    default_dir = os.path.join(videos_base, "Animated")
+    os.makedirs(default_dir, exist_ok=True)
+    return default_dir
+
+ANIMATION_DIR = get_anim_dir()
 
 WALL_THUMB_DIR = os.path.expanduser("~/.cache/wallpaper_thumbs")
 ANIM_THUMB_DIR = os.path.expanduser("~/.cache/animation_thumbs")
