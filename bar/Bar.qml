@@ -145,11 +145,6 @@ PanelWindow {
             opacity: GeneralSettings.barEntryAnimation ? 0 : 1
 
             Tray { menuRef: trayPopup }
-
-            Update { 
-                id: updateWidget
-                visible: !Theme.isSmallScreen && totalUpdates > 0
-            }
             
             Network { 
                 id: wifiWidget 
