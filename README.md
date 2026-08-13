@@ -1,3 +1,5 @@
+
+
 <p align="center">
   <img src="assets/screenshots/bar.png" alt="Zenith Shell Bar">
 </p>
@@ -156,7 +158,7 @@ To automatically fetch and apply updates to Zenith Shell whenever you run `nixos
 
 Zenith Shell comes with a built-in launcher script (`launch.sh`) that communicates directly with the running shell via IPC. You can bind these commands to Hyprland keybindings or run them from terminal.
 
-### IPC Command Commands
+### IPC Commands
 
 | Action / Menu | Command | Description |
 |---|---|---|
@@ -213,4 +215,3 @@ bind = SUPER, S, exec, $qs settings
 - [Axenide/Ax-Shell](https://github.com/Axenide/Ax-Shell)
 - [caelestia-dots/shell](https://github.com/caelestia-dots/shell)
 - [end-4/dots-hyprland](https://github.com/end-4/dots-hyprland)
-
