@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Io
 import "../.."
 import "../../.."
+import "../../../Settings"
 import "./ai"
 
 Rectangle {
@@ -13,7 +14,11 @@ Rectangle {
 
     property string currentModel: "gemini"
     property bool isStreaming: false
-    property string scriptPath: Quickshell.env("HOME") + "/zenith-shell/scripts/ai_agent.py"
+    // Every other component resolves scripts through PathSettings; this file
+    // hardcoded $HOME/zenith-shell/scripts, a directory that does not exist
+    // (the shell lives at $HOME/zenith/zenith-shell, symlinked to
+    // ~/.config/quickshell), so the helper could never be launched at all.
+    property string scriptPath: PathSettings.scriptsDir + "/ai_agent.py"
     property string promptText: ""
 
     property bool statusGemini: false
@@ -44,7 +49,6 @@ Rectangle {
                     if (res.type === "keys_status") {
                         root.statusGemini = res.gemini;
                         root.statusClaude = res.claude;
-                        root.statusGroq = res.groq;
                         root.statusOllama = res.ollama;
                         if (res.keys_file) root.keysFilePath = res.keys_file;
                     }
@@ -147,14 +151,15 @@ Rectangle {
         if (!trimText) return [];
 
         let currentProvider = (root.currentModel || "gemini").toLowerCase();
+        // Variant names must match what the helper script resolves:
+        // Claude aliases map to current model IDs in ai_agent.py, and the
+        // retired 3.5-sonnet / 3-opus / 3-haiku names are gone.
         let subModels = {
-            "gemini": ["/models gemini 2.5 Flash", "/models gemini 1.5 Pro", "/models gemini 2.0 Flash"],
-            "gemini-pro": ["/models gemini 1.5 Pro", "/models gemini 2.5 Flash"],
-            "claude": ["/models claude 3.5 Sonnet", "/models claude 3 Opus", "/models claude 3 Haiku"],
-            "groq": ["/models groq Llama 3.3 70B", "/models groq Mixtral 8x7b"],
+            "gemini": ["/models gemini 2.5-flash", "/models gemini 1.5-pro", "/models gemini 2.0-flash"],
+            "claude": ["/models claude opus", "/models claude sonnet", "/models claude haiku"],
             "ollama": ["/models ollama llama3", "/models ollama mistral", "/models ollama codellama"]
         };
-        let keyProviders = ["gemini", "claude", "groq"];
+        let keyProviders = ["gemini", "claude"];
         let lower = trimText.toLowerCase();
 
         if (lower.startsWith("/models") || lower.startsWith("/model") || lower.startsWith("model") || lower.startsWith("/m")) {
@@ -220,10 +225,11 @@ Rectangle {
         root.promptText = finalText;
 
         if (cleanSug.startsWith("/models ")) {
-            let targetModel = cleanSug.split(" ")[1].trim().toLowerCase();
-            if (["gemini", "gemini-pro", "claude", "groq", "ollama"].indexOf(targetModel) !== -1) {
-                root.currentModel = targetModel;
-            }
+            // Keep the whole selection, not just the provider word. This used
+            // to take split(" ")[1], which discarded the variant -- so picking
+            // "claude opus" or "gemini 1.5-pro" silently selected only the
+            // provider and every request ran on that provider's default model.
+            root.selectModel(cleanSug.substring("/models ".length));
         }
     }
 
@@ -370,12 +376,11 @@ Rectangle {
                 let statusText = "🔑 **API Key Configuration & Status**\\n\\n" +
                     "• **Gemini**: " + (root.statusGemini ? "✅ Active" : "❌ Missing") + "\\n" +
                     "• **Claude**: " + (root.statusClaude ? "✅ Active" : "❌ Missing") + "\\n" +
-                    "• **Groq**: " + (root.statusGroq ? "✅ Active" : "❌ Missing") + "\\n" +
                     "• **Ollama**: " + (root.statusOllama ? "✅ Server Active" : "❌ Server Unreachable") + "\\n\\n" +
                     "**To save an API key locally**:\\n" +
                     "`/key gemini AIzaSy...`\\n" +
                     "`/key claude sk-ant-...`\\n" +
-                    "`/key groq gsk_...`\\n\\n" +
+                    "\\n" +
                     "Keys are saved securely in `" + (root.keysFilePath || "~/.config/zenith/ai_keys.json") + "`";
                 
                 chatModel.append({
@@ -391,8 +396,8 @@ Rectangle {
 
         if (cmd === "/models" || cmd === "/model") {
             if (args.length >= 1) {
-                let targetModel = args[0].toLowerCase();
-                if (["gemini", "gemini-pro", "claude", "groq", "ollama"].indexOf(targetModel) !== -1) {
+                let targetModel = args.join(" ").toLowerCase();
+                if (root.selectModel(targetModel)) {
                     root.currentModel = targetModel;
                     chatModel.append({
                         role: "assistant",
@@ -403,18 +408,18 @@ Rectangle {
                 } else {
                     chatModel.append({
                         role: "assistant",
-                        content: "Unknown model `" + targetModel + "`. Available: `gemini`, `gemini-pro`, `claude`, `groq`, `ollama`",
+                        content: "Unknown model `" + targetModel + "`. Available providers: `gemini`, `claude`, `ollama`",
                         modelTag: "System",
                         timestamp: Qt.formatTime(new Date(), "hh:mm A")
                     });
                 }
             } else {
                 let modelsText = "🤖 **Available AI Models**\\n\\n" +
-                    "1. `/models gemini` - Google Gemini 3.6 / Flash\\n" +
-                    "2. `/models gemini-pro` - Google Gemini Pro\\n" +
-                    "3. `/models claude` - Anthropic Claude 3.5 Sonnet\\n" +
-                    "4. `/models groq` - Groq Free Tier (Llama 3.3 70B)\\n" +
-                    "5. `/models ollama` - Ollama Local Model\\n\\n" +
+                    "`/models gemini` - Google Gemini (2.5 Flash)\\n" +
+                    "`/models claude` - Anthropic Claude (Opus 5)\\n" +
+                    "`/models ollama` - Ollama, running locally\\n\\n" +
+                    "Add a variant to pick a specific model, e.g. " +
+                    "`/models claude sonnet` or `/models ollama mistral`.\\n\\n" +
                     "Current active model: **" + getModelDisplayName(root.currentModel) + "**";
                 chatModel.append({
                     role: "assistant",
@@ -433,7 +438,7 @@ Rectangle {
                 "• `/sys` : Query active window & system metrics\\n" +
                 "• `/export` : Export chat history to Markdown file\\n" +
                 "• `/key <provider> <API_KEY>` : Store API key locally\\n" +
-                "• `/models <name>` : Switch active model (gemini, claude, groq, ollama)\\n" +
+                "• `/models <provider> [variant]` : Switch model (gemini, claude, ollama)\\n" +
                 "• `@file /path/to/file` : Attach file contents directly into prompt\\n" +
                 "• `/clear` : Clear history\\n" +
                 "• `/help` : Show command guide";
@@ -507,13 +512,33 @@ Rectangle {
         aiProcess.running = true;
     }
 
+    // Providers the helper script can actually reach. Groq used to be listed
+    // here and in the slash-command help, but its backend was removed -- the
+    // UI was advertising a provider that could never answer.
+    readonly property var aiProviders: ["gemini", "claude", "ollama"]
+
+    // Accepts "claude" or "claude opus". Returns false for an unknown provider
+    // so the caller can report it rather than silently selecting nothing.
+    function selectModel(spec) {
+        let parts = String(spec || "").trim().toLowerCase().split(/\s+/).filter(w => w !== "");
+        if (parts.length === 0) return false;
+        if (root.aiProviders.indexOf(parts[0]) === -1) return false;
+        root.currentModel = parts.join(" ");
+        return true;
+    }
+
     function getModelDisplayName(modelKey) {
-        if (modelKey === "gemini") return "Gemini 3.6 / Flash";
-        if (modelKey === "gemini-pro") return "Gemini Pro";
-        if (modelKey === "claude") return "Claude 3.5";
-        if (modelKey === "groq") return "Groq Llama 3";
-        if (modelKey === "ollama") return "Ollama Local";
-        return "AI";
+        let parts = String(modelKey || "gemini").trim().toLowerCase().split(/\s+/);
+        let labels = { "gemini": "Gemini", "claude": "Claude", "ollama": "Ollama" };
+        let name = labels[parts[0]];
+        if (!name) return "AI";
+        // Show the variant when one was chosen, so the header reflects what
+        // will actually answer rather than a hardcoded version number.
+        if (parts.length === 1) return name;
+        let variant = parts.slice(1).map(function (w) {
+            return /^[a-z]+$/.test(w) ? w.charAt(0).toUpperCase() + w.slice(1) : w;
+        }).join(" ");
+        return name + " " + variant;
     }
 
     ColumnLayout {

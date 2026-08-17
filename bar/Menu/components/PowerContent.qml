@@ -39,12 +39,17 @@ ColumnLayout {
     // Explicit sizing for ScrollView integration
     implicitHeight: mainLayout.implicitHeight
 
-    property int selectedIndex: 5 
+    // Index 0 is LOCK. This used to default to 5 -- SHUTDOWN -- and was reset
+    // to it every time the panel opened. Because the panel calls
+    // forceActiveFocus() on open and Enter activates the selection, opening
+    // the session menu and pressing Enter powered the machine off.
+    readonly property int defaultIndex: 0
+    property int selectedIndex: defaultIndex
 
     // Reset selection every time the menu is opened
     onVisibleChanged: {
         if (visible) {
-            selectedIndex = 5;
+            selectedIndex = defaultIndex;
             root.forceActiveFocus();
         }
     }
@@ -58,7 +63,7 @@ ColumnLayout {
 
 
         Text {
-            text: "SYSTEM SESSION"
+            text: "SESSION"
             color: Theme.blue
             font.pixelSize: 10
             font.weight: Font.Black

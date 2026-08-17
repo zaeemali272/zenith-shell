@@ -156,7 +156,7 @@ PanelWindow {
                                 Text {
                                     id: tabText
                                     anchors.centerIn: parent
-                                    text: modelData
+                                    text: root.tabLabel(modelData)
                                     font.pixelSize: Theme.scaled(11)
                                     font.weight: Font.Bold
                                     color: CenterState.activeTab === modelData ? Colors.on_primary : "#ffffff"
@@ -430,6 +430,19 @@ PanelWindow {
                 mainContent.Keys.forwardTo = [];
             }
         }
+    }
+
+    // The tab strings double as identifiers, so this maps identifier -> label
+    // rather than renaming them. "Default" is meaningless to a reader; the tab
+    // shows the overview cards.
+    function tabLabel(tabId) {
+        // "Pomodoro" names one technique, but the tab holds a todo list and a
+        // timer; "Focus" covers both. "AI Agent" is what it is internally --
+        // "Assistant" is what it is to the person using it.
+        if (tabId === "Default") return "Overview";
+        if (tabId === "Pomodoro") return "Focus";
+        if (tabId === "AI Agent") return "Assistant";
+        return tabId;
     }
 
     function updateFocusForTab(tab) {

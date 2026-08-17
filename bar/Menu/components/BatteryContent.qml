@@ -26,7 +26,7 @@ ColumnLayout {
     readonly property real displayWatts: BatteryService.energyRate > 1000 ? BatteryService.energyRate / 1000000 : BatteryService.energyRate
 
     Text {
-        text: "ENERGY STATION"
+        text: "BATTERY"
         color: Theme.blue
         font.pixelSize: 10
         font.weight: Font.Black

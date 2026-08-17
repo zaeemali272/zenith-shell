@@ -191,15 +191,16 @@ def fetch_dynamic_models(provider_key):
         ]
 
     if "claude" in p:
+        # 3.5-sonnet / 3-opus / 3.5-haiku are retired and 404 on the API.
         return [
-            "/models claude 3.5-sonnet",
-            "/models claude 3-opus",
-            "/models claude 3.5-haiku"
+            "/models claude opus",
+            "/models claude sonnet",
+            "/models claude haiku"
         ]
 
     return [
         "/models gemini 2.5-flash",
-        "/models claude 3.5-sonnet",
+        "/models claude opus",
         "/models ollama llama3"
     ]
 
@@ -355,7 +356,27 @@ def stream_gemini(model_key, messages, system_prompt):
     except Exception as e:
         send_event({"type": "error", "message": f"Gemini request failed: {e}"})
 
-def stream_claude(messages, system_prompt):
+# Model IDs are the current Claude generation. The previous hardcoded
+# "claude-3-5-sonnet-20241022" was RETIRED on 2025-10-28 and now returns 404 --
+# so every Claude request failed even once the dispatcher was restored.
+CLAUDE_MODELS = {
+    "opus": "claude-opus-5",
+    "sonnet": "claude-sonnet-5",
+    "haiku": "claude-haiku-4-5",
+    "opus-4-8": "claude-opus-4-8",
+}
+CLAUDE_DEFAULT_MODEL = "claude-opus-5"
+
+
+def resolve_claude_model(model_key):
+    key = (model_key or "").lower()
+    for alias, model_id in CLAUDE_MODELS.items():
+        if alias in key:
+            return model_id
+    return CLAUDE_DEFAULT_MODEL
+
+
+def stream_claude(model_key, messages, system_prompt):
     api_key = get_api_key("claude")
     if not api_key:
         send_event({"type": "error", "message": "Claude API Key missing! Set it using `/key claude sk-ant-...`"})
@@ -371,8 +392,13 @@ def stream_claude(messages, system_prompt):
         formatted_msgs.append({"role": role, "content": content_text})
 
     payload = {
-        "model": "claude-3-5-sonnet-20241022",
-        "max_tokens": 4096,
+        "model": resolve_claude_model(model_key),
+        # Thinking is ON by default on Claude Opus 5, and max_tokens caps
+        # thinking + reply together -- 4096 could truncate an answer mid-sentence.
+        "max_tokens": 8192,
+        # Medium effort keeps a desktop assistant responsive; Opus 5 stays
+        # strong well below its default high setting.
+        "output_config": {"effort": "medium"},
         "system": system_prompt,
         "messages": formatted_msgs,
         "stream": True
@@ -398,25 +424,138 @@ def stream_claude(messages, system_prompt):
                     if json_str:
                         try:
                             event = json.loads(json_str)
-                            if event.get("type") == "content_block_delta":
-                                text = event.get("delta", {}).get("text", "")
-                                if text:
-                                    send_event({"type": "token", "content": text})
+                            etype = event.get("type")
+
+                            if etype == "content_block_delta":
+                                delta = event.get("delta", {})
+                                # Only render assistant text. Thinking arrives as
+                                # thinking_delta and must not be shown as an answer.
+                                if delta.get("type") == "text_delta":
+                                    text = delta.get("text", "")
+                                    if text:
+                                        send_event({"type": "token", "content": text})
+
+                            elif etype == "message_delta":
+                                # Safety classifiers can decline a request: the
+                                # stream ends normally with stop_reason "refusal"
+                                # and no error, which would otherwise look like an
+                                # empty reply.
+                                if event.get("delta", {}).get("stop_reason") == "refusal":
+                                    send_event({
+                                        "type": "token",
+                                        "content": "\n\n_The model declined this request._"
+                                    })
                         except Exception:
                             pass
         send_event({"type": "done"})
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="ignore")
+        send_event({"type": "error", "message": f"Claude HTTP {e.code}: {body[:300]}"})
     except Exception as e:
-        send_event({"type": "error", "message": f"Claude API failed: {e}"})
+        send_event({"type": "error", "message": f"Claude request failed: {e}"})
 
-        if "gemini" in model:
-            stream_gemini(model, messages, system_prompt)
-        elif "claude" in model:
-            stream_claude(messages, system_prompt)
-        elif "ollama" in model:
-            stream_ollama(messages, system_prompt)
-        else:
-            stream_gemini("gemini", messages, system_prompt)
+def stream_ollama(model_key, messages, system_prompt):
+    """Stream from a local Ollama daemon.
+
+    This function was referenced by the dispatcher but never existed, so
+    selecting Ollama raised NameError -- which main()'s bare `except` then
+    swallowed, producing a silent no-op.
+    """
+    host = os.environ.get("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
+
+    parts = (model_key or "").split()
+    model_name = parts[-1] if len(parts) > 1 else "llama3"
+
+    formatted = []
+    if system_prompt:
+        formatted.append({"role": "system", "content": system_prompt})
+    for m in messages:
+        role = "user" if m.get("role") == "user" else "assistant"
+        content = m.get("content", "")
+        if role == "user" and "@file" in content:
+            content = ingest_file_context(content)
+        formatted.append({"role": role, "content": content})
+
+    payload = {"model": model_name, "messages": formatted, "stream": True}
+    req = urllib.request.Request(
+        host + "/api/chat",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            for line in resp:
+                line_str = line.decode("utf-8").strip()
+                if not line_str:
+                    continue
+                try:
+                    chunk = json.loads(line_str)
+                except Exception:
+                    continue
+                text = chunk.get("message", {}).get("content", "")
+                if text:
+                    send_event({"type": "token", "content": text})
+                if chunk.get("done"):
+                    break
+        send_event({"type": "done"})
+    except urllib.error.URLError as e:
+        send_event({"type": "error", "message": f"Ollama unreachable at {host}: {e}"})
+    except Exception as e:
+        send_event({"type": "error", "message": f"Ollama request failed: {e}"})
+
+
+def handle_request(req):
+    """Route one request from the shell.
+
+    This function was called by main() but never defined -- the dispatch body
+    had been absorbed into stream_claude's except block, so *every* request
+    raised NameError. Interactive requests surfaced it as
+    "Malformed request: name 'handle_request' is not defined"; the argv path
+    swallowed it entirely via `except Exception: pass`.
+    """
+    action = (req.get("action") or "prompt").lower()
+
+    if action == "save_history":
+        send_event(save_history(req.get("messages", [])))
         return
+
+    if action == "save_key":
+        provider = req.get("provider", "")
+        key_val = req.get("key", "")
+        if not provider or not key_val:
+            send_event({"type": "error", "message": "save_key needs a provider and a key"})
+            return
+        save_key_to_file(provider, key_val)
+        send_event({"type": "token", "content": f"Saved API key for `{provider}`."})
+        send_event({"type": "done"})
+        return
+
+    if action == "exec":
+        execute_shell(req.get("command", ""))
+        return
+
+    if action == "sys_info":
+        fetch_sys_metrics()
+        return
+
+    if action == "export":
+        export_chat(req.get("messages", []))
+        return
+
+    # Default: a chat prompt.
+    model = (req.get("model") or "").lower()
+    messages = req.get("messages", [])
+    system_prompt = req.get("system_prompt", "")
+
+    if "claude" in model:
+        stream_claude(model, messages, system_prompt)
+    elif "ollama" in model:
+        stream_ollama(model, messages, system_prompt)
+    else:
+        stream_gemini(model or "gemini", messages, system_prompt)
+
 
 def main():
     if len(sys.argv) > 1:
