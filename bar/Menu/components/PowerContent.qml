@@ -79,17 +79,27 @@ ColumnLayout {
 
             Repeater {
                 id: powerButtons
+                // Same reason as PowerProfileContent: a Theme.* value inside the model
+                // array makes the array itself a palette binding, so a recolour
+                // destroys and rebuilds every delegate. Resolved per delegate below.
                 model: [
-                    { icon: "󰌾", label: "LOCK",     cmd: "hyprlock --immediate-render --no-fade-in", color: Theme.lavender },
-                    { icon: "󰒲", label: "BIOS",     cmd: "systemctl reboot --firmware-setup", color: Theme.mauve },
-                    { icon: "󰗼", label: "LOGOUT",   cmd: "hyprctl dispatch exit", color: Theme.powerGreen },
-                    { icon: "󰤄", label: "SUSPEND",  cmd: "systemctl suspend", color: Theme.lavender },
-                    { icon: "󰑐", label: "REBOOT",   cmd: "reboot", color: Theme.blue },
-                    { icon: "󰐥", label: "SHUTDOWN", cmd: "shutdown now", color: Theme.powerRed }
+                    { icon: "󰌾", label: "LOCK",     cmd: "hyprlock --immediate-render --no-fade-in" },
+                    { icon: "󰒲", label: "BIOS",     cmd: "systemctl reboot --firmware-setup" },
+                    { icon: "󰗼", label: "LOGOUT",   cmd: "hyprctl dispatch exit" },
+                    { icon: "󰤄", label: "SUSPEND",  cmd: "systemctl suspend" },
+                    { icon: "󰑐", label: "REBOOT",   cmd: "reboot" },
+                    { icon: "󰐥", label: "SHUTDOWN", cmd: "shutdown now" }
                 ]
 
                 delegate: Rectangle {
                     id: powerBtn
+
+                    readonly property color accent: modelData.label === "LOGOUT"   ? Theme.powerGreen
+                                                  : modelData.label === "REBOOT"   ? Theme.blue
+                                                  : modelData.label === "SHUTDOWN" ? Theme.powerRed
+                                                  : modelData.label === "BIOS"     ? Theme.mauve
+                                                  : Theme.lavender
+
                     Layout.fillWidth: true
                     height: Theme.scaled(100)
                     anchors.margins: 2 
@@ -98,7 +108,7 @@ ColumnLayout {
                     
                     color: isSelected ? Qt.rgba(1,1,1,0.1) : (m.containsMouse ? Qt.rgba(1,1,1,0.05) : Qt.rgba(0,0,0,0.2))
                     radius: Theme.scaled(20)
-                    border.color: isSelected ? modelData.color : (m.containsMouse ? modelData.color : Theme.glassBorder)
+                    border.color: isSelected ? powerBtn.accent : (m.containsMouse ? powerBtn.accent : Theme.glassBorder)
                     border.width: 1
                     
                     scale: m.pressed ? 0.92 : (isSelected || m.containsMouse ? 1.00 : 0.95)
@@ -116,8 +126,8 @@ ColumnLayout {
                     RowLayout {
                         anchors.centerIn: parent; spacing: 15
                         Rectangle {
-                            width: 44; height: 44; radius: 12; color: Qt.rgba(modelData.color.r, modelData.color.g, modelData.color.b, 0.1)
-                            Text { anchors.centerIn: parent; text: modelData.icon; font.family: Theme.iconFont; font.pixelSize: 22; color: modelData.color }
+                            width: 44; height: 44; radius: 12; color: Qt.rgba(powerBtn.accent.r, powerBtn.accent.g, powerBtn.accent.b, 0.1)
+                            Text { anchors.centerIn: parent; text: modelData.icon; font.family: Theme.iconFont; font.pixelSize: 22; color: powerBtn.accent }
                         }
                         Text { text: modelData.label; font.pixelSize: 11; font.weight: Font.Black; color: Theme.text; opacity: 0.8 }
                     }
