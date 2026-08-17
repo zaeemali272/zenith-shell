@@ -17,6 +17,41 @@ Item {
         WifiService.refresh();
     }
 
+    // ---- LIVE REFRESH WHILE THE PANEL IS OPEN ----
+    //
+    // Component.onCompleted above runs once when the shell starts, not when
+    // the panel opens -- this content item is built with the rest of the
+    // quick-settings window and then just hidden. So opening the Wi-Fi panel
+    // never triggered a scan at all: the list you saw was whatever the last
+    // `nmcli monitor` event happened to leave behind, which is why it looked
+    // stale or empty until you hit refresh by hand.
+    //
+    // `visible` alone is not enough to mean "the user is looking at this":
+    // it tracks the StackLayout tab, but items in a hidden window still
+    // report visible, so the panel must also be open.
+    readonly property bool isShowing: root.visible && QuickSettingsService.qsVisible
+
+    onIsShowingChanged: if (isShowing) WifiService.rescan()
+
+    // Connection state, signal strength and IP are cheap (~70ms) so they can
+    // poll briskly and keep the panel feeling live.
+    Timer {
+        running: root.isShowing && !WifiService.isUserTyping
+        interval: 3000
+        repeat: true
+        onTriggered: WifiService.refresh(false)
+    }
+
+    // A full rescan drives the radio for ~5s, so it runs far less often --
+    // often enough that networks appearing or disappearing show up on their
+    // own, rarely enough that the adapter is not permanently scanning.
+    Timer {
+        running: root.isShowing && !WifiService.isUserTyping
+        interval: 20000
+        repeat: true
+        onTriggered: WifiService.refresh(true)
+    }
+
     property var wifiSvc: WifiService
     readonly property bool isAirplane: wifiSvc.isAirplane
     property string selectedSsid: ""
@@ -152,7 +187,7 @@ Item {
                         id: refreshMouse
                         anchors.fill: parent
                         hoverEnabled: true
-                        onClicked: wifiSvc.refresh(true)
+                        onClicked: wifiSvc.rescan()
                     }
                 }
 

@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Io
 import "../.."
 import "../../../"
+import "../../../services"
 
 Rectangle {
     id: todoRoot
@@ -16,10 +17,22 @@ Rectangle {
     property var todoData: [] // Central source of truth
     property int editingIndex: -1 // Track which task is being edited
 
+    property bool reloadPending: false
+
     function cancelEdit() {
         editingIndex = -1;
         inputField.visible = false;
         inputField.text = "";
+        if (reloadPending) reloadTasks();
+    }
+
+    // Re-reading mid-edit would clear the model out from under the text field,
+    // so a reload that lands while the user is typing waits for them to finish.
+    function reloadTasks() {
+        if (editingIndex !== -1 || inputField.visible) { reloadPending = true; return; }
+        reloadPending = false;
+        loadProcess.running = false;
+        loadProcess.running = true;
     }
 
     // Auto-close input fields when menu is hidden without losing data
@@ -27,6 +40,37 @@ Rectangle {
         if (!visible) {
             cancelEdit();
             tabNameInputContainer.visible = false;
+        } else if (TodoistService.hasToken) {
+            // Pull anything added from the phone or web app since last time.
+            TodoistService.syncNow();
+        }
+    }
+
+    Connections {
+        target: TodoistService
+        // The sync script rewrites todo.json in place, so re-read it rather
+        // than keeping the stale in-memory copy.
+        function onTasksChanged() {
+            todoRoot.reloadTasks();
+        }
+    }
+
+    // Every row carries the same four roles, always. A ListModel fixes its
+    // roles from the first item appended, so a task added here (no Todoist link
+    // yet) landing first would leave todoist_id unreadable on every row after
+    // it -- silently breaking the link between the two sides.
+    function fillTasksModel() {
+        tasksModel.clear();
+        if (activeTabIndex < 0 || activeTabIndex >= todoData.length) return;
+        let tasks = todoData[activeTabIndex].tasks || [];
+        for (let i = 0; i < tasks.length; i++) {
+            if (tasks[i].deleted) continue; // tombstone: awaiting push, not shown
+            tasksModel.append({
+                task: String(tasks[i].task || ""),
+                completed: !!tasks[i].completed,
+                todoist_id: String(tasks[i].todoist_id || ""),
+                dirty: !!tasks[i].dirty
+            });
         }
     }
 
@@ -35,27 +79,46 @@ Rectangle {
         for (let i = 0; i < todoData.length; i++) {
             tabsModel.append({ name: todoData[i].name });
         }
-
-        tasksModel.clear();
-        if (activeTabIndex >= 0 && activeTabIndex < todoData.length) {
-            let tasks = todoData[activeTabIndex].tasks;
-            for (let i = 0; i < tasks.length; i++) {
-                tasksModel.append(tasks[i]);
-            }
-        }
+        fillTasksModel();
     }
 
     function syncCurrentTasks() {
         if (!isLoaded || activeTabIndex < 0 || activeTabIndex >= todoData.length) return;
-        
+
         let currentTasks = [];
         for (let i = 0; i < tasksModel.count; i++) {
-            currentTasks.push({ 
-                task: tasksModel.get(i).task, 
-                completed: tasksModel.get(i).completed 
-            });
+            let row = tasksModel.get(i);
+            let entry = { task: row.task, completed: row.completed, deleted: false };
+            // Carrying todoist_id through is what keeps a task the *same* task.
+            // Rebuilding rows as bare {task, completed} dropped it, so the next
+            // sync read every task as newly created and pushed a duplicate of
+            // the entire tab.
+            if (row.todoist_id) entry.todoist_id = String(row.todoist_id);
+            if (row.dirty) entry.dirty = true;
+            currentTasks.push(entry);
         }
+
+        // Tombstones are deliberately absent from the model -- they must not
+        // appear in the list -- but they still have to reach the sync so the
+        // deletion gets replayed to Todoist.
+        let previous = todoData[activeTabIndex].tasks || [];
+        for (let j = 0; j < previous.length; j++) {
+            if (previous[j].deleted) currentTasks.push(previous[j]);
+        }
+
         todoData[activeTabIndex].tasks = currentTasks;
+    }
+
+    // Record a deletion rather than just forgetting the task: with no tombstone
+    // the next pull finds it still alive on Todoist and brings it right back.
+    function tombstoneTask(row) {
+        if (!row || String(row.todoist_id || "") === "") return;
+        todoData[activeTabIndex].tasks.push({
+            task: String(row.task || ""),
+            completed: !!row.completed,
+            todoist_id: String(row.todoist_id),
+            deleted: true
+        });
     }
 
     function saveTasks() {
@@ -70,6 +133,7 @@ Rectangle {
             jsonStr
         ];
         saveProcess.running = true;
+        pushTimer.restart();
     }
 
     function switchTab(index) {
@@ -78,13 +142,7 @@ Rectangle {
         activeTabIndex = index;
         cancelEdit();
         
-        tasksModel.clear();
-        if (activeTabIndex >= 0 && activeTabIndex < todoData.length) {
-            let tasks = todoData[activeTabIndex].tasks;
-            for (let i = 0; i < tasks.length; i++) {
-                tasksModel.append(tasks[i]);
-            }
-        }
+        fillTasksModel();
     }
 
     function addTab(name) {
@@ -103,33 +161,59 @@ Rectangle {
         id: loadProcess
         command: ["sh", "-c", "mkdir -p $(dirname '" + todoRoot.todoPath + "') && (cat '" + todoRoot.todoPath + "' 2>/dev/null || echo '[]')"]
         running: true
-        stdout: SplitParser {
-            onRead: (text) => {
-                let output = text.trim();
-                if (output === "" || output === "[]") {
-                    todoData = [{ name: "General", tasks: [] }];
-                    todoRoot.isLoaded = true;
-                    updateModels();
-                    return;
-                }
-                try {
-                    let content = JSON.parse(output);
-                    if (Array.isArray(content)) {
-                        if (content.length > 0 && content[0].tasks === undefined) {
-                            todoData = [{ name: "General", tasks: content }];
-                        } else {
-                            todoData = content;
+        // StdioCollector, not SplitParser: SplitParser delivers one *line* per
+        // callback, so as soon as the file was written pretty-printed (which
+        // the sync script does, to keep it readable) the first callback got
+        // "[", JSON.parse threw, and the list fell back to an empty "General"
+        // tab -- the whole task list gone from the UI while intact on disk.
+        stdout: StdioCollector {
+            onStreamFinished: {
+                let output = String(text).trim();
+                let parsed = null;
+
+                if (output !== "" && output !== "[]") {
+                    try {
+                        let content = JSON.parse(output);
+                        if (Array.isArray(content) && content.length > 0) {
+                            parsed = (content[0].tasks === undefined)
+                                   ? [{ name: "General", tasks: content }] // legacy flat file
+                                   : content;
                         }
+                    } catch (e) {
+                        // Keep what is already on screen rather than replacing
+                        // it with an empty list: a truncated or corrupt file
+                        // must never render as "you have no tasks".
+                        if (todoRoot.isLoaded) return;
                     }
-                } catch (e) {
-                    todoData = [{ name: "General", tasks: [] }];
                 }
-                if (todoData.length === 0) todoData = [{ name: "General", tasks: [] }];
+
+                // Hold the user's place across a sync-triggered reload.
+                let previousTab = (todoRoot.isLoaded && activeTabIndex >= 0
+                                   && activeTabIndex < todoData.length)
+                                ? todoData[activeTabIndex].name : "";
+
+                todoData = parsed || [{ name: "General", tasks: [] }];
+
                 activeTabIndex = 0;
+                if (previousTab !== "") {
+                    for (let i = 0; i < todoData.length; i++) {
+                        if (todoData[i].name === previousTab) { activeTabIndex = i; break; }
+                    }
+                }
+
                 todoRoot.isLoaded = true;
                 updateModels();
             }
         }
+    }
+
+    // A local change is pushed shortly after it settles instead of waiting for
+    // the next retry tick, so a task typed here reaches the phone quickly.
+    Timer {
+        id: pushTimer
+        interval: 1500
+        repeat: false
+        onTriggered: if (TodoistService.hasToken) TodoistService.syncNow()
     }
 
     ColumnLayout {
@@ -272,9 +356,13 @@ Rectangle {
                     if (text.trim() !== "") {
                         if (todoRoot.editingIndex !== -1) {
                             tasksModel.setProperty(todoRoot.editingIndex, "task", text.trim());
+                            // Flag the edit so the sync pushes it; without this
+                            // "Todoist wins" quietly reverts it on the next pull.
+                            tasksModel.setProperty(todoRoot.editingIndex, "dirty", true);
                             todoRoot.editingIndex = -1;
                         } else {
-                            tasksModel.append({ "task": text.trim(), "completed": false });
+                            tasksModel.append({ "task": text.trim(), "completed": false,
+                                                "todoist_id": "", "dirty": false });
                         }
                         inputField.text = ""; inputField.visible = false; 
                         saveTasks();
@@ -284,6 +372,226 @@ Rectangle {
                     todoRoot.cancelEdit();
                     event.accepted = true;
                 }
+            }
+        }
+
+        // --- TODOIST CONNECT PROMPT ---
+        //
+        // Sits above the task list rather than inside tasksModel: it is not a
+        // task, and putting it in the model would make it draggable, savable,
+        // and part of the reorder indices. It disappears the moment a token is
+        // stored.
+        Rectangle {
+            id: todoistPrompt
+            Layout.fillWidth: true
+            Layout.preferredHeight: keyInputRow.visible ? Theme.scaled(112) : Theme.scaled(44)
+            Layout.bottomMargin: Theme.scaled(8)
+            visible: !TodoistService.hasToken
+
+            radius: Theme.scaled(12)
+            color: Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.10)
+            border.color: Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.35)
+            border.width: 1
+
+            Behavior on Layout.preferredHeight {
+                NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
+            }
+
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: Theme.scaled(8)
+                spacing: Theme.scaled(6)
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: Theme.scaled(8)
+
+                    Text {
+                        text: "󰌆"
+                        font.family: Theme.iconFont
+                        font.pixelSize: Theme.scaled(15)
+                        color: Theme.accentColor
+                        Layout.leftMargin: Theme.scaled(4)
+                    }
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: TodoistService.lastError !== ""
+                              ? TodoistService.lastError
+                              : "Add API key for Todoist to connect"
+                        color: TodoistService.lastError !== "" ? Theme.powerRed : Theme.text
+                        font.pixelSize: Theme.scaled(11)
+                        font.weight: Font.DemiBold
+                        elide: Text.ElideRight
+                    }
+
+                    // The key button: opens the inline field.
+                    Rectangle {
+                        implicitWidth: Theme.scaled(28)
+                        implicitHeight: Theme.scaled(28)
+                        radius: Theme.scaled(8)
+                        color: keyBtnMouse.containsMouse
+                               ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.25)
+                               : Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.15)
+
+                        Behavior on color { ColorAnimation { duration: 150 } }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "󰌆"
+                            font.family: Theme.iconFont
+                            font.pixelSize: Theme.scaled(13)
+                            color: Theme.accentColor
+                        }
+
+                        MouseArea {
+                            id: keyBtnMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                keyInputRow.visible = !keyInputRow.visible;
+                                if (keyInputRow.visible) {
+                                    tokenInput.text = "";
+                                    tokenInput.forceActiveFocus();
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Inline entry. Hidden until the key button is pressed.
+                RowLayout {
+                    id: keyInputRow
+                    Layout.fillWidth: true
+                    visible: false
+                    spacing: Theme.scaled(6)
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        implicitHeight: Theme.scaled(28)
+                        radius: Theme.scaled(8)
+                        color: Qt.rgba(0, 0, 0, 0.35)
+                        border.color: Theme.glassBorder
+                        border.width: 1
+
+                        TextInput {
+                            id: tokenInput
+                            anchors.fill: parent
+                            anchors.leftMargin: Theme.scaled(8)
+                            anchors.rightMargin: Theme.scaled(8)
+                            verticalAlignment: TextInput.AlignVCenter
+                            font.pixelSize: Theme.scaled(11)
+                            color: Theme.text
+                            selectByMouse: true
+                            clip: true
+                            // A credential on a desktop others can see.
+                            echoMode: TextInput.Password
+
+                            onAccepted: todoistPrompt.submitToken()
+                            Keys.onEscapePressed: keyInputRow.visible = false
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                visible: tokenInput.text.length === 0
+                                text: "Paste your Todoist API token"
+                                color: Theme.subtext0
+                                font.pixelSize: Theme.scaled(11)
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        implicitWidth: Theme.scaled(28)
+                        implicitHeight: Theme.scaled(28)
+                        radius: Theme.scaled(8)
+                        color: tokenInput.text.length > 0 ? Theme.accentColor : Theme.surface1
+                        Behavior on color { ColorAnimation { duration: 150 } }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: TodoistService.verifying ? "󰅖" : "󰄬"
+                            font.family: Theme.iconFont
+                            font.pixelSize: Theme.scaled(13)
+                            color: tokenInput.text.length > 0 ? Colors.on_primary : Theme.subtext0
+
+                            RotationAnimator on rotation {
+                                running: TodoistService.verifying
+                                from: 0; to: 360; duration: 900; loops: Animation.Infinite
+                            }
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            enabled: tokenInput.text.length > 0
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: todoistPrompt.submitToken()
+                        }
+                    }
+                }
+
+                // Where to actually get the token. Clicking opens the page
+                // directly rather than making the user hunt through settings.
+                // A plain Item the ColumnLayout manages, so the MouseArea can
+                // anchor-fill it. Anchoring directly inside a layout is
+                // undefined behaviour -- the layout owns the geometry.
+                Item {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: Theme.scaled(16)
+                    Layout.leftMargin: Theme.scaled(4)
+                    visible: keyInputRow.visible
+
+                    RowLayout {
+                        anchors.fill: parent
+                        spacing: Theme.scaled(5)
+
+                        Text {
+                            text: "󰏌"
+                            font.family: Theme.iconFont
+                            font.pixelSize: Theme.scaled(10)
+                            color: linkMouse.containsMouse ? Theme.accentColor : Theme.subtext0
+                            Behavior on color { ColorAnimation { duration: 150 } }
+                        }
+
+                        Text {
+                            text: "Get a token: Todoist -> Settings -> Integrations -> Developer"
+                            font.pixelSize: Theme.scaled(10)
+                            font.underline: linkMouse.containsMouse
+                            color: linkMouse.containsMouse ? Theme.accentColor : Theme.subtext0
+                            elide: Text.ElideRight
+                            Layout.fillWidth: true
+                            Behavior on color { ColorAnimation { duration: 150 } }
+                        }
+                    }
+
+                    MouseArea {
+                        id: linkMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: todoistPrompt.openTokenPage()
+                    }
+                }
+            }
+
+            readonly property string tokenPageUrl:
+                "https://app.todoist.com/app/settings/integrations/developer"
+
+            Process {
+                id: openTokenPageProc
+                command: ["xdg-open", todoistPrompt.tokenPageUrl]
+            }
+
+            function openTokenPage() {
+                openTokenPageProc.running = false;
+                openTokenPageProc.running = true;
+            }
+
+            function submitToken() {
+                if (tokenInput.text.trim() === "") return;
+                TodoistService.saveToken(tokenInput.text);
+                tokenInput.text = "";
+                keyInputRow.visible = false;
             }
         }
 
@@ -355,7 +663,14 @@ Rectangle {
                             Rectangle {
                                 width: 20; height: 20; radius: 4; color: model.completed ? Theme.blue : Theme.surface1
                                 Text { anchors.centerIn: parent; text: model.completed ? "✓" : ""; color: Theme.base; font.pixelSize: 12 }
-                                MouseArea { anchors.fill: parent; onClicked: { model.completed = !model.completed; saveTasks(); } }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: {
+                                        tasksModel.setProperty(index, "completed", !model.completed);
+                                        tasksModel.setProperty(index, "dirty", true);
+                                        saveTasks();
+                                    }
+                                }
                             }
 
                             Text { 
@@ -381,7 +696,14 @@ Rectangle {
                             
                             Text { 
                                 text: "󰆴"; font.family: Theme.iconFont; color: Theme.powerRed
-                                MouseArea { anchors.fill: parent; onClicked: { tasksModel.remove(index); saveTasks(); } }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: {
+                                        todoRoot.tombstoneTask(tasksModel.get(index));
+                                        tasksModel.remove(index);
+                                        saveTasks();
+                                    }
+                                }
                             }
                         }
                     }

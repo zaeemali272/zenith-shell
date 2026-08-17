@@ -28,16 +28,27 @@ PanelWindow {
     }
 
 
-    Component.onDestruction: MenuService.unregister(overlayRoot)
-
-
-
+    // This window is deliberately NOT registered with MenuService.
+    //
+    // Its visibility is a binding -- `visible: DynamicIslandService.active`
+    // in shell.qml -- and that binding is the only thing that ever shows it.
+    // MenuService.closeAll() closes registered menus by assigning
+    // `menu.visible = false`, and in QML an imperative assignment
+    // permanently replaces the binding underneath it. So the first time
+    // anything called closeAll() -- the `close` keybind, clicking outside a
+    // menu, or entering fullscreen -- this window's binding was destroyed and
+    // the launcher, clipboard and emoji picker could never open again for the
+    // rest of the session. The service still flipped to active (the dismiss
+    // overlay kept appearing), but no window was left listening.
+    //
+    // Registering bought nothing anyway: DismissOverlay, the only reader of
+    // MenuService.openMenus, already tests DynamicIslandService.active
+    // separately. Closing is handled by DynamicIslandService.close(), which
+    // closeAll() calls directly.
     onVisibleChanged: {
         if (visible) {
-            MenuService.register(overlayRoot);
             showAnim.restart();
         } else {
-            MenuService.unregister(overlayRoot);
             mainCard.opacity = 0;
             mainCard.scale = 0.95;
         }

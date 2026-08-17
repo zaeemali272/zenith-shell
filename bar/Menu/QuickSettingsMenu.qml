@@ -138,12 +138,12 @@ PanelWindow {
                     
                     Repeater {
                         model: [
-                            { id: "network", icon: "󰤨", title: "WIFI" },
+                            { id: "network", icon: "󰤨", title: "WI-FI" },
                             { id: "bluetooth", icon: "󰂯", title: "BT" },
                             { id: "volume", icon: "󰕾", title: "AUDIO" },
-                            { id: "powerprofile", icon: "󰍛", title: "PROF" },
-                            { id: "battery", icon: "󰁹", title: "PWR" },
-                            { id: "power", icon: "󰐥", title: "SYS" }
+                            { id: "powerprofile", icon: "󰍛", title: "POWER" },
+                            { id: "battery", icon: "󰁹", title: "BATTERY" },
+                            { id: "power", icon: "󰐥", title: "SESSION" }
                         ]
 
                         delegate: Rectangle {

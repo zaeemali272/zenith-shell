@@ -14,7 +14,7 @@ CACHE_HASH=$(echo "$QUERY" | md5sum | cut -d' ' -f1)
 CACHE_FILE="$CACHE_DIR/$CACHE_HASH.json"
 
 fetch_weather() {
-    local lat lon city
+    local lat lon city country
     
     if [ "$QUERY" = "auto" ]; then
         # Automatic IP-based detection using ip-api.com (more accurate for some regions)
@@ -22,12 +22,14 @@ fetch_weather() {
         lat=$(echo "$ip_data" | jq -r '.lat // empty' 2>/dev/null)
         lon=$(echo "$ip_data" | jq -r '.lon // empty' 2>/dev/null)
         city=$(echo "$ip_data" | jq -r '.city // empty' 2>/dev/null)
+        country=$(echo "$ip_data" | jq -r '.country // empty' 2>/dev/null)
         
         # Fallback to ipinfo.io if ip-api.com fails
         if [ -z "$lat" ]; then
             local ip_info=$(curl -s --max-time 3 "https://ipinfo.io/json/" 2>/dev/null)
             local loc=$(echo "$ip_info" | jq -r '.loc' 2>/dev/null)
             city=$(echo "$ip_info" | jq -r '.city' 2>/dev/null)
+            country=$(echo "$ip_info" | jq -r '.country // empty' 2>/dev/null)
             lat=$(echo "$loc" | cut -d',' -f1)
             lon=$(echo "$loc" | cut -d',' -f2)
         fi
@@ -37,6 +39,7 @@ fetch_weather() {
             lat="24.86"
             lon="67.01"
             city="Karachi"
+            country="Pakistan"
         fi
     else
         # Geocoding manual location
@@ -46,6 +49,7 @@ fetch_weather() {
         lat=$(echo "$geo_data" | jq -r '.results[0].latitude // empty')
         lon=$(echo "$geo_data" | jq -r '.results[0].longitude // empty')
         city=$(echo "$geo_data" | jq -r '.results[0].name // empty')
+        country=$(echo "$geo_data" | jq -r '.results[0].country // empty')
 
         if [ -z "$lat" ]; then
             # Fallback to auto if geocoding fails
@@ -60,7 +64,7 @@ fetch_weather() {
     
     if om_data=$(curl -s --max-time 5 "$om_url"); then
         # Transform to wttr.in-like format
-        echo "$om_data" | jq --arg city "$city" '
+        echo "$om_data" | jq --arg city "$city" --arg country "$country" '
             def wmo_to_wwo(code):
                 if code == 0 then "113"
                 elif code == 1 then "116"
@@ -102,7 +106,10 @@ fetch_weather() {
                 else "N" end;
 
             {
-                nearest_area: [{ areaName: [{ value: $city }] }],
+                nearest_area: [{
+                    areaName: [{ value: $city }],
+                    country: [{ value: $country }]
+                }],
                 current_condition: [{
                     weatherCode: wmo_to_wwo(.current.weather_code),
                     temp_C: (.current.temperature_2m | round | tostring),

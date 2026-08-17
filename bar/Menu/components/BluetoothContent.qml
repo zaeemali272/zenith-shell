@@ -54,16 +54,45 @@ ColumnLayout {
                 }
 
                 // Refresh Button
+                //
+                // Spins for userBusy, not busy: background status probes fire
+                // constantly (every monitor event, plus three follow-up polls
+                // after each action) and driving the spinner from them made
+                // the button strobe. See BluetoothService.userBusy.
                 Rectangle {
-                    width: Theme.scaled(44); height: Theme.scaled(44); radius: Theme.scaled(22); color: (refreshMouse.containsMouse ? Qt.rgba(1,1,1,0.05) : "transparent"); border.color: BluetoothService.busy ? Theme.powerYellow : Theme.glassBorder; clip: true
+                    id: refreshBtn
+                    readonly property bool spinning: BluetoothService.userBusy
+
+                    width: Theme.scaled(44); height: Theme.scaled(44); radius: Theme.scaled(22)
+                    color: (refreshMouse.containsMouse ? Qt.rgba(1,1,1,0.05) : "transparent")
+                    border.color: spinning ? Theme.powerYellow : Theme.glassBorder
+                    clip: true
                     visible: BluetoothService.powered
+
                     Behavior on color { ColorAnimation { duration: 200 } }
+                    Behavior on border.color { ColorAnimation { duration: 200 } }
+
                     Text {
-                        id: refreshIcon; anchors.centerIn: parent; text: "󰑐"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(18)
-                        color: BluetoothService.busy ? Theme.powerYellow : Theme.powerGreen
+                        id: refreshIcon
+                        anchors.centerIn: parent; text: "󰑐"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(18)
+                        color: refreshBtn.spinning ? Theme.powerYellow : Theme.powerGreen
+                        Behavior on color { ColorAnimation { duration: 200 } }
                     }
-                    RotationAnimation { target: refreshIcon; running: BluetoothService.busy; from: 0; to: 360; duration: 1000; loops: Animation.Infinite }
-                    MouseArea { id: refreshMouse; anchors.fill: parent; hoverEnabled: true; onClicked: BluetoothService.refresh() }
+
+                    RotationAnimation {
+                        target: refreshIcon
+                        running: refreshBtn.spinning
+                        from: 0; to: 360; duration: 1000; loops: Animation.Infinite
+                        // Stopping mid-spin used to leave the glyph frozen at
+                        // whatever angle it reached, so the next spin snapped
+                        // back to 0. Park it upright when idle.
+                        onRunningChanged: if (!running) refreshIcon.rotation = 0
+                    }
+
+                    MouseArea {
+                        id: refreshMouse; anchors.fill: parent; hoverEnabled: true
+                        onClicked: BluetoothService.refresh(true, true)
+                    }
                 }
 
                 // Scan Button
@@ -102,7 +131,7 @@ ColumnLayout {
                     RowLayout {
                         anchors.centerIn: parent; spacing: 8
                         Text { text: root.showUnnamed ? "󰈈" : "󰈉"; font.family: Theme.iconFont; color: root.showUnnamed ? Theme.blue : Theme.text; font.pixelSize: Theme.scaled(14) }
-                        Text { text: "UNNAMED"; color: Theme.text; font.pixelSize: Theme.scaled(8); font.weight: Font.Black; font.letterSpacing: 1 }
+                        Text { text: "SHOW UNNAMED"; color: Theme.text; font.pixelSize: Theme.scaled(8); font.weight: Font.Black; font.letterSpacing: 1 }
                     }
                     MouseArea { id: unnamedMouse; anchors.fill: parent; hoverEnabled: true; onClicked: root.showUnnamed = !root.showUnnamed }
                 }
@@ -121,7 +150,7 @@ ColumnLayout {
                             font.pixelSize: Theme.scaled(14) 
                         }
                         Text { 
-                            text: "STARTUP"; 
+                            text: "START AT BOOT"; 
                             color: Theme.text; font.pixelSize: Theme.scaled(8); font.weight: Font.Black; font.letterSpacing: 1 
                         }
                     }
@@ -223,39 +252,37 @@ ColumnLayout {
                         Layout.alignment: Qt.AlignRight
                         spacing: Theme.scaled(8)
 
-                        // Forget/Remove
+                        // Pair / Unpair / Disconnect toggle.
+                        //
+                        // The button reflects the device's *pairing* state, so
+                        // pressing it always undoes what it last did:
+                        //   not paired  -> pair
+                        //   paired      -> unpair (forget)
+                        //   connected   -> disconnect
+                        //
+                        // Connecting to an already-paired device is the row
+                        // click, so making this button unpair does not strand
+                        // saved devices.
                         Rectangle {
-                            width: Theme.scaled(40); height: Theme.scaled(40); radius: Theme.scaled(12); color: (forgetMouse.containsMouse ? Colors.background : Theme.mantle); border.color: Theme.surface1
-                            visible: modelData.paired
+                            width: Theme.scaled(40); height: Theme.scaled(40); radius: Theme.scaled(12);
+                            color: (modelData.connected || modelData.paired) ? Theme.powerRed : Theme.blue
                             Behavior on color { ColorAnimation { duration: 200 } }
-                            Text { anchors.centerIn: parent; text: "󰆴"; font.family: Theme.iconFont; color: Theme.powerRed; font.pixelSize: Theme.scaled(18) }
-                            MouseArea { id: forgetMouse; anchors.fill: parent; hoverEnabled: true; onClicked: BluetoothService.action("remove", modelData.address) }
-                        }
-
-                        // Connect/Disconnect Toggle Icon
-                        Rectangle {
-                            width: Theme.scaled(40); height: Theme.scaled(40); radius: Theme.scaled(12); 
-                            color: modelData.connected ? (actionMouse.containsMouse ? Theme.powerRed : Theme.powerRed) : (actionMouse.containsMouse ? Theme.blue : Theme.blue)
-                            Behavior on color { ColorAnimation { duration: 200 } }
-                            Text { 
+                            Text {
                                 anchors.centerIn: parent
-                                text: modelData.connected ? "󰂯" : "󰂴"
-                                font.family: Theme.iconFont; color: Colors.background; font.pixelSize: Theme.scaled(20) 
+                                text: modelData.connected ? "󰂯" : (modelData.paired ? "󰂲" : "󰂴")
+                                font.family: Theme.iconFont; color: Colors.background; font.pixelSize: Theme.scaled(20)
                             }
-                            MouseArea { 
+                            MouseArea {
                                 id: actionMouse
-                                anchors.fill: parent; 
+                                anchors.fill: parent;
                                 hoverEnabled: true
                                 onClicked: {
                                     if (modelData.connected) {
                                         BluetoothService.action("disconnect", modelData.address);
+                                    } else if (modelData.paired) {
+                                        BluetoothService.action("remove", modelData.address);
                                     } else {
-                                        // Pair first if needed, then connect.
-                                        if (!modelData.paired) {
-                                            BluetoothService.action("pair", modelData.address);
-                                        } else {
-                                            BluetoothService.action("connect", modelData.address);
-                                        }
+                                        BluetoothService.action("pair", modelData.address);
                                     }
                                 }
                             }
