@@ -1,11 +1,35 @@
-
+# ---------------------------------------------------------------------------
+# Personal data. Never commit these -- they are yours, not the project's.
+# ---------------------------------------------------------------------------
 wifi_secrets.json
+
+# The Todoist API token normally lives in ~/.config/zenith/todoist.json,
+# outside the repo. This is a guard in case one is ever dropped in-tree.
+todoist.json
+
+# ---------------------------------------------------------------------------
+# Runtime state written by the shell while it runs, not configuration.
+# Tracking these means a permanently dirty worktree and a conflict on every
+# pull, for data that gets rebuilt automatically anyway.
+# ---------------------------------------------------------------------------
+
+# per-app launch counts
+app_usage.json
+
+# pomodoro / focus session history
+productivity.json
+
+# holidays for YOUR country, refetched by scripts/fetch_events.sh
+events.json
+
 zenith.log
+
+# ---------------------------------------------------------------------------
+# Build / editor noise
+# ---------------------------------------------------------------------------
 __pycache__/
 *.pyc
-
-# Runtime state written by the shell at use time, not configuration.
-# These change on every app launch / pomodoro session, so tracking them
-# means a dirty worktree constantly and pointless diffs on every pull.
-app_usage.json
-productivity.json
+*.tmp
+*.new
+*.bak
+.qmlls.ini
