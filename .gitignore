@@ -3,3 +3,9 @@ wifi_secrets.json
 zenith.log
 __pycache__/
 *.pyc
+
+# Runtime state written by the shell at use time, not configuration.
+# These change on every app launch / pomodoro session, so tracking them
+# means a dirty worktree constantly and pointless diffs on every pull.
+app_usage.json
+productivity.json

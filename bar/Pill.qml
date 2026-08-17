@@ -1,5 +1,4 @@
 import ".."
-import ".."
 import QtQuick
 import QtQuick.Layouts
 
@@ -27,7 +26,13 @@ Rectangle {
     implicitHeight: Theme.pillHeight
     Layout.preferredHeight: Theme.pillHeight
     Layout.alignment: Qt.AlignVCenter
-    color: normalColor
+    // Hover is expressed as a binding, not as an assignment from onEntered.
+    // Assigning to `color` in a handler permanently destroys the binding
+    // underneath it, so after the first time the pointer touched a pill that
+    // pill was frozen at whatever colour the handler last wrote -- it could
+    // no longer follow a theme change, and any widget that varies
+    // `normalColor` by state stopped updating entirely.
+    color: mouseArea.containsMouse ? hoverColor : normalColor
     clip: true
     implicitWidth: Math.max(fallback.implicitWidth, contentItem.childrenRect.width) + Theme.pillPadding * 2
 
@@ -73,11 +78,7 @@ Rectangle {
         hoverEnabled: true
         z: 10 // Highest Z-index to ensure it captures events over everything inside
         acceptedButtons: Qt.LeftButton | Qt.RightButton
-        onEntered: {
-            pill.color = hoverColor;
-            pill.entered();
-        }
-        onExited: pill.color = normalColor
+        onEntered: pill.entered()
         onClicked: (mouse) => pill.clicked(mouse)
         onWheel: (wheel) => pill.wheel(wheel)
     }

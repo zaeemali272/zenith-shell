@@ -404,7 +404,12 @@ ColumnLayout {
     Timer { id: videoDelay; property string videoPath: ""; interval: 400; onTriggered: { mpvProcess.command = ["sh", "-c", "MONITOR=$(awww query | head -n1 | cut -d: -f1); if [ -z \"$MONITOR\" ]; then MONITOR=$(wlr-randr | head -n1 | awk '{print $1}'); fi; mpvpaper -vsf -o 'no-audio loop' $MONITOR '" + videoPath + "' >> " + root.logPath + " 2>&1"]; mpvProcess.running = true; CenterState.close(); } }
 
     Process { id: logger }
-    Process { id: awwwDaemon; command: ["sh", "-c", "awww-daemon >> " + logPath + " 2>&1"] }
+    // Only start the daemon if one is not already listening. Starting it
+    // unconditionally -- which applyWallpaper() does on every single wallpaper
+    // change -- makes it abort with a Rust panic ("already running on this
+    // socket") whenever it is already up, which is the normal case. Those
+    // panics and their backtraces were the entire contents of zenith.log.
+    Process { id: awwwDaemon; command: ["sh", "-c", "awww query >/dev/null 2>&1 || awww-daemon >> " + logPath + " 2>&1"] }
     Process { id: setWall; onExited: { CenterState.close(); } }
     Process { id: killawww; command: ["killall", "awww-daemon"] }
     Process { id: killMpv; command: ["killall", "mpvpaper"] }
