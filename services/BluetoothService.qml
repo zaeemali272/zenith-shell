@@ -20,6 +20,34 @@ Item {
     readonly property bool isPerformingAction: actionExec.running || powerExec.running || scanExec.running || oneShotScan.running || _actionInProgress || startupToggleExec.running
     readonly property bool isRefreshing: statusExec.running
     property bool busy: isPerformingAction || isRefreshing
+
+    // ---- SPIN STATE FOR THE MANUAL REFRESH CONTROL ----
+    //
+    // `busy` is true for *any* status probe, including the background ones
+    // fired by every bluetoothctl monitor event and the three follow-up polls
+    // that run one second apart after each action. Driving the refresh
+    // button's spinner and colour from it meant the button strobed several
+    // times whenever you connected or paired a device -- the flicker.
+    //
+    // This tracks only work the user actually asked for, and holds for a
+    // minimum period so a probe that finishes in 150ms still reads as
+    // deliberate feedback rather than a flash.
+    readonly property bool userBusy: isPerformingAction || _manualRefreshActive
+
+    property bool _manualRefreshActive: false
+
+    property Timer _manualRefreshFloor: Timer {
+        interval: 700
+        onTriggered: if (!statusExec.running) root._manualRefreshActive = false
+    }
+
+    property Connections _manualRefreshWatch: Connections {
+        target: statusExec
+        function onRunningChanged() {
+            if (!statusExec.running && !root._manualRefreshFloor.running)
+                root._manualRefreshActive = false;
+        }
+    }
     
     property bool _actionInProgress: false
 
@@ -29,8 +57,14 @@ Item {
     property int connectedBattery: -1
     property string connectedIcon: "bluetooth"
 
-    function refresh(full) {
+    function refresh(full, userInitiated) {
         if (statusExec.running) return;
+
+        if (userInitiated) {
+            _manualRefreshActive = true;
+            _manualRefreshFloor.restart();
+        }
+
         let doFull = (full !== undefined) ? full : Variables.quickSettingsOpen;
         
         statusExec.command = ["python3", "-c", `
