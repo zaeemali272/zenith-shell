@@ -19,7 +19,14 @@ Item {
 
     readonly property bool wifiConnected: WifiService.currentState === "connected"
     readonly property string wifiSSID: WifiService.currentSsid
-    readonly property bool airplaneMode: WifiService.isAirplane
+    readonly property bool airplaneMode: HardwareService.hasWifi && WifiService.isAirplane
+
+    // A machine with no wifi adapter -- a desktop, or most VMs -- is not
+    // "disconnected" just because there is no SSID. It is on ethernet, and the
+    // widget showed DISC over a perfectly working network.
+    readonly property bool wiredOnly: !HardwareService.hasWifi && HardwareService.hasEthernet
+    readonly property bool wiredUp: wiredOnly && WifiService.ipv4Address !== ""
+    readonly property bool online: wifiConnected || wiredUp
 
     function formatSpeed(kb) {
         if (kb < 1024)
@@ -66,7 +73,7 @@ Item {
             spacing: Theme.scaled(6)
 
             Text {
-                text: airplaneMode ? "󰀞" : (!wifiConnected ? "󰤮" : (showUpload ? Theme.netUpIcon : Theme.netDownIcon))
+                text: airplaneMode ? "󰀞" : (!online ? "󰤮" : (showUpload ? Theme.netUpIcon : Theme.netDownIcon))
                 font.family: Theme.iconFont
                 font.pixelSize: Theme.iconSize
                 color: airplaneMode ? Theme.powerRed : (!wifiConnected ? Theme.powerRed : Theme.accentColor)
@@ -74,7 +81,7 @@ Item {
             }
 
             Text {
-                text: airplaneMode ? "OFF" : (!wifiConnected ? "DISC" : (outerContainer.containsMouse ? (wifiSSID ? wifiSSID : "Connected") : formatSpeed(showUpload ? upSpeed : downSpeed)))
+                text: airplaneMode ? "OFF" : (!online ? "DISC" : (outerContainer.containsMouse ? (outerContainer.wiredOnly ? "Wired" : (wifiSSID ? wifiSSID : "Connected")) : formatSpeed(showUpload ? upSpeed : downSpeed)))
                 font.pixelSize: Theme.fontSize
                 font.family: "JetBrains Mono"
                 font.weight: (airplaneMode || !wifiConnected) ? Font.Bold : Font.DemiBold

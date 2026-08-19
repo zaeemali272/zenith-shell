@@ -18,3 +18,4 @@ singleton WeatherService WeatherService.qml
 singleton DynamicIslandService DynamicIslandService.qml
 singleton TodoistService TodoistService.qml
 singleton MailService MailService.qml
+singleton HardwareService HardwareService.qml

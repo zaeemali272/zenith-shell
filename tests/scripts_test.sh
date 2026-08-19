@@ -156,6 +156,22 @@ timeout 15 "$S/battery_conservation.sh" bogus 2>/dev/null | jq -e '.ok == false'
     && pass "battery_conservation.sh rejects an unknown command" \
     || fail "battery_conservation.sh accepted an unknown command"
 
+# ----------------------------------------------------------- detect_hardware
+OUT="$(timeout 15 "$S/detect_hardware.sh" 2>/dev/null)"
+if printf '%s' "$OUT" | json_has battery bluetooth wifi ethernet vm; then
+    pass "detect_hardware.sh reports every capability key"
+else
+    fail "detect_hardware.sh output is not usable: ${OUT:0:70}"
+fi
+# systemd-detect-virt prints "none" *and* exits 1 on bare metal, which once made
+# a physical laptop report itself as a VM.
+printf '%s' "$OUT" | jq -e '.virt | test("\n") | not' >/dev/null 2>&1 \
+    && pass "detect_hardware.sh virt field is a single clean value" \
+    || fail "virt field contains stray output: $(printf '%s' "$OUT" | jq -r .virt)"
+printf '%s' "$OUT" | jq -e '(.vm | type) == "boolean" and (.battery | type) == "boolean"' >/dev/null 2>&1 \
+    && pass "detect_hardware.sh emits real booleans" \
+    || fail "capabilities are not booleans"
+
 # ------------------------------------------------------------ super_launcher
 # Tap detection keeps its state under XDG_RUNTIME_DIR; point it somewhere
 # disposable so a test cannot disturb a live session.

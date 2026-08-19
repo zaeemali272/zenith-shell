@@ -165,6 +165,7 @@ Rectangle {
 
                         MouseArea {
                             id: resM
+                            anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: detail.openLink(modelData.url)

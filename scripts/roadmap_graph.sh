@@ -38,6 +38,24 @@ jq -c '
              or .type == "paragraph")
     | select(((.data.label // "")
               | test("^roadmap\\.sh$|^Click to visit the roadmap$|^Find the detailed version")) | not) ]
+  as $candidates
+  # Sponsor cards. roadmap.sh lays these out as a paragraph with a call-to-
+  # action button positioned on top of it, which is fine on their canvas and
+  # renders here as text with a button sitting through the middle of it.
+  # Matched by the wording rather than a sponsor name, and anything drawn
+  # inside such a card goes with it.
+  | ([$candidates[]
+      | select(.type == "paragraph")
+      | select((.data.label // "") | test("^Special thanks|sponsor(ed)? by"; "i"))
+      | {x: .position.x, y: .position.y,
+         w: (.width // .measured.width // 100), h: (.height // .measured.height // 40)}]) as $ads
+  | [$candidates[]
+     | select(. as $n
+              | ($ads | map(
+                    ($n.position.x >= .x) and ($n.position.y >= .y)
+                    and (($n.position.x + ($n.width // $n.measured.width // 100)) <= (.x + .w + 2))
+                    and (($n.position.y + ($n.height // $n.measured.height // 40)) <= (.y + .h + 2))
+                  ) | any) | not)]
   as $keep
   | ([$keep[].position.x] | min) as $minx
   | ([$keep[].position.y] | min) as $miny
