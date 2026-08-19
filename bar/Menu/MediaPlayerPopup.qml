@@ -8,36 +8,19 @@ import "../.."
 import "../../services"
 import "./components"
 
-PanelWindow {
+MenuWindow {
     id: root
+
+    card: mainContent
+    namespaceName: "mediaplayer"
+    onDismissed: CenterState.close()
     property var parentWindow: null
-    visible: false
-    color: "transparent"
-
-    WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.exclusiveZone: 0
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
-    WlrLayershell.namespace: "mediaplayer"
-    anchors {
-        top: true
-        bottom: true
-        left: true
-        right: true
-    }
-
-    mask: Region {
-        item: mainContent
-    }
-
-    Component.onDestruction: MenuService.unregister(root)
 
     onVisibleChanged: {
         if (visible) {
-            MenuService.register(root);
             mainContent.forceActiveFocus();
             showAnim.restart();
         } else {
-            MenuService.unregister(root);
             mainContent.opacity = 0;
             mainContent.scale = 0.94;
             mainTranslate.y = -6;
@@ -52,14 +35,9 @@ PanelWindow {
         NumberAnimation { target: mainTranslate; property: "y"; from: -6; to: 0; duration: Theme.animNormal; easing.type: Theme.animEasing }
     }
 
-    // --- DISMISS ON OUTER CLICK ---
-    MouseArea {
-        anchors.fill: parent
-        z: -1
-        onClicked: CenterState.close()
-    }
-
-    // Masterwork Material 3 Floating Media Card (Directly below media widget)
+    // Outer clicks are dismissed by DismissOverlay; the input mask and the
+    // reason a dismiss MouseArea cannot live here are documented in
+    // MenuWindow.qml.
     Rectangle {
         id: mainContent
         anchors.horizontalCenter: parent.horizontalCenter

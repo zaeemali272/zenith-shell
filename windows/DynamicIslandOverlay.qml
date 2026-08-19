@@ -23,9 +23,30 @@ PanelWindow {
         right: true
     }
 
-    mask: Region {
-        item: mainCard
+    // Dismissal here is a click catcher, not a focus grab.
+    //
+    // A HyprlandFocusGrab is wrong for this window. Bar.qml already takes
+    // exclusive keyboard focus while the island is open --
+    //     keyboardFocus: DynamicIslandService.active ? Exclusive : None
+    // -- because the search field the user types into lives in the bar, not
+    // here. Engaging a grab took focus routing away from the bar a moment after
+    // opening, so the launcher accepted a keystroke or two and then went deaf.
+    //
+    // Instead the window drops its input mask and catches clicks itself: the
+    // card swallows its own, anything outside it closes. That is the ordinary
+    // launcher behaviour and it does not touch focus at all.
+    // The backdrop that does this already exists further down, declared before
+    // mainCard so the card stacks above it. It never fired because of the mask.
+
+    Shortcut {
+        sequences: ["Escape"]
+        enabled: overlayRoot.visible
+        onActivated: DynamicIslandService.close()
     }
+
+    // No mask on purpose: the window has to receive clicks outside the card in
+    // order to dismiss on them. A mask limited input to the card, which is why
+    // outside clicks reached the desktop instead of closing the launcher.
 
 
     // This window is deliberately NOT registered with MenuService.
@@ -96,6 +117,16 @@ PanelWindow {
     // Centered Results Container below the Top Bar Center Widget
     Item {
         id: mainCard
+
+        // Swallows clicks that land on the card but miss a control. Without it
+        // they fall through to the backdrop and close the launcher -- the exact
+        // bug the menus had, where clicking padding dismissed the window.
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.AllButtons
+            onPressed: (mouse) => mouse.accepted = true
+        }
+
         anchors.horizontalCenter: parent.horizontalCenter
         y: (Shell.Theme.barHeight || 40) + (Shell.Theme.barMarginTop || 8) + Shell.Theme.scaled(8)
         width: Shell.Theme.scaled(593)

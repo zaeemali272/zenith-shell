@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "../Settings"
 
 pragma Singleton
 
@@ -30,6 +31,62 @@ Item {
 
     Component.onCompleted: {
         checkAvailability.running = true;
+    }
+
+    // ---- Battery conservation / charge limit ----
+    //
+    // PowerProfileContent has always had a card bound to conservativeSupported,
+    // conservativeActive, conservativeLabel and toggleConservativeMode(). None
+    // of them existed here, so the bindings evaluated to undefined: the card
+    // stayed hidden and the toggle did nothing at all.
+    property bool conservativeSupported: false
+    property bool conservativeActive: false
+    property string conservativeLabel: ""
+    property string conservativeError: ""
+
+    readonly property string conservationScript: PathSettings.scriptsDir + "/battery_conservation.sh"
+
+    function refreshConservative() {
+        consStatus.running = false;
+        consStatus.running = true;
+    }
+
+    function toggleConservativeMode() {
+        consToggle.command = ["bash", service.conservationScript, "toggle"];
+        consToggle.running = false;
+        consToggle.running = true;
+    }
+
+    property Process _consStatus: Process {
+        id: consStatus
+        running: true
+        command: ["bash", service.conservationScript, "status"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    var r = JSON.parse(String(text).trim() || "{}");
+                    service.conservativeSupported = !!r.supported;
+                    service.conservativeActive = !!r.active;
+                    service.conservativeLabel = r.label || "Battery Care";
+                } catch (e) { service.conservativeSupported = false; }
+            }
+        }
+    }
+
+    property Process _consToggle: Process {
+        id: consToggle
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    var r = JSON.parse(String(text).trim() || "{}");
+                    service.conservativeError = r.ok ? "" : (r.error || "failed");
+                } catch (e) { service.conservativeError = "failed"; }
+                // Re-read rather than assuming the write landed: it can be
+                // refused by permissions, and the card must not claim a state
+                // the hardware is not in.
+                service.refreshConservative();
+            }
+        }
     }
 
     Process {

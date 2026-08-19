@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Event-driven streaming resource monitor daemon for zenith-shell
 
-python3 -u -c '
+exec python3 -u -c '
 import json, os, glob, time, socket, sys
 
 def read_cpu():
@@ -54,9 +54,20 @@ except Exception:
     pass
 
 last_t, last_i = read_cpu()
+_startup_ppid = os.getppid()
 
 while True:
     try:
+        # Orphaned by a shell that exited or reloaded: nothing is reading this
+        # any more. Without the check these daemons accumulate one per restart
+        # and poll forever -- four of them were found running against a shell
+        # that had not existed for twelve hours.
+        #
+        # Compared against the parent we started with rather than against pid 1:
+        # an orphan is not necessarily reparented to init, since systemd marks
+        # the user session as a subreaper and adopts it instead.
+        if os.getppid() != _startup_ppid:
+            break
         time.sleep(1.5)
         t, i = read_cpu()
         total_diff = t - last_t
@@ -117,7 +128,7 @@ while True:
             "ip": ip_addr
         }
         print(json.dumps(data), flush=True)
-    except KeyboardInterrupt:
+    except (BrokenPipeError, KeyboardInterrupt):
         break
     except Exception:
         time.sleep(2)

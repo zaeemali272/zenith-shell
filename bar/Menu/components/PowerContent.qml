@@ -39,11 +39,21 @@ ColumnLayout {
     // Explicit sizing for ScrollView integration
     implicitHeight: mainLayout.implicitHeight
 
-    // Index 0 is LOCK. This used to default to 5 -- SHUTDOWN -- and was reset
-    // to it every time the panel opened. Because the panel calls
-    // forceActiveFocus() on open and Enter activates the selection, opening
-    // the session menu and pressing Enter powered the machine off.
-    readonly property int defaultIndex: 0
+    // SHUTDOWN is the default selection, by request.
+    //
+    // Worth knowing: the panel calls forceActiveFocus() when it opens and Enter
+    // activates whatever is selected, so opening this menu and pressing Enter
+    // powers the machine off. That is the intended behaviour here -- it is only
+    // a hazard if a keystroke arrives before you have looked at the panel.
+    //
+    // Found by label rather than written as a number, so reordering the buttons
+    // below cannot silently point this at REBOOT.
+    readonly property int defaultIndex: {
+        var buttons = powerButtons.model;
+        for (var i = 0; i < buttons.length; i++)
+            if (buttons[i].label === "SHUTDOWN") return i;
+        return 0;
+    }
     property int selectedIndex: defaultIndex
 
     // Reset selection every time the menu is opened
@@ -79,17 +89,27 @@ ColumnLayout {
 
             Repeater {
                 id: powerButtons
+                // Same reason as PowerProfileContent: a Theme.* value inside the model
+                // array makes the array itself a palette binding, so a recolour
+                // destroys and rebuilds every delegate. Resolved per delegate below.
                 model: [
-                    { icon: "󰌾", label: "LOCK",     cmd: "hyprlock --immediate-render --no-fade-in", color: Theme.lavender },
-                    { icon: "󰒲", label: "BIOS",     cmd: "systemctl reboot --firmware-setup", color: Theme.mauve },
-                    { icon: "󰗼", label: "LOGOUT",   cmd: "hyprctl dispatch exit", color: Theme.powerGreen },
-                    { icon: "󰤄", label: "SUSPEND",  cmd: "systemctl suspend", color: Theme.lavender },
-                    { icon: "󰑐", label: "REBOOT",   cmd: "reboot", color: Theme.blue },
-                    { icon: "󰐥", label: "SHUTDOWN", cmd: "shutdown now", color: Theme.powerRed }
+                    { icon: "󰌾", label: "LOCK",     cmd: "hyprlock --immediate-render --no-fade-in" },
+                    { icon: "󰒲", label: "BIOS",     cmd: "systemctl reboot --firmware-setup" },
+                    { icon: "󰗼", label: "LOGOUT",   cmd: "hyprctl dispatch exit" },
+                    { icon: "󰤄", label: "SUSPEND",  cmd: "systemctl suspend" },
+                    { icon: "󰑐", label: "REBOOT",   cmd: "reboot" },
+                    { icon: "󰐥", label: "SHUTDOWN", cmd: "shutdown now" }
                 ]
 
                 delegate: Rectangle {
                     id: powerBtn
+
+                    readonly property color accent: modelData.label === "LOGOUT"   ? Theme.powerGreen
+                                                  : modelData.label === "REBOOT"   ? Theme.blue
+                                                  : modelData.label === "SHUTDOWN" ? Theme.powerRed
+                                                  : modelData.label === "BIOS"     ? Theme.mauve
+                                                  : Theme.lavender
+
                     Layout.fillWidth: true
                     height: Theme.scaled(100)
                     anchors.margins: 2 
@@ -98,7 +118,7 @@ ColumnLayout {
                     
                     color: isSelected ? Qt.rgba(1,1,1,0.1) : (m.containsMouse ? Qt.rgba(1,1,1,0.05) : Qt.rgba(0,0,0,0.2))
                     radius: Theme.scaled(20)
-                    border.color: isSelected ? modelData.color : (m.containsMouse ? modelData.color : Theme.glassBorder)
+                    border.color: isSelected ? powerBtn.accent : (m.containsMouse ? powerBtn.accent : Theme.glassBorder)
                     border.width: 1
                     
                     scale: m.pressed ? 0.92 : (isSelected || m.containsMouse ? 1.00 : 0.95)
@@ -116,8 +136,8 @@ ColumnLayout {
                     RowLayout {
                         anchors.centerIn: parent; spacing: 15
                         Rectangle {
-                            width: 44; height: 44; radius: 12; color: Qt.rgba(modelData.color.r, modelData.color.g, modelData.color.b, 0.1)
-                            Text { anchors.centerIn: parent; text: modelData.icon; font.family: Theme.iconFont; font.pixelSize: 22; color: modelData.color }
+                            width: 44; height: 44; radius: 12; color: Qt.rgba(powerBtn.accent.r, powerBtn.accent.g, powerBtn.accent.b, 0.1)
+                            Text { anchors.centerIn: parent; text: modelData.icon; font.family: Theme.iconFont; font.pixelSize: 22; color: powerBtn.accent }
                         }
                         Text { text: modelData.label; font.pixelSize: 11; font.weight: Font.Black; color: Theme.text; opacity: 0.8 }
                     }
