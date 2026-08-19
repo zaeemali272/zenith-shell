@@ -9,6 +9,13 @@ Rectangle {
 
     property var menuRef
 
+    // Nothing to show, nothing to draw. SystemTray.items is an ObjectModel:
+    // it has no `length`, so the old `SystemTray.items.length === 0` test was
+    // `undefined === 0` -- always false -- which is why the empty-state icon
+    // below it never appeared and the pill just sat there empty.
+    readonly property int itemCount: SystemTray.items.values.length
+    visible: itemCount > 0
+
     height: Theme.pillHeight
     implicitHeight: Theme.pillHeight
     Layout.preferredHeight: Theme.pillHeight
@@ -44,17 +51,6 @@ Rectangle {
                 item: modelData
                 menuRef: trayContainer.menuRef
             }
-        }
-
-        // Minimalist empty-state indicator
-        Text {
-            text: "󰇄"
-            visible: SystemTray.items.length === 0
-            font.family: Theme.iconFont
-            font.pixelSize: Theme.scaled(13)
-            color: Theme.subtext0
-            opacity: 0.6
-            Layout.alignment: Qt.AlignVCenter
         }
     }
 }

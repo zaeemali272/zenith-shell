@@ -35,14 +35,29 @@ Rectangle {
         loadProcess.running = true;
     }
 
+    // The task file is read the first time the tab is shown, not at shell
+    // start: nothing can look at the list before then.
+    property bool started: false
+
+    function startIfNeeded() {
+        if (started || !visible) return;
+        started = true;
+        loadProcess.running = true;
+    }
+
+    Component.onCompleted: startIfNeeded()
+
     // Auto-close input fields when menu is hidden without losing data
     onVisibleChanged: {
         if (!visible) {
             cancelEdit();
             tabNameInputContainer.visible = false;
-        } else if (TodoistService.hasToken) {
-            // Pull anything added from the phone or web app since last time.
-            TodoistService.syncNow();
+        } else {
+            startIfNeeded();
+            if (TodoistService.hasToken) {
+                // Pull anything added from the phone or web app since last time.
+                TodoistService.syncNow();
+            }
         }
     }
 
@@ -160,7 +175,8 @@ Rectangle {
     Process {
         id: loadProcess
         command: ["sh", "-c", "mkdir -p $(dirname '" + todoRoot.todoPath + "') && (cat '" + todoRoot.todoPath + "' 2>/dev/null || echo '[]')"]
-        running: true
+        // Loaded when the tab is first shown rather than at shell start.
+        running: false
         // StdioCollector, not SplitParser: SplitParser delivers one *line* per
         // callback, so as soon as the file was written pretty-printed (which
         // the sync script does, to keep it readable) the first callback got
@@ -600,6 +616,8 @@ Rectangle {
             id: taskListView
             Layout.fillWidth: true; Layout.fillHeight: true
             model: tasksModel; clip: true; spacing: 8
+
+            FastWheel {}
             
             displaced: Transition {
                 NumberAnimation { properties: "y"; duration: 150; easing.type: Easing.OutQuad }

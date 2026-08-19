@@ -25,17 +25,17 @@ jobs:
         run: |
           nix flake check --all-systems
 
-      - name: QML & Python Linting Environment
+      - name: Python Lint
         run: |
-          nix shell nixpkgs#qt6.qtdeclarative nixpkgs#python3Packages.flake8 -c bash -c "
-            echo '==> Running QML Lint...'
-            qmllint \$(find . -name '*.qml')
-            
-            echo '==> Running Python Lint...'
-            if find scripts/ -name '*.py' | grep -q .; then
-              flake8 scripts/ --max-line-length=120 --ignore=E501,W503,E203
+          nix shell nixpkgs#python3Packages.flake8 -c bash -c "
+            if find scripts/ tests/ -name '*.py' | grep -q .; then
+              flake8 scripts/ tests/ --max-line-length=120 --ignore=E501,W503,E203
             fi
           "
+
+      - name: Behavioural Tests
+        run: |
+          nix shell nixpkgs#qt6.qtdeclarative nixpkgs#python3 -c bash tests/run.sh
 
       - name: Build Zenith Shell Package
         run: |

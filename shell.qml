@@ -28,7 +28,7 @@ Scope {
         function launcher(): void { handleCommand("launcher"); }
         function dashboard(): void { handleCommand("dashboard"); }
         function wallpaper(): void { handleCommand("wallpaper"); }
-        function ai(): void { handleCommand("ai"); }
+        function mail(): void { handleCommand("mail"); }
         function pomodoro(): void { handleCommand("pomodoro"); }
         function volume(): void { handleCommand("volume"); }
         function clipboard(): void { handleCommand("clipboard"); }
@@ -45,7 +45,6 @@ Scope {
     GlobalShortcut { appid: "zenith"; name: "launcher"; onPressed: handleCommand("launcher") }
     GlobalShortcut { appid: "zenith"; name: "dashboard"; onPressed: handleCommand("dashboard") }
     GlobalShortcut { appid: "zenith"; name: "wallpaper"; onPressed: handleCommand("wallpaper") }
-    GlobalShortcut { appid: "zenith"; name: "ai"; onPressed: handleCommand("ai") }
     GlobalShortcut { appid: "zenith"; name: "pomodoro"; onPressed: handleCommand("pomodoro") }
     GlobalShortcut { appid: "zenith"; name: "volume"; onPressed: handleCommand("volume") }
     GlobalShortcut { appid: "zenith"; name: "close"; onPressed: handleCommand("close") }
@@ -88,17 +87,21 @@ Scope {
             let tab = "Default";
             if (lowerArg === "pomodoro") tab = "Pomodoro";
             else if (lowerArg === "wallpaper" || lowerArg === "wallpapers") tab = "Wallpaper";
-            else if (lowerArg === "ai" || lowerArg === "aiagent" || lowerArg === "agent") tab = "AI Agent";
+            else if (lowerArg === "roadmap" || lowerArg === "roadmaps") { tab = "Pomodoro"; CenterState.focusTool = "Roadmap"; }
             CenterState.toggle(tab);
         } else if (lowerAction === "quicksettings" || lowerAction === "toggle_quicksettings") {
             let tab = arg || "network";
             QuickSettingsService.toggle(tab);
+        } else if (lowerAction === "mail" || lowerAction === "email" || lowerAction === "inbox") {
+            CenterState.toggle("Mail");
         } else if (lowerAction === "wallpaper" || lowerAction === "wallpapers") {
             CenterState.toggle("Wallpaper");
+        } else if (lowerAction === "roadmap" || lowerAction === "roadmaps") {
+            // Roadmap lives inside the Focus tab now, alongside the todo list.
+            CenterState.focusTool = "Roadmap";
+            CenterState.toggle("Pomodoro");
         } else if (lowerAction === "pomodoro") {
             CenterState.toggle("Pomodoro");
-        } else if (lowerAction === "ai" || lowerAction === "aiagent" || lowerAction === "agent") {
-            CenterState.toggle("AI Agent");
         } else if (lowerAction === "wifi" || lowerAction === "network") {
             QuickSettingsService.toggle("network");
         } else if (lowerAction === "bluetooth" || lowerAction === "bt") {

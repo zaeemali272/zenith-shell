@@ -25,25 +25,21 @@ QtObject {
         }
     }
 
+    // Emitted so anything holding a menu can react. Nothing here closes a
+    // window directly: these surfaces bind their visibility to service state,
+    // and writing to `visible` destroys that binding, after which the menu
+    // never opens again.
+    //
+    // The per-service closes used to sit here behind
+    // `typeof X !== "undefined"` guards. This file imports only QtQuick and
+    // Quickshell, so those names never resolved, all three guards were always
+    // false, and closeAll() silently closed nothing. DismissOverlay does that
+    // job now -- it imports the services and is what observes the click.
+    signal closeRequested()
+
     function closeAll() {
-        let menusToClose = [...openMenus];
         openMenus = [];
-        for (let menu of menusToClose) {
-            if (menu) {
-                try {
-                    menu.visible = false;
-                } catch(e) {}
-            }
-        }
-        if (typeof DynamicIslandService !== "undefined") {
-            DynamicIslandService.close();
-        }
-        if (typeof CenterState !== "undefined") {
-            CenterState.close();
-        }
-        if (typeof QuickSettingsService !== "undefined") {
-            QuickSettingsService.close();
-        }
+        closeRequested();
     }
 }
 

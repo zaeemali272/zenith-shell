@@ -1,166 +1,248 @@
+// Focus timer.
+//
+// Rebuilt around a progress ring: the old version was a bare number with rows
+// of buttons under it, and gave no sense of how much of the session was left
+// without reading and subtracting. The ring is the state; everything else is
+// secondary.
+//
+// The service API is unchanged -- duration/remaining/running plus
+// setDuration, adjustDuration, toggleTimer and resetTimer.
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
+import QtQuick.Shapes
 import "../.."
 import "../../../"
 import "../../../services"
 
 Item {
     id: root
-    
-    Layout.fillWidth: true
-    Layout.fillHeight: true
+
+    readonly property int total: Math.max(1, ProductivityService.duration)
+    readonly property real progress: Math.max(0, Math.min(1,
+        1 - (ProductivityService.remaining / total)))
+    readonly property bool done: ProductivityService.remaining <= 0
+
+    readonly property color ringColor: ProductivityService.isBeeping ? Theme.powerRed
+                                     : ProductivityService.running    ? Theme.accentColor
+                                                                      : Theme.blue
+
+    function clock(secs) {
+        var s = Math.max(0, secs);
+        var h = Math.floor(s / 3600);
+        var m = Math.floor((s % 3600) / 60);
+        var r = s % 60;
+        return (h > 0 ? h + ":" + String(m).padStart(2, "0")
+                      : String(m)) + ":" + String(r).padStart(2, "0");
+    }
 
     ColumnLayout {
-        anchors.centerIn: parent
-        spacing: Theme.scaled(30)
-        width: parent.width * 0.9
+        anchors.fill: parent
+        anchors.margins: Theme.scaled(10)
+        spacing: Theme.scaled(14)
 
-        // --- MAIN TIMER DISPLAY ---
-        ColumnLayout {
+        Item { Layout.fillHeight: true }
+
+        // ---------------- ring ----------------
+        Item {
+            id: ring
             Layout.alignment: Qt.AlignHCenter
-            spacing: Theme.scaled(10)
+            readonly property real dim: Math.max(Theme.scaled(140),
+                Math.min(Theme.scaled(230), Math.min(root.width, root.height) * 0.55))
+            Layout.preferredWidth: dim
+            Layout.preferredHeight: dim
 
-            Text {
-                text: {
-                    let m = Math.floor(ProductivityService.remaining / 60);
-                    let s = ProductivityService.remaining % 60;
-                    return m + ":" + s.toString().padStart(2, '0');
+            readonly property real side: Math.min(width, height)
+            readonly property real stroke: Math.max(6, side * 0.055)
+            readonly property real radius: Math.max(1, (side - stroke) / 2)
+
+            Shape {
+                anchors.fill: parent
+                preferredRendererType: Shape.CurveRenderer
+
+                // track
+                ShapePath {
+                    strokeColor: Qt.rgba(1, 1, 1, 0.08)
+                    strokeWidth: ring.stroke
+                    fillColor: "transparent"
+                    capStyle: ShapePath.RoundCap
+                    PathAngleArc {
+                        centerX: ring.width / 2; centerY: ring.height / 2
+                        radiusX: ring.radius; radiusY: ring.radius
+                        startAngle: -90; sweepAngle: 360
+                    }
                 }
-                font.pixelSize: Theme.scaled(84)
-                font.weight: Font.Black
-                color: ProductivityService.running ? Theme.blue : Theme.text
-                Layout.alignment: Qt.AlignHCenter
-                
-                Behavior on color { ColorAnimation { duration: 300 } }
+                // elapsed
+                ShapePath {
+                    strokeColor: root.ringColor
+                    strokeWidth: ring.stroke
+                    fillColor: "transparent"
+                    capStyle: ShapePath.RoundCap
+                    PathAngleArc {
+                        centerX: ring.width / 2; centerY: ring.height / 2
+                        radiusX: ring.radius; radiusY: ring.radius
+                        startAngle: -90
+                        sweepAngle: 360 * root.progress
+                        Behavior on sweepAngle { NumberAnimation { duration: 400; easing.type: Easing.OutQuad } }
+                    }
+                }
             }
 
-            // --- ADJUSTMENT CONTROLS ---
-            RowLayout {
-                Layout.alignment: Qt.AlignHCenter
-                spacing: Theme.scaled(20)
-                visible: !ProductivityService.running
+            ColumnLayout {
+                anchors.centerIn: parent
+                spacing: 0
 
-                ControlBtn { 
-                    text: "-1m"; icon: "󰐊"; 
-                    onClicked: ProductivityService.adjustDuration(-60) 
+                Text {
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.preferredWidth: ring.side * 0.68
+                    horizontalAlignment: Text.AlignHCenter
+                    text: root.clock(ProductivityService.remaining)
+                    font.pixelSize: ring.side * 0.26
+                    fontSizeMode: Text.HorizontalFit
+                    minimumPixelSize: 10
+                    font.weight: Font.Black
+                    color: root.done ? Theme.powerRed : Theme.text
+                    Behavior on color { ColorAnimation { duration: 300 } }
                 }
-                ControlBtn { 
-                    text: "+1m"; icon: "󰐊"; 
-                    onClicked: ProductivityService.adjustDuration(60) 
-                }
-                ControlBtn { 
-                    text: "+5m"; icon: "󰐊"; 
-                    onClicked: ProductivityService.adjustDuration(300) 
+                Text {
+                    Layout.alignment: Qt.AlignHCenter
+                    text: ProductivityService.isBeeping ? "TIME UP"
+                        : ProductivityService.running   ? "FOCUSING"
+                        : root.progress > 0             ? "PAUSED"
+                                                        : "READY"
+                    color: Theme.subtext0
+                    font.pixelSize: Math.max(9, ring.side * 0.055)
+                    font.weight: Font.Black
+                    font.letterSpacing: 2
                 }
             }
         }
 
-        // --- QUICK PRESETS ---
+        // ---------------- presets ----------------
         Flow {
-            Layout.fillWidth: true
-            spacing: Theme.scaled(10)
-            Layout.alignment: Qt.AlignHCenter
-            
-            Repeater {
-                model: [
-                    { label: "5m",  secs: 300 },
-                    { label: "10m", secs: 600 },
-                    { label: "15m", secs: 900 },
-                    { label: "25m", secs: 1500 },
-                    { label: "30m", secs: 1800 },
-                    { label: "1h",  secs: 3600 }
-                ]
+            id: presetFlow
+            // Layout.fillWidth made this span the whole row, so the chips
+            // packed against the left edge while the ring and transport were
+            // centred. Sizing it to its own content and centring that keeps
+            // all three columns on the same axis; it still wraps when the
+            // panel is too narrow for one row.
+            readonly property real chipW: Theme.scaled(58)
+            readonly property real contentW: 6 * chipW + 5 * spacing
 
+            Layout.alignment: Qt.AlignHCenter
+            Layout.preferredWidth: Math.min(contentW, root.width - Theme.scaled(24))
+            spacing: Theme.scaled(8)
+            visible: !ProductivityService.running
+
+            Repeater {
+                // Values only -- no Theme colours in the model, so a palette
+                // change cannot force every delegate to be rebuilt.
+                model: [300, 600, 900, 1500, 1800, 3600]
                 delegate: Rectangle {
-                    width: (parent.width - Theme.scaled(50)) / (Theme.isSmallScreen ? 3 : 6)
-                    height: Theme.scaled(45)
-                    radius: Theme.scaled(12)
-                    color: ProductivityService.duration === modelData.secs ? Theme.blue : Theme.surface1
-                    
+                    required property int modelData
+                    readonly property bool active: ProductivityService.duration === modelData
+                    width: presetFlow.chipW; height: Theme.scaled(34)
+                    radius: height / 2
+                    color: active ? Theme.accentColor
+                                  : (presetMouse.containsMouse ? Theme.surfaceContainerHigh : Theme.surface1)
+                    Behavior on color { ColorAnimation { duration: 120 } }
+
                     Text {
                         anchors.centerIn: parent
-                        text: modelData.label
-                        font.pixelSize: Theme.scaled(12)
+                        text: modelData >= 3600 ? (modelData / 3600) + "h" : (modelData / 60) + "m"
+                        font.pixelSize: Theme.scaled(13)
                         font.weight: Font.Bold
-                        color: ProductivityService.duration === modelData.secs ? Theme.base : Theme.text
+                        color: parent.active ? Theme.base : Theme.subtext1
                     }
-
                     MouseArea {
+                        id: presetMouse
                         anchors.fill: parent
-                        onClicked: ProductivityService.setDuration(modelData.secs)
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: ProductivityService.setDuration(modelData)
                     }
                 }
             }
         }
 
-        // --- PLAYBACK CONTROLS ---
+        // ---------------- transport ----------------
         RowLayout {
             Layout.alignment: Qt.AlignHCenter
-            spacing: Theme.scaled(25)
+            spacing: Theme.scaled(16)
 
-            // Start / Pause
+            NudgeBtn { label: "-5"; onTriggered: ProductivityService.adjustDuration(-300) }
+            NudgeBtn { label: "-1"; onTriggered: ProductivityService.adjustDuration(-60) }
+
             Rectangle {
-                width: Theme.scaled(70); height: Theme.scaled(70); radius: width/2
-                color: ProductivityService.running ? Theme.powerRed : Theme.blue
-                
+                width: Theme.scaled(72); height: Theme.scaled(72); radius: width / 2
+                color: ProductivityService.running ? Theme.powerRed : Theme.accentColor
+                Behavior on color { ColorAnimation { duration: 150 } }
+
                 Text {
                     anchors.centerIn: parent
+                    // Nudged right because the play triangle is visually
+                    // off-centre inside its own glyph box.
+                    anchors.horizontalCenterOffset: ProductivityService.running ? 0 : Theme.scaled(2)
                     text: ProductivityService.running ? "󰏤" : "󰐊"
                     font.family: Theme.iconFont
-                    font.pixelSize: Theme.scaled(32)
+                    font.pixelSize: Theme.scaled(30)
                     color: Theme.base
-                    // Manual offset for better visual centering of the play icon
-                    anchors.horizontalCenterOffset: ProductivityService.running ? 0 : 3
                 }
-
                 MouseArea {
                     anchors.fill: parent
-                    onClicked: ProductivityService.toggleTimer()
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: ProductivityService.isBeeping ? ProductivityService.dismissAlarm()
+                                                             : ProductivityService.toggleTimer()
                 }
             }
 
-            // Reset
+            NudgeBtn { label: "+1"; onTriggered: ProductivityService.adjustDuration(60) }
+            NudgeBtn { label: "+5"; onTriggered: ProductivityService.adjustDuration(300) }
+
             Rectangle {
-                width: Theme.scaled(55); height: Theme.scaled(55); radius: width/2
-                color: Theme.surface1
-                
+                width: Theme.scaled(46); height: Theme.scaled(46); radius: width / 2
+                color: resetMouse.containsMouse ? Theme.surfaceContainerHigh : Theme.surface1
                 Text {
                     anchors.centerIn: parent
                     text: "󰜉"
                     font.family: Theme.iconFont
-                    font.pixelSize: Theme.scaled(24)
-                    color: Theme.text
+                    font.pixelSize: Theme.scaled(20)
+                    color: Theme.subtext1
                 }
-
                 MouseArea {
+                    id: resetMouse
                     anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
                     onClicked: ProductivityService.resetTimer()
                 }
             }
         }
+
+        Item { Layout.fillHeight: true }
     }
 
-    // --- Helper Component ---
-    component ControlBtn: Rectangle {
-        property string text
-        property string icon
-        signal clicked()
+    component NudgeBtn: Rectangle {
+        property string label
+        signal triggered()
 
-        width: Theme.scaled(60); height: Theme.scaled(35); radius: Theme.scaled(10)
-        color: Theme.surface1
-        
+        width: Theme.scaled(40); height: Theme.scaled(40); radius: width / 2
+        color: nudgeMouse.containsMouse ? Theme.surfaceContainerHigh : Theme.surface1
+        visible: !ProductivityService.running
+
         Text {
             anchors.centerIn: parent
-            text: parent.text
-            font.pixelSize: Theme.scaled(11)
+            text: parent.label
+            font.pixelSize: Theme.scaled(13)
             font.weight: Font.Black
             color: Theme.subtext1
         }
-
         MouseArea {
+            id: nudgeMouse
             anchors.fill: parent
-            onClicked: parent.clicked()
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: parent.triggered()
         }
     }
 }

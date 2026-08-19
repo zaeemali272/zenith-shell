@@ -3,10 +3,13 @@ import QtQuick.Layouts
 import QtQuick.Controls
 import "../.."
 import "../../../"
+import "../../../services"
 
 Item {
     id: root
-    property string activeTool: "Todo"
+    property string activeTool: CenterState.focusTool
+
+    onActiveToolChanged: CenterState.focusTool = activeTool
 
     ColumnLayout {
         anchors.fill: parent
@@ -17,7 +20,7 @@ Item {
             Layout.fillWidth: true
             spacing: Theme.scaled(10)
             Repeater {
-                model: ["Todo", "Timer"]
+                model: ["Todo", "Roadmap", "Timer"]
                 delegate: Rectangle {
                     width: Theme.scaled(80); height: Theme.scaled(30); radius: Theme.scaled(8)
                     color: root.activeTool === modelData ? Theme.blue : Theme.surface1
@@ -32,9 +35,10 @@ Item {
 
         StackLayout {
             Layout.fillWidth: true; Layout.fillHeight: true
-            currentIndex: ["Todo", "Timer"].indexOf(root.activeTool)
+            currentIndex: ["Todo", "Roadmap", "Timer"].indexOf(root.activeTool)
 
             TodoContent { Layout.fillWidth: true; Layout.fillHeight: true }
+            RoadmapContent { Layout.fillWidth: true; Layout.fillHeight: true }
             TimerContent { Layout.fillWidth: true; Layout.fillHeight: true }
         }
     }

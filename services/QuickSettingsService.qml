@@ -32,9 +32,6 @@ Item {
         }
 
         qsVisible = true;
-        if (menuRef) {
-            menuRef.visible = true;
-        }
     }
 
     function toggle(tab, rect) {
@@ -46,10 +43,13 @@ Item {
         }
     }
 
+    // Visibility is a binding: shell.qml declares
+    //     ControlCenter      { visible: CenterState.qsVisible }
+    //     QuickSettingsMenu  { visible: QuickSettingsService.qsVisible }
+    // Assigning menuRef.visible here would overwrite that binding permanently,
+    // after which the state flag still flips but the window stops following it.
+    // Setting the flag is the whole job.
     function close() {
         qsVisible = false;
-        if (menuRef) {
-            menuRef.visible = false;
-        }
     }
 }

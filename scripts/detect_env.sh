@@ -41,11 +41,13 @@ LANG_CODE="${LANG_STR%%.*}"
 COUNTRY_CODE=""
 COUNTRY_NAME="United States"
 
-if [[ "$LANG_STR" =~ _([A-Z]{2}) ]]; then
-    COUNTRY_CODE="${BASH_REMATCH[1]}"
-fi
-
-if [ -z "$COUNTRY_CODE" ] && [ -n "$TIMEZONE" ]; then
+# Timezone first, locale second.
+#
+# The locale says which language you read, not where you are: LANG=en_US.UTF-8
+# is the default for a great many people who have never been to the United
+# States. Checking it first meant a machine in Asia/Karachi reported US, and
+# the calendar filled up with Presidents Day instead of Pakistan Day.
+if [ -n "$TIMEZONE" ]; then
     case "$TIMEZONE" in
         *Karachi*|*Pakistan*) COUNTRY_CODE="PK" ;;
         *Riyadh*|*Saudi*) COUNTRY_CODE="SA" ;;
@@ -60,6 +62,12 @@ if [ -z "$COUNTRY_CODE" ] && [ -n "$TIMEZONE" ]; then
         *Sydney*|*Australia*) COUNTRY_CODE="AU" ;;
         *New_York*|*Chicago*|*Los_Angeles*|*America*) COUNTRY_CODE="US" ;;
     esac
+fi
+
+# Only when the timezone is unknown to the table above does the locale get a
+# say -- it is better than nothing, but it is a guess.
+if [ -z "$COUNTRY_CODE" ] && [[ "$LANG_STR" =~ _([A-Z]{2}) ]]; then
+    COUNTRY_CODE="${BASH_REMATCH[1]}"
 fi
 
 COUNTRY_CODE="${COUNTRY_CODE:-US}"
