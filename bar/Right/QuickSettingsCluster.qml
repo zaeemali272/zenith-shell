@@ -227,7 +227,9 @@ Item {
                 Layout.preferredWidth: implicitWidth
                 Layout.preferredHeight: implicitHeight
                 Layout.alignment: Qt.AlignVCenter
-                visible: BluetoothService.powered
+                // Gone entirely on a machine with no adapter, rather than
+                // sitting there permanently off.
+                visible: HardwareService.hasBluetooth && BluetoothService.powered
 
                 Rectangle {
                     anchors.fill: parent
@@ -273,7 +275,10 @@ Item {
                 Layout.preferredWidth: implicitWidth
                 Layout.preferredHeight: implicitHeight
                 Layout.alignment: Qt.AlignVCenter
-                visible: WidgetSettings.enableBattery && !HyprlandService.isFullscreen
+                // A desktop or VM has no battery to report, so the readout
+                // is removed rather than showing a meaningless 0%.
+                visible: HardwareService.hasBattery && WidgetSettings.enableBattery
+                         && !HyprlandService.isFullscreen
 
                 Rectangle {
                     anchors.fill: parent
