@@ -64,23 +64,34 @@ ColumnLayout {
         columnSpacing: Theme.scaled(12)
 
         Repeater {
+            // No Theme.* values in here on purpose. Embedding them made the whole
+            // array a binding on the palette, so every recolour rebuilt all four
+            // delegates -- and when that rebuild landed inside a layout pass the
+            // layout engine walked an item it had just destroyed and segfaulted.
+            // Colours are resolved per delegate instead, updating in place.
             model: [
-                { id: "performance", icon: "󰀦", color: Theme.powerRed, label: "PERFORMANCE", desc: "Max Speed & Power" },
-                { id: "balanced",    icon: "󰏤", color: Theme.blue, label: "BALANCED", desc: "Optimal Performance" },
-                { id: "powersave",   icon: "󰍛", color: Theme.powerGreen, label: "POWER SAVER", desc: "Extended Battery Life" },
-                { id: "turbo",       icon: "󰞃", color: Theme.powerYellow, label: "TURBO", desc: "Peak Boost Mode" }
+                { id: "performance", icon: "󰀦", label: "PERFORMANCE", desc: "Max Speed & Power" },
+                { id: "balanced",    icon: "󰏤", label: "BALANCED", desc: "Optimal Performance" },
+                { id: "powersave",   icon: "󰍛", label: "POWER SAVER", desc: "Extended Battery Life" },
+                { id: "turbo",       icon: "󰞃", label: "TURBO", desc: "Peak Boost Mode" }
             ]
 
             delegate: Rectangle {
                 id: profileCard
+
+                readonly property color accent: modelData.id === "performance" ? Theme.powerRed
+                                              : modelData.id === "balanced"    ? Theme.blue
+                                              : modelData.id === "powersave"   ? Theme.powerGreen
+                                              : Theme.powerYellow
+
                 Layout.fillWidth: true
                 height: Theme.scaled(82)
                 color: PowerProfileService.currentProfile === modelData.id ? 
-                       Qt.rgba(modelData.color.r, modelData.color.g, modelData.color.b, 0.18) : 
+                       Qt.rgba(profileCard.accent.r, profileCard.accent.g, profileCard.accent.b, 0.18) : 
                        Qt.rgba(Theme.surfaceContainerHigh.r, Theme.surfaceContainerHigh.g, Theme.surfaceContainerHigh.b, 0.4)
                 radius: Theme.scaled(18)
                 border.width: PowerProfileService.currentProfile === modelData.id ? 2 : 1
-                border.color: PowerProfileService.currentProfile === modelData.id ? modelData.color : Theme.glassBorder
+                border.color: PowerProfileService.currentProfile === modelData.id ? profileCard.accent : Theme.glassBorder
 
                 scale: m.pressed ? 0.96 : (m.containsMouse ? 1.015 : 1.0)
                 Behavior on scale { NumberAnimation { duration: 180; easing.type: Theme.elasticEasing } }
@@ -100,14 +111,14 @@ ColumnLayout {
 
                     Rectangle {
                         width: Theme.scaled(44); height: Theme.scaled(44); radius: Theme.scaled(14)
-                        color: PowerProfileService.currentProfile === modelData.id ? modelData.color : Qt.rgba(1,1,1,0.06)
+                        color: PowerProfileService.currentProfile === modelData.id ? profileCard.accent : Qt.rgba(1,1,1,0.06)
 
                         Text {
                             anchors.centerIn: parent
                             text: modelData.icon
                             font.family: Theme.iconFont
                             font.pixelSize: Theme.scaled(20)
-                            color: PowerProfileService.currentProfile === modelData.id ? Theme.base : modelData.color
+                            color: PowerProfileService.currentProfile === modelData.id ? Theme.base : profileCard.accent
                         }
                     }
 
@@ -127,7 +138,7 @@ ColumnLayout {
                             Rectangle {
                                 visible: PowerProfileService.currentProfile === modelData.id
                                 width: Theme.scaled(6); height: Theme.scaled(6); radius: 3
-                                color: modelData.color
+                                color: profileCard.accent
                             }
                         }
 

@@ -124,6 +124,7 @@ ColumnLayout {
         clip: true
 
         Flickable {
+            FastWheel {}
             id: wallFlickable
             anchors.fill: parent
             contentHeight: wallFlow.height

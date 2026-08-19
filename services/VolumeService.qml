@@ -172,7 +172,20 @@ Item {
 
     Process {
         id: volListener
-        command: ["sh", "-c", "pw-mon 2>/dev/null || pactl subscribe"]
+        // pw-mon is not a trickle of change events: it dumps the entire
+        // PipeWire graph on connect -- measured at 10,237 lines in the first
+        // second, then silence. Fed straight into SplitParser that became
+        // 10,237 JS callbacks, each restarting the debounce timer, every time
+        // the listener (re)connected.
+        //
+        // awk collapses any burst to at most one line per second, so a
+        // reconnect costs one update instead of ten thousand callbacks. The
+        // pactl fallback is kept only for machines without pw-mon; it emits
+        // nothing on this one, verified by subscribing across a real volume
+        // change.
+        command: ["sh", "-c",
+            "{ pw-mon 2>/dev/null || pactl subscribe; } | " +
+            "awk 'systime() != t { t = systime(); print \"change\"; fflush() }'"]
         running: true
         stdout: SplitParser {
             onRead: (data) => {

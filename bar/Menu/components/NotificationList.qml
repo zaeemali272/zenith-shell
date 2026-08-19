@@ -6,6 +6,7 @@ import "../../../services"
 import "../../../"
 
 Flickable {
+    FastWheel {}
     id: root
     Layout.fillWidth: true
     Layout.fillHeight: true
