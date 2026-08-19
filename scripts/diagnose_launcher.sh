@@ -92,6 +92,52 @@ else
 fi
 
 echo
+echo "== super tap detector =="
+# The launcher is the only action with a tap detector in front of it. Emoji and
+# clipboard go through the same launch.sh and the same IPC, so if those work and
+# the launcher does not, the problem is here rather than anywhere downstream.
+if pgrep -f "super_tap.py" >/dev/null 2>&1; then
+    ok "super_tap.py is running"
+else
+    bad "super_tap.py is NOT running"
+    info "it is started from Hyprland's execs.lua; check that config is loaded"
+fi
+
+# Whether the devices can actually be read is the thing that matters. Group
+# membership is only the usual reason it fails, and it can be misreported inside
+# a sandbox or a container, so it is reported as a hint rather than a verdict.
+READABLE=0; TOTAL=0
+for dev in /dev/input/event*; do
+    [ -e "$dev" ] || continue
+    TOTAL=$((TOTAL + 1))
+    [ -r "$dev" ] && READABLE=$((READABLE + 1))
+done
+
+if [ "$TOTAL" -eq 0 ]; then
+    bad "no /dev/input/event* devices at all"
+elif [ "$READABLE" -eq "$TOTAL" ]; then
+    ok "all $TOTAL input devices are readable -- the tap can be seen"
+else
+    bad "only $READABLE of $TOTAL input devices are readable"
+    info "super_tap.py reads these directly; it cannot detect a tap without them."
+    if id -nG 2>/dev/null | tr ' ' '\n' | grep -qx input; then
+        info "you are in the 'input' group, so this is a udev/permissions issue"
+    else
+        info "you are not in the 'input' group. NixOS adds it in the system"
+        info "configuration; on Arch you have to do it yourself:"
+        info "    sudo usermod -aG input \$USER     # then log out and back in"
+    fi
+fi
+
+echo
+echo "== hyprland binds =="
+if command -v hyprctl >/dev/null 2>&1; then
+    N="$(hyprctl binds 2>/dev/null | grep -c 'key: SUPER_L' || true)"
+    info "SUPER_L binds registered: $N (expected 2: press and release)"
+    [ "$N" = "2" ] && ok "the keybind half is present" || warn "keybinds.lua may not be loaded"
+fi
+
+echo
 echo "== summary =="
 info "If ipc failed above, that is the cause. Everything else can look healthy"
 info "-- including tests/smoke.sh, which talks to the shell by pid, not by path."
