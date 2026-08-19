@@ -14,6 +14,22 @@ MenuWindow {
 
     card: mainContent
     namespaceName: "quicksettings"
+
+    readonly property var allTabs: [
+        { id: "network", icon: "󰤨", title: "WI-FI" },
+        { id: "bluetooth", icon: "󰂯", title: "BT" },
+        { id: "volume", icon: "󰕾", title: "AUDIO" },
+        { id: "powerprofile", icon: "󰍛", title: "POWER" },
+        { id: "battery", icon: "󰁹", title: "BATTERY" },
+        { id: "power", icon: "󰐥", title: "SESSION" }
+    ]
+
+    readonly property var availableTabs: allTabs.filter(function (t) {
+        if (t.id === "bluetooth") return HardwareService.hasBluetooth;
+        if (t.id === "battery")   return HardwareService.hasBattery;
+        if (t.id === "network")   return HardwareService.hasNetworking;
+        return true;
+    })
     // Typing a WiFi password flips keyboardFocus, which reconfigures the
     // surface and drops the grab; without this the panel vanished the
     // moment you clicked a network to connect to.
@@ -120,14 +136,10 @@ MenuWindow {
                     spacing: Theme.scaled(4)
                     
                     Repeater {
-                        model: [
-                            { id: "network", icon: "󰤨", title: "WI-FI" },
-                            { id: "bluetooth", icon: "󰂯", title: "BT" },
-                            { id: "volume", icon: "󰕾", title: "AUDIO" },
-                            { id: "powerprofile", icon: "󰍛", title: "POWER" },
-                            { id: "battery", icon: "󰁹", title: "BATTERY" },
-                            { id: "power", icon: "󰐥", title: "SESSION" }
-                        ]
+                        // Only the tabs this machine can actually use. A
+                        // Bluetooth tab on a desktop with no adapter, or a
+                        // battery tab in a VM, is a dead button.
+                        model: root.availableTabs
 
                         delegate: Rectangle {
                             id: tabRect
@@ -206,7 +218,23 @@ MenuWindow {
                     // children[currentIndex].implicitHeight, which re-enters
                     // Qt's layout engine from inside its own rearrange.
                     height: Math.max(implicitHeight, Theme.scaled(420))
-                    currentIndex: ["network", "bluetooth", "volume", "powerprofile", "battery", "power"].indexOf(QuickSettingsService.activeTab)
+                    // Indexed against allTabs, because the pages below are all
+                    // still here in their original order -- only the tab strip
+                    // is filtered. Indexing the filtered list would show the
+                    // wrong page as soon as one was hidden.
+                    //
+                    // A tab that has been filtered out can still be the active
+                    // one (a saved state, or a keybind), so fall back to the
+                    // first tab this machine actually has.
+                    currentIndex: {
+                        var all = root.allTabs.map(function (t) { return t.id; });
+                        var avail = root.availableTabs.map(function (t) { return t.id; });
+                        var active = QuickSettingsService.activeTab;
+                        if (avail.indexOf(active) < 0 && avail.length > 0)
+                            active = avail[0];
+                        var i = all.indexOf(active);
+                        return i >= 0 ? i : 0;
+                    }
 
                     onCurrentIndexChanged: transitionAnim.restart()
 
