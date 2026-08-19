@@ -59,12 +59,16 @@ PanelWindow {
         NumberAnimation { target: mainTranslate; property: "y"; from: -6; to: 0; duration: Theme.animFast; easing.type: Theme.animEasing }
     }
 
-    // --- DISMISS ON OUTER CLICK ---
-    MouseArea {
-        anchors.fill: parent
-        z: -1
-        onClicked: CenterState.close()
-    }
+    // Outer clicks are dismissed by DismissOverlay, a separate full-screen
+    // layer window that calls MenuService.closeAll().
+    //
+    // There used to be a "dismiss on outer click" MouseArea filling this window
+    // at z: -1. It could never do that job: `mask: Region { item: ... }` above
+    // means the compositor only delivers input that lands inside the card, so
+    // the only clicks that MouseArea ever received were *inside* the menu. The
+    // card is a plain Rectangle and does not accept mouse events, so any click
+    // on empty card area -- padding, gaps between widgets, the tab strip
+    // background -- fell straight through to it and closed the menu.
 
     // Masterwork Material 3 Floating ControlCenter Card (Centered directly below bar)
     Rectangle {
@@ -141,7 +145,7 @@ PanelWindow {
                         spacing: Theme.scaled(4)
 
                         Repeater {
-                            model: ["Default", "Pomodoro", "Wallpaper", "AI Agent"]
+                            model: ["Default", "Pomodoro", "Mail", "Wallpaper"]
                             delegate: Rectangle {
                                 id: tabRect
                                 width: Math.max(Theme.scaled(82), tabText.implicitWidth + Theme.scaled(18))
@@ -240,7 +244,7 @@ PanelWindow {
                 id: contentStack
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                currentIndex: ["Default", "Pomodoro", "Wallpaper", "AI Agent"].indexOf(CenterState.activeTab)
+                currentIndex: ["Default", "Pomodoro", "Mail", "Wallpaper"].indexOf(CenterState.activeTab)
                 transform: Translate { id: contentTranslate }
                 onCurrentIndexChanged: fadeAnim.restart()
 
@@ -403,15 +407,14 @@ PanelWindow {
                     Layout.fillWidth: true; Layout.fillHeight: true
                 }
 
-                // Wallpaper Tab
-                WallpaperContent {
-                    id: wallpaperContent
+                // Mail Tab
+                MailContent {
                     Layout.fillWidth: true; Layout.fillHeight: true
                 }
 
-                // AI Agent Tab
-                AiAgentContent {
-                    id: aiAgentContent
+                // Wallpaper Tab
+                WallpaperContent {
+                    id: wallpaperContent
                     Layout.fillWidth: true; Layout.fillHeight: true
                 }
             }
@@ -423,9 +426,6 @@ PanelWindow {
         function onActiveTabChanged() {
             if (CenterState.activeTab === "Wallpaper") {
                 mainContent.Keys.forwardTo = [wallpaperContent];
-            } else if (CenterState.activeTab === "AI Agent") {
-                mainContent.Keys.forwardTo = [aiAgentContent];
-                aiAgentContent.focusInput();
             } else {
                 mainContent.Keys.forwardTo = [];
             }
@@ -437,19 +437,15 @@ PanelWindow {
     // shows the overview cards.
     function tabLabel(tabId) {
         // "Pomodoro" names one technique, but the tab holds a todo list and a
-        // timer; "Focus" covers both. "AI Agent" is what it is internally --
-        // "Assistant" is what it is to the person using it.
+        // timer; "Focus" covers both.
         if (tabId === "Default") return "Overview";
         if (tabId === "Pomodoro") return "Focus";
-        if (tabId === "AI Agent") return "Assistant";
         return tabId;
     }
 
     function updateFocusForTab(tab) {
         if (tab === "Wallpaper") {
             wallpaperContent.forceActiveFocus();
-        } else if (tab === "AI Agent") {
-            aiAgentContent.focusInput();
         }
     }
 }

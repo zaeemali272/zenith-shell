@@ -148,6 +148,7 @@ Rectangle {
                     clip: true
 
                     ListView {
+                        FastWheel {}
                         width: parent.width
                         spacing: Theme.scaled(6)
                         model: root.eventData || []

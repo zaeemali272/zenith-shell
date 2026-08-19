@@ -296,6 +296,7 @@ Item {
 
         // --- WiFi Networks List ---
         ListView {
+            FastWheel {}
             id: list
             Layout.fillWidth: true
             Layout.preferredHeight: contentHeight
