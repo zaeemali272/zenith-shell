@@ -53,7 +53,10 @@ QtObject {
 
     function shellQuote(str) { return "'" + String(str).replace(/'/g, "'\\''") + "'"; }
 
-    function saveAccount(user, password, hostOverride) {
+    // append=true keeps the existing accounts and adds another; the merge is
+    // done by a tiny python step because it has to read the current file, and
+    // shelling out a JSON rewrite from QML would be worse.
+    function saveAccount(user, password, hostOverride, append) {
         var u = String(user || "").trim();
         // Google presents an app password as four groups of four with spaces
         // ("abcd efgh ijkl mnop"). Pasted verbatim that fails to authenticate,
@@ -74,10 +77,25 @@ QtObject {
         }, null, 2);
 
         // umask 077 so the file is created 0600 -- it holds a password.
+        var merge =
+            'import json,os,sys\n' +
+            'path=sys.argv[1]; entry=json.loads(sys.argv[2]); append=sys.argv[3]=="1"\n' +
+            'accounts=[]\n' +
+            'if append:\n' +
+            '    try:\n' +
+            '        cur=json.load(open(path))\n' +
+            '        accounts=cur.get("accounts") if isinstance(cur,dict) and cur.get("accounts") else ([cur] if isinstance(cur,dict) and cur.get("user") else [])\n' +
+            '    except Exception:\n' +
+            '        accounts=[]\n' +
+            'accounts=[a for a in accounts if a.get("user")!=entry["user"]]\n' +
+            'accounts.append(entry)\n' +
+            'os.makedirs(os.path.dirname(path), exist_ok=True)\n' +
+            'json.dump({"accounts":accounts}, open(path,"w"), indent=2)\n';
+
         writeProc.command = ["sh", "-c",
             'umask 077; mkdir -p ' + shellQuote(configDir) +
-            ' && printf "%s" "$1" > ' + shellQuote(configPath),
-            "--", payload];
+            ' && python3 -c "$1" ' + shellQuote(configPath) + ' "$2" "$3"',
+            "--", merge, payload, append ? "1" : "0"];
         writeProc.running = false;
         writeProc.running = true;
     }
@@ -145,13 +163,9 @@ QtObject {
         onExited: (code) => { if (code !== 0) service.checking = false; }
     }
 
-    // Whether an account exists at all, without connecting to anything.
-    property Process _probeProc: Process {
-        id: probeProc
-        running: true
-        command: ["sh", "-c", "test -s " + service.shellQuote(service.configPath) + " && echo yes || echo no"]
-        stdout: StdioCollector {
-            onStreamFinished: service.hasConfig = String(text).trim() === "yes"
-        }
-    }
+    // hasConfig is set by the mail tab from the `accounts` command when it
+    // first opens. There is deliberately no startup probe: it was a shell fork
+    // before anything was on screen just to test a file's existence, and
+    // reading mail.json into QML to answer the same question would pull the
+    // account passwords into the UI process for no reason.
 }

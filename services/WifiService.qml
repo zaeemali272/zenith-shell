@@ -47,6 +47,17 @@ Item {
         stateProc.running = true;
     }
 
+    // What NetworkManager already knows, without touching the radio. Opening
+    // the panel used to jump straight to a five second rescan, so the header
+    // said "0 NETWORKS IN RANGE" for five seconds -- stating as fact that
+    // nothing was there, when it simply had not looked yet.
+    function listCached() {
+        if (stateProc.running) return;
+        _requestScanned = true;
+        stateProc.command = ["python3", helperScript, "cached"];
+        stateProc.running = true;
+    }
+
     // Force a full rescan even if a cheap status read is in flight -- used
     // when the user explicitly opens the panel or hits the refresh button,
     // where waiting on an unrelated poll would feel broken.

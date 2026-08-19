@@ -9,33 +9,17 @@ import "../../services"
 import "../../Settings"
 import "./components"
 
-PanelWindow {
+MenuWindow {
     id: root
+
+    card: mainContent
+    namespaceName: "controlcenter"
+    onDismissed: CenterState.close()
     property var parentWindow: null
-    visible: false
-    color: "transparent"
-
-    WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.exclusiveZone: 0
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
-    WlrLayershell.namespace: "controlcenter"
-    anchors {
-        top: true
-        bottom: true
-        left: true
-        right: true
-    }
-
-    mask: Region {
-        item: mainContent
-    }
-
-    Component.onDestruction: MenuService.unregister(root)
 
     onVisibleChanged: {
         Variables.controlCenterOpen = visible;
         if (visible) {
-            MenuService.register(root);
             CenterState.qsVisible = true;
             Qt.callLater(() => {
                 mainContent.forceActiveFocus();
@@ -43,7 +27,6 @@ PanelWindow {
             });
             showAnim.restart();
         } else {
-            MenuService.unregister(root);
             CenterState.qsVisible = false;
             mainContent.opacity = 0;
             mainContent.scale = 0.94;
@@ -59,18 +42,9 @@ PanelWindow {
         NumberAnimation { target: mainTranslate; property: "y"; from: -6; to: 0; duration: Theme.animFast; easing.type: Theme.animEasing }
     }
 
-    // Outer clicks are dismissed by DismissOverlay, a separate full-screen
-    // layer window that calls MenuService.closeAll().
-    //
-    // There used to be a "dismiss on outer click" MouseArea filling this window
-    // at z: -1. It could never do that job: `mask: Region { item: ... }` above
-    // means the compositor only delivers input that lands inside the card, so
-    // the only clicks that MouseArea ever received were *inside* the menu. The
-    // card is a plain Rectangle and does not accept mouse events, so any click
-    // on empty card area -- padding, gaps between widgets, the tab strip
-    // background -- fell straight through to it and closed the menu.
-
-    // Masterwork Material 3 Floating ControlCenter Card (Centered directly below bar)
+    // Outer clicks are dismissed by DismissOverlay; the input mask and the
+    // reason a dismiss MouseArea cannot live here are documented in
+    // MenuWindow.qml.
     Rectangle {
         id: mainContent
         anchors.top: parent.top

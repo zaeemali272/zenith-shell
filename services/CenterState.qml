@@ -21,7 +21,6 @@ Item {
         if (qsVisible) {
             if (typeof QuickSettingsService !== "undefined") QuickSettingsService.close();
             mediaVisible = false;
-            if (mediaPopupRef) mediaPopupRef.visible = false;
         }
     }
 
@@ -33,10 +32,8 @@ Item {
         if (typeof DynamicIslandService !== "undefined") DynamicIslandService.close();
         if (typeof QuickSettingsService !== "undefined") QuickSettingsService.close();
         mediaVisible = false;
-        if (mediaPopupRef) mediaPopupRef.visible = false;
         
         qsVisible = true;
-        if (menuRef) menuRef.visible = true;
     }
 
     function toggleMedia(rect) {
@@ -46,7 +43,6 @@ Item {
             close();
             if (typeof QuickSettingsService !== "undefined") QuickSettingsService.close();
             if (rect !== undefined) anchorRect = rect;
-            if (mediaPopupRef) mediaPopupRef.visible = true;
             mediaVisible = true;
         }
     }
@@ -60,10 +56,14 @@ Item {
         }
     }
 
+    // Visibility is a binding: shell.qml declares
+    //     ControlCenter      { visible: CenterState.qsVisible }
+    //     QuickSettingsMenu  { visible: QuickSettingsService.qsVisible }
+    // Assigning menuRef.visible here would overwrite that binding permanently,
+    // after which the state flag still flips but the window stops following it.
+    // Setting the flag is the whole job.
     function close() {
         qsVisible = false;
         mediaVisible = false;
-        if (menuRef) menuRef.visible = false;
-        if (mediaPopupRef) mediaPopupRef.visible = false;
     }
 }
