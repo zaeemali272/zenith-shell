@@ -37,6 +37,34 @@ ColumnLayout {
     // { slug: { nodeId: true } } -- only completed ids are stored.
     property var doneMap: ({})
     property int doneCount: 0
+
+    // Detail panel, the equivalent of roadmap.sh's side sheet.
+    property string detailId: ""
+    property string detailTitle: ""
+    property string detailBody: ""
+    property var detailResources: []
+    property bool detailLoading: false
+    property bool detailDone: false
+
+    // { slug: lastOpenedUnixSeconds } -- drives the ordering of the picker so
+    // whatever you are actually working through sits at the front.
+    property var recent: ({})
+
+    // { slug: togglableNodeCount } -- learned when a roadmap is opened, so a
+    // chip can say 102/139 rather than just 102. A roadmap never opened has no
+    // entry and shows no bar, which is honest: we do not know its size yet.
+    property var totals: ({})
+
+    function doneFor(slug) {
+        var m = root.doneMap ? root.doneMap[slug] : null;
+        if (!m) return 0;
+        var n = 0;
+        for (var k in m) if (m[k]) n++;
+        return n;
+    }
+    function totalFor(slug) {
+        return (root.totals && root.totals[slug]) ? root.totals[slug] : 0;
+    }
     property int togglableCount: 0
 
     readonly property string progressPath: PathSettings.configDir + "/zenith/roadmap_progress.json"
@@ -65,6 +93,33 @@ ColumnLayout {
     }
 
     function isTogglable(t) { return t === "topic" || t === "subtopic"; }
+
+    function openDetail(index) {
+        var row = nodeModel.get(index);
+        if (!row || !isTogglable(row.type)) return;
+        root.detailId = row.id;
+        root.detailTitle = row.label;
+        root.detailBody = "";
+        root.detailResources = [];
+        root.detailDone = row.done;
+        root.detailLoading = true;
+        contentProc.command = ["bash", PathSettings.scriptsDir + "/roadmap_content.sh",
+                               root.activeSlug, row.id];
+        contentProc.running = false;
+        contentProc.running = true;
+    }
+
+    function closeDetail() { root.detailId = ""; }
+
+    function toggleDetailDone() {
+        for (var i = 0; i < nodeModel.count; i++) {
+            if (nodeModel.get(i).id === root.detailId) {
+                toggleNode(i);
+                root.detailDone = nodeModel.get(i).done;
+                return;
+            }
+        }
+    }
 
     // roadmap.sh encodes "can I skip this?" in data.legend. No legend means
     // core material; the three legend colours mean recommendation, alternative
@@ -137,6 +192,12 @@ ColumnLayout {
 
     function selectSlug(slug, title) {
         if (!slug) return;
+        closeDetail();
+        // Remembered so the picker can lead with what is actually in progress.
+        var seen = root.recent || ({});
+        seen[slug] = Math.floor(Date.now() / 1000);
+        root.recent = seen;
+        saveTimer.restart();
         root.activeSlug = slug;
         root.activeTitle = title || prettify(slug);
         nodeModel.clear();
@@ -178,7 +239,18 @@ ColumnLayout {
                 var rows = [];
                 for (var i = 0; i < slugs.length; i++)
                     rows.push({ slug: slugs[i], title: root.prettify(slugs[i]) });
-                rows.sort(function (a, b) { return a.title.localeCompare(b.title); });
+                // Most recently opened first, then anything with progress, then the
+        // rest alphabetically -- the roadmap you are working through should not
+        // be somewhere down an alphabetical list of ninety-one.
+        rows.sort(function (a, b) {
+            var ra = (root.recent && root.recent[a.slug]) || 0;
+            var rb = (root.recent && root.recent[b.slug]) || 0;
+            if (ra !== rb) return rb - ra;
+            var pa = (root.doneMap && root.doneMap[a.slug]) ? 1 : 0;
+            var pb = (root.doneMap && root.doneMap[b.slug]) ? 1 : 0;
+            if (pa !== pb) return pb - pa;
+            return a.title.localeCompare(b.title);
+        });
                 for (var j = 0; j < rows.length; j++) allModel.append(rows[j]);
                 root.listFailed = allModel.count === 0;
                 root.applyFilter();
@@ -236,6 +308,10 @@ ColumnLayout {
                     });
                 }
                 root.togglableCount = togglable;
+                var sizes = root.totals || ({});
+                sizes[root.activeSlug] = togglable;
+                root.totals = sizes;
+                saveTimer.restart();
                 root.recountDone();
                 graphView.userZoomed = false;
                 graphView.fitToWidth();
@@ -246,6 +322,25 @@ ColumnLayout {
     }
 
     Process {
+        id: contentProc
+        stdout: StdioCollector {
+            onStreamFinished: {
+                root.detailLoading = false;
+                var res = {};
+                try { res = JSON.parse(String(text).trim() || "{}"); }
+                catch (e) { root.detailBody = "Could not load this topic."; return; }
+                if (res.title) root.detailTitle = res.title;
+                root.detailBody = res.description || (res.missing
+                    ? "roadmap.sh has no write-up for this node yet."
+                    : "");
+                root.detailResources = res.resources || [];
+            }
+        }
+    }
+
+    Process { id: openLinkProc }
+
+    Process {
         id: progressLoad
         command: ["sh", "-c", "cat '" + root.progressPath + "' 2>/dev/null || echo '{}'"]
         running: false
@@ -253,7 +348,17 @@ ColumnLayout {
             onStreamFinished: {
                 try {
                     var parsed = JSON.parse(String(text).trim() || "{}");
-                    if (parsed && typeof parsed === "object") root.doneMap = parsed;
+                    if (parsed && typeof parsed === "object") {
+                        // New shape is {done, recent}; anything older is the
+                        // bare done-map and still loads.
+                        if (parsed.done !== undefined) {
+                            root.doneMap = parsed.done || ({});
+                            root.recent = parsed.recent || ({});
+                            root.totals = parsed.totals || ({});
+                        } else {
+                            root.doneMap = parsed;
+                        }
+                    }
                 } catch (e) { root.doneMap = ({}); }
             }
         }
@@ -266,7 +371,17 @@ ColumnLayout {
         id: saveTimer
         interval: 700
         onTriggered: {
-            var payload = JSON.stringify(root.doneMap);
+            // Empty entries are dropped: a roadmap you ticked something in and
+            // then unticked would otherwise count as "has progress" forever.
+            var pruned = {};
+            for (var slug in root.doneMap) {
+                var ids = root.doneMap[slug], any = false;
+                for (var k in ids) if (ids[k]) { any = true; break; }
+                if (any) pruned[slug] = ids;
+            }
+            root.doneMap = pruned;
+            var payload = JSON.stringify({ done: pruned, recent: root.recent,
+                                           totals: root.totals });
             progressSave.command = ["sh", "-c",
                 "mkdir -p \"$(dirname '" + root.progressPath + "')\" && " +
                 "printf '%s' \"$1\" > '" + root.progressPath + ".tmp' && " +
@@ -384,13 +499,51 @@ ColumnLayout {
             border.width: 1
             Behavior on color { ColorAnimation { duration: 120 } }
 
-            Text {
+            readonly property int chipDone: root.doneFor(slug)
+            readonly property int chipTotal: root.totalFor(slug)
+            readonly property real chipFraction: chipTotal > 0
+                ? Math.min(1, chipDone / chipTotal) : 0
+
+            Row {
                 id: tabLabel
                 anchors.centerIn: parent
-                text: tabItem.title
-                color: tabItem.isActive ? Theme.base : Theme.subtext1
-                font.pixelSize: Theme.scaled(10)
-                font.weight: tabItem.isActive ? Font.Bold : Font.Medium
+                spacing: Theme.scaled(4)
+
+                Text {
+                    text: tabItem.title
+                    color: tabItem.isActive ? Theme.base : Theme.subtext1
+                    font.pixelSize: Theme.scaled(10)
+                    font.weight: tabItem.isActive ? Font.Bold : Font.Medium
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                // The count is the point: 102 nodes deep into a roadmap should
+                // not look identical to one never opened.
+                Text {
+                    visible: tabItem.chipDone > 0
+                    text: tabItem.chipTotal > 0
+                          ? tabItem.chipDone + "/" + tabItem.chipTotal
+                          : String(tabItem.chipDone)
+                    color: tabItem.isActive ? Theme.base : Theme.accentColor
+                    opacity: tabItem.isActive ? 0.75 : 1.0
+                    font.pixelSize: Theme.scaled(8)
+                    font.weight: Font.Black
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+            }
+
+            // Progress as a hairline along the bottom of the chip.
+            Rectangle {
+                visible: tabItem.chipFraction > 0
+                anchors.left: parent.left
+                anchors.bottom: parent.bottom
+                anchors.leftMargin: Theme.scaled(6)
+                anchors.bottomMargin: Theme.scaled(3)
+                width: (tabItem.width - Theme.scaled(12)) * tabItem.chipFraction
+                height: Theme.scaled(2)
+                radius: height / 2
+                color: tabItem.isActive ? Theme.base : Theme.accentColor
+                opacity: tabItem.isActive ? 0.65 : 0.85
+                Behavior on width { NumberAnimation { duration: 200 } }
             }
             MouseArea {
                 id: tabMouse
@@ -414,10 +567,7 @@ ColumnLayout {
             font.pixelSize: Theme.scaled(14)
             font.weight: Font.Black
             elide: Text.ElideNone
-            // Measured against the tab, not the row: reading the row's own
-            // width from a child that determines it makes Qt Quick
-            // Layouts recurse ("Detected recursive rearrange").
-            Layout.maximumWidth: root.width * 0.6
+            Layout.fillWidth: true
         }
         Text {
             text: root.togglableCount > 0
@@ -648,16 +798,60 @@ ColumnLayout {
                             font.strikeout: nodeBox.done
                         }
 
+                        // Completion badge, as on roadmap.sh: a tick on the
+                        // corner rather than relying on the fill colour alone,
+                        // which is hard to read at fit-to-width zoom.
+                        Rectangle {
+                            visible: nodeBox.done && nodeBox.togglable
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.rightMargin: -6
+                            width: 16; height: 16
+                            radius: 8
+                            color: nodeBox.accent
+                            border.color: Theme.base
+                            border.width: 2
+                            z: 3
+                            Text {
+                                anchors.centerIn: parent
+                                text: "\u2713"
+                                color: Theme.base
+                                font.pixelSize: 10
+                                font.weight: Font.Black
+                            }
+                        }
+
                         MouseArea {
                             id: nodeMouse
                             anchors.fill: parent
                             enabled: nodeBox.togglable
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: root.toggleNode(nodeBox.index)
+                            onClicked: root.openDetail(nodeBox.index)
                         }
                     }
                 }
+            }
+        }
+
+        // ---------------- topic detail ----------------
+        RoadmapDetail {
+            anchors.fill: parent
+            visible: root.detailId !== ""
+            z: 5
+
+            topicTitle: root.detailTitle
+            body: root.detailBody
+            resources: root.detailResources
+            loading: root.detailLoading
+            isDone: root.detailDone
+
+            onClosed: root.closeDetail()
+            onToggleDone: root.toggleDetailDone()
+            onOpenLink: (url) => {
+                openLinkProc.command = ["xdg-open", url];
+                openLinkProc.running = false;
+                openLinkProc.running = true;
             }
         }
 

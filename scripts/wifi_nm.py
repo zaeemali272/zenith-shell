@@ -29,7 +29,7 @@ def run_cmd(args):
     except Exception:
         return ""
 
-def get_wifi_state(do_scan=True):
+def get_wifi_state(do_scan=True, list_cached=False):
     radio = run_cmd(["nmcli", "radio", "wifi"])
     is_airplane = (radio.lower() == "disabled")
     
@@ -81,9 +81,12 @@ def get_wifi_state(do_scan=True):
                     break
 
     networks = []
-    if do_scan:
-        # Scan WiFi list
-        scan_lines = run_cmd(["nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY,IN-USE", "dev", "wifi", "list", "--rescan", "yes"]).split("\n")
+    if do_scan or list_cached:
+        # --rescan yes drives the radio for about five seconds. --rescan no
+        # returns NetworkManager's existing view in about ten milliseconds,
+        # which is what the panel shows while the real scan is still running.
+        rescan = "yes" if do_scan else "no"
+        scan_lines = run_cmd(["nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY,IN-USE", "dev", "wifi", "list", "--rescan", rescan]).split("\n")
         seen = {}
         for line in scan_lines:
             if not line:
@@ -148,10 +151,14 @@ def get_wifi_state(do_scan=True):
 
 def main():
     do_scan = True
+    list_cached = False
     if len(sys.argv) > 1:
         cmd = sys.argv[1].lower()
         if cmd == "status" or cmd == "fast":
             do_scan = False
+        elif cmd == "cached":
+            do_scan = False
+            list_cached = True
         elif cmd == "connect" and len(sys.argv) >= 3:
             ssid = sys.argv[2]
             password = sys.argv[3] if len(sys.argv) >= 4 else ""
@@ -179,7 +186,7 @@ def main():
             print(res)
             return
 
-    data = get_wifi_state(do_scan=do_scan)
+    data = get_wifi_state(do_scan=do_scan, list_cached=list_cached)
     print(json.dumps(data, indent=2))
 
 if __name__ == "__main__":

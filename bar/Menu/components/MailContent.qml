@@ -20,6 +20,9 @@ ColumnLayout {
     spacing: Theme.scaled(10)
 
     property bool started: false
+    property string account: ""          // selected account address
+    property bool showingCached: false
+    property bool addingAccount: false
     property bool loading: false
     property string errorText: ""
     property bool needsConfig: !MailService.hasConfig
@@ -47,7 +50,7 @@ ColumnLayout {
         root.openBody = "";
         root.openAttachments = [];
         root.openLoading = true;
-        bodyProc.command = ["python3", MailService.script, "body", row.uid];
+        bodyProc.command = accountArgs(["body", row.uid]);
         bodyProc.running = false;
         bodyProc.running = true;
     }
@@ -63,17 +66,63 @@ ColumnLayout {
     function startIfNeeded() {
         if (started || !visible) return;
         started = true;
+        accountsProc.running = true;
+        // Painting the last known inbox first is what makes the tab feel
+        // instant: the network round trip then replaces it in place instead of
+        // the user staring at an empty box while IMAP connects.
+        loadCached();
+        refresh();
+    }
+
+    function loadCached() {
+        cachedProc.command = accountArgs(["cached"]);
+        cachedProc.running = false;
+        cachedProc.running = true;
+    }
+
+    function accountArgs(args) {
+        var cmd = ["python3", MailService.script].concat(args);
+        if (root.account !== "") cmd = cmd.concat(["--account", root.account]);
+        return cmd;
+    }
+
+    function selectAccount(user) {
+        if (root.account === user) return;
+        root.account = user;
+        mailModel.clear();
+        root.unread = 0;
+        closeMessage();
+        loadCached();
         refresh();
     }
     onVisibleChanged: { startIfNeeded(); if (started && visible) refresh(); }
     Component.onCompleted: startIfNeeded()
 
     function refresh() {
-        if (loading || !MailService.hasConfig) return;
+        if (loading) return;
         loading = true;
         errorText = "";
+        listProc.command = accountArgs(["list", "25"]);
         listProc.running = false;
         listProc.running = true;
+    }
+
+    function fillFrom(res, cached) {
+        root.unread = res.unread || 0;
+        MailService.unread = root.unread;
+        MailService.account = res.user || "";
+        if (root.account === "") root.account = res.user || "";
+        root.showingCached = !!cached;
+        mailModel.clear();
+        var list = res.messages || [];
+        for (var i = 0; i < list.length; i++) {
+            var m = list[i];
+            mailModel.append({
+                uid: String(m.uid), sender: String(m["from"] || ""),
+                addr: String(m.addr || ""), subject: String(m.subject || ""),
+                ts: m.ts | 0, unread: !!m.unread
+            });
+        }
     }
 
     function relative(ts) {
@@ -88,9 +137,85 @@ ColumnLayout {
 
     ListModel { id: mailModel }
 
+    ListModel { id: accountModel }
+
+    Connections {
+        target: MailService
+        function onAccountSaved() {
+            accountsProc.running = false;
+            accountsProc.running = true;
+            root.needsConfig = false;
+            root.refresh();
+        }
+    }
+
+    Process {
+        id: accountsProc
+        command: ["python3", MailService.script, "accounts"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                var res = {};
+                try { res = JSON.parse(String(text).trim().split("\n").pop()); }
+                catch (e) { return; }
+                if (res.type !== "accounts") return;
+                accountModel.clear();
+                for (var i = 0; i < res.accounts.length; i++)
+                    accountModel.append({ user: String(res.accounts[i].user) });
+
+                MailService.hasConfig = accountModel.count > 0;
+                root.needsConfig = accountModel.count === 0;
+
+                if (root.account === "" && accountModel.count > 0) {
+                    root.account = accountModel.get(0).user;
+                    root.loadCached();
+                    root.refresh();
+                }
+            }
+        }
+    }
+
+    Process {
+        id: cachedProc
+        stdout: StdioCollector {
+            onStreamFinished: {
+                var res = {};
+                try { res = JSON.parse(String(text).trim().split("\n").pop()); }
+                catch (e) { return; }
+                // Only paint the cache while nothing fresher has arrived.
+                if (res.type === "list" && mailModel.count === 0)
+                    root.fillFrom(res, true);
+            }
+        }
+    }
+
+    Process {
+        id: deleteProc
+        stdout: StdioCollector {
+            onStreamFinished: {
+                var res = {};
+                try { res = JSON.parse(String(text).trim().split("\n").pop()); }
+                catch (e) { return; }
+                if (res.type !== "delete_done") root.errorText = res.message || "Delete failed.";
+            }
+        }
+    }
+
+    function deleteMessage(index) {
+        var row = mailModel.get(index);
+        if (!row) return;
+        if (root.openUid === row.uid) closeMessage();
+        // Removed locally straight away; the script also drops it from the
+        // cache so a restart cannot bring it back.
+        var uid = row.uid;
+        if (row.unread) root.unread = Math.max(0, root.unread - 1);
+        mailModel.remove(index);
+        deleteProc.command = accountArgs(["delete", uid]);
+        deleteProc.running = false;
+        deleteProc.running = true;
+    }
+
     Process {
         id: listProc
-        command: ["python3", MailService.script, "list", "25"]
         stdout: StdioCollector {
             onStreamFinished: {
                 root.loading = false;
@@ -99,19 +224,8 @@ ColumnLayout {
                 catch (e) { root.errorText = "Mail fetch produced no usable result."; return; }
 
                 if (res.type === "list") {
-                    root.unread = res.unread || 0;
-                    MailService.unread = root.unread;
                     MailService.connected = true;
-                    MailService.account = res.user || "";
-                    mailModel.clear();
-                    for (var i = 0; i < res.messages.length; i++) {
-                        var m = res.messages[i];
-                        mailModel.append({
-                            uid: String(m.uid), sender: String(m["from"] || ""),
-                            addr: String(m.addr || ""), subject: String(m.subject || ""),
-                            ts: m.ts | 0, unread: !!m.unread
-                        });
-                    }
+                    root.fillFrom(res, false);
                 } else {
                     root.errorText = res.message || "Could not load mail.";
                     root.needsConfig = !!res.needs_config;
@@ -166,7 +280,7 @@ ColumnLayout {
         mailModel.setProperty(index, "unread", false);
         root.unread = Math.max(0, root.unread - 1);
         MailService.unread = root.unread;
-        markProc.command = ["python3", MailService.script, "read", row.uid];
+        markProc.command = accountArgs(["read", row.uid]);
         markProc.running = false;
         markProc.running = true;
     }
@@ -182,10 +296,7 @@ ColumnLayout {
             font.pixelSize: Theme.scaled(12)
             font.weight: Font.Black
             elide: Text.ElideRight
-            // Measured against the tab, not the row: reading the row's own
-            // width from a child that determines it makes Qt Quick
-            // Layouts recurse ("Detected recursive rearrange").
-            Layout.maximumWidth: root.width * 0.55
+            Layout.fillWidth: true
         }
         Rectangle {
             visible: root.unread > 0
@@ -201,6 +312,24 @@ ColumnLayout {
                 font.pixelSize: Theme.scaled(9)
                 font.weight: Font.Black
             }
+        }
+        // A refresh that fails while messages are already on screen used to
+        // leave no trace at all -- the list just quietly stopped updating.
+        Text {
+            text: root.errorText !== "" ? root.errorText : MailService.lastError
+            visible: (root.errorText !== "" || MailService.lastError !== "")
+                     && mailModel.count > 0
+            color: Theme.powerRed
+            font.pixelSize: Theme.scaled(9)
+            elide: Text.ElideRight
+            Layout.maximumWidth: Theme.scaled(180)
+        }
+
+        Text {
+            text: "saved copy"
+            visible: root.showingCached && root.loading
+            color: Theme.subtext0
+            font.pixelSize: Theme.scaled(9)
         }
         Item { Layout.fillWidth: true }
         Rectangle {
@@ -258,11 +387,76 @@ ColumnLayout {
         }
     }
 
+    // ---------------- accounts ----------------
+    Flow {
+        Layout.fillWidth: true
+        spacing: Theme.scaled(6)
+        visible: MailService.hasConfig
+
+        Repeater {
+            model: accountModel
+            delegate: Rectangle {
+                id: accChip
+                required property string user
+                readonly property bool active: user === root.account
+                width: accLabel.implicitWidth + Theme.scaled(16)
+                height: Theme.scaled(22)
+                radius: height / 2
+                color: active ? Theme.accentColor
+                              : (accMouse.containsMouse ? Theme.surfaceContainerHigh : Qt.rgba(0, 0, 0, 0.3))
+                border.color: active ? Theme.accentColor : Theme.glassBorder
+                border.width: 1
+                Text {
+                    id: accLabel
+                    anchors.centerIn: parent
+                    text: accChip.user.split("@")[0]
+                    color: accChip.active ? Theme.base : Theme.subtext1
+                    font.pixelSize: Theme.scaled(9)
+                    font.weight: Font.Bold
+                }
+                MouseArea {
+                    id: accMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.selectAccount(accChip.user)
+                }
+            }
+        }
+
+        Rectangle {
+            width: Theme.scaled(64); height: Theme.scaled(22)
+            radius: height / 2
+            color: addMouse.containsMouse ? Theme.accentColor : Qt.rgba(0, 0, 0, 0.3)
+            border.color: Theme.glassBorder
+            border.width: 1
+            Text {
+                anchors.centerIn: parent
+                text: root.addingAccount ? "cancel" : "+ account"
+                color: addMouse.containsMouse ? Theme.base : Theme.subtext1
+                font.pixelSize: Theme.scaled(9)
+                font.weight: Font.Bold
+            }
+            MouseArea {
+                id: addMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    root.addingAccount = !root.addingAccount;
+                    if (root.addingAccount) { userInput.text = ""; passInput.text = ""; }
+                }
+            }
+        }
+    }
+
     // ---------------- connect prompt ----------------
     Rectangle {
         Layout.fillWidth: true
         Layout.preferredHeight: connectCol.implicitHeight + Theme.scaled(24)
-        visible: root.needsConfig || MailService.authFailed || !MailService.hasConfig
+        // Only when there is something to connect: no accounts at all, the
+        // "+ account" button was pressed, or the server rejected what we have.
+        visible: root.needsConfig || root.addingAccount || MailService.authFailed
         radius: Theme.cardRadius
         color: Qt.rgba(0, 0, 0, 0.35)
         border.color: Theme.accentColor
@@ -343,7 +537,11 @@ ColumnLayout {
                         echoMode: TextInput.Password
                         selectByMouse: true
                         clip: true
-                        onAccepted: MailService.saveAccount(userInput.text, passInput.text, "")
+                        onAccepted: {
+                            MailService.saveAccount(userInput.text, passInput.text, "",
+                                                    root.addingAccount);
+                            root.addingAccount = false;
+                        }
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "app password"
@@ -369,7 +567,11 @@ ColumnLayout {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: MailService.saveAccount(userInput.text, passInput.text, "")
+                        onClicked: {
+                            MailService.saveAccount(userInput.text, passInput.text, "",
+                                                    root.addingAccount);
+                            root.addingAccount = false;
+                        }
                     }
                 }
             }
@@ -445,13 +647,41 @@ ColumnLayout {
                     visible: mailRow.unread
                 }
 
+                // Only on hover, so a list at rest stays calm and the button
+                // cannot be hit by accident while scanning.
+                Rectangle {
+                    id: delBtn
+                    anchors.right: parent.right
+                    anchors.rightMargin: Theme.scaled(6)
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: Theme.scaled(22); height: Theme.scaled(22)
+                    radius: width / 2
+                    z: 2
+                    visible: rowMouse.containsMouse || delMouse.containsMouse
+                    color: delMouse.containsMouse ? Theme.powerRed : Qt.rgba(1, 1, 1, 0.08)
+                    Text {
+                        anchors.centerIn: parent
+                        text: "x"
+                        color: delMouse.containsMouse ? Theme.base : Theme.subtext1
+                        font.pixelSize: Theme.scaled(11)
+                        font.weight: Font.Black
+                    }
+                    MouseArea {
+                        id: delMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.deleteMessage(mailRow.index)
+                    }
+                }
+
                 ColumnLayout {
                     id: rowCol
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.leftMargin: Theme.scaled(14)
-                    anchors.rightMargin: Theme.scaled(8)
+                    anchors.rightMargin: Theme.scaled(34)
                     spacing: Theme.scaled(2)
 
                     RowLayout {
@@ -524,6 +754,31 @@ ColumnLayout {
                         }
                     }
                     Item { Layout.fillWidth: true }
+                    Rectangle {
+                        width: Theme.scaled(54); height: Theme.scaled(24)
+                        radius: Theme.scaled(8)
+                        color: delReaderMouse.containsMouse ? Theme.powerRed : Qt.rgba(0, 0, 0, 0.35)
+                        border.color: Theme.glassBorder; border.width: 1
+                        Text {
+                            anchors.centerIn: parent
+                            text: "delete"
+                            color: delReaderMouse.containsMouse ? Theme.base : Theme.subtext1
+                            font.pixelSize: Theme.scaled(9); font.weight: Font.Bold
+                        }
+                        MouseArea {
+                            id: delReaderMouse
+                            anchors.fill: parent; hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                for (var i = 0; i < mailModel.count; i++) {
+                                    if (mailModel.get(i).uid === root.openUid) {
+                                        root.deleteMessage(i);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
                     Rectangle {
                         width: Theme.scaled(74); height: Theme.scaled(24)
                         radius: Theme.scaled(8)
@@ -616,10 +871,11 @@ ColumnLayout {
             color: Theme.subtext0
             font.pixelSize: Theme.scaled(11)
             visible: mailModel.count === 0 && root.openUid === ""
-            text: root.needsConfig     ? "No account connected yet"
-                : root.loading         ? "Loading mail..."
-                : root.errorText !== "" ? root.errorText
-                                       : "Inbox is empty"
+            text: root.needsConfig      ? "No account connected yet"
+                : root.errorText !== ""  ? root.errorText
+                : MailService.lastError !== "" ? MailService.lastError
+                : root.loading           ? "Loading mail..."
+                                         : "Inbox is empty"
         }
     }
 }

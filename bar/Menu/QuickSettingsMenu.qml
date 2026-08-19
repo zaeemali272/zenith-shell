@@ -9,39 +9,27 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
 
-PanelWindow {
+MenuWindow {
     id: root
 
+    card: mainContent
+    namespaceName: "quicksettings"
+    // Typing a WiFi password flips keyboardFocus, which reconfigures the
+    // surface and drops the grab; without this the panel vanished the
+    // moment you clicked a network to connect to.
+    dismissInhibited: typeof wifiContent !== "undefined" && wifiContent.isInputActive
+    onDismissed: QuickSettingsService.close()
+
     property var parentWindow: null
-    visible: false
-    color: "transparent"
 
-    WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.exclusiveZone: 0
     WlrLayershell.keyboardFocus: (typeof wifiContent !== "undefined" && wifiContent.isInputActive) ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.OnDemand
-    WlrLayershell.namespace: "quicksettings"
-    anchors {
-        top: true
-        bottom: true
-        left: true
-        right: true
-    }
-
-    mask: Region {
-        item: mainContent
-    }
-
-    Component.onDestruction: MenuService.unregister(root)
-
     onVisibleChanged: {
         Variables.quickSettingsOpen = visible;
         if (visible) {
-            MenuService.register(root);
             QuickSettingsService.qsVisible = true;
             Qt.callLater(() => mainContent.forceActiveFocus());
             showAnim.restart();
         } else {
-            MenuService.unregister(root);
             QuickSettingsService.qsVisible = false;
             mainContent.opacity = 0;
             mainContent.scale = 0.94;
@@ -75,18 +63,9 @@ PanelWindow {
         }
     }
 
-    // Outer clicks are dismissed by DismissOverlay, a separate full-screen
-    // layer window that calls MenuService.closeAll().
-    //
-    // There used to be a "dismiss on outer click" MouseArea filling this window
-    // at z: -1. It could never do that job: `mask: Region { item: ... }` above
-    // means the compositor only delivers input that lands inside the card, so
-    // the only clicks that MouseArea ever received were *inside* the menu. The
-    // card is a plain Rectangle and does not accept mouse events, so any click
-    // on empty card area -- padding, gaps between widgets, the tab strip
-    // background -- fell straight through to it and closed the menu.
-
-    // Masterwork Material 3 Floating QuickSettings Card (Directly below bar)
+    // Outer clicks are dismissed by DismissOverlay; the input mask and the
+    // reason a dismiss MouseArea cannot live here are documented in
+    // MenuWindow.qml.
     Rectangle {
         id: mainContent
         anchors.top: parent.top
@@ -222,12 +201,11 @@ PanelWindow {
                     id: contentStack
                     width: scrollArea.availableWidth
                     transform: Translate { id: contentTranslate }
-                    height: {
-                        if (currentIndex >= 0 && currentIndex < children.length && children[currentIndex]) {
-                            return children[currentIndex].implicitHeight || 420;
-                        }
-                        return 420;
-                    }
+                    // Own implicitHeight, not a walk over children. See the
+                    // segfault note: the previous binding read
+                    // children[currentIndex].implicitHeight, which re-enters
+                    // Qt's layout engine from inside its own rearrange.
+                    height: Math.max(implicitHeight, Theme.scaled(420))
                     currentIndex: ["network", "bluetooth", "volume", "powerprofile", "battery", "power"].indexOf(QuickSettingsService.activeTab)
 
                     onCurrentIndexChanged: transitionAnim.restart()

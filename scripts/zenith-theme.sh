@@ -34,6 +34,51 @@ log_err()  { printf '\033[1;31m[ERR]\033[0m %s\n' "$*" >&2; }
 # --autoselect keeps the old flag working; matugen needs a --prefer strategy
 # when an image yields several candidate source colours and no terminal is
 # attached to ask in (which is always, when called from the shell).
+
+# Validates a generated Hyprland scheme without installing it. Exposed as a
+# subcommand so the check that guards your desktop can itself be tested:
+#
+#     zenith-theme.sh --validate <file>     exit 0 if safe to install
+#
+# This is not hypothetical. A generated scheme once lost the trailing commas on
+# its entries, was installed anyway, and Hyprland refused to start until the
+# file was restored by hand.
+validate_scheme() {
+    local file="$1"
+    [ -s "$file" ] || { echo "empty or missing" >&2; return 1; }
+
+    python3 - "$file" <<'SCHEME_CHECK' || return 1
+import re, sys
+s = open(sys.argv[1]).read()
+rows = [l for l in s.splitlines() if re.match(r'\s+\w+\s*=', l)]
+problems = []
+if not rows:                                       problems.append("no entries")
+if any(not l.rstrip().endswith(',') for l in rows): problems.append("missing trailing comma")
+if "{{" in s:                                      problems.append("unrendered template placeholder")
+if s.count("{") != s.count("}"):                   problems.append("unbalanced braces")
+if problems:
+    sys.stderr.write("; ".join(problems) + "\n")
+    sys.exit(1)
+SCHEME_CHECK
+
+    # Then a real interpreter, when one is available.
+    local lua_bin
+    for lua_bin in lua luajit lua5.4 lua5.3; do
+        if command -v "$lua_bin" >/dev/null 2>&1; then
+            "$lua_bin" -e "assert(type(dofile('$file'))=='table')" 2>/dev/null || {
+                echo "not valid Lua" >&2
+                return 1
+            }
+            break
+        fi
+    done
+    return 0
+}
+
+if [[ "${1:-}" == "--validate" ]]; then
+    validate_scheme "${2:-}" && { echo "ok"; exit 0; } || exit 1
+fi
+
 PREFER="saturation"
 if [[ "${1:-}" == "--autoselect" ]]; then
     shift
@@ -110,36 +155,10 @@ mv -f "$PALETTE_STAGE" "$PALETTE"
 log_ok "Palette written to $PALETTE"
 
 if [[ "${THEME_HYPRLAND:-0}" == "1" ]]; then
-    # Structural check first: every "key = value" line must still end in a
-    # comma, and the table must be balanced with no unrendered placeholders.
-    if ! python3 - "$HYPR_STAGE" <<'PYEOF'
-import re, sys
-s = open(sys.argv[1]).read()
-rows = [l for l in s.splitlines() if re.match(r'\s+\w+\s*=', l)]
-problems = []
-if not rows:                                   problems.append("no entries")
-if any(not l.rstrip().endswith(',') for l in rows): problems.append("missing trailing comma")
-if "{{" in s:                                  problems.append("unrendered template placeholder")
-if s.count("{") != s.count("}"):               problems.append("unbalanced braces")
-if problems:
-    sys.stderr.write("; ".join(problems) + "\n")
-    sys.exit(1)
-PYEOF
-    then
+    if ! validate_scheme "$HYPR_STAGE"; then
         log_err "Generated Hyprland scheme is malformed; keeping the existing one."
         exit 1
     fi
-
-    # Then let a real Lua interpreter confirm it, when one is available.
-    for lua_bin in lua luajit lua5.4 lua5.3; do
-        if command -v "$lua_bin" >/dev/null 2>&1; then
-            if ! "$lua_bin" -e "assert(type(dofile('$HYPR_STAGE'))=='table')" 2>/dev/null; then
-                log_err "Generated Hyprland scheme is not valid Lua; keeping the existing one."
-                exit 1
-            fi
-            break
-        fi
-    done
 
     # Keep one generation of backup, in the cache dir rather than beside the
     # config: ~/.config/hypr is commonly a symlink into a dotfiles repo, and a

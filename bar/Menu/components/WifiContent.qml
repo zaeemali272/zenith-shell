@@ -31,7 +31,22 @@ Item {
     // report visible, so the panel must also be open.
     readonly property bool isShowing: root.visible && QuickSettingsService.qsVisible
 
-    onIsShowingChanged: if (isShowing) WifiService.rescan()
+    // Cached list first so the panel is populated immediately, then the real
+    // scan a moment later to pick up anything new. Same idea as the mail tab
+    // painting its cache before the network answers.
+    onIsShowingChanged: {
+        if (isShowing) {
+            WifiService.listCached();
+            firstScan.restart();
+        }
+    }
+
+    Timer {
+        id: firstScan
+        interval: 400
+        repeat: false
+        onTriggered: if (root.isShowing) WifiService.rescan()
+    }
 
     // Connection state, signal strength and IP are cheap (~70ms) so they can
     // poll briskly and keep the panel feeling live.
@@ -109,7 +124,11 @@ Item {
                     }
 
                     Text {
-                        text: root.isAirplane ? "AIRPLANE MODE ACTIVE" : (wifiSvc.networks.length + " NETWORKS IN RANGE")
+                        // "0 NETWORKS IN RANGE" while a scan is still running
+                        // is a claim the shell cannot back up yet.
+                        text: root.isAirplane ? "AIRPLANE MODE ACTIVE"
+                            : (wifiSvc.networks.length === 0 && wifiSvc.isRefreshing) ? "SCANNING..."
+                            : (wifiSvc.networks.length + " NETWORKS IN RANGE")
                         color: Theme.subtext0
                         font.pixelSize: Theme.scaled(10)
                         font.weight: Font.Bold

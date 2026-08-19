@@ -21,3 +21,4 @@ WifiContent WifiContent.qml
 RoadmapContent RoadmapContent.qml
 FastWheel FastWheel.qml
 MailContent MailContent.qml
+RoadmapDetail RoadmapDetail.qml

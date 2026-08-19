@@ -19,7 +19,7 @@ PanelWindow {
     WlrLayershell.anchors.left: true
     WlrLayershell.anchors.right: true
     color: "transparent"
-    visible: MenuService.openMenus.length > 0 || (typeof DynamicIslandService !== "undefined" && DynamicIslandService.active)
+    visible: MenuService.openMenus.length > 0 || DynamicIslandService.active
 
 
 
@@ -28,7 +28,13 @@ PanelWindow {
         acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
         
         onPressed: (mouse) => {
+            // Closed explicitly here because this file imports the services and
+            // MenuService does not. Every surface that can be open off a click
+            // gets closed, whichever one the click actually landed outside of.
             MenuService.closeAll();
+            DynamicIslandService.close();
+            CenterState.close();
+            QuickSettingsService.close();
         }
     }
 }

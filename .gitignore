@@ -3,9 +3,19 @@
 # ---------------------------------------------------------------------------
 wifi_secrets.json
 
-# The Todoist API token normally lives in ~/.config/zenith/todoist.json,
-# outside the repo. This is a guard in case one is ever dropped in-tree.
+# Credentials normally live in ~/.config/zenith/, outside the repo. These are
+# guards in case one is ever generated, copied or dropped in-tree -- a leaked
+# app password or API key is not something you get to take back.
 todoist.json
+mail.json
+ai_keys.json
+*_secrets.json
+*.key
+*.pem
+
+# Personal state: what you have read, ticked and worked on.
+roadmap_progress.json
+todo.json
 
 # ---------------------------------------------------------------------------
 # Runtime state written by the shell while it runs, not configuration.

@@ -39,11 +39,21 @@ ColumnLayout {
     // Explicit sizing for ScrollView integration
     implicitHeight: mainLayout.implicitHeight
 
-    // Index 0 is LOCK. This used to default to 5 -- SHUTDOWN -- and was reset
-    // to it every time the panel opened. Because the panel calls
-    // forceActiveFocus() on open and Enter activates the selection, opening
-    // the session menu and pressing Enter powered the machine off.
-    readonly property int defaultIndex: 0
+    // SHUTDOWN is the default selection, by request.
+    //
+    // Worth knowing: the panel calls forceActiveFocus() when it opens and Enter
+    // activates whatever is selected, so opening this menu and pressing Enter
+    // powers the machine off. That is the intended behaviour here -- it is only
+    // a hazard if a keystroke arrives before you have looked at the panel.
+    //
+    // Found by label rather than written as a number, so reordering the buttons
+    // below cannot silently point this at REBOOT.
+    readonly property int defaultIndex: {
+        var buttons = powerButtons.model;
+        for (var i = 0; i < buttons.length; i++)
+            if (buttons[i].label === "SHUTDOWN") return i;
+        return 0;
+    }
     property int selectedIndex: defaultIndex
 
     // Reset selection every time the menu is opened
