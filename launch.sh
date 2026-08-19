@@ -53,6 +53,18 @@ send_cmd() {
         quickshell -d -p "$SHELL_DIR" &
         sleep 0.6
     fi
+    # By pid first.
+    #
+    # `ipc -p <dir>` selects the instance by the config path it was started
+    # with, which only matches when the shell was launched from exactly this
+    # directory. A symlinked ~/.config/quickshell, a different clone location or
+    # a shell started by a display manager all break it -- and the failure is
+    # silent: the Super key does nothing while every other part of the shell
+    # works, which is why tests/smoke.sh (which talks by pid) passes anyway.
+    local qs_pid
+    qs_pid="$(pgrep -f 'quickshell -[pd]' | head -1)"
+
+    { [ -n "$qs_pid" ] && quickshell ipc --pid "$qs_pid" call zenith:menu toggle "$cmd" 2>/dev/null; } || \
     quickshell ipc -p "$SHELL_DIR" call zenith:menu toggle "$cmd" 2>/dev/null || \
     quickshell ipc call zenith:menu toggle "$cmd" 2>/dev/null || \
     python3 -c "import os, sys; p=sys.argv[1]; c=sys.argv[2]; f=os.open(p, os.O_WRONLY|os.O_NONBLOCK); os.write(f, (c+'\n').encode()); os.close(f)" "$FIFO_FILE" "$cmd" 2>/dev/null || \

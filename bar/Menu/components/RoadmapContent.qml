@@ -735,7 +735,11 @@ ColumnLayout {
                         x: nx; y: ny; width: nw; height: nh
                         // Sections are the backdrop panels the website groups
                         // nodes into, so they sit behind everything else.
-                        z: type === "section" ? -1 : 1
+                        // section < paragraph < everything else. Both are
+                        // containers that other nodes are drawn inside, so
+                        // leaving them on the same layer as their contents left
+                        // paint order to decide which covered which.
+                        z: type === "section" ? -2 : (type === "paragraph" ? -1 : 1)
                         radius: type === "section" ? 10 : 6
 
                         // Solid, not translucent: these sit over a glass card,
@@ -764,16 +768,34 @@ ColumnLayout {
                         Text {
                             anchors.fill: parent
                             anchors.margins: 3
+                            // Paragraph nodes are containers, not labels: the
+                            // heading sits at the top of the box and the buttons
+                            // roadmap.sh draws underneath live inside the same
+                            // rectangle. Centring the text vertically put it
+                            // straight through those buttons.
+                            anchors.topMargin: nodeBox.type === "paragraph" ? 6 : 3
                             horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
+                            verticalAlignment: nodeBox.type === "paragraph"
+                                             ? Text.AlignTop : Text.AlignVCenter
                             wrapMode: Text.WordWrap
                             // Never truncate. The boxes are fixed sizes handed
                             // down by the API, so the text shrinks to fit them
                             // instead -- "API Au..." tells you nothing, and
                             // letting it spill would run into the next node.
                             elide: Text.ElideNone
+                            // Fit both dimensions, and wrap. HorizontalFit was
+                            // tried for containers and is wrong next to
+                            // WordWrap: it shrinks until the text fits the width
+                            // on one line rather than letting it wrap, so 57
+                            // characters in a 280px box collapsed to a few
+                            // pixels tall.
                             fontSizeMode: Text.Fit
-                            minimumPixelSize: 5
+                            // Headings and captions get a floor. They are the
+                            // labels most likely to sit in a box that is tight
+                            // for their length, and shrinking them to nothing is
+                            // worse than letting them wrap onto another line.
+                            minimumPixelSize: (nodeBox.type === "paragraph"
+                                               || nodeBox.type === "label") ? 9 : 5
                             text: nodeBox.label
                             visible: nodeBox.label !== ""
                             color: nodeBox.done ? Theme.base

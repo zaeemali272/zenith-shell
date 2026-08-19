@@ -197,10 +197,17 @@ ColumnLayout {
                     spacing: Theme.scaled(6)
 
                     Text {
-                        text: PowerProfileService.conservativeLabel || "Battery Care"
+                        // A refused write used to look exactly like a working
+                        // one that changed nothing: the button is pressed, no
+                        // password prompt appears because no polkit agent is
+                        // running, and the card sits unchanged.
+                        text: PowerProfileService.conservativeError !== ""
+                              ? "Needs permission"
+                              : (PowerProfileService.conservativeLabel || "Battery Care")
                         font.pixelSize: Theme.scaled(11)
                         font.weight: Font.Black
-                        color: Theme.text
+                        color: PowerProfileService.conservativeError !== ""
+                               ? Theme.powerRed : Theme.text
                     }
 
                     Rectangle {
