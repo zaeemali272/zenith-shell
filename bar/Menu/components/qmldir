@@ -1,4 +1,3 @@
-AiAgentContent AiAgentContent.qml
 BatteryContent BatteryContent.qml
 BluetoothContent BluetoothContent.qml
 CalendarWidget CalendarWidget.qml
@@ -19,3 +18,6 @@ VolumeSlider VolumeSlider.qml
 WallpaperContent WallpaperContent.qml
 WeatherWidget WeatherWidget.qml
 WifiContent WifiContent.qml
+RoadmapContent RoadmapContent.qml
+FastWheel FastWheel.qml
+MailContent MailContent.qml

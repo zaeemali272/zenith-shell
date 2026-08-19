@@ -52,12 +52,16 @@ PanelWindow {
         NumberAnimation { target: mainTranslate; property: "y"; from: -6; to: 0; duration: Theme.animNormal; easing.type: Theme.animEasing }
     }
 
-    // --- DISMISS ON OUTER CLICK ---
-    MouseArea {
-        anchors.fill: parent
-        z: -1
-        onClicked: CenterState.close()
-    }
+    // Outer clicks are dismissed by DismissOverlay, a separate full-screen
+    // layer window that calls MenuService.closeAll().
+    //
+    // There used to be a "dismiss on outer click" MouseArea filling this window
+    // at z: -1. It could never do that job: `mask: Region { item: ... }` above
+    // means the compositor only delivers input that lands inside the card, so
+    // the only clicks that MouseArea ever received were *inside* the menu. The
+    // card is a plain Rectangle and does not accept mouse events, so any click
+    // on empty card area -- padding, gaps between widgets, the tab strip
+    // background -- fell straight through to it and closed the menu.
 
     // Masterwork Material 3 Floating Media Card (Directly below media widget)
     Rectangle {

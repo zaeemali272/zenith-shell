@@ -13,6 +13,8 @@ Item {
     property var menuRef: null
     property var mediaPopupRef: null
     property string activeTab: "Default"
+    // Sub-tool for the Focus tab: "Todo", "Roadmap" or "Timer".
+    property string focusTool: "Todo"
     property rect anchorRect: Qt.rect(0, 0, 0, 0)
 
     onQsVisibleChanged: {

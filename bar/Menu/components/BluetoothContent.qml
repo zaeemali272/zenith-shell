@@ -197,6 +197,7 @@ ColumnLayout {
 
         // --- Device List ---
         ListView {
+            FastWheel {}
             id: deviceList
             Layout.fillWidth: true
             
