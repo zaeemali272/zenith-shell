@@ -172,19 +172,11 @@ printf '%s' "$OUT" | jq -e '(.vm | type) == "boolean" and (.battery | type) == "
     && pass "detect_hardware.sh emits real booleans" \
     || fail "capabilities are not booleans"
 
-# ------------------------------------------------------------ super_launcher
-# Tap detection keeps its state under XDG_RUNTIME_DIR; point it somewhere
-# disposable so a test cannot disturb a live session.
-export XDG_RUNTIME_DIR="$WORK"
-timeout 10 "$S/super_launcher.sh" press >/dev/null 2>&1
-if [ -f "$WORK/zenith_super/press_time" ]; then
-    pass "super_launcher.sh records a press"
-else
-    fail "super_launcher.sh did not record a press"
-fi
-timeout 10 "$S/super_launcher.sh" combo >/dev/null 2>&1
-[ -f "$WORK/zenith_super/combo_flag" ] \
-    && pass "super_launcher.sh records a combo, which suppresses the tap" \
-    || fail "super_launcher.sh did not record a combo"
+# ------------------------------------------------------------------ launch.sh
+# The CLI must parse and describe itself without a running shell.
+bash -n "$REPO/launch.sh" && pass "launch.sh parses" || fail "launch.sh has a syntax error"
+"$REPO/launch.sh" --help 2>/dev/null | grep -q "dashboard" \
+    && pass "launch.sh --help lists the surfaces" \
+    || fail "launch.sh --help is broken"
 
 exit "$FAILED"

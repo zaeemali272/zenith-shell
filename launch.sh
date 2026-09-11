@@ -1,168 +1,131 @@
 #!/usr/bin/env bash
-# Zenith Shell (Quickshell) Launcher & IPC CLI
+# Zenith Shell (Quickshell) launcher & IPC CLI.
+#
+#   launch.sh start|stop|restart      manage the shell process
+#   launch.sh <action>                toggle a surface (see --help)
+#
+# Keybinds do not go through here: Hyprland-dots binds them to the shell's
+# native global shortcuts (hl.dsp.global("zenith:...")), which costs no
+# process at all. This script is for terminals, scripts and anything that is
+# not the compositor.
+set -uo pipefail
 
 SHELL_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export ZENITH_ROOT="$SHELL_DIR"
 export QML_IMPORT_PATH="$SHELL_DIR"
 export QML2_IMPORT_PATH="$SHELL_DIR"
 
-FIFO_FILE="$HOME/.cache/zenith_fifo"
+FIFO_FILE="${XDG_CACHE_HOME:-$HOME/.cache}/zenith_fifo"
 
-# Ensure FIFO file directory exists
-if [ ! -d "$HOME/.cache" ]; then
-    mkdir -p "$HOME/.cache"
-fi
-
-if [ ! -p "$FIFO_FILE" ]; then
-    rm -f "$FIFO_FILE"
-    mkfifo "$FIFO_FILE" 2>/dev/null || touch "$FIFO_FILE"
-fi
-
-COMBO_FILE="$HOME/.cache/zenith_last_combo"
-
-mark_combo() {
-    python3 -c "import time; print(int(time.time()*1000))" > "$COMBO_FILE" 2>/dev/null || date +%s%3N > "$COMBO_FILE" 2>/dev/null || true
-}
-
-is_recent_combo() {
-    if [ -f "$COMBO_FILE" ]; then
-        local last_time
-        last_time=$(cat "$COMBO_FILE" 2>/dev/null || echo 0)
-        local now
-        now=$(python3 -c "import time; print(int(time.time()*1000))" 2>/dev/null || date +%s%3N 2>/dev/null || echo 0)
-        local diff=$((now - last_time))
-        if [ "$diff" -ge 0 ] && [ "$diff" -lt 550 ]; then
-            return 0
-        fi
-    fi
-    return 1
+# Matched on the command line, not the process name: on NixOS the binary is a
+# wrapper whose comm is ".quickshell-wra", so `pkill -x quickshell` never
+# matched anything and every "restart" started a second shell beside the
+# first (two bars, every keybind firing twice).
+shell_pids() {
+    pgrep -f '^quickshell( |$)' 2>/dev/null
 }
 
 is_running() {
-    pgrep -x "quickshell" >/dev/null 2>&1 || pgrep -x ".quickshell-wra" >/dev/null 2>&1 || pgrep -f "quickshell" >/dev/null 2>&1
+    [ -n "$(shell_pids)" ]
 }
 
+stop_shell() {
+    local pids
+    pids="$(shell_pids)"
+    [ -n "$pids" ] || return 0
+    # shellcheck disable=SC2086
+    kill $pids 2>/dev/null
+    for _ in 1 2 3 4 5 6 7 8 9 10; do
+        is_running || return 0
+        sleep 0.1
+    done
+    # shellcheck disable=SC2086
+    kill -9 $(shell_pids) 2>/dev/null || true
+}
+
+start_shell() {
+    echo "Starting Quickshell..."
+    (cd "$SHELL_DIR" && setsid quickshell -d -p "$SHELL_DIR" >/dev/null 2>&1 &)
+}
+
+# Fastest first. Writing to the FIFO the shell already reads is a single
+# open+write; `quickshell ipc` is a Qt client start-up (~100ms). The FIFO open
+# blocks when nobody is reading, so it is bounded by a timeout and falls
+# through to ipc, which also covers a shell started from somewhere else.
 send_cmd() {
     local cmd="$1"
-    if [ "$cmd" != "launcher" ]; then
-        "$SHELL_DIR/scripts/super_launcher.sh" mark_combo 2>/dev/null || true
-        mark_combo
-    fi
+
     if ! is_running; then
-        echo "Starting Quickshell..."
-        quickshell -d -p "$SHELL_DIR" &
-        sleep 0.6
+        start_shell
+        sleep 0.8
     fi
-    # By pid first.
-    #
-    # `ipc -p <dir>` selects the instance by the config path it was started
-    # with, which only matches when the shell was launched from exactly this
-    # directory. A symlinked ~/.config/quickshell, a different clone location or
-    # a shell started by a display manager all break it -- and the failure is
-    # silent: the Super key does nothing while every other part of the shell
-    # works, which is why tests/smoke.sh (which talks by pid) passes anyway.
+
+    if [ -p "$FIFO_FILE" ] && timeout 0.3 bash -c 'printf "%s\n" "$1" > "$2"' _ "$cmd" "$FIFO_FILE" 2>/dev/null; then
+        return 0
+    fi
+
     local qs_pid
-    qs_pid="$(pgrep -f 'quickshell -[pd]' | head -1)"
-
-    { [ -n "$qs_pid" ] && quickshell ipc --pid "$qs_pid" call zenith:menu toggle "$cmd" 2>/dev/null; } || \
-    quickshell ipc -p "$SHELL_DIR" call zenith:menu toggle "$cmd" 2>/dev/null || \
-    quickshell ipc call zenith:menu toggle "$cmd" 2>/dev/null || \
-    python3 -c "import os, sys; p=sys.argv[1]; c=sys.argv[2]; f=os.open(p, os.O_WRONLY|os.O_NONBLOCK); os.write(f, (c+'\n').encode()); os.close(f)" "$FIFO_FILE" "$cmd" 2>/dev/null || \
-    (echo "$cmd" > "$FIFO_FILE" 2>/dev/null &)
+    qs_pid="$(shell_pids | head -1)"
+    { [ -n "$qs_pid" ] && quickshell ipc --pid "$qs_pid" call zenith:menu toggle "$cmd" >/dev/null 2>&1; } \
+        || quickshell ipc -p "$SHELL_DIR" call zenith:menu toggle "$cmd" >/dev/null 2>&1 \
+        || quickshell ipc call zenith:menu toggle "$cmd" >/dev/null 2>&1
 }
-
 
 show_usage() {
-    echo "Zenith Shell CLI & IPC Launch Script"
-    echo ""
-    echo "Usage: $0 [command/action]"
-    echo ""
-    echo "Actions:"
-    echo "  launcher | applauncher     Toggle App Launcher"
-    echo "  clipboard | clip | cliphist Toggle Clipboard Manager"
-    echo "  emoji | emojis             Toggle Emoji Selector"
-    echo "  dashboard | overview      Toggle Dashboard"
-    echo "  wallpaper                 Toggle Wallpaper tab"
-    echo "  pomodoro                  Toggle Pomodoro tab"
-    echo "  wifi | network            Toggle Wi-Fi QuickSettings"
-    echo "  bluetooth | bt            Toggle Bluetooth QuickSettings"
-    echo "  volume | audio            Toggle Volume QuickSettings"
-    echo "  powerprofile | prof       Toggle Power Profile QuickSettings"
-    echo "  battery | pwr             Toggle Battery QuickSettings"
-    echo "  power | sys               Toggle Power Menu"
-    echo "  close | close_all         Close all active menus"
-    echo "  restart | reload          Restart Quickshell"
-    echo "  stop                      Stop Quickshell"
-    echo ""
+    cat <<USAGE
+Zenith Shell CLI
+
+Usage: $(basename "$0") <command>
+
+Process:
+  start                       Start Quickshell if it is not running
+  stop                        Stop Quickshell
+  restart | reload            Restart Quickshell
+  toggle                      Stop it if running, start it otherwise
+
+Surfaces (each toggles):
+  launcher | applauncher      App launcher
+  clipboard | clip            Clipboard history
+  emoji                       Emoji picker
+  dashboard | overview        Dashboard
+  dashboard:<tab>             Dashboard on a tab: pomodoro, roadmap, mail, wallpaper
+  wallpaper                   Wallpaper tab
+  pomodoro | roadmap | mail   Focus / roadmap / mail tabs
+  wifi | network              Wi-Fi quick settings
+  bluetooth | bt              Bluetooth quick settings
+  volume | audio              Audio quick settings
+  powerprofile | prof         Power profile quick settings
+  battery | pwr               Battery quick settings
+  power | sys                 Session / power menu
+  settings | config           Settings window
+  lock                        Lock the session
+  close | close_all           Close every open menu
+
+Any other word is sent to the shell unchanged.
+USAGE
 }
 
-case "$1" in
+case "${1:-}" in
     start)
-        if ! is_running; then
-            echo "Starting Quickshell..."
-            quickshell -d -p "$SHELL_DIR" &
-        else
-            echo "Quickshell is already running."
-        fi
+        if is_running; then echo "Quickshell is already running."; else start_shell; fi
         ;;
     stop)
         echo "Stopping Quickshell..."
-        pkill -f quickshell
+        stop_shell
         ;;
     restart|reload)
         echo "Restarting Quickshell..."
-        pkill -f quickshell
-        sleep 0.3
-        quickshell -d -p "$SHELL_DIR" &
+        stop_shell
+        start_shell
         ;;
-    launcher|applauncher|Launcher)
-        if is_recent_combo; then
-            exit 0
-        fi
-        send_cmd "launcher"
+    toggle)
+        if is_running; then echo "Stopping Quickshell..."; stop_shell; else start_shell; fi
         ;;
-    mark_combo|combo)
-        mark_combo
-        ;;
-
-    clipboard|clip|cliphist|Clipboard)
-        send_cmd "clipboard"
-        ;;
-    emoji|emojis|emojiselector|Emoji)
-        send_cmd "emoji"
-        ;;
-    pomodoro)
-        send_cmd "pomodoro"
-        ;;
-    wifi|network)
-        send_cmd "wifi"
-        ;;
-    bluetooth|bt)
-        send_cmd "bluetooth"
-        ;;
-    volume|audio)
-        send_cmd "volume"
-        ;;
-    powerprofile|prof)
-        send_cmd "powerprofile"
-        ;;
-    battery|pwr)
-        send_cmd "battery"
-        ;;
-    power|sys)
-        send_cmd "power"
-        ;;
-    close|close_all)
-        send_cmd "close_all"
-        ;;
-    settings)
-        send_cmd "settings"
-        ;;
-    "")
+    ""|-h|--help|help)
         show_usage
         ;;
     *)
-        # Fallback: send arg directly as IPC command
+        # shell.qml normalises aliases (bt, prof, sys, ...) itself.
         send_cmd "$1"
         ;;
 esac

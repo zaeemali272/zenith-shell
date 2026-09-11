@@ -14,7 +14,9 @@ fi
 COUNTRY="${COUNTRY:-PK}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-JSON_FILE="$SCRIPT_DIR/../events.json"
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/zenith"
+mkdir -p "$STATE_DIR"
+JSON_FILE="$STATE_DIR/events.json"
 TMP_DIR=$(mktemp -d)
 
 # 1. Fetch Official Public Holidays from Nager.Date API

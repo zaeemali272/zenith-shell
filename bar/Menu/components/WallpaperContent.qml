@@ -58,7 +58,7 @@ ColumnLayout {
         thumbGen.running = true;
     }
 
-    readonly property string logPath: PathSettings.shellDir + "/zenith.log"
+    readonly property string logPath: PathSettings.cacheDir + "/wallpaper.log"
     readonly property string scriptsPath: PathSettings.scriptsDir
 
     // --- SUB-TABS ---
@@ -381,22 +381,33 @@ ColumnLayout {
     }
     function startSlideshow() {
         if (root.selectedWalls.length === 0) return;
-        let home = Quickshell.env("HOME");
         let scriptPath = root.scriptsPath + "/slideshow.sh";
-        let servicePath = home + "/.config/systemd/user/zenith-slideshow.service";
-        let listPath = home + "/.cache/zenith_wallpaper_list";
+        let listPath = PathSettings.cacheDir + "/slideshow_list";
         let paths = root.selectedWalls.map(p => p.replace("file://", "")).join("\n");
-        saveList.command = ["sh", "-c", "echo '" + paths + "' > " + listPath]; saveList.running = true;
-        let serviceContent = "[Unit]\nDescription=Zenith Slideshow\n\n[Service]\nExecStart=/bin/bash " + scriptPath + "\nRestart=always\nRestartSec=5\nEnvironment=PATH=/usr/bin:/bin:/usr/local/bin\n[Install]\nWantedBy=default.target";
-        installService.command = ["sh", "-c", "echo -e '" + serviceContent + "' > " + servicePath + " && chmod +x " + scriptPath + " && systemctl --user daemon-reload"];
+        // One process writes the list and installs the unit; the service is
+        // started only after both are on disk.
+        let unit = [
+            "[Unit]", "Description=Zenith wallpaper slideshow", "",
+            "[Service]", "ExecStart=/usr/bin/env bash " + scriptPath,
+            "Restart=on-failure", "RestartSec=5", "",
+            "[Install]", "WantedBy=default.target"
+        ].join("\n");
+        installService.command = ["sh", "-c",
+            "mkdir -p \"$1\" \"$(dirname \"$2\")\" && printf '%s\\n' \"$3\" > \"$2\" && printf '%s\\n' \"$4\" > \"$1/zenith-slideshow.service\" && systemctl --user daemon-reload",
+            "_", PathSettings.configDir + "/systemd/user", listPath, paths, unit];
         installService.running = true;
-        startTimer.start();
     }
-    Timer { id: startTimer; interval: 500; onTriggered: { serviceCmd.command = ["systemctl", "--user", "enable", "--now", "zenith-slideshow.service"]; serviceCmd.running = true; CenterState.close(); } }
+    Process {
+        id: installService
+        onExited: (code) => {
+            if (code !== 0) return;
+            serviceCmd.command = ["systemctl", "--user", "enable", "--now", "zenith-slideshow.service"];
+            serviceCmd.running = true;
+            CenterState.close();
+        }
+    }
     function stopSlideshow() {
-        let home = Quickshell.env("HOME");
-        let servicePath = home + "/.config/systemd/user/zenith-slideshow.service";
-        serviceCmd.command = ["sh", "-c", "systemctl --user disable --now zenith-slideshow.service && rm -f " + servicePath + " && systemctl --user daemon-reload"];
+        serviceCmd.command = ["sh", "-c", "systemctl --user disable --now zenith-slideshow.service 2>/dev/null; rm -f \"$1\"; systemctl --user daemon-reload", "_", PathSettings.configDir + "/systemd/user/zenith-slideshow.service"];
         serviceCmd.running = true;
     }
     function log(msg) { logger.command = ["sh", "-c", "echo '[$(date +%T)] " + msg + "' >> " + logPath]; logger.running = true; }
@@ -414,12 +425,10 @@ ColumnLayout {
     Process { id: setWall; onExited: { CenterState.close(); } }
     Process { id: killawww; command: ["killall", "awww-daemon"] }
     Process { id: killMpv; command: ["killall", "mpvpaper"] }
-    Process { id: installService }
-    Process { id: saveList }
     Process { id: serviceCmd }
     Process { id: mpvProcess }
-    Process { id: saveCurrentWall; property string path: ""; command: ["sh", "-c", "mkdir -p " + Quickshell.env("HOME") + "/.config && echo '" + path + "' > " + Quickshell.env("HOME") + "/.config/current_wallpaper.txt"] }
-    Process { id: thumbGen; command: ["python3", (Quickshell.env("ZENITH_ROOT") ? Quickshell.env("ZENITH_ROOT") : Quickshell.env("HOME") + "/.config/quickshell") + "/services/generate_thumbnails.py"]; onRunningChanged: { if (!running) { root.thumbnailsReady = true; root.refreshTrigger++; } } }
+    Process { id: saveCurrentWall; property string path: ""; command: ["sh", "-c", "printf '%s\\n' \"$1\" > \"$2\"", "_", path, PathSettings.configDir + "/current_wallpaper.txt"] }
+    Process { id: thumbGen; command: ["python3", WallpaperService.scriptPath]; onRunningChanged: { if (!running) { root.thumbnailsReady = true; root.refreshTrigger++; } } }
     Component.onCompleted: refreshThumbnails()
 
     function resetScroll() {

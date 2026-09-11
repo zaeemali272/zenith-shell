@@ -19,8 +19,10 @@ Item {
     property string arch: ""
     property string kernel: ""
     property string ip: ""
-    property var coreUsages: []
-    property var coreTemps: []
+    // Throughput on the default-route interface, KB/s, sampled every 1.5s.
+    property string netIface: ""
+    property int netDown: 0
+    property int netUp: 0
 
     readonly property string scriptPath: PathSettings.scriptsDir + "/resources.sh"
 
@@ -45,6 +47,9 @@ Item {
                     service.arch = data.arch ?? "";
                     service.kernel = data.kernel ?? "";
                     service.ip = data.ip ?? "";
+                    service.netIface = data.net_iface ?? "";
+                    service.netDown = data.net_down ?? 0;
+                    service.netUp = data.net_up ?? 0;
                 } catch (e) {}
             }
         }

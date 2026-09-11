@@ -17,7 +17,6 @@ Item {
     readonly property string weatherDesc: weatherData?.current_condition?.[0]?.weatherDesc?.[0]?.value || ""
     readonly property string areaName: weatherData?.nearest_area?.[0]?.areaName?.[0]?.value || "Unknown"
 
-    readonly property string cacheFile: PathSettings.cacheDir + "/weather.json"
     readonly property string scriptPath: PathSettings.scriptsDir + "/weather.sh"
 
     function getIcon(code) {
@@ -38,35 +37,10 @@ Item {
         }
     }
 
-    Component.onCompleted: {
-        loadCache.running = true;
-    }
-
-    Timer {
-        id: weatherStartupTimer
-        interval: 1200
-        running: true
-        repeat: false
-        onTriggered: refresh()
-    }
-
-    Process {
-        id: loadCache
-        command: ["python3", "-c", "import sys, os, json; p=sys.argv[1]; print(open(p).read() if os.path.exists(p) else '')", cacheFile]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                if (text && text.trim() !== "") {
-                    try {
-                        let parsed = JSON.parse(text);
-                        if (parsed && parsed.current_condition) {
-                            service.weatherData = parsed;
-                            service.loading = false;
-                        }
-                    } catch (e) {}
-                }
-            }
-        }
-    }
+    // weather.sh keeps its own on-disk cache and answers from it instantly
+    // when it is under 30 minutes old, so the first call paints the bar at
+    // once; only a stale cache costs a network round-trip.
+    Component.onCompleted: refresh()
 
     Process {
         id: weatherProc
@@ -79,16 +53,11 @@ Item {
                     let parsed = JSON.parse(text);
                     if (parsed && parsed.current_condition) {
                         service.weatherData = parsed;
-                        saveCache.command = ["python3", "-c", "import sys, os; p=sys.argv[1]; os.makedirs(os.path.dirname(p), exist_ok=True); open(p, 'w').write(sys.argv[2])", cacheFile, text];
-                        saveCache.running = false;
-                        saveCache.running = true;
                     }
                 } catch (e) {}
             }
         }
     }
-
-    Process { id: saveCache }
 
     Timer {
         interval: 1800000 // 30 minutes

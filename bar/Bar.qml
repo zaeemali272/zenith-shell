@@ -13,7 +13,6 @@ import Quickshell.Wayland
 PanelWindow {
     id: bar
 
-    property var controlCenterMenuRef: null
 
     WlrLayershell.keyboardFocus: DynamicIslandService.active ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     WlrLayershell.layer: WlrLayer.Top
@@ -106,7 +105,6 @@ PanelWindow {
         Center {
             id: centerSide
             anchors.verticalCenter: parent.verticalCenter
-            controlCenterMenuRef: bar.controlCenterMenuRef
             height: Theme.pillHeight
             opacity: BarSettings.entryAnimation ? 0 : 1
             
@@ -142,13 +140,13 @@ PanelWindow {
             anchors.verticalCenter: parent.verticalCenter
             height: Theme.pillHeight
             spacing: Theme.pillSpacing
-            opacity: GeneralSettings.barEntryAnimation ? 0 : 1
+            opacity: BarSettings.entryAnimation ? 0 : 1
 
             Tray { menuRef: trayPopup }
             
-            Network { 
-                id: wifiWidget 
-                visible: WidgetSettings.enableResources
+            Network {
+                id: wifiWidget
+                visible: WidgetSettings.enableNetwork && HardwareService.hasNetworking
             }
             
             Resources { 

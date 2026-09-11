@@ -11,32 +11,13 @@ Item {
     readonly property string home: PathSettings.home
     readonly property string wallpaperDir: "file://" + home + "/Pictures/Wallpapers"
     readonly property string animationDir: "file://" + home + "/Videos/Animated"
-    readonly property string thumbDir: PathSettings.cacheDir + "/wallpaper_thumbs"
     readonly property string scriptPath: PathSettings.scriptsDir + "/generate_thumbnails.py"
-
-    function applyWallpaper(path) {
-        let cleanPath = path.replace("file://", "");
-
-        applyProcess.command = ["swww", "img", cleanPath, 
-            "--transition-type", "fade", 
-            "--transition-fps", "60", 
-            "--transition-duration", "1"
-        ];
-        applyProcess.running = true;
-
-        saveHistory.command = ["python3", "-c", "import sys; open(sys.argv[1], 'w').write(sys.argv[2])", PathSettings.configDir + "/current_wallpaper.txt", cleanPath];
-        saveHistory.running = true;
-    }
-
 
     function generate() {
         if (!thumbGen.running) {
             thumbGen.running = true;
         }
     }
-
-    Process { id: applyProcess }
-    Process { id: saveHistory }
 
     Process {
         id: thumbGen

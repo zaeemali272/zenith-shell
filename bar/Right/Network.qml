@@ -5,17 +5,16 @@ import "../../services"
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
-import Quickshell.Io
 
 Item {
     id: root
 
     property var menuRef
     property bool showUpload: false
-    property real rxPrev: 0
-    property real txPrev: 0
-    property int downSpeed: 0
-    property int upSpeed: 0
+    // Measured by the resources daemon, which already samples /proc every
+    // 1.5s; this widget used to spawn its own awk on a timer for the same data.
+    readonly property int downSpeed: ResourceService.netDown
+    readonly property int upSpeed: ResourceService.netUp
 
     readonly property bool wifiConnected: WifiService.currentState === "connected"
     readonly property string wifiSSID: WifiService.currentSsid
@@ -54,6 +53,7 @@ Item {
         clip: true
 
         MouseArea {
+            id: netMouse
             anchors.fill: parent
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
@@ -81,47 +81,13 @@ Item {
             }
 
             Text {
-                text: airplaneMode ? "OFF" : (!online ? "DISC" : (outerContainer.containsMouse ? (outerContainer.wiredOnly ? "Wired" : (wifiSSID ? wifiSSID : "Connected")) : formatSpeed(showUpload ? upSpeed : downSpeed)))
+                text: airplaneMode ? "OFF" : (!online ? "DISC" : (netMouse.containsMouse ? (root.wiredOnly ? "Wired" : (wifiSSID ? wifiSSID : "Connected")) : formatSpeed(showUpload ? upSpeed : downSpeed)))
                 font.pixelSize: Theme.fontSize
                 font.family: "JetBrains Mono"
                 font.weight: (airplaneMode || !wifiConnected) ? Font.Bold : Font.DemiBold
                 color: airplaneMode ? Theme.powerRed : (!wifiConnected ? Theme.powerRed : Theme.fontColor)
                 Layout.alignment: Qt.AlignVCenter
             }
-        }
-    }
-
-    Process {
-        id: netExec
-        command: ["awk", "/:/ && $1 !~ /lo/ && $2 > 0 {gsub(/:/,\"\"); print \"SPEED\", $2, $10; exit}", "/proc/net/dev"]
-
-        stdout: StdioCollector {
-            onStreamFinished: {
-                if (!text) return;
-                const parts = text.trim().split(/\s+/);
-                if (parts[0] === "SPEED") {
-                    const rx = parseFloat(parts[1]);
-                    const tx = parseFloat(parts[2]);
-                    const dt = (refreshTimer.interval / 1000.0);
-                    if (rxPrev > 0 && dt > 0) {
-                        downSpeed = Math.max(0, Math.floor(((rx - rxPrev) / 1024) / dt));
-                        upSpeed = Math.max(0, Math.floor(((tx - txPrev) / 1024) / dt));
-                    }
-                    rxPrev = rx;
-                    txPrev = tx;
-                }
-            }
-        }
-    }
-
-    Timer {
-        id: refreshTimer
-        interval: (outerContainer.containsMouse || Variables.quickSettingsOpen) ? Variables.fastInterval : Variables.mediumInterval
-        running: true
-        repeat: true
-        onTriggered: {
-            netExec.running = false;
-            netExec.running = true;
         }
     }
 }

@@ -1,35 +1,48 @@
 // Shared scaffolding for every menu surface.
 //
-// ControlCenter, QuickSettingsMenu and MediaPlayerPopup were each carrying
-// their own copy of: overlay layer, screen-filling anchors, an input mask over
-// the card, and register/unregister with MenuService. Identical code in three
-// files means a mistake gets made three times -- which is exactly what
+// ControlCenter and QuickSettingsMenu were each carrying their own copy of:
+// overlay layer, screen-filling anchors, an input mask over the card,
+// register/unregister with MenuService, and a show animation. Identical code
+// in several files means a mistake gets made several times -- which is what
 // happened with the "dismiss on outer click" MouseArea, present and wrong in
-// all three until it was fixed in all three.
+// all of them until it was fixed in all of them.
 //
 // Usage:
 //
 //     MenuWindow {
 //         id: root
-//         card: mainContent          // the thing that takes input
-//         namespaceName: "whatever"  // layer-shell namespace
+//         shown: SomeService.visibleFlag   // the only thing a caller binds
+//         card: mainContent                // the thing that takes input
+//         namespaceName: "whatever"        // layer-shell namespace
+//         onDismissed: SomeService.close()
 //
 //         Rectangle { id: mainContent /* ... */ }
 //     }
+//
+// `visible` is owned here: it turns on the moment `shown` goes true and only
+// turns off once the exit animation has finished, so a menu leaves the screen
+// the way it arrived instead of vanishing on the frame it was dismissed.
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Hyprland
+import "../.."
 import "../../services"
 
 PanelWindow {
     id: menuWindow
+
+    // Bound by the caller to the service flag that means "this menu is open".
+    property bool shown: false
 
     // The visible card. Input is masked to it; everything outside is not this
     // window's business.
     property Item card: null
 
     property string namespaceName: "zenith-menu"
+
+    // Where the card grows out from and shrinks back into.
+    property int cardOrigin: Item.Top
 
     // A surface that should not participate in "close all open menus" can opt
     // out; the dynamic island does its own lifecycle.
@@ -71,6 +84,48 @@ PanelWindow {
         item: menuWindow.card
     }
 
+    // ---- Enter / exit ----------------------------------------------------
+
+    property Translate _cardTranslate: Translate {}
+
+    onCardChanged: {
+        if (!card) return;
+        card.transformOrigin = menuWindow.cardOrigin;
+        card.transform = [menuWindow._cardTranslate];
+        card.opacity = 0;
+        card.scale = 0.94;
+    }
+
+    onShownChanged: {
+        if (shown) {
+            hideAnim.stop();
+            visible = true;
+            showAnim.restart();
+        } else if (visible) {
+            showAnim.stop();
+            hideAnim.restart();
+        }
+    }
+
+    ParallelAnimation {
+        id: showAnim
+        NumberAnimation { target: menuWindow.card; property: "opacity"; from: 0; to: 1; duration: Theme.animFast; easing.type: Theme.animEasing }
+        NumberAnimation { target: menuWindow.card; property: "scale"; from: 0.94; to: 1.0; duration: Theme.animFast; easing.type: Theme.animEasing }
+        NumberAnimation { target: menuWindow._cardTranslate; property: "y"; from: -6; to: 0; duration: Theme.animFast; easing.type: Theme.animEasing }
+    }
+
+    SequentialAnimation {
+        id: hideAnim
+        ParallelAnimation {
+            NumberAnimation { target: menuWindow.card; property: "opacity"; to: 0; duration: Theme.animFast * 0.6; easing.type: Easing.InCubic }
+            NumberAnimation { target: menuWindow.card; property: "scale"; to: 0.96; duration: Theme.animFast * 0.6; easing.type: Easing.InCubic }
+            NumberAnimation { target: menuWindow._cardTranslate; property: "y"; to: -4; duration: Theme.animFast * 0.6; easing.type: Easing.InCubic }
+        }
+        ScriptAction { script: if (!menuWindow.shown) menuWindow.visible = false }
+    }
+
+    // ---- Dismissal ---------------------------------------------------------
+
     // Closing on an outside click is a focus grab, not a full-screen click
     // catcher. DismissOverlay only maps once a menu has registered, so on the
     // same layer it lands on top of the very menu it is meant to sit behind --
@@ -80,10 +135,10 @@ PanelWindow {
     // stacking. TrayMenu already worked this way.
     HyprlandFocusGrab {
         id: focusGrab
-        active: menuWindow.visible
+        active: menuWindow.shown
         windows: [menuWindow]
         onCleared: {
-            if (menuWindow.visible && !menuWindow.dismissInhibited)
+            if (menuWindow.shown && !menuWindow.dismissInhibited)
                 menuWindow.dismissed();
         }
     }
@@ -97,7 +152,7 @@ PanelWindow {
     // clicks.
     Shortcut {
         sequences: ["Escape"]
-        enabled: menuWindow.visible
+        enabled: menuWindow.shown
         onActivated: menuWindow.dismissed()
     }
 

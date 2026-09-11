@@ -10,6 +10,7 @@ import "bar/Menu/components"
 import "services"
 import "Settings"
 import "windows"
+import "windows/lock"
 
 Scope {
     readonly property var _notifications: NotificationService
@@ -42,17 +43,25 @@ Scope {
     property string cmdPath: Quickshell.env("HOME") + "/.cache/zenith_fifo"
     
     // --- NATIVE HYPRLAND GLOBAL SHORTCUTS ---
-    GlobalShortcut { appid: "zenith"; name: "launcher"; onPressed: handleCommand("launcher") }
-    GlobalShortcut { appid: "zenith"; name: "dashboard"; onPressed: handleCommand("dashboard") }
-    GlobalShortcut { appid: "zenith"; name: "wallpaper"; onPressed: handleCommand("wallpaper") }
-    GlobalShortcut { appid: "zenith"; name: "pomodoro"; onPressed: handleCommand("pomodoro") }
-    GlobalShortcut { appid: "zenith"; name: "volume"; onPressed: handleCommand("volume") }
-    GlobalShortcut { appid: "zenith"; name: "close"; onPressed: handleCommand("close") }
-    GlobalShortcut { appid: "zenith"; name: "clipboard"; onPressed: handleCommand("clipboard") }
-    GlobalShortcut { appid: "zenith"; name: "emoji"; onPressed: handleCommand("emoji") }
-    GlobalShortcut { appid: "zenith"; name: "power"; onPressed: handleCommand("power") }
-    GlobalShortcut { appid: "zenith"; name: "settings"; onPressed: handleCommand("settings") }
-    
+    //
+    // Hyprland-dots binds keys to these with hl.dsp.global("zenith:<name>"):
+    // no script and no IPC client per keypress. A normal bind delivers
+    // `pressed` when the chord goes down and `released` when it comes up, so
+    // only one edge may toggle. The launcher is the exception: the Super tap
+    // in keybinds.lua fires from a release bind, which delivers `released`
+    // alone.
+    Instantiator {
+        model: ["dashboard", "wallpaper", "pomodoro", "volume",
+                "close", "clipboard", "emoji", "power", "settings", "lock"]
+        delegate: GlobalShortcut {
+            required property string modelData
+            appid: "zenith"
+            name: modelData
+            onPressed: handleCommand(modelData)
+        }
+    }
+    GlobalShortcut { appid: "zenith"; name: "launcher"; onReleased: handleCommand("launcher") }
+
     property bool settingsVisible: false
     
     Process {
@@ -114,11 +123,12 @@ Scope {
             QuickSettingsService.toggle("battery");
         } else if (lowerAction === "power" || lowerAction === "sys") {
             QuickSettingsService.toggle("power");
+        } else if (lowerAction === "lock") {
+            LockService.lock();
         } else if (lowerAction === "settings" || lowerAction === "config") {
             settingsVisible = !settingsVisible;
         } else if (lowerAction === "close" || lowerAction === "close_all") {
             MenuService.closeAll();
-            DynamicIslandService.close();
         }
     }
 
@@ -126,34 +136,34 @@ Scope {
         id: dismissOverlay
     }
 
+    // MenuService.closeAll() is the one "close everything" entry point (bar
+    // click, click outside, fullscreen, the `close` command). It only emits
+    // the request; the services that own the surfaces are closed here, so
+    // MenuService itself never has to import them.
+    Connections {
+        target: MenuService
+        function onCloseRequested() {
+            CenterState.close();
+            QuickSettingsService.close();
+            DynamicIslandService.close();
+        }
+    }
+
     Connections {
         target: HyprlandService
         function onIsFullscreenChanged() {
-            if (HyprlandService.isFullscreen) {
-                MenuService.closeAll();
-                DynamicIslandService.close();
-            }
+            if (HyprlandService.isFullscreen) MenuService.closeAll();
         }
     }
 
     Bar {
         id: bar
-        controlCenterMenuRef: controlCenterMenu
     }
 
-    ControlCenter {
-        id: controlCenterMenu
-        parentWindow: bar
-        visible: CenterState.qsVisible
-        Component.onCompleted: CenterState.menuRef = this
-    }
-
-    QuickSettingsMenu {
-        id: quickSettingsMenu
-        parentWindow: bar
-        visible: QuickSettingsService.qsVisible
-        Component.onCompleted: QuickSettingsService.menuRef = this
-    }
+    // Each menu binds its own `shown` to its service flag; MenuWindow owns
+    // `visible` so the exit animation can finish before the surface unmaps.
+    ControlCenter { id: controlCenterMenu }
+    QuickSettingsMenu { id: quickSettingsMenu }
 
     NotificationPopup {
         id: notificationPopup
@@ -161,6 +171,10 @@ Scope {
 
     OsdPopup {
         id: osdPopup
+    }
+
+    LockScreen {
+        id: lockScreen
     }
 
     DynamicIslandOverlay {

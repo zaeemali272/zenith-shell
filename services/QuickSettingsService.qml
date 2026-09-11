@@ -9,19 +9,14 @@ Item {
     id: service
 
     property bool qsVisible: false
-    property var menuRef: null
     property string activeTab: "network"
     property rect lastRect: Qt.rect(0, 0, 0, 0)
 
     onQsVisibleChanged: Variables.quickSettingsOpen = qsVisible
 
     function open(tab, rect) {
-        if (typeof CenterState !== "undefined") {
-            CenterState.close();
-        }
-        if (typeof DynamicIslandService !== "undefined") {
-            DynamicIslandService.close();
-        }
+        CenterState.close();
+        DynamicIslandService.close();
 
         if (tab && tab !== "") {
             activeTab = tab;
@@ -43,12 +38,9 @@ Item {
         }
     }
 
-    // Visibility is a binding: shell.qml declares
-    //     ControlCenter      { visible: CenterState.qsVisible }
-    //     QuickSettingsMenu  { visible: QuickSettingsService.qsVisible }
-    // Assigning menuRef.visible here would overwrite that binding permanently,
-    // after which the state flag still flips but the window stops following it.
-    // Setting the flag is the whole job.
+    // The menu binds MenuWindow.shown to this flag and owns its own
+    // visibility (so the exit animation can finish). Setting the flag is the
+    // whole job.
     function close() {
         qsVisible = false;
     }
