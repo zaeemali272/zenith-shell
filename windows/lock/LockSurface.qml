@@ -34,7 +34,8 @@ WlSessionLockSurface {
         id: keys
         anchors.fill: parent
         focus: true
-        Component.onCompleted: forceActiveFocus()
+        Component.onCompleted: { forceActiveFocus(); console.warn("zenith lock: surface up, activeFocus", activeFocus); }
+        onActiveFocusChanged: console.warn("zenith lock: activeFocus ->", activeFocus)
         Keys.onPressed: (event) => {
             if (root.unlocking) return;
             LockService.handleKey(event);
