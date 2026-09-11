@@ -158,45 +158,46 @@ MouseArea {
         }
     }
 
-    // Custom Glassmorphic Tooltip
-    PopupWindow {
-        id: tooltipPopup
+    // Tooltip. A PopupWindow is a real Wayland surface; one per tray icon
+    // sitting around unmapped is waste, so it only exists while hovered.
+    Loader {
+        active: root.containsMouse && root.item
+        sourceComponent: PopupWindow {
+            anchor.window: root.QsWindow.window
+            anchor.rect: root.mapToItem(null, 0, 0, root.width, root.height)
+            anchor.edges: Edges.Bottom
+            anchor.gravity: Edges.Bottom
 
-        anchor.window: root.QsWindow.window
-        anchor.rect: root.mapToItem(null, 0, 0, root.width, root.height)
-        anchor.edges: Edges.Bottom
-        anchor.gravity: Edges.Bottom
+            visible: tooltipText.text !== ""
+            color: "transparent"
 
-        visible: root.containsMouse && tooltipText.text !== ""
-        color: "transparent"
+            implicitWidth: tooltipRect.implicitWidth
+            implicitHeight: tooltipRect.implicitHeight + Theme.scaled(10)
 
-        implicitWidth: tooltipRect.implicitWidth
-        implicitHeight: tooltipRect.implicitHeight + Theme.scaled(10)
+            Rectangle {
+                id: tooltipRect
+                y: Theme.scaled(6)
+                color: Theme.glassBackground
+                border.color: Theme.glassBorder
+                border.width: 1
+                radius: Theme.scaled(8)
 
-        Rectangle {
-            id: tooltipRect
-            y: Theme.scaled(6)
-            color: Theme.tooltipBackground || Theme.glassBackground
-            border.color: Theme.glassBorder
-            border.width: 1
-            radius: Theme.scaled(8)
+                implicitWidth: tooltipText.implicitWidth + Theme.scaled(16)
+                implicitHeight: tooltipText.implicitHeight + Theme.scaled(10)
 
-            implicitWidth: tooltipText.implicitWidth + Theme.scaled(16)
-            implicitHeight: tooltipText.implicitHeight + Theme.scaled(10)
-
-            Text {
-                id: tooltipText
-                anchors.centerIn: parent
-                text: {
-                    if (!root.item) return "";
-                    var title = String(root.item.title || "").trim();
-                    var tooltip = String(root.item.tooltip || "").trim();
-                    var itemId = String(root.item.id || "").trim();
-                    return title ? title : (tooltip ? tooltip : itemId);
+                Text {
+                    id: tooltipText
+                    anchors.centerIn: parent
+                    text: {
+                        if (!root.item) return "";
+                        var title = String(root.item.title || "").trim();
+                        var tooltip = String(root.item.tooltip || "").trim();
+                        return title || tooltip || String(root.item.id || "").trim();
+                    }
+                    color: Theme.text
+                    font.pixelSize: Theme.scaled(10)
+                    font.weight: Font.Medium
                 }
-                color: Theme.text
-                font.pixelSize: Theme.scaled(10)
-                font.weight: Font.Medium
             }
         }
     }

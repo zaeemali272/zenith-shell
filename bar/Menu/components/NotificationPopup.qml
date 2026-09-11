@@ -80,7 +80,6 @@ PanelWindow {
             delegate: NotificationItem {
                 notification: activeNotifications.get(index)
                 Layout.fillWidth: true
-                onAutoDismissed: (id) => NotificationService.dismissNotification(id)
             }
         }
     }

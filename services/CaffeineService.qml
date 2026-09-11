@@ -1,59 +1,39 @@
 // services/CaffeineService.qml
+//
+// Keeps the session awake. IdleService checks this flag directly, which is
+// the only thing that works reliably: Hyprland honours idle-inhibit only on
+// toplevel windows, so an invisible layer-shell inhibitor (what caelestia
+// uses) is silently ignored, and the previous `systemd-inhibit sleep
+// infinity` was invisible to the compositor altogether.
 import QtQuick
 import Quickshell
 import Quickshell.Io
 
 pragma Singleton
 
-Item {
+Singleton {
     id: service
 
-    property bool active: false
+    property alias active: props.active
 
-    function toggle() {
-        if (active) {
-            disable();
-        } else {
-            enable();
-        }
+    function toggle() { active = !active; }
+    function enable() { active = true; }
+    function disable() { active = false; }
+
+    // Survives a shell reload, not a restart -- a stuck inhibitor after a
+    // crash is worse than having to press the button again.
+    PersistentProperties {
+        id: props
+        reloadableId: "zenithCaffeine"
+        property bool active: false
     }
 
-    function enable() {
-        active = true;
-        inhibitProc.command = ["sh", "-c", "systemd-inhibit --what=idle --who=Quickshell-Caffeine --why='Keep Awake' --mode=block sleep infinity & echo $! > /dev/shm/zenith_caffeine.pid"];
-        inhibitProc.running = false;
-        inhibitProc.running = true;
-
-        notifyProc.command = ["notify-send", "-a", "Caffeine", "-i", "preferences-desktop-screensaver", "Caffeine Enabled", "Screen idle and sleep disabled."];
-        notifyProc.running = false;
+    onActiveChanged: {
+        notifyProc.command = ["notify-send", "-a", "Caffeine", "-i", "preferences-desktop-screensaver",
+            active ? "Caffeine Enabled" : "Caffeine Disabled",
+            active ? "Idle lock, screen off and sleep are held off." : "Idle handling is back to normal."];
         notifyProc.running = true;
     }
 
-    function disable() {
-        active = false;
-        killProc.command = ["sh", "-c", "if [ -f /dev/shm/zenith_caffeine.pid ]; then kill $(cat /dev/shm/zenith_caffeine.pid) 2>/dev/null; rm -f /dev/shm/zenith_caffeine.pid; fi; pkill -f 'Quickshell-Caffeine' 2>/dev/null || true"];
-        killProc.running = false;
-        killProc.running = true;
-
-        notifyProc.command = ["notify-send", "-a", "Caffeine", "-i", "preferences-desktop-screensaver", "Caffeine Disabled", "Screen idle and sleep restored."];
-        notifyProc.running = false;
-        notifyProc.running = true;
-    }
-
-    Process { id: inhibitProc }
-    Process { id: killProc }
     Process { id: notifyProc }
-
-    // Check initial state on completion
-    Component.onCompleted: checkState.running = true
-
-    Process {
-        id: checkState
-        command: ["pgrep", "-f", "Quickshell-Caffeine"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                service.active = (text && text.trim() !== "");
-            }
-        }
-    }
 }

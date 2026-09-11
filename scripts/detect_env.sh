@@ -131,6 +131,27 @@ fi
 
 JSON_ICON_BASES=$(printf '%s\n' "${ICON_BASES[@]}" | jq -R . | jq -s .)
 
+# Theme directories that exist on this machine. The shell's icon fallback
+# probes <base><sub><name>.svg/.png with an Image for every candidate; without
+# this list it tried every theme it knew of on every base, ~1300 failed loads
+# (each one a logged warning) for a single notification with an unknown icon.
+THEME_SUBPATHS=(
+    /Reversal/status@2x/32/ /Reversal/status@2x/22/ /Reversal/status/32/ /Reversal/status/22/
+    /Reversal/status/scalable/ /Reversal/apps/scalable/ /Reversal/apps/48/
+    /Reversal-dark/status@2x/32/ /Reversal-dark/status@2x/22/ /Reversal-dark/status/scalable/ /Reversal-dark/apps/scalable/
+    /breeze/status/22@2x/ /breeze/status/22/ /breeze/status/scalable/ /breeze/apps/scalable/ /breeze/apps/48/
+    /breeze-dark/status/22/ /breeze-dark/status/scalable/
+    /hicolor/scalable/status/ /hicolor/scalable/apps/ /hicolor/48x48/status/ /hicolor/48x48/apps/
+    /Papirus/48x48/apps/ /Papirus/scalable/apps/ /Adwaita/scalable/apps/
+)
+ICON_DIRS=()
+for base in "${ICON_BASES[@]}"; do
+    for sub in "${THEME_SUBPATHS[@]}"; do
+        [ -d "$base$sub" ] && ICON_DIRS+=("$base$sub")
+    done
+done
+JSON_ICON_DIRS=$(printf '%s\n' "${ICON_DIRS[@]}" | jq -R . | jq -s 'map(select(length > 0))')
+
 cat <<EOF
 {
   "distroId": "$DISTRO_ID",
@@ -150,6 +171,7 @@ cat <<EOF
   "screenHeight": ${SCREEN_HEIGHT:-1080},
   "refreshRate": ${REFRESH_RATE:-60},
   "resolution": "$RES_STR",
-  "iconBases": $JSON_ICON_BASES
+  "iconBases": $JSON_ICON_BASES,
+  "iconDirs": $JSON_ICON_DIRS
 }
 EOF
