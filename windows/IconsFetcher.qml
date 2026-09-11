@@ -18,6 +18,11 @@ QtObject {
             candidates.push(raw.startsWith("file://") ? raw : "file://" + raw);
         }
 
+        // An already-resolved "image://icon/<name>" comes back through here
+        // when a notification is re-rendered; only the name is a token, or
+        // every file probe below is built on a URL and fails.
+        if (raw.startsWith("image://icon/")) raw = raw.substring("image://icon/".length);
+
         let rawTokens = [];
         if (raw !== "") {
             rawTokens.push(raw);
@@ -99,17 +104,20 @@ QtObject {
         }
 
         // 2. Pre-computed, distro-verified icon base paths and theme subpaths from Services.Variables
-        let iconBases = Services.Variables.iconBases || [];
-        let themeSubPaths = Services.Variables.themeSubPaths || [];
+        // Only directories that exist: probing is done by an Image per
+        // candidate, so every impossible path is a failed load and a warning.
+        let iconDirs = Services.Variables.iconDirs || [];
+        if (iconDirs.length === 0) {
+            for (let base of (Services.Variables.iconBases || []))
+                for (let sub of (Services.Variables.themeSubPaths || []))
+                    iconDirs.push(base + sub);
+        }
 
-        let fileTokens = allTokens.slice(0, 5);
+        let fileTokens = allTokens.slice(0, 3);
         for (let token of fileTokens) {
-            for (let base of iconBases) {
-                for (let sub of themeSubPaths) {
-                    let fullDir = base + sub;
-                    candidates.push("file://" + fullDir + token + ".svg");
-                    candidates.push("file://" + fullDir + token + ".png");
-                }
+            for (let dir of iconDirs) {
+                candidates.push("file://" + dir + token + ".svg");
+                candidates.push("file://" + dir + token + ".png");
             }
         }
 

@@ -2,6 +2,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "../Settings"
 pragma Singleton
 
 Item {
@@ -63,20 +64,30 @@ Item {
     Process { id: setMicMuteProc; onExited: service.update() }
     Process { id: setMicVolProc; onExited: service.update() }
 
+    // Levels and the device list are refreshed on every PipeWire change. The
+    // device list used to be read only while a menu was open, so a headset
+    // that connected while the panel was closed did not appear until some
+    // later event (a volume key) happened to fire with the panel open.
+    // Per-application streams are only needed by the panel itself.
     function _performUpdate() {
-        if (!volExec.running) {
-            volExec.running = true;
-        }
-        if (Variables.quickSettingsOpen || Variables.controlCenterOpen) {
-            if (!appVolExec.running) appVolExec.running = true;
-            if (!devExec.running) devExec.running = true;
-        }
+        if (!volExec.running) volExec.running = true;
+        if (!devExec.running) devExec.running = true;
+        if (Variables.activeMenuOpen && !appVolExec.running) appVolExec.running = true;
     }
 
     Timer {
         id: updateTimer
         interval: 300
         onTriggered: _performUpdate()
+    }
+
+    // Opening a menu reads everything fresh rather than showing whatever the
+    // last background event left behind.
+    Connections {
+        target: Variables
+        function onActiveMenuOpenChanged() {
+            if (Variables.activeMenuOpen) service.update();
+        }
     }
 
     Component.onCompleted: _performUpdate()
@@ -87,7 +98,7 @@ Item {
 
     Process {
         id: appVolExec
-        command: ["sh", "-c", "pactl -f json list sink-inputs 2>/dev/null || python3 -c '\nimport json, subprocess\ntry:\n    data = json.loads(subprocess.check_output([\"pw-dump\"]))\n    result = []\n    for obj in data:\n        if obj.get(\"type\") == \"PipeWire:Interface:Node\":\n            props = obj.get(\"info\", {}).get(\"props\", {})\n            if props.get(\"media.class\") == \"Stream/Output/Audio\":\n                name = props.get(\"application.name\") or props.get(\"media.name\") or \"App\"\n                vol_pct = 100\n                muted = False\n                params = obj.get(\"info\", {}).get(\"params\", {})\n                for p in params.get(\"Props\", []):\n                    if \"channelVolumes\" in p:\n                        vols = p[\"channelVolumes\"]\n                        if vols:\n                            vol_pct = int(round(max(vols) * 100))\n                    if \"mute\" in p:\n                        muted = bool(p[\"mute\"])\n                result.append({\n                    \"index\": obj[\"id\"],\n                    \"properties\": {\"application.name\": name},\n                    \"volume\": {\"front-left\": {\"value_percent\": str(vol_pct) + \"%\"}},\n                    \"mute\": muted\n                })\n    print(json.dumps(result))\nexcept Exception:\n    print(\"[]\")\n'"]
+        command: ["python3", PathSettings.scriptsDir + "/audio_streams.py"]
         stdout: StdioCollector {
             onStreamFinished: {
                 if (!text || text.trim() === "") return;
@@ -206,41 +217,7 @@ Item {
 
     Process {
         id: volExec
-        command: ["python3", "-c", `
-import json, subprocess, re
-
-res = {"outputVolume": 0, "muted": False, "micVolume": 0, "micMuted": False, "micActive": False, "btActive": False}
-
-try:
-    out = subprocess.check_output(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"], text=True, stderr=subprocess.DEVNULL)
-    res["muted"] = "[MUTED]" in out
-    m = re.search(r"([0-9]+\.?[0-9]*)", out)
-    if m: res["outputVolume"] = round(float(m.group(1)) * 100)
-except Exception: pass
-
-try:
-    out = subprocess.check_output(["wpctl", "get-volume", "@DEFAULT_AUDIO_SOURCE@"], text=True, stderr=subprocess.DEVNULL)
-    res["micMuted"] = "[MUTED]" in out
-    m = re.search(r"([0-9]+\.?[0-9]*)", out)
-    if m: res["micVolume"] = round(float(m.group(1)) * 100)
-except Exception: pass
-
-try:
-    insp = subprocess.check_output(["wpctl", "inspect", "@DEFAULT_AUDIO_SINK@"], text=True, stderr=subprocess.DEVNULL)
-    res["btActive"] = "bluez" in insp.lower()
-except Exception: pass
-
-try:
-    dump = json.loads(subprocess.check_output(["pw-dump"], stderr=subprocess.DEVNULL))
-    res["micActive"] = any(
-        obj.get("type") == "PipeWire:Interface:Node" and 
-        obj.get("info", {}).get("props", {}).get("media.class") == "Stream/Input/Audio"
-        for obj in dump
-    )
-except Exception: pass
-
-print(json.dumps(res))
-`]
+        command: ["bash", PathSettings.scriptsDir + "/audio_state.sh"]
         stdout: StdioCollector {
             onStreamFinished: {
                 if (!text || text.trim() === "") return;
@@ -259,82 +236,7 @@ print(json.dumps(res))
 
     Process {
         id: devExec
-        command: ["python3", "-c", `
-import subprocess, re, json
-
-def get_desc(dev_id):
-    try:
-        out = subprocess.check_output(['wpctl', 'inspect', str(dev_id)], text=True, timeout=1)
-        for line in out.splitlines():
-            if 'node.description' in line:
-                m = re.search(r'node\\.description\\s*=\\s*"(.*)"', line)
-                if m: return m.group(1)
-    except: pass
-    return ''
-
-def get_devices():
-    try: out = subprocess.check_output(['wpctl', 'status'], text=True, timeout=2)
-    except Exception: out = ''
-
-    sinks, sources = [], []
-    active_sink, active_source = -1, -1
-
-    in_sinks = False
-    in_sources = False
-
-    for line in out.splitlines():
-        if 'Sinks:' in line:
-            in_sinks = True
-            in_sources = False
-            continue
-        elif 'Sources:' in line:
-            in_sources = True
-            in_sinks = False
-            continue
-        elif any(k in line for k in ['Filters:', 'Streams:', 'Settings', 'Video']):
-            in_sinks = False
-            in_sources = False
-
-        m = re.search(r'(\\*?\\s*)(\\d+)\\.\\s+(.*?)\\s*(\\[|$)', line)
-        if m and (in_sinks or in_sources):
-            is_def = '*' in m.group(1)
-            dev_id = int(m.group(2))
-            dev_name = m.group(3).strip()
-
-            if not dev_name or dev_name == '(null)' or 'camera' in dev_name.lower():
-                continue
-
-            if dev_name.startswith('Built-in Audio'):
-                dev_name = 'Built-in Microphone' if in_sources else 'Built-in Speaker'
-            elif dev_name.startswith('bluez_'):
-                real_desc = get_desc(dev_id)
-                if real_desc: dev_name = real_desc
-
-            item = {'id': dev_id, 'name': dev_name, 'isDefault': is_def}
-            if in_sinks:
-                sinks.append(item)
-                if is_def: active_sink = dev_id
-            elif in_sources:
-                sources.append(item)
-                if is_def: active_source = dev_id
-
-    if not any('bluez' in s['name'].lower() or 'bluetooth' in s['name'].lower() or 'yopod' in s['name'].lower() for s in sources):
-        for line in out.splitlines():
-            if '[Audio/Source]' in line and ('bluez' in line or 'bluetooth' in line):
-                m = re.search(r'(\\*?\\s*)(\\d+)\\.\\s+(.*?)\\s*\\[Audio/Source\\]', line)
-                if m:
-                    is_def = '*' in m.group(1)
-                    dev_id = int(m.group(2))
-                    real_desc = get_desc(dev_id)
-                    dev_name = real_desc if real_desc else 'Bluetooth Microphone'
-                    item = {'id': dev_id, 'name': dev_name, 'isDefault': is_def}
-                    sources.append(item)
-                    if is_def: active_source = dev_id
-
-    return {'sinks': sinks, 'sources': sources, 'activeSinkId': active_sink, 'activeSourceId': active_source}
-
-print(json.dumps(get_devices()))
-`]
+        command: ["python3", PathSettings.scriptsDir + "/audio_devices.py"]
         stdout: StdioCollector {
             onStreamFinished: {
                 if (!text || text.trim() === "") return;

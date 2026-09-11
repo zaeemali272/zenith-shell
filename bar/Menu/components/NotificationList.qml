@@ -31,6 +31,7 @@ Flickable {
                     notification: NotificationService.notifications.get(index)
                     Layout.fillWidth: true
                     enableAutoDismiss: false
+                    animateOut: false
                 }
             }
         }

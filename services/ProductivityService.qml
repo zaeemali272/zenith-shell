@@ -8,7 +8,8 @@ pragma Singleton
 Item {
     id: service
 
-    property string storagePath: PathSettings.configDir + "/quickshell/productivity.json"
+    readonly property string storagePath: PathSettings.stateDir + "/productivity.json"
+    readonly property string _legacyStoragePath: PathSettings.shellDir + "/productivity.json"
     
     // --- Reactive Properties (Source of Truth) ---
     property int duration: 0
@@ -170,7 +171,7 @@ Item {
 
     Process { 
         id: loadProcess; 
-        command: ["cat", service.storagePath]; 
+        command: ["sh", "-c", "cat \"$1\" 2>/dev/null || cat \"$2\"", "_", service.storagePath, service._legacyStoragePath]
         stdout: StdioCollector {
             onStreamFinished: {
                 try { 
