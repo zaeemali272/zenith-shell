@@ -7,7 +7,6 @@ import "../Settings"
 
 RowLayout {
     id: root
-    property var controlCenterMenuRef: null
 
     height: Theme.pillHeight
     implicitHeight: Theme.pillHeight

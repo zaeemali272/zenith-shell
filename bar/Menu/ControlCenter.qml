@@ -15,31 +15,17 @@ MenuWindow {
     card: mainContent
     namespaceName: "controlcenter"
     onDismissed: CenterState.close()
-    property var parentWindow: null
 
-    onVisibleChanged: {
-        Variables.controlCenterOpen = visible;
-        if (visible) {
-            CenterState.qsVisible = true;
+    shown: CenterState.qsVisible
+
+    onShownChanged: {
+        Variables.controlCenterOpen = shown;
+        if (shown) {
             Qt.callLater(() => {
                 mainContent.forceActiveFocus();
                 updateFocusForTab(CenterState.activeTab);
             });
-            showAnim.restart();
-        } else {
-            CenterState.qsVisible = false;
-            mainContent.opacity = 0;
-            mainContent.scale = 0.94;
-            mainTranslate.y = -6;
         }
-    }
-
-
-    ParallelAnimation {
-        id: showAnim
-        NumberAnimation { target: mainContent; property: "opacity"; from: 0; to: 1; duration: Theme.animFast; easing.type: Theme.animEasing }
-        NumberAnimation { target: mainContent; property: "scale"; from: 0.94; to: 1.0; duration: Theme.animFast; easing.type: Theme.animEasing }
-        NumberAnimation { target: mainTranslate; property: "y"; from: -6; to: 0; duration: Theme.animFast; easing.type: Theme.animEasing }
     }
 
     // Outer clicks are dismissed by DismissOverlay; the input mask and the
@@ -63,21 +49,11 @@ MenuWindow {
 
         focus: true
         Keys.onPressed: (event) => {
-            if (event.key === Qt.Key_Escape) {
-                CenterState.close();
-            } else {
-                let currentContent = contentStack.children[contentStack.currentIndex];
-                if (currentContent && typeof currentContent.handleKeys === 'function') {
-                    currentContent.handleKeys(event);
-                }
+            let currentContent = contentStack.children[contentStack.currentIndex];
+            if (currentContent && typeof currentContent.handleKeys === 'function') {
+                currentContent.handleKeys(event);
             }
         }
-        
-        opacity: 0
-        scale: 0.94
-        transformOrigin: Item.Top
-        
-        transform: Translate { id: mainTranslate; y: -6 }
 
         ColumnLayout {
             anchors.fill: parent

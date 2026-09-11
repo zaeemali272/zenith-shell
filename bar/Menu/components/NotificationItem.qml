@@ -27,8 +27,6 @@ Rectangle {
         }
     }
 
-    signal autoDismissed(real id)
-
     // --- ZENITH THEMEING ---
     color: Theme.glassBackground
     radius: Theme.scaled(20)
@@ -56,6 +54,46 @@ Rectangle {
         NumberAnimation { target: trans; property: "x"; to: 0; duration: Theme.animSlow; easing.type: Theme.elasticEasing }
     }
 
+    // Leaving mirrors arriving: slide out to the right and fade, then let the
+    // model drop the row. Removing the row first made popups blink out of
+    // existence while everything else in the shell animates.
+    property bool _leaving: false
+    signal leaveFinished()
+
+    function leave() {
+        if (_leaving) return;
+        _leaving = true;
+        appearAnim.stop();
+        leaveAnim.start();
+    }
+
+    SequentialAnimation {
+        id: leaveAnim
+        ParallelAnimation {
+            NumberAnimation { target: root; property: "opacity"; to: 0; duration: Theme.animFast; easing.type: Easing.InCubic }
+            NumberAnimation { target: root; property: "scale"; to: 0.94; duration: Theme.animFast; easing.type: Easing.InCubic }
+            NumberAnimation { target: trans; property: "x"; to: 60; duration: Theme.animFast; easing.type: Easing.InCubic }
+        }
+        ScriptAction { script: root.leaveFinished() }
+    }
+
+    // Popup rows animate out; the dashboard history list (animateOut false)
+    // removes rows directly, since it is a scrolling list rather than a stack
+    // of toasts.
+    property bool animateOut: true
+
+    function dismiss(removeFromHistory) {
+        if (!notification) return;
+        const id = notification.id;
+        const finish = () => {
+            if (removeFromHistory) NotificationService.removeNotification(id);
+            else NotificationService.dismissNotification(id);
+        };
+        if (!animateOut) { finish(); return; }
+        leaveFinished.connect(finish);
+        leave();
+    }
+
     Behavior on implicitHeight {
         enabled: root.animateHeight
         NumberAnimation { duration: 300; easing.type: Easing.OutExpo }
@@ -68,9 +106,7 @@ Rectangle {
         running: !!notification && enableAutoDismiss
         repeat: false
         onTriggered: {
-            if (!root.realHovered) {
-                root.autoDismissed(root.notification.id);
-            }
+            if (!root.realHovered) root.dismiss(false);
         }
     }
 
@@ -235,7 +271,7 @@ Rectangle {
             if (notification?.originalNotif) {
                 notification.originalNotif.invokeAction("default");
                 notification.originalNotif.dismiss();
-                NotificationService.dismissNotification(notification.id);
+                root.dismiss(false);
             }
         }
     }
@@ -278,7 +314,7 @@ Rectangle {
             onClicked: {
                 if (notification) {
                     notification.originalNotif?.dismiss();
-                    NotificationService.removeNotification(notification.id);
+                    root.dismiss(true);
                 }
             }
         }
