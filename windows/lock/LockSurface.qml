@@ -34,8 +34,7 @@ WlSessionLockSurface {
         id: keys
         anchors.fill: parent
         focus: true
-        Component.onCompleted: { forceActiveFocus(); console.warn("zenith lock: surface up, activeFocus", activeFocus); }
-        onActiveFocusChanged: console.warn("zenith lock: activeFocus ->", activeFocus)
+        Component.onCompleted: forceActiveFocus()
         Keys.onPressed: (event) => {
             if (root.unlocking) return;
             LockService.handleKey(event);
@@ -58,12 +57,19 @@ WlSessionLockSurface {
         anchors.fill: parent
         opacity: 0
 
+        // The compositor hands the keyboard to the lock only after its first
+        // frame is committed, and keys typed before that are dropped. A
+        // full-resolution 64px blur made that first frame slow enough to eat
+        // the start of a quickly typed password. Blurring at quarter size is
+        // visually identical for a heavy blur and many times cheaper.
         layer.enabled: IdleSettings.blurBackground
+        layer.textureSize: Qt.size(Math.max(1, Math.round(width / 4)), Math.max(1, Math.round(height / 4)))
+        layer.smooth: true
         layer.effect: MultiEffect {
             autoPaddingEnabled: false
             blurEnabled: true
             blur: 1
-            blurMax: 64
+            blurMax: 32
             blurMultiplier: 1
         }
 
