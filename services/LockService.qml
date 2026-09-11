@@ -55,12 +55,10 @@ Singleton {
     }
 
     function handleKey(event) {
-        console.warn("zenith lock: key", event.key, "active", passwd.active, "state", state);
         if (passwd.active || state === LockService.State.MaxTries) return;
 
         if (event.key === Qt.Key_Enter || event.key === Qt.Key_Return) {
-            console.warn("zenith lock: enter, buffer", buffer.length, "active", passwd.active, "state", state);
-            if (buffer.length > 0) console.warn("zenith lock: start ->", passwd.start(), "active now", passwd.active);
+            if (buffer.length > 0) passwd.start();
         } else if (event.key === Qt.Key_Backspace) {
             buffer = (event.modifiers & Qt.ControlModifier) ? "" : buffer.slice(0, -1);
         } else if (event.key === Qt.Key_Escape) {
