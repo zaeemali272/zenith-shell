@@ -15,7 +15,8 @@ QtObject {
     property string selectedCategory: "All"
 
     // --- LAUNCHER DATA ---
-    property string storagePath: Quickshell.env("HOME") + "/.config/quickshell/app_usage.json"
+    readonly property string storagePath: PathSettings.stateDir + "/app_usage.json"
+    readonly property string _legacyStoragePath: PathSettings.shellDir + "/app_usage.json"
     property var usageMap: ({})
     property var allAppsCache: []
     property var displayedApps: []
@@ -44,7 +45,8 @@ QtObject {
     // App usage loader
     property var loadUsageProc: Process {
         id: loadUsage
-        command: ["cat", root.storagePath]
+        // Falls back to the pre-stateDir location once, so launch counts survive the move.
+        command: ["sh", "-c", "cat \"$1\" 2>/dev/null || cat \"$2\"", "_", root.storagePath, root._legacyStoragePath]
         stdout: StdioCollector {
             onStreamFinished: {
                 try {
@@ -111,8 +113,8 @@ QtObject {
             validMode = "launcher";
         }
         
-        if (typeof CenterState !== "undefined") CenterState.close();
-        if (typeof QuickSettingsService !== "undefined") QuickSettingsService.close();
+        CenterState.close();
+        QuickSettingsService.close();
 
         query = "";
         selectedIndex = 0;

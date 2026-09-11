@@ -80,7 +80,7 @@ Item {
                             default: return 200;
                         }
                     }
-                    running: true
+                    running: !HyprlandService.isFullscreen
                     repeat: true
                     onTriggered: frameCount++
                 }

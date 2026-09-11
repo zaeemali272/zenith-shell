@@ -41,7 +41,7 @@ Rectangle {
 
     Process {
         id: readProcess
-        command: ['cat', PathSettings.shellDir + '/events.json']
+        command: ['cat', PathSettings.stateDir + '/events.json']
         stdout: StdioCollector {
             onStreamFinished: {
                 if (text) {

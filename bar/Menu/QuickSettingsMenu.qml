@@ -12,8 +12,10 @@ import Quickshell.Wayland
 MenuWindow {
     id: root
 
+    shown: QuickSettingsService.qsVisible
     card: mainContent
     namespaceName: "quicksettings"
+    cardOrigin: Item.TopRight
 
     readonly property var allTabs: [
         { id: "network", icon: "󰤨", title: "WI-FI" },
@@ -36,47 +38,11 @@ MenuWindow {
     dismissInhibited: typeof wifiContent !== "undefined" && wifiContent.isInputActive
     onDismissed: QuickSettingsService.close()
 
-    property var parentWindow: null
 
     WlrLayershell.keyboardFocus: (typeof wifiContent !== "undefined" && wifiContent.isInputActive) ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.OnDemand
-    onVisibleChanged: {
-        Variables.quickSettingsOpen = visible;
-        if (visible) {
-            QuickSettingsService.qsVisible = true;
-            Qt.callLater(() => mainContent.forceActiveFocus());
-            showAnim.restart();
-        } else {
-            QuickSettingsService.qsVisible = false;
-            mainContent.opacity = 0;
-            mainContent.scale = 0.94;
-            mainTranslate.y = -6;
-        }
-    }
 
-
-    ParallelAnimation {
-        id: showAnim
-        NumberAnimation {
-            target: mainContent
-            property: "opacity"
-            from: 0; to: 1
-            duration: Theme.animFast
-            easing.type: Theme.animEasing
-        }
-        NumberAnimation {
-            target: mainContent
-            property: "scale"
-            from: 0.94; to: 1.0
-            duration: Theme.animFast
-            easing.type: Theme.animEasing
-        }
-        NumberAnimation {
-            target: mainTranslate
-            property: "y"
-            from: -6; to: 0
-            duration: Theme.animFast
-            easing.type: Theme.animEasing
-        }
+    onShownChanged: {
+        if (shown) Qt.callLater(() => mainContent.forceActiveFocus());
     }
 
     // Outer clicks are dismissed by DismissOverlay; the input mask and the
@@ -95,27 +61,17 @@ MenuWindow {
 
         focus: true
         Keys.onPressed: (event) => {
-            if (event.key === Qt.Key_Escape) {
-                QuickSettingsService.close();
-            } else {
-                let currentContent = contentStack.children[contentStack.currentIndex];
-                if (currentContent && typeof currentContent.handleKeys === 'function') {
-                    currentContent.handleKeys(event);
-                }
+            let currentContent = contentStack.children[contentStack.currentIndex];
+            if (currentContent && typeof currentContent.handleKeys === 'function') {
+                currentContent.handleKeys(event);
             }
         }
-        
+
         color: Theme.glassBackground
         radius: Theme.cardRadius
         border.color: Theme.glassBorder
         border.width: 2
         clip: true
-
-        opacity: 0
-        scale: 0.94
-        transformOrigin: Item.TopRight
-        
-        transform: Translate { id: mainTranslate; y: -6 }
 
         ColumnLayout {
             anchors.fill: parent

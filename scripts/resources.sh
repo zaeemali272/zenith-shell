@@ -53,7 +53,42 @@ try:
 except Exception:
     pass
 
+# Bytes moved on the interface that carries the default route, so the bar
+# shows the link you are actually using rather than the first one in
+# /proc/net/dev (which could be a bridge or a VM tap).
+def default_iface():
+    try:
+        with open("/proc/net/route") as f:
+            next(f)
+            for line in f:
+                cols = line.split()
+                if len(cols) > 1 and cols[1] == "00000000":
+                    return cols[0]
+    except Exception:
+        pass
+    return ""
+
+def read_net(iface):
+    if not iface:
+        return 0, 0
+    try:
+        with open("/proc/net/dev") as f:
+            for line in f:
+                if ":" not in line:
+                    continue
+                name, rest = line.split(":", 1)
+                if name.strip() == iface:
+                    cols = rest.split()
+                    return int(cols[0]), int(cols[8])
+    except Exception:
+        pass
+    return 0, 0
+
+INTERVAL = 1.5
 last_t, last_i = read_cpu()
+iface = default_iface()
+last_rx, last_tx = read_net(iface)
+last_wall = time.monotonic()
 _startup_ppid = os.getppid()
 
 while True:
@@ -68,7 +103,7 @@ while True:
         # the user session as a subreaper and adopts it instead.
         if os.getppid() != _startup_ppid:
             break
-        time.sleep(1.5)
+        time.sleep(INTERVAL)
         t, i = read_cpu()
         total_diff = t - last_t
         idle_diff = i - last_i
@@ -114,8 +149,20 @@ while True:
         except Exception:
             pass
 
+        # Re-resolve the route occasionally: wifi <-> ethernet switches change it.
+        iface = default_iface()
+        rx, tx = read_net(iface)
+        now = time.monotonic()
+        dt = max(now - last_wall, 0.1)
+        net_down = int(max(0, rx - last_rx) / 1024 / dt) if rx >= last_rx else 0
+        net_up = int(max(0, tx - last_tx) / 1024 / dt) if tx >= last_tx else 0
+        last_rx, last_tx, last_wall = rx, tx, now
+
         data = {
             "cpu": cpu_overall,
+            "net_iface": iface,
+            "net_down": net_down,
+            "net_up": net_up,
             "mem": mem_perc,
             "temp": cpu_temp,
             "load": load,

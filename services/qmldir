@@ -19,3 +19,5 @@ singleton DynamicIslandService DynamicIslandService.qml
 singleton TodoistService TodoistService.qml
 singleton MailService MailService.qml
 singleton HardwareService HardwareService.qml
+singleton IdleService IdleService.qml
+singleton LockService LockService.qml

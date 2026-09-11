@@ -54,7 +54,8 @@ Zenith Shell leverages native Wayland protocols and modular QML singletons for n
 - **UI Framework**: [Quickshell](https://github.com/outfoxxed/quickshell) (Qt6 QML engine with native Wayland Layer Shell, Foreign Toplevel, and Screencopy bindings).
 - **Compositor Integration**: Hyprland IPC sockets for real-time workspace state, active window tracking, and monitor scaling.
 - **Design System**: Responsive QML design system with dynamic scaling (`Theme.scaled()`), glassmorphic overlays, and customizable Catppuccin-inspired color palettes.
-- **IPC Control System**: Non-blocking asynchronous Named Pipe (FIFO) IPC at `~/.cache/zenith_fifo` managed via `launch.sh`.
+- **Control Surface**: Hyprland global shortcuts (`zenith:<name>`) for keybinds — nothing is forked per keypress — plus a FIFO at `~/.cache/zenith_fifo` and `quickshell ipc` behind `launch.sh` for terminals and scripts.
+- **Runtime State**: `~/.local/state/zenith` (launch counts, focus sessions, holidays) and `~/.cache/zenith` (palette, thumbnails, logs); the repo stays clean.
 - **Media Engine**: Native Python & `ffmpeg` pipeline for high-performance rounded-corner wallpaper thumbnail generation.
 
 ---
@@ -78,6 +79,7 @@ Ensure the following packages are installed on your Linux system:
 | **Bluetooth** | `bluez`, `bluez-utils` (`bluetoothctl`) | Device discovery and connection management |
 | **Audio & Media** | `pipewire`, `wireplumber`, `playerctl` | System volume control & MPRIS metadata |
 | **Power** | `upower`, `power-profiles-daemon` | Battery level tracking & power profile switching |
+| **Lock / Idle** | none (Quickshell `WlSessionLock` + `IdleMonitor`, PAM `login` or `zenith-lock`) | Replaces hyprlock + hypridle; Caffeine gates the idle timers (Hyprland ignores layer-shell idle inhibitors) |
 | **Helper Runtime** | `python3`, `python-pillow`, `jq` | Async backend scripts & JSON parsing |
 
 ---
@@ -156,44 +158,49 @@ To automatically fetch and apply updates to Zenith Shell whenever you run `nixos
 
 <h2><sub><img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Symbols/Input%20Latin%20Uppercase.png" alt="Keyboard" width="25" height="25" /></sub> How to Open Menus & IPC Commands</h2>
 
-Zenith Shell comes with a built-in launcher script (`launch.sh`) that communicates directly with the running shell via IPC. You can bind these commands to Hyprland keybindings or run them from terminal.
+Every surface is a Hyprland **global shortcut** named `zenith:<action>`, so a keybind reaches the shell through the compositor with no script and no IPC client in between. `launch.sh` is the CLI for terminals and scripts; it takes the same action names.
 
 ### IPC Commands
 
 | Action / Menu | Command | Description |
 |---|---|---|
-| **Dashboard / Launcher** | `~/.config/quickshell/launch.sh overview` | Toggle app grid & overview workspace window |
+| **App Launcher** | `~/.config/quickshell/launch.sh launcher` | Search apps, calculator; Tab cycles to clipboard and emoji |
+| **Clipboard / Emoji** | `~/.config/quickshell/launch.sh clipboard` / `emoji` | Clipboard history (cliphist) and emoji picker |
+| **Dashboard** | `~/.config/quickshell/launch.sh dashboard` | Overview: notifications, media, calendar, weather |
 | **Wallpaper Selector** | `~/.config/quickshell/launch.sh wallpaper` | Open static & live wallpaper chooser |
-| **Quick Settings** | `~/.config/quickshell/launch.sh controlcenter` | Toggle main Quick Settings control center |
 | **Wi-Fi / Network** | `~/.config/quickshell/launch.sh wifi` | Open Wi-Fi scan and connection menu |
 | **Bluetooth** | `~/.config/quickshell/launch.sh bluetooth` | Open Bluetooth paired & available devices menu |
 | **Volume / Audio** | `~/.config/quickshell/launch.sh volume` | Open audio output/input sliders popup |
 | **Power Profile** | `~/.config/quickshell/launch.sh powerprofile` | Switch between Performance, Balanced & Power-saver |
 | **Battery Details** | `~/.config/quickshell/launch.sh battery` | Open battery health & status popup |
 | **Power Menu** | `~/.config/quickshell/launch.sh power` | Open Lock, Logout, Reboot, Shutdown menu |
-| **Pomodoro & Todo** | `~/.config/quickshell/launch.sh pomodoro` | Open Pomodoro timer & task manager |
+| **Focus (Pomodoro, Todo, Roadmap)** | `~/.config/quickshell/launch.sh pomodoro` / `roadmap` | Focus timer, task list, roadmap |
+| **Mail** | `~/.config/quickshell/launch.sh mail` | Inbox tab |
 | **Settings App** | `~/.config/quickshell/launch.sh settings` | Open Zenith Shell configuration window |
+| **Lock** | `~/.config/quickshell/launch.sh lock` | Session lock (Quickshell `WlSessionLock` + PAM, caelestia-style card); idle-locks per `Settings/IdleSettings.qml` |
 | **Close All Menus** | `~/.config/quickshell/launch.sh close` | Instantly close any open popups or overlays |
+| **Shell process** | `~/.config/quickshell/launch.sh start` / `stop` / `restart` / `toggle` | Manage the Quickshell daemon (NixOS-wrapper aware) |
 
 ---
 
 ### Recommended Hyprland Keybindings
 
-Add these bindings to your `~/.config/hypr/hyprland.conf` or `keybinds.conf`:
+[Hyprland-dots](https://github.com/zaeemali272/Hyprland-dots) already binds everything (see its `variables.lua`), including a Super-tap launcher. On a plain `hyprland.conf` use the `global` dispatcher:
 
 ```ini
-# Zenith Shell Keybindings
-$qs = ~/.config/quickshell/launch.sh
-
-bind = SUPER, TAB, exec, $qs overview
-bind = SUPER, W, exec, $qs wallpaper
-bind = SUPER, V, exec, $qs volume
-bind = SUPER, N, exec, $qs wifi
-bind = SUPER, B, exec, $qs bluetooth
-bind = SUPER, P, exec, $qs powerprofile
-bind = SUPER, ESCAPE, exec, $qs power
-bind = SUPER, S, exec, $qs settings
+# Zenith Shell Keybindings -- no script in between
+bind = SUPER, A, global, zenith:dashboard
+bind = CTRL SUPER, T, global, zenith:wallpaper
+bind = CTRL SUPER, S, global, zenith:volume
+bind = SUPER, V, global, zenith:clipboard
+bind = SUPER, PERIOD, global, zenith:emoji
+bind = CTRL ALT, DELETE, global, zenith:power
+bind = CTRL SUPER, I, global, zenith:settings
+bindl = SUPER, L, global, zenith:lock
+bind = CTRL SUPER, C, global, zenith:close
 ```
+
+The launcher shortcut (`zenith:launcher`) toggles on the *release* edge so it can be driven by a bare Super tap; bind it with `bindr` if you wire it yourself.
 
 ---
 
@@ -207,6 +214,17 @@ bind = SUPER, S, exec, $qs settings
 - [x] **MPRIS Media Controller**: Album artwork, track info, seekbar, and playback controls.
 - [x] **Pomodoro & Todo Widget**: Built-in focus timer with task list management.
 - [x] **Adaptive Theme System**: Modular Catppuccin color palette with smooth glassmorphism borders and blur.
+
+---
+
+<h2><sub><img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Test%20Tube.png" alt="Tests" width="25" height="25" /></sub> Checks</h2>
+
+```bash
+tests/run.sh          # shell/python syntax, glyphs, helper scripts, todoist sync, mail -- runs anywhere
+tests/run.sh --all    # plus a headless smoke test: loads the shell, opens every menu, fails on a QML error
+```
+
+`tests/README.md` explains what each check exists to catch. The matching check for the compositor side is `Hyprland-dots/check.sh --live`.
 
 ---
 

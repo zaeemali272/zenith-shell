@@ -569,5 +569,10 @@ Item {
                 }
             }
         }
+
+        // Takes whatever the page has left over, so the header and the list
+        // hug the top. Without it a short list (or no list yet, on the first
+        // open) was stretched out and the content floated in the middle.
+        Item { Layout.fillHeight: true }
     }
 }

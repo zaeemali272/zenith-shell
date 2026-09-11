@@ -55,6 +55,11 @@ QtObject {
         "/usr/share/icons"
     ]
 
+    // Icon theme directories verified to exist, filled by detect_env.sh.
+    // Until then (or if detection fails) IconsFetcher falls back to
+    // iconBases x themeSubPaths.
+    property var iconDirs: []
+
     // Pre-combined high-frequency theme subpaths
     property var themeSubPaths: [
         "/Reversal/status@2x/32/",
@@ -89,10 +94,16 @@ QtObject {
         command: ["bash", PathSettings.scriptsDir + "/detect_env.sh"]
         running: true
 
-        stdout: SplitParser {
-            onRead: (data) => {
+        // detect_env.sh prints one pretty-printed JSON object. This was a
+        // SplitParser, which hands over one *line* at a time, so JSON.parse
+        // failed on every line and none of the detected values ever landed;
+        // the shell ran on the hardcoded defaults below without anyone
+        // noticing, including a /usr/share/icons path that does not exist on
+        // NixOS.
+        stdout: StdioCollector {
+            onStreamFinished: {
                 try {
-                    let parsed = JSON.parse(data);
+                    let parsed = JSON.parse(text);
                     if (parsed.distroId) variables.distroId = parsed.distroId;
                     if (parsed.distroName) variables.distroName = parsed.distroName;
                     if (parsed.distroVersion !== undefined) variables.distroVersion = parsed.distroVersion;
@@ -114,6 +125,7 @@ QtObject {
                     if (parsed.iconBases && Array.isArray(parsed.iconBases) && parsed.iconBases.length > 0) {
                         variables.iconBases = parsed.iconBases.filter((v, i, a) => v && v !== "" && a.indexOf(v) === i);
                     }
+                    if (Array.isArray(parsed.iconDirs)) variables.iconDirs = parsed.iconDirs;
                 } catch (e) {
                     // Fallback to default NixOS initialization if JSON parse error
                 }
