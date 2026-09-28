@@ -9,7 +9,8 @@ import "../services"
 
 PanelWindow {
     id: overlayRoot
-    visible: DynamicIslandService.active
+    readonly property bool shown: DynamicIslandService.active
+    visible: false
     color: "transparent"
 
     WlrLayershell.layer: WlrLayer.Overlay
@@ -66,12 +67,14 @@ PanelWindow {
     // MenuService.openMenus, already tests DynamicIslandService.active
     // separately. Closing is handled by DynamicIslandService.close(), which
     // closeAll() calls directly.
-    onVisibleChanged: {
-        if (visible) {
+    onShownChanged: {
+        if (shown) {
+            hideAnim.stop();
+            visible = true;
             showAnim.restart();
-        } else {
-            mainCard.opacity = 0;
-            mainCard.scale = 0.95;
+        } else if (visible) {
+            showAnim.stop();
+            hideAnim.restart();
         }
     }
 
@@ -103,6 +106,30 @@ PanelWindow {
             to: (Shell.Theme.barHeight || 40) + (Shell.Theme.barMarginTop || 8) + Shell.Theme.scaled(8)
             duration: 200
             easing.type: Easing.OutExpo
+        }
+    }
+
+    // Smooth exit animation on close
+    SequentialAnimation {
+        id: hideAnim
+        ParallelAnimation {
+            NumberAnimation {
+                target: mainCard
+                property: "opacity"
+                to: 0
+                duration: 140
+                easing.type: Easing.InCubic
+            }
+            NumberAnimation {
+                target: mainCard
+                property: "scale"
+                to: 0.95
+                duration: 140
+                easing.type: Easing.InCubic
+            }
+        }
+        ScriptAction {
+            script: if (!overlayRoot.shown) overlayRoot.visible = false
         }
     }
 

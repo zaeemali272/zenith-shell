@@ -20,6 +20,12 @@ Item {
         }
     }
 
+    readonly property string activeTitle: {
+        _trigger;
+        const win = Hyprland.activeWindow;
+        return win ? (win.title || "") : "";
+    }
+
     // Robust fullscreen detection
     readonly property bool isFullscreen: {
         _trigger; // Force re-evaluation on compositor events

@@ -11,6 +11,7 @@ Item {
     id: root
 
     property alias notifications: historyModel
+    readonly property int count: historyModel.count
     property string lastNotifKey: ""
 
     signal notificationReceived(var notifData)

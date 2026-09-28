@@ -84,7 +84,8 @@ RowLayout {
         color: DynamicIslandService.active
             ? Theme.surfaceContainerHigh
             : (pillMouse.containsMouse ? Theme.pillHoverColor : Theme.pillColor)
-        border.color: DynamicIslandService.active ? Theme.accentColor : Theme.glassBorder
+        border.color: DynamicIslandService.active ? Theme.accentColor : (pillMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.25) : Theme.glassBorder)
+        border.width: 1
         height: Theme.pillHeight
         implicitHeight: Theme.pillHeight
         Layout.preferredHeight: Theme.pillHeight
@@ -95,12 +96,44 @@ RowLayout {
         implicitWidth: width
         clip: true
 
-        scale: DynamicIslandService.active ? 1.0 : (pillMouse.pressed ? 0.95 : (pillMouse.containsMouse ? 1.04 : 1.0))
+        scale: DynamicIslandService.active ? 1.0 : (pillMouse.pressed ? 0.96 : (pillMouse.containsMouse ? 1.02 : 1.0))
 
         Behavior on width { NumberAnimation { duration: 420; easing.type: Easing.OutBack; easing.overshoot: 0.8 } }
         Behavior on scale { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
         Behavior on color { ColorAnimation { duration: 280 } }
         Behavior on border.color { ColorAnimation { duration: 280 } }
+
+        // Media Track Progress Line at bottom of center pill
+        Item {
+            id: mediaProgressTrack
+            anchors.left: parent.left
+            anchors.leftMargin: parent.height / 2
+            anchors.right: parent.right
+            anchors.rightMargin: parent.height / 2
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: Theme.scaled(2)
+            height: Theme.scaled(2)
+            visible: !DynamicIslandService.active && MediaPlayerService.trackedPlayer && MediaPlayerService.isActuallyPlaying && (MediaPlayerService.getTrackLengthSec() > 0)
+
+            // Track background
+            Rectangle {
+                anchors.fill: parent
+                radius: parent.height / 2
+                color: Qt.rgba(1, 1, 1, 0.14)
+            }
+
+            // Progress fill
+            Rectangle {
+                anchors.left: parent.left
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                radius: parent.height / 2
+                color: Theme.accentColor
+                width: Math.min(parent.width, Math.max(0, parent.width * MediaPlayerService.getProgressRatio()))
+
+                Behavior on width { NumberAnimation { duration: 350; easing.type: Easing.OutCubic } }
+            }
+        }
 
         // --- DEFAULT CENTER CONTENT (Clock/Media/Weather) ---
         RowLayout {
@@ -186,8 +219,12 @@ RowLayout {
                         font.family: Theme.iconFont
                         font.pixelSize: Theme.scaled(15)
                         text: WeatherService.getIcon(WeatherService.weatherCode)
-                        color: Theme.accentColor
+                        color: pillMouse.containsMouse ? Theme.yellow : Theme.accentColor
                         Layout.alignment: Qt.AlignVCenter
+                        scale: pillMouse.containsMouse ? 1.2 : 1.0
+
+                        Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutBack } }
+                        Behavior on color { ColorAnimation { duration: 150 } }
                     }
 
                     Text {
@@ -199,15 +236,17 @@ RowLayout {
                     }
 
                     Text {
-                        text: WeatherService.weatherDesc
+                        text: WeatherService.weatherDesc ? WeatherService.weatherDesc : HyprlandService.activeTitle
                         color: Theme.subtext0
                         font.pixelSize: Theme.scaled(11)
+                        elide: Text.ElideRight
+                        Layout.maximumWidth: Theme.scaled(140)
                         visible: text !== "" && !Theme.isSmallScreen
                         Layout.alignment: Qt.AlignVCenter
                     }
                 }
 
-                // Elegant Vertical Glass Separator
+                // Flat Modern Vertical Separator
                 Rectangle {
                     width: 1
                     implicitWidth: 1
@@ -215,11 +254,7 @@ RowLayout {
                     Layout.alignment: Qt.AlignVCenter
                     Layout.leftMargin: Theme.scaled(2)
                     Layout.rightMargin: Theme.scaled(2)
-                    gradient: Gradient {
-                        GradientStop { position: 0.0; color: Qt.rgba(255, 255, 255, 0.0) }
-                        GradientStop { position: 0.5; color: Qt.rgba(255, 255, 255, 0.35) }
-                        GradientStop { position: 1.0; color: Qt.rgba(255, 255, 255, 0.0) }
-                    }
+                    color: Qt.rgba(1, 1, 1, 0.12)
                 }
             }
 
@@ -229,11 +264,18 @@ RowLayout {
                 Layout.alignment: Qt.AlignVCenter
 
                 Text {
+                    id: clockIcon
                     font.family: Theme.iconFont
                     font.pixelSize: Theme.scaled(13)
                     text: "󰥔"
-                    color: Theme.subtext0
+                    color: pillMouse.containsMouse ? Theme.accentColor : Theme.subtext0
                     Layout.alignment: Qt.AlignVCenter
+                    scale: pillMouse.containsMouse ? 1.15 : 1.0
+                    rotation: pillMouse.containsMouse ? 15 : 0
+
+                    Behavior on color { ColorAnimation { duration: 150 } }
+                    Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutBack } }
+                    Behavior on rotation { NumberAnimation { duration: 180; easing.type: Easing.OutBack } }
                 }
 
                 Text {
@@ -245,7 +287,7 @@ RowLayout {
                     text: Qt.formatDateTime(systemClock.date, ClockSettings.dateFormat)
                 }
 
-                // Elegant Vertical Glass Separator
+                // Flat Modern Vertical Separator
                 Rectangle {
                     visible: ClockSettings.showDate && ClockSettings.showClock
                     width: 1
@@ -254,11 +296,7 @@ RowLayout {
                     Layout.alignment: Qt.AlignVCenter
                     Layout.leftMargin: Theme.scaled(2)
                     Layout.rightMargin: Theme.scaled(2)
-                    gradient: Gradient {
-                        GradientStop { position: 0.0; color: Qt.rgba(255, 255, 255, 0.0) }
-                        GradientStop { position: 0.5; color: Qt.rgba(255, 255, 255, 0.35) }
-                        GradientStop { position: 1.0; color: Qt.rgba(255, 255, 255, 0.0) }
-                    }
+                    color: Qt.rgba(1, 1, 1, 0.12)
                 }
 
                 Text {

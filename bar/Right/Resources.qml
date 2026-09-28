@@ -34,11 +34,16 @@ Item {
         implicitWidth: width
         radius: height / 2
         color: Theme.pillColor
-        border.color: Theme.glassBorder
+        border.color: resMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.3) : Theme.glassBorder
         border.width: 1
         clip: true
+        scale: resMouse.containsMouse ? 1.02 : 1.0
+
+        Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+        Behavior on border.color { ColorAnimation { duration: 150 } }
 
         MouseArea {
+            id: resMouse
             anchors.fill: parent
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
@@ -66,6 +71,11 @@ Item {
                     width: Theme.scaled(35)
                     height: Theme.scaled(35)
                     fillMode: Image.PreserveAspectFit
+                    scale: resMouse.containsMouse ? 1.15 : 1.0
+                    rotation: resMouse.containsMouse ? 10 : 0
+
+                    Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutBack } }
+                    Behavior on rotation { NumberAnimation { duration: 180; easing.type: Easing.OutBack } }
                 }
 
                 Timer {
@@ -80,7 +90,7 @@ Item {
                             default: return 200;
                         }
                     }
-                    running: !HyprlandService.isFullscreen
+                    running: root.visible && !HyprlandService.isFullscreen
                     repeat: true
                     onTriggered: frameCount++
                 }
@@ -113,7 +123,7 @@ Item {
                     text: root.cpu + "%"
                     color: Theme.fontColor
                     font.pixelSize: Theme.fontSize
-                    font.family: "JetBrains Mono"
+                    font.family: Theme.monoFont
                     font.weight: Font.DemiBold
                     Layout.alignment: Qt.AlignVCenter
                 }
@@ -146,7 +156,7 @@ Item {
                     text: root.mem + "%"
                     color: Theme.fontColor
                     font.pixelSize: Theme.fontSize
-                    font.family: "JetBrains Mono"
+                    font.family: Theme.monoFont
                     font.weight: Font.DemiBold
                     Layout.alignment: Qt.AlignVCenter
                 }
@@ -179,7 +189,7 @@ Item {
                     text: root.temp + "°C"
                     color: Theme.fontColor
                     font.pixelSize: Theme.fontSize
-                    font.family: "JetBrains Mono"
+                    font.family: Theme.monoFont
                     font.weight: Font.DemiBold
                     Layout.alignment: Qt.AlignVCenter
                 }
