@@ -14,4 +14,5 @@ QtObject {
     property int menuPadding: 20
     property int menuSpacing: 15
     property string iconTheme: "Adwaita"
+    property string monoFont: "JetBrains Mono"
 }

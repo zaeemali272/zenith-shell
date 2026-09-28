@@ -83,12 +83,16 @@ PanelWindow {
             }
         }
         
-        NumberAnimation {
+        SequentialAnimation {
             id: contentFadeAnim
-            targets: [leftSide, centerSide, rightLayout]
-            property: "opacity"
-            from: 0; to: 1
-            duration: BarSettings.animationDuration * 1.5
+            ParallelAnimation {
+                NumberAnimation { target: leftSide; property: "opacity"; from: 0; to: 1; duration: BarSettings.animationDuration }
+                NumberAnimation { target: centerSide; property: "opacity"; from: 0; to: 1; duration: BarSettings.animationDuration }
+            }
+            NumberAnimation { target: trayPill; property: "opacity"; from: 0; to: 1; duration: 180 }
+            NumberAnimation { target: wifiWidget; property: "opacity"; from: 0; to: 1; duration: 180 }
+            NumberAnimation { target: resourcesWidget; property: "opacity"; from: 0; to: 1; duration: 180 }
+            NumberAnimation { target: quickSettingsCluster; property: "opacity"; from: 0; to: 1; duration: 180 }
         }
 
         // --- LEFT SIDE ---
@@ -104,32 +108,10 @@ PanelWindow {
         // --- PERFECT CENTER ---
         Center {
             id: centerSide
+            anchors.horizontalCenter: parent.horizontalCenter
             anchors.verticalCenter: parent.verticalCenter
             height: Theme.pillHeight
             opacity: BarSettings.entryAnimation ? 0 : 1
-            
-            x: {
-                let screenW = (screen ? screen.width : Theme.screenWidth);
-                let absoluteCenter = screenW / 2;
-                let marginLeft = Theme.barMarginLeft;
-                
-                // Calculate position relative to the bar window
-                let preferredX = (absoluteCenter - marginLeft) - (width / 2);
-                
-                let leftBound = leftSide.x + leftSide.width + Theme.pillGap;
-                let rightBound = rightLayout.x - width - Theme.pillGap;
-                
-                // If it can fit in the absolute center, put it there.
-                // If the right side is pushing it, move it left.
-                // But don't let it overlap the left side.
-                return Math.max(leftBound, Math.min(preferredX, rightBound));
-            }
-
-            // Hide only if the available space is smaller than the widget itself
-            visible: {
-                let availableSpace = rightLayout.x - (leftSide.x + leftSide.width) - (Theme.pillGap * 2);
-                return width <= availableSpace;
-            }
         }
 
         // --- RIGHT SIDE ---
@@ -140,22 +122,24 @@ PanelWindow {
             anchors.verticalCenter: parent.verticalCenter
             height: Theme.pillHeight
             spacing: Theme.pillSpacing
-            opacity: BarSettings.entryAnimation ? 0 : 1
 
-            Tray { menuRef: trayPopup }
+            Tray { id: trayPill; menuRef: trayPopup; opacity: BarSettings.entryAnimation ? 0 : 1 }
             
             Network {
                 id: wifiWidget
                 visible: WidgetSettings.enableNetwork && HardwareService.hasNetworking
+                opacity: BarSettings.entryAnimation ? 0 : 1
             }
             
             Resources { 
                 id: resourcesWidget
                 visible: WidgetSettings.enableResources && !Theme.isSmallScreen
+                opacity: BarSettings.entryAnimation ? 0 : 1
             }
             
             QuickSettingsCluster {
                 id: quickSettingsCluster
+                opacity: BarSettings.entryAnimation ? 0 : 1
             }
         }
     }

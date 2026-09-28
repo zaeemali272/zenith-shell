@@ -243,7 +243,7 @@ ColumnLayout {
                 width: Theme.scaled(84)
                 height: Theme.scaled(36)
                 radius: Theme.scaled(12)
-                color: PowerProfileService.conservativeActive ? Theme.accentColor : Qt.rgba(255, 255, 255, 0.12)
+                color: PowerProfileService.conservativeActive ? Theme.accentColor : Qt.rgba(1, 1, 1, 0.12)
                 border.width: 1
                 border.color: PowerProfileService.conservativeActive ? Theme.accentColor : Theme.glassBorder
 

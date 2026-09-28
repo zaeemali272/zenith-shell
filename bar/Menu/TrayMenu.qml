@@ -122,7 +122,7 @@ PopupWindow {
                     Layout.fillWidth: true
                     implicitHeight: Theme.scaled(32)
                     radius: Theme.scaled(10)
-                    color: backMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.15) : Qt.rgba(255, 255, 255, 0.08)
+                    color: backMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(1, 1, 1, 0.08)
 
                     RowLayout {
                         anchors.fill: parent
@@ -167,7 +167,7 @@ PopupWindow {
                             Layout.fillWidth: true
                             Layout.preferredHeight: entry.isSeparator ? Theme.scaled(11) : Theme.scaled(34)
                             radius: Theme.scaled(10)
-                            color: entry.isSeparator ? "transparent" : (itemMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : "transparent")
+                            color: entry.isSeparator ? "transparent" : (itemMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent")
 
                             Rectangle {
                                 anchors.centerIn: parent

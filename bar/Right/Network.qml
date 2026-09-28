@@ -48,9 +48,14 @@ Item {
         implicitWidth: width
         radius: height / 2
         color: Theme.pillColor
-        border.color: Theme.glassBorder
+        border.color: netMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.3) : Theme.glassBorder
         border.width: 1
         clip: true
+        scale: netMouse.containsMouse ? 1.02 : 1.0
+
+        Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+        Behavior on border.color { ColorAnimation { duration: 150 } }
+        Behavior on width { NumberAnimation { duration: 250; easing.type: Easing.OutExpo } }
 
         MouseArea {
             id: netMouse
@@ -76,16 +81,21 @@ Item {
                 text: airplaneMode ? "󰀞" : (!online ? "󰤮" : (showUpload ? Theme.netUpIcon : Theme.netDownIcon))
                 font.family: Theme.iconFont
                 font.pixelSize: Theme.iconSize
-                color: airplaneMode ? Theme.powerRed : (!wifiConnected ? Theme.powerRed : Theme.accentColor)
+                color: airplaneMode ? Theme.powerRed : (!online ? Theme.powerRed : Theme.accentColor)
                 Layout.alignment: Qt.AlignVCenter
+                scale: netMouse.containsMouse ? 1.2 : 1.0
+                rotation: netMouse.containsMouse ? (showUpload ? -10 : 10) : 0
+
+                Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutBack } }
+                Behavior on rotation { NumberAnimation { duration: 180; easing.type: Easing.OutBack } }
             }
 
             Text {
                 text: airplaneMode ? "OFF" : (!online ? "DISC" : (netMouse.containsMouse ? (root.wiredOnly ? "Wired" : (wifiSSID ? wifiSSID : "Connected")) : formatSpeed(showUpload ? upSpeed : downSpeed)))
                 font.pixelSize: Theme.fontSize
-                font.family: "JetBrains Mono"
-                font.weight: (airplaneMode || !wifiConnected) ? Font.Bold : Font.DemiBold
-                color: airplaneMode ? Theme.powerRed : (!wifiConnected ? Theme.powerRed : Theme.fontColor)
+                font.family: Theme.monoFont
+                font.weight: (airplaneMode || !online) ? Font.Bold : Font.DemiBold
+                color: airplaneMode ? Theme.powerRed : (!online ? Theme.powerRed : Theme.fontColor)
                 Layout.alignment: Qt.AlignVCenter
             }
         }

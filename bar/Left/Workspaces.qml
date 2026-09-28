@@ -66,7 +66,7 @@ Item {
 
                     color: isCurrentActive
                            ? Theme.accentColor
-                           : (isOccupied ? Theme.surfaceContainerHigh : Qt.rgba(255, 255, 255, 0.12))
+                           : (isOccupied ? Theme.surfaceContainerHigh : Qt.rgba(1, 1, 1, 0.15))
 
                     border.width: isCurrentActive ? 0 : 1
                     border.color: isCurrentActive ? "transparent" : (isOccupied ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.35) : Theme.glassBorder)
@@ -78,7 +78,7 @@ Item {
                     Behavior on radius { NumberAnimation { duration: 200 } }
 
                     // Elastic Bubble Bounce on Hover & Click
-                    scale: wsMouse.pressed ? 0.8 : (wsMouse.containsMouse ? 1.25 : 1.0)
+                    scale: wsMouse.pressed ? 0.88 : (wsMouse.containsMouse ? 1.20 : 1.0)
                     Behavior on scale { NumberAnimation { duration: 180; easing.type: Theme.elasticEasing } }
 
                     MouseArea {
@@ -96,6 +96,22 @@ Item {
                                 }
                             }
                         }
+                    }
+
+                    // Active Workspace Outer Glow Pulse Ring
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: parent.width + Theme.scaled(6)
+                        height: parent.height + Theme.scaled(6)
+                        radius: height / 2
+                        color: "transparent"
+                        border.color: Theme.accentColor
+                        border.width: 1
+                        opacity: isCurrentActive ? 0.45 : 0.0
+                        scale: isCurrentActive ? 1.0 : 0.5
+
+                        Behavior on opacity { NumberAnimation { duration: 200 } }
+                        Behavior on scale { NumberAnimation { duration: 300; easing.type: Easing.OutBack } }
                     }
 
                     // Inner Glow Sphere for Active / Occupied Balls

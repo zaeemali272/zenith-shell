@@ -97,7 +97,7 @@ PanelWindow {
 
                 Text {
                     text: Math.round(osdValue * 100) + "%"
-                    color: Theme.text; font.family: "JetBrains Mono"; font.weight: Font.Bold; font.pixelSize: osdWindow.isFullscreen ? Theme.scaled(11) : Theme.scaled(13)
+                    color: Theme.text; font.family: Theme.monoFont; font.weight: Font.Bold; font.pixelSize: osdWindow.isFullscreen ? Theme.scaled(11) : Theme.scaled(13)
                 }
             }
 
@@ -125,8 +125,8 @@ PanelWindow {
                 }
 
                 background: Rectangle {
-                    x: osdSlider.leftPadding + osdSlider.handleWidth /1
-                    y: osdWindow.isFullscreen ? osdSlider.topPadding + (osdSlider.availableHeight - height) / 5 : osdSlider.topPadding + (osdSlider.availableHeight - height) / 2
+                    x: osdSlider.leftPadding + osdSlider.handleWidth / 2
+                    y: osdSlider.topPadding + (osdSlider.availableHeight - height) / 2
                     implicitHeight: osdWindow.isFullscreen ? Theme.scaled(8) : Theme.scaled(10)
                     width: osdSlider.availableWidth - osdSlider.handleWidth
                     radius: Theme.scaled(3); color: Theme.mantle

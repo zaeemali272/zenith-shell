@@ -49,6 +49,16 @@ MenuWindow {
 
         focus: true
         Keys.onPressed: (event) => {
+            if (event.key === Qt.Key_Left || event.key === Qt.Key_Right) {
+                let tabs = ["Default", "Pomodoro", "Mail", "Wallpaper"];
+                let idx = tabs.indexOf(CenterState.activeTab);
+                if (idx !== -1) {
+                    let nextIdx = (event.key === Qt.Key_Right) ? (idx + 1) % tabs.length : (idx - 1 + tabs.length) % tabs.length;
+                    CenterState.activeTab = tabs[nextIdx];
+                    event.accepted = true;
+                    return;
+                }
+            }
             let currentContent = contentStack.children[contentStack.currentIndex];
             if (currentContent && typeof currentContent.handleKeys === 'function') {
                 currentContent.handleKeys(event);
@@ -72,13 +82,35 @@ MenuWindow {
                     radius: 999
                 }
 
-                Text { 
-                    text: "DASHBOARD"
-                    color: "#ffffff"
-                    font.pixelSize: Theme.scaled(12.5)
-                    font.weight: Font.Black
-                    font.letterSpacing: 2
+                RowLayout {
+                    spacing: Theme.scaled(6)
                     visible: !Theme.isSmallScreen
+
+                    Text { 
+                        text: "DASHBOARD"
+                        color: "#ffffff"
+                        font.pixelSize: Theme.scaled(12.5)
+                        font.weight: Font.Black
+                        font.letterSpacing: 2
+                    }
+
+                    // Notification Count Badge
+                    Rectangle {
+                        visible: NotificationService.count > 0
+                        width: Theme.scaled(18)
+                        height: Theme.scaled(18)
+                        radius: height / 2
+                        color: Theme.powerRed
+                        Layout.alignment: Qt.AlignVCenter
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: NotificationService.count.toString()
+                            color: "#ffffff"
+                            font.pixelSize: Theme.scaled(10)
+                            font.weight: Font.Bold
+                        }
+                    }
                 }
 
                 // Bubble Tab Switcher Capsule
@@ -101,7 +133,7 @@ MenuWindow {
                                 width: Math.max(Theme.scaled(82), tabText.implicitWidth + Theme.scaled(18))
                                 height: Theme.scaled(30)
                                 radius: 999
-                                color: CenterState.activeTab === modelData ? Theme.accentColor : (tabMouse.containsMouse ? Qt.rgba(255,255,255,0.12) : "transparent")
+                                color: CenterState.activeTab === modelData ? Theme.accentColor : (tabMouse.containsMouse ? Qt.rgba(1,1,1,0.12) : "transparent")
                                 scale: tabMouse.pressed ? 0.94 : (tabMouse.containsMouse ? 1.03 : 1.0)
                                 
                                 Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.animEasing } }
@@ -133,7 +165,7 @@ MenuWindow {
                     id: focusRect
                     width: Theme.scaled(38); height: Theme.scaled(38)
                     radius: 999
-                    color: MediaPlayerService.mediaFocus ? Theme.accentColor : (focusMouse.containsMouse ? Qt.rgba(255,255,255,0.12) : Qt.rgba(0,0,0,0.3))
+                    color: MediaPlayerService.mediaFocus ? Theme.accentColor : (focusMouse.containsMouse ? Qt.rgba(1,1,1,0.12) : Qt.rgba(0,0,0,0.3))
                     border.width: 0
                     scale: focusMouse.pressed ? 0.94 : (focusMouse.containsMouse ? 1.05 : 1.0)
                     
@@ -160,7 +192,7 @@ MenuWindow {
                     id: caffeineRect
                     width: Theme.scaled(38); height: Theme.scaled(38)
                     radius: 999
-                    color: CaffeineService.active ? Theme.accentColor : (caffeineMouse.containsMouse ? Qt.rgba(255,255,255,0.12) : Qt.rgba(0,0,0,0.3))
+                    color: CaffeineService.active ? Theme.accentColor : (caffeineMouse.containsMouse ? Qt.rgba(1,1,1,0.12) : Qt.rgba(0,0,0,0.3))
                     border.width: 0
                     scale: caffeineMouse.pressed ? 0.94 : (caffeineMouse.containsMouse ? 1.05 : 1.0)
                     
@@ -251,7 +283,7 @@ MenuWindow {
                                             }
                                             Text { text: "NOTIFY"; font.pixelSize: 9; font.weight: Font.Black; color: "#ffffff" }
                                         }
-                                        background: Rectangle { color: fullscreenBtn.hovered ? Qt.rgba(255,255,255,0.1) : "transparent"; radius: 999 }
+                                        background: Rectangle { color: fullscreenBtn.hovered ? Qt.rgba(1,1,1,0.1) : "transparent"; radius: 999 }
                                         onClicked: NotificationSettings.fullscreenNotification = !NotificationSettings.fullscreenNotification
                                     }
                                     Button {
@@ -269,7 +301,7 @@ MenuWindow {
                                             }
                                             Text { text: "OSD"; font.pixelSize: 9; font.weight: Font.Black; color: "#ffffff" }
                                         }
-                                        background: Rectangle { color: osdFullscreenBtn.hovered ? Qt.rgba(255,255,255,0.1) : "transparent"; radius: 999 }
+                                        background: Rectangle { color: osdFullscreenBtn.hovered ? Qt.rgba(1,1,1,0.1) : "transparent"; radius: 999 }
                                         onClicked: NotificationSettings.fullscreenOSD = !NotificationSettings.fullscreenOSD
                                     }
                                     Button {
@@ -277,7 +309,7 @@ MenuWindow {
                                         flat: true
                                         padding: Theme.scaled(3)
                                         contentItem: Text { text: "󰃢"; font.family: Theme.iconFont; color: "#ffffff"; font.pixelSize: Theme.scaled(15) }
-                                        background: Rectangle { color: clearBtn.hovered ? Qt.rgba(255,255,255,0.1) : "transparent"; radius: 999 }
+                                        background: Rectangle { color: clearBtn.hovered ? Qt.rgba(1,1,1,0.1) : "transparent"; radius: 999 }
                                         onClicked: NotificationService.clearAll()
                                     }
                                 }
