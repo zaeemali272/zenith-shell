@@ -38,12 +38,52 @@ MouseArea {
         if (!root.item) return;
 
         if (mouse.button === Qt.LeftButton) {
+            let pos = root.mapToItem(null, mouse.x, mouse.y);
+            let globalX = Math.round(pos.x);
+            let globalY = Math.round(pos.y);
+
             try {
                 if (typeof root.item.activate === "function") {
-                    root.item.activate();
+                    root.item.activate(globalX, globalY);
+                } else if (typeof root.item.secondaryActivate === "function") {
+                    root.item.secondaryActivate(globalX, globalY);
                 }
             } catch (e) {
                 console.warn("Tray activate error:", e);
+            }
+
+            // Window focus / toggle fallback for Hyprland app windows
+            let appId = String(root.item.id || root.item.title || "").toLowerCase().trim();
+            if (appId !== "") {
+                let targetWin = null;
+                let workspaces = Hyprland.workspaces.values;
+                for (let i = 0; i < workspaces.length; i++) {
+                    let ws = workspaces[i];
+                    if (!ws || !ws.toplevels) continue;
+                    let toplevels = ws.toplevels.values;
+                    for (let j = 0; j < toplevels.length; j++) {
+                        let win = toplevels[j];
+                        if (!win) continue;
+                        let winClass = String(win.initialClass || win.waylandAppId || "").toLowerCase();
+                        if (winClass !== "" && (winClass.includes(appId) || appId.includes(winClass))) {
+                            targetWin = win;
+                            break;
+                        }
+                    }
+                    if (targetWin) break;
+                }
+
+                if (targetWin) {
+                    if (Hyprland.activeWindow === targetWin) {
+                        Hyprland.dispatch("workspace previous");
+                    } else {
+                        if (typeof targetWin.activate === "function") {
+                            targetWin.activate();
+                        } else {
+                            Hyprland.dispatch("focuswindow address:" + targetWin.address);
+                        }
+                    }
+                }
             }
         } else if (mouse.button === Qt.RightButton) {
             if (root.item.hasMenu && menuRef) {
@@ -158,10 +198,29 @@ MouseArea {
         }
     }
 
+    property bool tooltipShow: false
+
+    Timer {
+        id: tooltipTimer
+        interval: 400
+        repeat: false
+        running: false
+        onTriggered: root.tooltipShow = true
+    }
+
+    onContainsMouseChanged: {
+        if (containsMouse) {
+            tooltipTimer.restart();
+        } else {
+            tooltipTimer.stop();
+            tooltipShow = false;
+        }
+    }
+
     // Tooltip. A PopupWindow is a real Wayland surface; one per tray icon
     // sitting around unmapped is waste, so it only exists while hovered.
     Loader {
-        active: root.containsMouse && root.item
+        active: root.tooltipShow && root.containsMouse && root.item
         sourceComponent: PopupWindow {
             anchor.window: root.QsWindow.window
             anchor.rect: root.mapToItem(null, 0, 0, root.width, root.height)

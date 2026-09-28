@@ -21,6 +21,7 @@ Item {
     // Helper functions matching original widgets
     function volumeIcon(v, m) {
         if (m) return Theme.volMute;
+        if (v > 100) return Theme.volOverdrive;
         if (v >= 70) return Theme.volHigh;
         if (v >= 30) return Theme.volMid;
         return Theme.volLow;
@@ -50,7 +51,6 @@ Item {
         return Theme.fontColor;
     }
 
-    // Outer Glass Container (No line spacers, clean rounded pills layout)
     Rectangle {
         id: outerContainer
         height: Theme.pillHeight
@@ -59,15 +59,25 @@ Item {
         implicitWidth: width
         radius: height / 2
         color: Theme.pillColor
-        border.color: Theme.glassBorder
+        border.color: clusterMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.25) : Theme.glassBorder
         border.width: 1
         clip: true
+        scale: clusterMouse.containsMouse ? 1.02 : 1.0
 
+        Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+        Behavior on border.color { ColorAnimation { duration: 150 } }
         Behavior on width {
             NumberAnimation {
                 duration: 350
                 easing.type: Easing.OutExpo
             }
+        }
+
+        MouseArea {
+            id: clusterMouse
+            anchors.fill: parent
+            hoverEnabled: true
+            acceptedButtons: Qt.NoButton
         }
 
         RowLayout {
@@ -107,6 +117,8 @@ Item {
                         font.pixelSize: Theme.scaled(Theme.iconSize + 1)
                         color: VolumeService.micMuted ? Theme.red : Theme.accentColor
                         Layout.alignment: Qt.AlignVCenter
+                        scale: micMouse.containsMouse ? 1.18 : 1.0
+                        Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutBack } }
                     }
                 }
 
@@ -135,11 +147,21 @@ Item {
                 Layout.alignment: Qt.AlignVCenter
 
                 property bool showVolText: false
+                property bool volHoverText: false
+
+                Behavior on implicitWidth { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
                 Timer {
                     id: volTextTimer
                     interval: 3000
                     onTriggered: volSubBtn.showVolText = false
+                }
+
+                Timer {
+                    id: volHoverTimer
+                    interval: 400
+                    repeat: false
+                    onTriggered: volSubBtn.volHoverText = true
                 }
 
                 Connections {
@@ -172,17 +194,19 @@ Item {
                         text: root.volumeIcon(VolumeService.outputVolume, VolumeService.muted)
                         font.family: Theme.iconFont
                         font.pixelSize: Theme.scaled(Theme.iconSize + 1)
-                        color: VolumeService.btActive ? Theme.bluetoothColor : Theme.fontColor
+                        color: (!VolumeService.muted && VolumeService.outputVolume > 100) ? Theme.powerYellow : (VolumeService.btActive ? Theme.bluetoothColor : Theme.fontColor)
                         Layout.alignment: Qt.AlignVCenter
+                        scale: volMouse.containsMouse ? 1.18 : 1.0
+                        Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutBack } }
                     }
 
-                    // Percentage Text (Visible ONLY when volume changes or mouse hovers, hides after 3s)
+                    // Percentage Text (Visible when volume changes, or hovered after 400ms delay)
                     Text {
-                        visible: volSubBtn.showVolText || volMouse.containsMouse
+                        visible: volSubBtn.showVolText || volSubBtn.volHoverText
                         text: VolumeService.muted ? "Muted" : VolumeService.outputVolume + "%"
                         font.pixelSize: Theme.fontSize
-                        font.family: "JetBrains Mono"
-                        color: VolumeService.btActive ? Theme.bluetoothColor : Theme.fontColor
+                        font.family: Theme.monoFont
+                        color: (!VolumeService.muted && VolumeService.outputVolume > 100) ? Theme.powerYellow : (VolumeService.btActive ? Theme.bluetoothColor : Theme.fontColor)
                         Layout.alignment: Qt.AlignVCenter
                     }
                 }
@@ -193,6 +217,15 @@ Item {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     acceptedButtons: Qt.LeftButton | Qt.RightButton
+
+                    onContainsMouseChanged: {
+                        if (containsMouse) {
+                            volHoverTimer.restart();
+                        } else {
+                            volHoverTimer.stop();
+                            volSubBtn.volHoverText = false;
+                        }
+                    }
 
                     onClicked: (mouse) => {
                         if (mouse.button === Qt.RightButton) {
@@ -280,6 +313,17 @@ Item {
                 visible: HardwareService.hasBattery && WidgetSettings.enableBattery
                          && !HyprlandService.isFullscreen
 
+                property bool batHoverText: false
+
+                Behavior on implicitWidth { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+
+                Timer {
+                    id: batHoverTimer
+                    interval: 400
+                    repeat: false
+                    onTriggered: batSubBtn.batHoverText = true
+                }
+
                 Rectangle {
                     anchors.fill: parent
                     radius: height / 2
@@ -300,6 +344,8 @@ Item {
                         font.pixelSize: Theme.scaled(Theme.iconSize + 1)
                         color: root.batteryColor(root.batPercent, root.batState, root.acOnline)
                         Layout.alignment: Qt.AlignVCenter
+                        scale: batMouse.containsMouse ? 1.18 : 1.0
+                        Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutBack } }
 
                         SequentialAnimation on opacity {
                             running: root.batState === "charging"
@@ -309,12 +355,12 @@ Item {
                         }
                     }
 
-                    // Percentage Text (Shown ONLY when battery <= 20% or on mouse hover)
+                    // Percentage Text (Shown when battery <= 20%, or hovered after 400ms delay)
                     Text {
-                        visible: root.batPercent <= 20 || batMouse.containsMouse
+                        visible: root.batPercent <= 20 || batSubBtn.batHoverText
                         text: (root.batPercent >= 0 ? root.batPercent : 0) + "%"
                         font.pixelSize: Theme.fontSize
-                        font.family: "JetBrains Mono"
+                        font.family: Theme.monoFont
                         font.weight: Font.Bold
                         color: root.batteryColor(root.batPercent, root.batState, root.acOnline)
                         Layout.alignment: Qt.AlignVCenter
@@ -327,6 +373,16 @@ Item {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     acceptedButtons: Qt.LeftButton
+
+                    onContainsMouseChanged: {
+                        if (containsMouse) {
+                            batHoverTimer.restart();
+                        } else {
+                            batHoverTimer.stop();
+                            batSubBtn.batHoverText = false;
+                        }
+                    }
+
                     onClicked: {
                         QuickSettingsService.toggle("battery");
                     }
@@ -357,9 +413,13 @@ Item {
                     color: pwrMouse.containsMouse ? Theme.powerRed : Theme.fontColor
                     font.family: Theme.iconFont
                     font.pixelSize: Theme.scaled(Theme.iconSize + 1)
+                    scale: pwrMouse.containsMouse ? 1.2 : 1.0
+                    rotation: pwrMouse.containsMouse ? 90 : 0
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
 
+                    Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutBack } }
+                    Behavior on rotation { NumberAnimation { duration: 220; easing.type: Easing.OutBack } }
                     Behavior on color { ColorAnimation { duration: 150 } }
                 }
 

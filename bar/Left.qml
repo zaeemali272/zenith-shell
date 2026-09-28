@@ -1,11 +1,11 @@
 import "Left"
+import ".."
 import QtQuick
 import Quickshell
 
 Row {
-    spacing: 10
+    spacing: Theme.scaled(10)
 
     Workspaces {
     }
-
 }

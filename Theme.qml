@@ -35,7 +35,7 @@ QtObject {
     // ===== Glassmorphism & Effects =====
     readonly property real menuOpacity: AppearanceSettings.menuOpacity
     readonly property color glassBackground: Qt.alpha(Colors.background, menuOpacity)
-    readonly property color glassBorder: Qt.rgba(1, 1, 1, 0.15)
+    readonly property color glassBorder: Qt.rgba(1, 1, 1, 0.10)
     readonly property real glassBlur: AppearanceSettings.glassBlur
     
     // ===== Animation Defaults =====
@@ -114,18 +114,19 @@ QtObject {
     readonly property int pillRadius: scaled(PillSettings.radius)
     readonly property int pillPadding: scaled(PillSettings.padding)
     readonly property int extraPillPadding: scaled(PillSettings.extraPadding)
-    readonly property color pillColor: Colors.background
+    readonly property color pillColor: Colors.surface_container_low
     readonly property int pillSpacing: scaled(PillSettings.spacing)
     readonly property int pillGap: scaled(PillSettings.gap)
     readonly property color pillBorderColor: Colors.outline
     readonly property int pillBorderWidth: PillSettings.borderWidth
     readonly property int pillHoverBorderWidth: PillSettings.hoverBorderWidth
-    readonly property color pillHoverColor: Colors.surface_variant
+    readonly property color pillHoverColor: Colors.surface_container_high
     
     // ===== Typography =====
     readonly property int fontSize: scaled(AppearanceSettings.fontSize)
     readonly property int iconSize: scaled(AppearanceSettings.iconSize)
     readonly property string iconFont: AppearanceSettings.iconFont
+    readonly property string monoFont: AppearanceSettings.monoFont
     readonly property color fontColor: Colors.on_background
     
     // ===== Menu / Popup Styling =====
@@ -184,6 +185,7 @@ QtObject {
     readonly property string volLow: "󰕿"
     readonly property string volMid: "󰖀"
     readonly property string volHigh: "󰕾"
+    readonly property string volOverdrive: "󰓃"
     readonly property string btIcon: "󰂯"
     readonly property string netUpIcon: ""
     readonly property string netDownIcon: ""

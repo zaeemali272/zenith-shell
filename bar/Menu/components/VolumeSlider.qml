@@ -40,7 +40,7 @@ ColumnLayout {
             }
             Text { 
                 text: root.value + "%"
-                color: Theme.text; font.family: "JetBrains Mono"
+                color: Theme.text; font.family: Theme.monoFont
                 font.weight: Font.Bold; font.pixelSize: Theme.scaled(13) 
             }
         }

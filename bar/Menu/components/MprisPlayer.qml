@@ -25,6 +25,7 @@ Rectangle {
 
     function formatTime(s) {
         if (s < 0 || isNaN(s)) return "0:00"
+        if (s > 100000) s = s / 1000000.0;
         let mins = Math.floor(s / 60); let secs = Math.floor(s % 60)
         return mins + ":" + (secs < 10 ? "0" : "") + secs
     }
@@ -67,9 +68,18 @@ Rectangle {
                 Slider {
                     id: posSlider; Layout.fillWidth: true; 
                     Layout.preferredHeight: Theme.scaled(18)
-                    from: 0; to: (player && player.length > 0) ? player.length : 100
-                    value: mprisPlayer.currentPos
-                    onMoved: { if(player) player.position = value }
+                    from: 0; to: MediaPlayerService.getTrackLengthSec() > 0 ? MediaPlayerService.getTrackLengthSec() : 100
+                    value: MediaPlayerService.getCurrentPosSec()
+                    onMoved: {
+                        if (player) {
+                            let targetSec = value;
+                            if (player.length > 100000) {
+                                player.position = targetSec * 1000000;
+                            } else {
+                                player.position = targetSec;
+                            }
+                        }
+                    }
                     padding: 0; leftPadding: 0; rightPadding: 0; topPadding: 0; bottomPadding: 0
                     background: Rectangle {
                         x: posSlider.leftPadding + Theme.scaled(6); y: posSlider.topPadding + (posSlider.availableHeight - height) / 2
@@ -85,9 +95,9 @@ Rectangle {
                 }
                 RowLayout {
                     Layout.fillWidth: true
-                    Label { text: mprisPlayer.formatTime(mprisPlayer.currentPos); color: Theme.subtext1; font.pixelSize: Theme.scaled(9) }
+                    Label { text: mprisPlayer.formatTime(MediaPlayerService.getCurrentPosSec()); color: Theme.subtext1; font.pixelSize: Theme.scaled(9) }
                     Item { Layout.fillWidth: true }
-                    Label { text: mprisPlayer.formatTime(player ? player.length : 0); color: Theme.subtext1; font.pixelSize: Theme.scaled(9) }
+                    Label { text: mprisPlayer.formatTime(MediaPlayerService.getTrackLengthSec()); color: Theme.subtext1; font.pixelSize: Theme.scaled(9) }
                 }
             }
 

@@ -61,6 +61,16 @@ MenuWindow {
 
         focus: true
         Keys.onPressed: (event) => {
+            if (event.key === Qt.Key_Left || event.key === Qt.Key_Right) {
+                let tabs = root.availableTabs;
+                let idx = tabs.findIndex(t => t.id === QuickSettingsService.activeTab);
+                if (idx !== -1) {
+                    let nextIdx = (event.key === Qt.Key_Right) ? (idx + 1) % tabs.length : (idx - 1 + tabs.length) % tabs.length;
+                    QuickSettingsService.activeTab = tabs[nextIdx].id;
+                    event.accepted = true;
+                    return;
+                }
+            }
             let currentContent = contentStack.children[contentStack.currentIndex];
             if (currentContent && typeof currentContent.handleKeys === 'function') {
                 currentContent.handleKeys(event);
@@ -102,7 +112,7 @@ MenuWindow {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             radius: 999
-                            color: QuickSettingsService.activeTab === modelData.id ? Theme.accentColor : (tabMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : "transparent")
+                            color: QuickSettingsService.activeTab === modelData.id ? Theme.accentColor : (tabMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent")
                             
                             scale: tabMouse.pressed ? 0.94 : (tabMouse.containsMouse ? 1.03 : 1.0)
                             

@@ -23,11 +23,12 @@ Rectangle {
     width: trayRow.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
     implicitWidth: width
     color: trayHoverArea.containsMouse ? Theme.pillHoverColor : Theme.pillColor
-    radius: Theme.pillRadius
-    border.color: Theme.glassBorder
+    radius: height / 2
+    border.color: trayHoverArea.containsMouse ? Qt.rgba(1, 1, 1, 0.25) : Theme.glassBorder
     border.width: 1
     scale: trayHoverArea.pressed ? 0.96 : (trayHoverArea.containsMouse ? 1.02 : 1.0)
 
+    Behavior on border.color { ColorAnimation { duration: 150 } }
     Behavior on width { NumberAnimation { duration: 250; easing.type: Easing.OutExpo } }
     Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.animEasing } }
     Behavior on color { ColorAnimation { duration: Theme.animFast } }
