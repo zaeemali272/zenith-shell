@@ -427,8 +427,8 @@ ColumnLayout {
     Process { id: killMpv; command: ["killall", "mpvpaper"] }
     Process { id: serviceCmd }
     Process { id: mpvProcess }
-    Process { id: saveCurrentWall; property string path: ""; command: ["sh", "-c", "printf '%s\\n' \"$1\" > \"$2\"", "_", path, PathSettings.configDir + "/current_wallpaper.txt"] }
-    Process { id: thumbGen; command: ["python3", WallpaperService.scriptPath]; onRunningChanged: { if (!running) { root.thumbnailsReady = true; root.refreshTrigger++; } } }
+    Process { id: saveCurrentWall; property string path: ""; command: ["sh", "-c", "mkdir -p " + Quickshell.env("HOME") + "/.config && echo '" + path + "' > " + Quickshell.env("HOME") + "/.config/current_wallpaper.txt"] }
+    Process { id: thumbGen; command: ["python3", (Quickshell.env("ZENITH_ROOT") ? Quickshell.env("ZENITH_ROOT") : Quickshell.env("HOME") + "/.config/quickshell") + "/services/generate_thumbnails.py"]; onRunningChanged: { if (!running) { root.thumbnailsReady = true; root.refreshTrigger++; } } }
     Component.onCompleted: refreshThumbnails()
 
     function resetScroll() {
