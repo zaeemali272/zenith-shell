@@ -200,8 +200,8 @@ MenuWindow {
 
             ParallelAnimation {
                 id: fadeAnim
-                NumberAnimation { target: contentStack; property: "opacity"; from: 0; to: 1; duration: 250; easing.type: Easing.OutQuad }
-                NumberAnimation { target: contentTranslate; property: "y"; from: 8; to: 0; duration: 250; easing.type: Easing.OutQuad }
+                NumberAnimation { target: contentStack; property: "opacity"; from: 0; to: 1; duration: 70; easing.type: Easing.OutQuad }
+                NumberAnimation { target: contentTranslate; property: "y"; from: 4; to: 0; duration: 70; easing.type: Easing.OutQuad }
             }
 
             // --- CONTENT AREA ---

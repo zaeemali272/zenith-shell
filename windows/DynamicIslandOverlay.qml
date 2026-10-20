@@ -77,7 +77,7 @@ PanelWindow {
     }
 
 
-    // Ultra-smooth spring entrance animation
+    // Fast, crisp entrance animation
     ParallelAnimation {
         id: showAnim
         NumberAnimation {
@@ -85,25 +85,24 @@ PanelWindow {
             property: "opacity"
             from: 0
             to: 1
-            duration: 180
-            easing.type: Easing.OutCubic
+            duration: 60
+            easing.type: Easing.OutQuad
         }
         NumberAnimation {
             target: mainCard
             property: "scale"
-            from: 0.92
+            from: 0.98
             to: 1.0
-            duration: 220
-            easing.type: Easing.OutBack
-            easing.overshoot: 1.15
+            duration: 70
+            easing.type: Easing.OutQuad
         }
         NumberAnimation {
             target: mainCard
             property: "y"
-            from: -Shell.Theme.scaled(8)
+            from: 0
             to: Shell.Theme.scaled(6)
-            duration: 200
-            easing.type: Easing.OutExpo
+            duration: 70
+            easing.type: Easing.OutQuad
         }
     }
 
@@ -130,7 +129,8 @@ PanelWindow {
 
         anchors.horizontalCenter: parent.horizontalCenter
         y: Shell.Theme.scaled(6)
-        width: Shell.Theme.scaled(593)
+        width: DynamicIslandService.activeMode === "launcher" ? Shell.Theme.scaled(480) : Shell.Theme.scaled(593)
+        Behavior on width { NumberAnimation { duration: 80; easing.type: Easing.OutQuad } }
         height: cardColumn.implicitHeight
         opacity: 0
         scale: 0.95

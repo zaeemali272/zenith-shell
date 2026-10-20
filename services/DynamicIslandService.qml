@@ -251,7 +251,7 @@ QtObject {
                     name: app.name,
                     nameLower: app.nameLower,
                     icon: app.icon,
-                    genericName: usage > 0 ? ("Frequently Used (" + usage + ")") : (app.genericName || app.comment || "Application"),
+                    genericName: usage > 0 ? "Frequently Used" : (app.genericName || app.comment || "Application"),
                     comment: app.comment,
                     usage: usage
                 });
