@@ -11,6 +11,8 @@ import "../../../Settings"
 ColumnLayout {
     id: root
     spacing: Theme.scaled(20)
+    focus: true
+    Keys.onPressed: (event) => handleKeys(event)
 
     property var selectedWalls: []
     property int refreshTrigger: 0
@@ -19,10 +21,26 @@ ColumnLayout {
     property int selectedIndex: 0
 
     function handleKeys(event) {
+        if (event.key === Qt.Key_Tab) {
+            let subTabs = ["Wallpaper", "Slideshow", "Animated"];
+            let sIdx = subTabs.indexOf(root.activeSubTab);
+            root.activeSubTab = subTabs[(sIdx + 1) % subTabs.length];
+            root.selectedIndex = 0;
+            event.accepted = true;
+            return;
+        } else if (event.key === Qt.Key_Backtab) {
+            let subTabs = ["Wallpaper", "Slideshow", "Animated"];
+            let sIdx = subTabs.indexOf(root.activeSubTab);
+            root.activeSubTab = subTabs[(sIdx - 1 + subTabs.length) % subTabs.length];
+            root.selectedIndex = 0;
+            event.accepted = true;
+            return;
+        }
+
         let cols = 4;
         let isAnimated = (root.activeSubTab === "Animated");
         let model = isAnimated ? animFolderModel : wallFolderModel;
-        let maxIdx = model.count - 1;
+        let maxIdx = model ? model.count - 1 : -1;
 
         if (maxIdx < 0) return;
 
@@ -257,6 +275,18 @@ ColumnLayout {
             visible: root.activeSubTab === "Animated"
             clip: true
             ScrollBar.vertical: ScrollBar { width: 4; policy: ScrollBar.AsNeeded }
+
+            Connections {
+                target: root
+                function onSelectedIndexChanged() {
+                    let item = animRepeater.itemAt(root.selectedIndex);
+                    if (item) {
+                        let itemPos = item.y;
+                        if (itemPos < animFlickable.contentY) animFlickable.contentY = itemPos;
+                        else if (itemPos + item.height > animFlickable.contentY + animFlickable.height) animFlickable.contentY = itemPos + item.height - animFlickable.height;
+                    }
+                }
+            }
 
             Flow {
                 id: animFlow

@@ -10,21 +10,28 @@ ColumnLayout {
     spacing: Theme.scaled(25)
     Layout.fillWidth: true
     focus: true
+    Keys.onPressed: (event) => handleKeys(event)
     
     function handleKeys(event) {
         let cols = 2;
         let maxIdx = powerButtons.count - 1;
+        if (maxIdx < 0) return;
+
         if (event.key === Qt.Key_Right) {
             root.selectedIndex = Math.min(root.selectedIndex + 1, maxIdx);
+            event.accepted = true;
         }
         else if (event.key === Qt.Key_Left) {
             root.selectedIndex = Math.max(root.selectedIndex - 1, 0);
+            event.accepted = true;
         }
         else if (event.key === Qt.Key_Down) {
             root.selectedIndex = Math.min(root.selectedIndex + cols, maxIdx);
+            event.accepted = true;
         }
         else if (event.key === Qt.Key_Up) {
             root.selectedIndex = Math.max(root.selectedIndex - cols, 0);
+            event.accepted = true;
         }
         else if (event.key === Qt.Key_Enter || event.key === Qt.Key_Return) {
             let modelData = powerButtons.model[root.selectedIndex];
@@ -33,6 +40,7 @@ ColumnLayout {
                 powerProc.command = ["sh", "-c", cmd];
                 powerProc.running = true;
             }
+            event.accepted = true;
         }
     }
     

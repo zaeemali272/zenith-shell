@@ -49,9 +49,24 @@ MenuWindow {
 
         focus: true
         Keys.onPressed: (event) => {
+            if (CenterState.activeTab === "Wallpaper") {
+                wallpaperContent.handleKeys(event);
+                if (event.accepted) return;
+            }
             let currentContent = contentStack.children[contentStack.currentIndex];
             if (currentContent && typeof currentContent.handleKeys === 'function') {
                 currentContent.handleKeys(event);
+                if (event.accepted) return;
+            }
+            if (event.key === Qt.Key_Left || event.key === Qt.Key_Right) {
+                let tabs = ["Default", "Pomodoro", "Mail", "Wallpaper"];
+                let idx = tabs.indexOf(CenterState.activeTab);
+                if (idx !== -1) {
+                    let nextIdx = (event.key === Qt.Key_Right) ? (idx + 1) % tabs.length : (idx - 1 + tabs.length) % tabs.length;
+                    CenterState.activeTab = tabs[nextIdx];
+                    event.accepted = true;
+                    return;
+                }
             }
         }
 
