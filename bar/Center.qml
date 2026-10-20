@@ -97,10 +97,10 @@ RowLayout {
 
         scale: DynamicIslandService.active ? 1.0 : (pillMouse.pressed ? 0.95 : (pillMouse.containsMouse ? 1.04 : 1.0))
 
-        Behavior on width { NumberAnimation { duration: 420; easing.type: Easing.OutBack; easing.overshoot: 0.8 } }
-        Behavior on scale { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
-        Behavior on color { ColorAnimation { duration: 280 } }
-        Behavior on border.color { ColorAnimation { duration: 280 } }
+        Behavior on width { NumberAnimation { duration: 80; easing.type: Easing.OutQuad } }
+        Behavior on scale { NumberAnimation { duration: 60; easing.type: Easing.OutQuad } }
+        Behavior on color { ColorAnimation { duration: 60 } }
+        Behavior on border.color { ColorAnimation { duration: 60 } }
 
         // --- DEFAULT CENTER CONTENT (Clock/Media/Weather) ---
         RowLayout {
