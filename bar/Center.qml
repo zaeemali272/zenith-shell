@@ -97,7 +97,6 @@ RowLayout {
 
         scale: DynamicIslandService.active ? 1.0 : (pillMouse.pressed ? 0.95 : (pillMouse.containsMouse ? 1.04 : 1.0))
 
-        Behavior on width { NumberAnimation { duration: 80; easing.type: Easing.OutQuad } }
         Behavior on scale { NumberAnimation { duration: 60; easing.type: Easing.OutQuad } }
         Behavior on color { ColorAnimation { duration: 60 } }
         Behavior on border.color { ColorAnimation { duration: 60 } }
@@ -384,6 +383,16 @@ RowLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
 
+                Timer {
+                    id: searchDebounce
+                    interval: 15
+                    repeat: false
+                    onTriggered: {
+                        DynamicIslandService.query = searchInput.text;
+                        DynamicIslandService.rebuildFiltered();
+                    }
+                }
+
                 TextInput {
                     id: searchInput
                     anchors.fill: parent
@@ -391,26 +400,37 @@ RowLayout {
                     font.pixelSize: Theme.fontSize
                     color: Theme.text
                     selectByMouse: true
-                    text: DynamicIslandService.query
                     focus: DynamicIslandService.active
 
                     Connections {
                         target: DynamicIslandService
                         function onActiveChanged() {
                             if (DynamicIslandService.active) {
+                                searchDebounce.stop();
+                                searchInput.text = DynamicIslandService.query;
+                                Qt.callLater(() => searchInput.forceActiveFocus());
+                            } else {
+                                searchDebounce.stop();
+                                searchInput.text = "";
+                            }
+                        }
+                        function onActiveModeChanged() {
+                            if (DynamicIslandService.active) {
+                                searchDebounce.stop();
+                                searchInput.text = "";
                                 Qt.callLater(() => searchInput.forceActiveFocus());
                             }
                         }
                     }
 
                     onTextChanged: {
-                        if (DynamicIslandService.active && text !== DynamicIslandService.query) {
-                            DynamicIslandService.query = text;
-                            Qt.callLater(() => {
-                                if (text === DynamicIslandService.query) {
-                                    DynamicIslandService.rebuildFiltered();
-                                }
-                            });
+                        if (!DynamicIslandService.active) return;
+                        if (text === "") {
+                            searchDebounce.stop();
+                            DynamicIslandService.query = "";
+                            DynamicIslandService.rebuildFiltered();
+                        } else {
+                            searchDebounce.restart();
                         }
                     }
 
@@ -476,9 +496,15 @@ RowLayout {
                     Keys.onEnterPressed: (event) => handleEnter(event)
 
                     function handleEnter(event) {
+                        if (searchDebounce.running) {
+                            searchDebounce.stop();
+                            DynamicIslandService.query = searchInput.text;
+                            DynamicIslandService.rebuildFiltered();
+                        }
+
                         let isShift = event && (event.modifiers & Qt.ShiftModifier);
                         if (isShift && DynamicIslandService.activeMode === "launcher") {
-                            DynamicIslandService.runInTerminal(DynamicIslandService.query);
+                            DynamicIslandService.runInTerminal(searchInput.text || DynamicIslandService.query);
                             DynamicIslandService.close();
                             if (event) event.accepted = true;
                             return;
@@ -488,8 +514,11 @@ RowLayout {
                         if (DynamicIslandService.activeMode === "launcher") {
                             if (idx >= 0 && idx < DynamicIslandService.displayedApps.length) {
                                 DynamicIslandService.launchApp(DynamicIslandService.displayedApps[idx]);
-                            } else if (DynamicIslandService.query.trim() !== "") {
-                                DynamicIslandService.searchWeb(DynamicIslandService.query);
+                            } else {
+                                let cmd = (searchInput.text || DynamicIslandService.query).trim();
+                                if (cmd !== "") {
+                                    DynamicIslandService.runInTerminal(cmd);
+                                }
                                 DynamicIslandService.close();
                             }
                         } else if (DynamicIslandService.activeMode === "clipboard") {

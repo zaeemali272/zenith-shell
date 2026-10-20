@@ -19,6 +19,7 @@ QtObject {
     readonly property string _legacyStoragePath: PathSettings.shellDir + "/app_usage.json"
     property var usageMap: ({})
     property var allAppsCache: []
+    property var topAppsCache: []
     property var displayedApps: []
 
     // --- CLIPBOARD DATA ---
@@ -54,6 +55,7 @@ QtObject {
                 } catch(e) {
                     root.usageMap = {};
                 }
+                root.updateTopAppsCache();
                 if (root.activeMode === "launcher") root.rebuildFiltered();
             }
         }
@@ -188,6 +190,32 @@ QtObject {
 
     // --- LAUNCHER LOGIC ---
 
+    function updateTopAppsCache() {
+        let topApps = [];
+        for (let i = 0; i < allAppsCache.length; i++) {
+            let app = allAppsCache[i];
+            let usage = usageMap[app.id] || 0;
+            topApps.push({
+                isMath: false,
+                entry: app.entry,
+                id: app.id,
+                name: app.name,
+                nameLower: app.nameLower,
+                icon: app.icon,
+                genericName: usage > 0 ? "Frequently Used" : (app.genericName || app.comment || "Application"),
+                comment: app.comment,
+                usage: usage
+            });
+        }
+        topApps.sort((a, b) => {
+            if (b.usage !== a.usage) return b.usage - a.usage;
+            let an = a.nameLower;
+            let bn = b.nameLower;
+            return an < bn ? -1 : (an > bn ? 1 : 0);
+        });
+        topAppsCache = topApps.slice(0, 5);
+    }
+
     function rebuildAppCache() {
         let rawApps = DesktopEntries.applications.values || [];
         let cache = [];
@@ -216,6 +244,7 @@ QtObject {
         }
 
         allAppsCache = cache;
+        updateTopAppsCache();
         if (activeMode === "launcher") rebuildLauncherFiltered();
     }
 
@@ -239,45 +268,26 @@ QtObject {
         let q = query.toLowerCase().trim();
 
         if (q === "") {
-            // Show top 5 most frequently used apps immediately upon opening
-            let topApps = [];
-            for (let i = 0; i < allAppsCache.length; i++) {
-                let app = allAppsCache[i];
-                let usage = usageMap[app.id] || 0;
-                topApps.push({
-                    isMath: false,
-                    entry: app.entry,
-                    id: app.id,
-                    name: app.name,
-                    nameLower: app.nameLower,
-                    icon: app.icon,
-                    genericName: usage > 0 ? "Frequently Used" : (app.genericName || app.comment || "Application"),
-                    comment: app.comment,
-                    usage: usage
-                });
-            }
-            topApps.sort((a, b) => {
-                if (b.usage !== a.usage) return b.usage - a.usage;
-                return a.nameLower.localeCompare(b.nameLower);
-            });
-            displayedApps = topApps.slice(0, 5);
+            displayedApps = topAppsCache;
             return;
         }
 
         let results = [];
 
-        // Math calculation
-        let mathRes = evalMath(query);
-        if (mathRes !== null) {
-            results.push({
-                isMath: true,
-                result: mathRes,
-                name: query.trim() + " = " + mathRes,
-                genericName: "Calculation Result (Press Enter to copy)",
-                icon: "calculator",
-                id: "math_calc",
-                score: 100000
-            });
+        // Math calculation - only evaluate if query starts with a number or math operator
+        if (/^[\d\(\.\-\+]/.test(q)) {
+            let mathRes = evalMath(query);
+            if (mathRes !== null) {
+                results.push({
+                    isMath: true,
+                    result: mathRes,
+                    name: query.trim() + " = " + mathRes,
+                    genericName: "Calculation Result (Press Enter to copy)",
+                    icon: "calculator",
+                    id: "math_calc",
+                    score: 100000
+                });
+            }
         }
 
         // Filter pre-indexed apps
@@ -316,24 +326,15 @@ QtObject {
             return an < bn ? -1 : (an > bn ? 1 : 0);
         });
 
-        // Web search and terminal command fallbacks if no application matches
+        // Terminal command fallback if no application matches
         if (results.length === 0) {
             let trimmed = query.trim();
             if (trimmed !== "") {
                 results.push({
-                    isWebSearch: true,
-                    queryText: trimmed,
-                    name: "Search web for \"" + trimmed + "\"",
-                    genericName: "Search in Zen Browser (Enter)",
-                    icon: "web-browser",
-                    id: "web_search",
-                    score: 100
-                });
-                results.push({
                     isTerminal: true,
                     queryText: trimmed,
                     name: "Run \"" + trimmed + "\" in terminal",
-                    genericName: "Execute command in Kitty (Shift+Enter or click)",
+                    genericName: "Execute command in Kitty (Enter or click)",
                     icon: "utilities-terminal",
                     id: "terminal_run",
                     score: 90
@@ -344,19 +345,11 @@ QtObject {
         displayedApps = results.slice(0, 7);
     }
 
-    function searchWeb(queryText) {
-        let cleanQuery = (queryText || "").trim();
-        if (!cleanQuery) return;
-        let url = "https://duckduckgo.com/?q=" + encodeURIComponent(cleanQuery);
-        execProc.command = ["sh", "-c", "zen '" + url + "' 2>/dev/null || xdg-open '" + url + "' 2>/dev/null || true"];
-        execProc.running = true;
-    }
-
     function runInTerminal(cmdText) {
         let cleanCmd = (cmdText || "").trim();
         if (!cleanCmd) return;
-        let escaped = cleanCmd.replace(/'/g, "'\\''");
-        execProc.command = ["kitty", "-e", "sh", "-c", escaped + "; exec bash"];
+        execProc.running = false;
+        execProc.command = ["sh", "-c", "kitty sh -c 'eval \"$1\"; exec ${SHELL:-fish}' _ \"$1\" &", "_", cleanCmd];
         execProc.running = true;
     }
 
@@ -374,6 +367,7 @@ QtObject {
         if (!appId) return;
         let count = usageMap[appId] || 0;
         usageMap[appId] = count + 1;
+        updateTopAppsCache();
         saveAppUsage();
     }
 
@@ -383,12 +377,6 @@ QtObject {
         if (appItem.isMath) {
             execProc.command = ["sh", "-c", "echo -n '" + appItem.result + "' | wl-copy 2>/dev/null || true"];
             execProc.running = true;
-            close();
-            return;
-        }
-
-        if (appItem.isWebSearch) {
-            searchWeb(appItem.queryText || query);
             close();
             return;
         }

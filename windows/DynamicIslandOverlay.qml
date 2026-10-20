@@ -220,14 +220,14 @@ PanelWindow {
 
                                 Text {
                                     anchors.centerIn: parent
-                                    visible: !!(appDelegate.modelData && (appDelegate.modelData.isWebSearch || appDelegate.modelData.isTerminal))
-                                    text: (appDelegate.modelData && appDelegate.modelData.isWebSearch) ? "🌐" : "💻"
+                                    visible: !!(appDelegate.modelData && appDelegate.modelData.isTerminal)
+                                    text: "💻"
                                     font.pixelSize: 18
                                 }
 
                                 IconImage {
                                     anchors.fill: parent
-                                    visible: (!appDelegate.modelData || (!appDelegate.modelData.isMath && !appDelegate.modelData.isWebSearch && !appDelegate.modelData.isTerminal)) ? true : false
+                                    visible: (!appDelegate.modelData || (!appDelegate.modelData.isMath && !appDelegate.modelData.isTerminal)) ? true : false
                                     appName: (appDelegate.modelData && appDelegate.modelData.name) ? appDelegate.modelData.name : ""
                                     desktopEntry: (appDelegate.modelData && appDelegate.modelData.id) ? appDelegate.modelData.id : ""
                                     iconName: (appDelegate.modelData && appDelegate.modelData.icon) ? appDelegate.modelData.icon : ""
