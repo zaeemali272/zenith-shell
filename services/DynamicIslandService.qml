@@ -249,12 +249,19 @@ QtObject {
     }
 
     function evalMath(expr) {
+        if (!expr) return null;
+        let clean = expr.trim();
+        if (!/^[\d\s\+\-\*\/\%\(\)\.\^]+$/.test(clean)) return null;
+        if (!/[\+\-\*\/\%\^]/.test(clean)) return null;
+        if (/[\+\-\*\/\%\^\(]$/.test(clean)) return null;
+
         try {
-            let clean = expr.trim();
-            if (!/^[\d\s\+\-\*\/\%\(\)\.\^]+$/.test(clean)) return null;
-            if (!/[\+\-\*\/\%\^]/.test(clean)) return null;
-            
             clean = clean.replace(/\^/g, '**');
+            let openParen = (clean.match(/\(/g) || []).length;
+            let closeParen = (clean.match(/\)/g) || []).length;
+            if (openParen !== closeParen) return null;
+            if (/[\+\-\*\/\%]{3,}/.test(clean)) return null;
+
             let val = Function('"use strict"; return (' + clean + ')')();
             if (typeof val === "number" && !isNaN(val) && isFinite(val)) {
                 let formatted = Number.isInteger(val) ? val.toString() : val.toFixed(4).replace(/\.?0+$/, '');
@@ -283,7 +290,7 @@ QtObject {
                     result: mathRes,
                     name: query.trim() + " = " + mathRes,
                     genericName: "Calculation Result (Press Enter to copy)",
-                    icon: "calculator",
+                    icon: "",
                     id: "math_calc",
                     score: 100000
                 });

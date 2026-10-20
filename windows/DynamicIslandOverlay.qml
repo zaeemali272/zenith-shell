@@ -225,12 +225,14 @@ PanelWindow {
                                     font.pixelSize: 18
                                 }
 
-                                IconImage {
+                                Loader {
                                     anchors.fill: parent
-                                    visible: (!appDelegate.modelData || (!appDelegate.modelData.isMath && !appDelegate.modelData.isTerminal)) ? true : false
-                                    appName: (appDelegate.modelData && appDelegate.modelData.name) ? appDelegate.modelData.name : ""
-                                    desktopEntry: (appDelegate.modelData && appDelegate.modelData.id) ? appDelegate.modelData.id : ""
-                                    iconName: (appDelegate.modelData && appDelegate.modelData.icon) ? appDelegate.modelData.icon : ""
+                                    active: !!(appDelegate.modelData && !appDelegate.modelData.isMath && !appDelegate.modelData.isTerminal)
+                                    sourceComponent: IconImage {
+                                        appName: (appDelegate.modelData && appDelegate.modelData.name) ? appDelegate.modelData.name : ""
+                                        desktopEntry: (appDelegate.modelData && appDelegate.modelData.id) ? appDelegate.modelData.id : ""
+                                        iconName: (appDelegate.modelData && appDelegate.modelData.icon) ? appDelegate.modelData.icon : ""
+                                    }
                                 }
                             }
 

@@ -97,6 +97,7 @@ RowLayout {
 
         scale: DynamicIslandService.active ? 1.0 : (pillMouse.pressed ? 0.95 : (pillMouse.containsMouse ? 1.04 : 1.0))
 
+        Behavior on width { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
         Behavior on scale { NumberAnimation { duration: 60; easing.type: Easing.OutQuad } }
         Behavior on color { ColorAnimation { duration: 60 } }
         Behavior on border.color { ColorAnimation { duration: 60 } }
@@ -106,7 +107,9 @@ RowLayout {
             id: centerContent
             anchors.centerIn: parent
             spacing: Theme.pillGap
-            visible: !DynamicIslandService.active
+            opacity: DynamicIslandService.active ? 0.0 : 1.0
+            visible: opacity > 0.01
+            Behavior on opacity { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
 
             // --- MEDIA / WEATHER SECTION ---
             RowLayout {
@@ -281,7 +284,9 @@ RowLayout {
             anchors.leftMargin: Theme.scaled(10)
             anchors.rightMargin: Theme.scaled(10)
             spacing: Theme.scaled(8)
-            visible: DynamicIslandService.active
+            opacity: DynamicIslandService.active ? 1.0 : 0.0
+            visible: opacity > 0.01
+            Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutQuad } }
 
             // Mode Selector Buttons
             RowLayout {

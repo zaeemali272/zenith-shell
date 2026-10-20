@@ -12,6 +12,7 @@ Item {
 
     // Call the Singleton directly using its QML file name type (IconsFetcher)
     readonly property string resolvedSource: {
+        if (!root.appName && !root.desktopEntry && !root.iconName) return "";
         let src = IconsFetcher.getValidIcon(root.appName, root.desktopEntry, root.iconName);
         return src;
     }
