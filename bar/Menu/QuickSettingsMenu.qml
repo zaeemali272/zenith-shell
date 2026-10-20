@@ -61,9 +61,24 @@ MenuWindow {
 
         focus: true
         Keys.onPressed: (event) => {
+            if (QuickSettingsService.activeTab === "power") {
+                powerContent.handleKeys(event);
+                if (event.accepted) return;
+            }
             let currentContent = contentStack.children[contentStack.currentIndex];
             if (currentContent && typeof currentContent.handleKeys === 'function') {
                 currentContent.handleKeys(event);
+                if (event.accepted) return;
+            }
+            if (event.key === Qt.Key_Left || event.key === Qt.Key_Right) {
+                let tabs = root.availableTabs;
+                let idx = tabs.findIndex(t => t.id === QuickSettingsService.activeTab);
+                if (idx !== -1) {
+                    let nextIdx = (event.key === Qt.Key_Right) ? (idx + 1) % tabs.length : (idx - 1 + tabs.length) % tabs.length;
+                    QuickSettingsService.activeTab = tabs[nextIdx].id;
+                    event.accepted = true;
+                    return;
+                }
             }
         }
 
