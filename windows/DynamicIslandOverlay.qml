@@ -72,6 +72,7 @@ PanelWindow {
         } else {
             mainCard.opacity = 0;
             mainCard.scale = 0.95;
+            mainCard.y = Shell.Theme.scaled(6);
         }
     }
 
@@ -99,8 +100,8 @@ PanelWindow {
         NumberAnimation {
             target: mainCard
             property: "y"
-            from: (Shell.Theme.barHeight || 40) - 8
-            to: (Shell.Theme.barHeight || 40) + (Shell.Theme.barMarginTop || 8) + Shell.Theme.scaled(8)
+            from: -Shell.Theme.scaled(8)
+            to: Shell.Theme.scaled(6)
             duration: 200
             easing.type: Easing.OutExpo
         }
@@ -128,7 +129,7 @@ PanelWindow {
         }
 
         anchors.horizontalCenter: parent.horizontalCenter
-        y: (Shell.Theme.barHeight || 40) + (Shell.Theme.barMarginTop || 8) + Shell.Theme.scaled(8)
+        y: Shell.Theme.scaled(6)
         width: Shell.Theme.scaled(593)
         height: cardColumn.implicitHeight
         opacity: 0
@@ -204,7 +205,7 @@ PanelWindow {
                             anchors.rightMargin: 12
                             spacing: 12
 
-                            // Math Icon or App Icon
+                            // Math, Web, Terminal, or App Icon
                             Item {
                                 width: 26
                                 height: 26
@@ -212,14 +213,21 @@ PanelWindow {
 
                                 Text {
                                     anchors.centerIn: parent
-                                    visible: appDelegate.modelData && appDelegate.modelData.isMath
+                                    visible: !!(appDelegate.modelData && appDelegate.modelData.isMath)
                                     text: "🧮"
+                                    font.pixelSize: 18
+                                }
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    visible: !!(appDelegate.modelData && (appDelegate.modelData.isWebSearch || appDelegate.modelData.isTerminal))
+                                    text: (appDelegate.modelData && appDelegate.modelData.isWebSearch) ? "🌐" : "💻"
                                     font.pixelSize: 18
                                 }
 
                                 IconImage {
                                     anchors.fill: parent
-                                    visible: !appDelegate.modelData || !appDelegate.modelData.isMath
+                                    visible: (!appDelegate.modelData || (!appDelegate.modelData.isMath && !appDelegate.modelData.isWebSearch && !appDelegate.modelData.isTerminal)) ? true : false
                                     appName: (appDelegate.modelData && appDelegate.modelData.name) ? appDelegate.modelData.name : ""
                                     desktopEntry: (appDelegate.modelData && appDelegate.modelData.id) ? appDelegate.modelData.id : ""
                                     iconName: (appDelegate.modelData && appDelegate.modelData.icon) ? appDelegate.modelData.icon : ""

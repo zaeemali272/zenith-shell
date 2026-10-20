@@ -65,6 +65,10 @@ MenuWindow {
                 powerContent.handleKeys(event);
                 if (event.accepted) return;
             }
+            if (QuickSettingsService.activeTab === "network") {
+                wifiContent.handleKeys(event);
+                if (event.accepted) return;
+            }
             let currentContent = contentStack.children[contentStack.currentIndex];
             if (currentContent && typeof currentContent.handleKeys === 'function') {
                 currentContent.handleKeys(event);

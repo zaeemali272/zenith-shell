@@ -472,14 +472,25 @@ RowLayout {
                     }
 
 
-                    Keys.onReturnPressed: handleEnter()
-                    Keys.onEnterPressed: handleEnter()
+                    Keys.onReturnPressed: (event) => handleEnter(event)
+                    Keys.onEnterPressed: (event) => handleEnter(event)
 
-                    function handleEnter() {
+                    function handleEnter(event) {
+                        let isShift = event && (event.modifiers & Qt.ShiftModifier);
+                        if (isShift && DynamicIslandService.activeMode === "launcher") {
+                            DynamicIslandService.runInTerminal(DynamicIslandService.query);
+                            DynamicIslandService.close();
+                            if (event) event.accepted = true;
+                            return;
+                        }
+
                         let idx = DynamicIslandService.selectedIndex;
                         if (DynamicIslandService.activeMode === "launcher") {
                             if (idx >= 0 && idx < DynamicIslandService.displayedApps.length) {
                                 DynamicIslandService.launchApp(DynamicIslandService.displayedApps[idx]);
+                            } else if (DynamicIslandService.query.trim() !== "") {
+                                DynamicIslandService.searchWeb(DynamicIslandService.query);
+                                DynamicIslandService.close();
                             }
                         } else if (DynamicIslandService.activeMode === "clipboard") {
                             if (idx >= 0 && idx < DynamicIslandService.displayedClips.length) {
@@ -490,6 +501,7 @@ RowLayout {
                                 DynamicIslandService.copyEmoji(DynamicIslandService.displayedEmojis[idx].emoji);
                             }
                         }
+                        if (event) event.accepted = true;
                     }
 
                     Text {

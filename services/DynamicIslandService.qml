@@ -239,7 +239,28 @@ QtObject {
         let q = query.toLowerCase().trim();
 
         if (q === "") {
-            displayedApps = [];
+            // Show top 5 most frequently used apps immediately upon opening
+            let topApps = [];
+            for (let i = 0; i < allAppsCache.length; i++) {
+                let app = allAppsCache[i];
+                let usage = usageMap[app.id] || 0;
+                topApps.push({
+                    isMath: false,
+                    entry: app.entry,
+                    id: app.id,
+                    name: app.name,
+                    nameLower: app.nameLower,
+                    icon: app.icon,
+                    genericName: usage > 0 ? ("Frequently Used (" + usage + ")") : (app.genericName || app.comment || "Application"),
+                    comment: app.comment,
+                    usage: usage
+                });
+            }
+            topApps.sort((a, b) => {
+                if (b.usage !== a.usage) return b.usage - a.usage;
+                return a.nameLower.localeCompare(b.nameLower);
+            });
+            displayedApps = topApps.slice(0, 5);
             return;
         }
 
@@ -295,7 +316,48 @@ QtObject {
             return an < bn ? -1 : (an > bn ? 1 : 0);
         });
 
-        displayedApps = results.slice(0, 4);
+        // Web search and terminal command fallbacks if no application matches
+        if (results.length === 0) {
+            let trimmed = query.trim();
+            if (trimmed !== "") {
+                results.push({
+                    isWebSearch: true,
+                    queryText: trimmed,
+                    name: "Search web for \"" + trimmed + "\"",
+                    genericName: "Search in Zen Browser (Enter)",
+                    icon: "web-browser",
+                    id: "web_search",
+                    score: 100
+                });
+                results.push({
+                    isTerminal: true,
+                    queryText: trimmed,
+                    name: "Run \"" + trimmed + "\" in terminal",
+                    genericName: "Execute command in Kitty (Shift+Enter or click)",
+                    icon: "utilities-terminal",
+                    id: "terminal_run",
+                    score: 90
+                });
+            }
+        }
+
+        displayedApps = results.slice(0, 7);
+    }
+
+    function searchWeb(queryText) {
+        let cleanQuery = (queryText || "").trim();
+        if (!cleanQuery) return;
+        let url = "https://duckduckgo.com/?q=" + encodeURIComponent(cleanQuery);
+        execProc.command = ["sh", "-c", "zen '" + url + "' 2>/dev/null || xdg-open '" + url + "' 2>/dev/null || true"];
+        execProc.running = true;
+    }
+
+    function runInTerminal(cmdText) {
+        let cleanCmd = (cmdText || "").trim();
+        if (!cleanCmd) return;
+        let escaped = cleanCmd.replace(/'/g, "'\\''");
+        execProc.command = ["kitty", "-e", "sh", "-c", escaped + "; exec bash"];
+        execProc.running = true;
     }
 
     function saveAppUsage() {
@@ -321,6 +383,18 @@ QtObject {
         if (appItem.isMath) {
             execProc.command = ["sh", "-c", "echo -n '" + appItem.result + "' | wl-copy 2>/dev/null || true"];
             execProc.running = true;
+            close();
+            return;
+        }
+
+        if (appItem.isWebSearch) {
+            searchWeb(appItem.queryText || query);
+            close();
+            return;
+        }
+
+        if (appItem.isTerminal) {
+            runInTerminal(appItem.queryText || query);
             close();
             return;
         }

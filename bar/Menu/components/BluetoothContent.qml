@@ -14,6 +14,18 @@ ColumnLayout {
 
     property bool showUnnamed: false
 
+    readonly property bool isShowing: root.visible && QuickSettingsService.qsVisible
+    onIsShowingChanged: {
+        if (isShowing) BluetoothService.refresh(true);
+    }
+
+    Timer {
+        running: root.isShowing
+        interval: 3000
+        repeat: true
+        onTriggered: BluetoothService.refresh(true)
+    }
+
     Component.onCompleted: {
         BluetoothService.refresh();
     }

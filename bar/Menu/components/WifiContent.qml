@@ -78,6 +78,34 @@ Item {
     property bool isInputActive: selectedSsid !== "" && !wifiSvc.knownNetworks[selectedSsid]
     onIsInputActiveChanged: WifiService.isUserTyping = isInputActive
 
+    property int selectedIndex: 0
+
+    function handleKeys(event) {
+        if (isInputActive) return; // Typing password, don't hijack keys
+        let nets = wifiSvc.networks || [];
+        if (nets.length === 0) return;
+
+        if (event.key === Qt.Key_Down || event.key === Qt.Key_J) {
+            selectedIndex = Math.min(nets.length - 1, selectedIndex + 1);
+            event.accepted = true;
+        } else if (event.key === Qt.Key_Up || event.key === Qt.Key_K) {
+            selectedIndex = Math.max(0, selectedIndex - 1);
+            event.accepted = true;
+        } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
+            if (selectedIndex >= 0 && selectedIndex < nets.length) {
+                let targetNet = nets[selectedIndex];
+                if (targetNet) {
+                    if (targetNet.isKnown && !targetNet.connected) {
+                        wifiSvc.connect(targetNet.ssid, "");
+                    } else {
+                        selectedSsid = (selectedSsid === targetNet.ssid) ? "" : targetNet.ssid;
+                    }
+                    event.accepted = true;
+                }
+            }
+        }
+    }
+
     Connections {
         target: WifiService
         function onConnectionFailed(ssid) {
@@ -339,10 +367,10 @@ Item {
                 Rectangle {
                     id: backgroundRect
                     anchors.fill: parent
-                    color: isConnected ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.12) : (delegateMouse.containsMouse ? Theme.surfaceContainerHigh : Theme.surfaceContainerLow)
+                    color: isConnected ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.12) : ((delegateMouse.containsMouse || root.selectedIndex === index) ? Theme.surfaceContainerHigh : Theme.surfaceContainerLow)
                     radius: Theme.bubbleRadiusMedium
-                    border.color: isConnected ? Theme.powerGreen : (selectedSsid === modelData.ssid ? Theme.accentColor : Theme.glassBorder)
-                    border.width: 1
+                    border.color: isConnected ? Theme.powerGreen : ((selectedSsid === modelData.ssid || root.selectedIndex === index) ? Theme.accentColor : Theme.glassBorder)
+                    border.width: (selectedSsid === modelData.ssid || root.selectedIndex === index || isConnected) ? 2 : 1
                     clip: true
 
                     Behavior on color { ColorAnimation { duration: Theme.animFast } }
@@ -352,7 +380,9 @@ Item {
                         id: delegateMouse
                         anchors.fill: parent
                         hoverEnabled: true
+                        onEntered: root.selectedIndex = index
                         onClicked: {
+                            root.selectedIndex = index;
                             selectedSsid = (selectedSsid === modelData.ssid) ? "" : modelData.ssid;
                         }
                     }
