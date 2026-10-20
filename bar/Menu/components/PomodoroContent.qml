@@ -34,12 +34,19 @@ Item {
         }
 
         StackLayout {
+            id: toolStack
             Layout.fillWidth: true; Layout.fillHeight: true
             currentIndex: ["Todo", "Roadmap", "Timer"].indexOf(root.activeTool)
 
-            TodoContent { Layout.fillWidth: true; Layout.fillHeight: true }
+            TodoContent { id: todoContent; Layout.fillWidth: true; Layout.fillHeight: true }
             RoadmapContent { Layout.fillWidth: true; Layout.fillHeight: true }
             TimerContent { Layout.fillWidth: true; Layout.fillHeight: true }
+        }
+    }
+
+    function handleKeys(event) {
+        if (root.activeTool === "Todo" && typeof todoContent.handleKeys === 'function') {
+            todoContent.handleKeys(event);
         }
     }
 

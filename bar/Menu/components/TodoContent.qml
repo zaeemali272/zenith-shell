@@ -16,6 +16,32 @@ Rectangle {
     property int activeTabIndex: 0
     property var todoData: [] // Central source of truth
     property int editingIndex: -1 // Track which task is being edited
+    property int selectedIndex: 0
+
+    function handleKeys(event) {
+        if (editingIndex !== -1 || inputField.visible || tabNameInputContainer.visible || keyInputRow.visible) return;
+        let count = tasksModel.count;
+        if (count === 0) return;
+
+        if (event.key === Qt.Key_Down || event.key === Qt.Key_J) {
+            selectedIndex = Math.min(count - 1, selectedIndex + 1);
+            taskListView.positionViewAtIndex(selectedIndex, ListView.Contain);
+            event.accepted = true;
+        } else if (event.key === Qt.Key_Up || event.key === Qt.Key_K) {
+            selectedIndex = Math.max(0, selectedIndex - 1);
+            taskListView.positionViewAtIndex(selectedIndex, ListView.Contain);
+            event.accepted = true;
+        } else if (event.key === Qt.Key_Space) {
+            if (selectedIndex >= 0 && selectedIndex < count) {
+                let currentItem = tasksModel.get(selectedIndex);
+                let newCompleted = !currentItem.completed;
+                tasksModel.setProperty(selectedIndex, "completed", newCompleted);
+                tasksModel.setProperty(selectedIndex, "dirty", true);
+                saveTasks();
+                event.accepted = true;
+            }
+        }
+    }
 
     property bool reloadPending: false
 
@@ -632,6 +658,8 @@ Rectangle {
                 Rectangle {
                     id: visualContent
                     anchors.fill: parent; radius: 8; color: Theme.glassBackground
+                    border.color: (todoRoot.selectedIndex === index) ? Theme.accentColor : "transparent"
+                    border.width: (todoRoot.selectedIndex === index) ? 2 : 0
                     y: 0
                     
                     ColumnLayout {

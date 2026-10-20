@@ -308,20 +308,31 @@ print(json.dumps({
     Process { id: scanExec; onExited: { root.state = "Idle"; postActionPoll.trigger(); } }
     Process { id: actionExec; onExited: { root.state = "Idle"; postActionPoll.trigger(); } }
 
-    // Event-driven Bluetooth Monitor
+    Timer {
+        id: debouncedBtRefresh
+        interval: 150
+        repeat: false
+        onTriggered: root.refresh(Variables.quickSettingsOpen)
+    }
+
+    // Real-time Event-driven D-Bus Bluetooth Monitor
     Process {
         id: btMonitor
-        command: ["bluetoothctl", "monitor"]
+        command: ["gdbus", "monitor", "--system", "--dest", "org.bluez"]
         running: true
         stdout: SplitParser {
-            onRead: (data) => root.refresh(Variables.quickSettingsOpen)
+            onRead: (data) => {
+                if (data && data.trim() !== "") {
+                    debouncedBtRefresh.restart();
+                }
+            }
         }
         onExited: restartBtMon.start()
     }
 
     Timer {
         id: restartBtMon
-        interval: 3000
+        interval: 2000
         onTriggered: btMonitor.running = true
     }
 
