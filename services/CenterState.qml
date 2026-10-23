@@ -12,10 +12,16 @@ Item {
     property string activeTab: "Default"
     // Sub-tool for the Focus tab: "Todo", "Roadmap" or "Timer".
     property string focusTool: "Todo"
+    // Sub-tab for the Wallpaper page: "Wallpaper", "Themes", "Slideshow", "Animated"
+    property string wallpaperSubTab: "Wallpaper"
     property rect anchorRect: Qt.rect(0, 0, 0, 0)
 
     function open(tab, rect) {
         let targetTab = (tab && tab !== "") ? tab : "Default";
+        if (targetTab === "Theme" || targetTab === "Themes") {
+            targetTab = "Wallpaper";
+            wallpaperSubTab = "Themes";
+        }
         activeTab = targetTab;
         if (rect !== undefined) anchorRect = rect;
         
@@ -26,6 +32,14 @@ Item {
 
     function toggle(tab, rect) {
         let targetTab = (tab && tab !== "") ? tab : "Default";
+        if (targetTab === "Theme" || targetTab === "Themes") {
+            if (qsVisible && activeTab === "Wallpaper" && wallpaperSubTab === "Themes") {
+                close();
+                return;
+            }
+            open("Theme", rect);
+            return;
+        }
         if (qsVisible && activeTab === targetTab) {
             close();
         } else {

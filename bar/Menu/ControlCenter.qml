@@ -143,57 +143,225 @@ MenuWindow {
                 
                 Item { Layout.fillWidth: true }
                 
-                // --- MEDIA PLAYER AUTO-FOCUS BUBBLE TOGGLE (Positioned before Caffeine) ---
-                Rectangle {
-                    id: focusRect
-                    width: Theme.scaled(38); height: Theme.scaled(38)
-                    radius: 999
-                    color: MediaPlayerService.mediaFocus ? Theme.accentColor : (focusMouse.containsMouse ? Qt.rgba(255,255,255,0.12) : Qt.rgba(0,0,0,0.3))
-                    border.width: 0
-                    scale: focusMouse.pressed ? 0.94 : (focusMouse.containsMouse ? 1.05 : 1.0)
-                    
-                    Behavior on color { ColorAnimation { duration: Theme.animFast } }
-                    Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.animEasing } }
+                // --- TOP RIGHT POWER USER TOOLS ICON CLUSTER ---
+                RowLayout {
+                    spacing: Theme.scaled(6)
+                    Layout.alignment: Qt.AlignVCenter
 
-                    Text {
-                        anchors.centerIn: parent
-                        text: MediaPlayerService.mediaFocus ? "󰎆" : "󰎇"
-                        font.family: Theme.iconFont
-                        font.pixelSize: Theme.scaled(17)
-                        color: MediaPlayerService.mediaFocus ? Colors.on_primary : "#ffffff"
-                    }
-                    MouseArea { 
-                        id: focusMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: MediaPlayerService.mediaFocus = !MediaPlayerService.mediaFocus
-                    }
-                }
+                    // 1. Media Player Auto-Focus
+                    Rectangle {
+                        id: focusRect
+                        width: Theme.scaled(34); height: Theme.scaled(34)
+                        radius: 999
+                        color: MediaPlayerService.mediaFocus ? Theme.accentColor : (focusMouse.containsMouse ? Qt.rgba(255,255,255,0.14) : Qt.rgba(0,0,0,0.35))
+                        border.color: MediaPlayerService.mediaFocus ? Theme.accentColor : Theme.glassBorder
+                        border.width: 1
+                        scale: focusMouse.pressed ? 0.91 : (focusMouse.containsMouse ? 1.08 : 1.0)
+                        
+                        Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                        Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.animEasing } }
 
-                // --- CAFFEINE BUBBLE TOGGLE ---
-                Rectangle {
-                    id: caffeineRect
-                    width: Theme.scaled(38); height: Theme.scaled(38)
-                    radius: 999
-                    color: CaffeineService.active ? Theme.accentColor : (caffeineMouse.containsMouse ? Qt.rgba(255,255,255,0.12) : Qt.rgba(0,0,0,0.3))
-                    border.width: 0
-                    scale: caffeineMouse.pressed ? 0.94 : (caffeineMouse.containsMouse ? 1.05 : 1.0)
-                    
-                    Behavior on color { ColorAnimation { duration: Theme.animFast } }
-                    Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.animEasing } }
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: CaffeineService.active ? "󰅶" : "󰛊"
-                        font.family: Theme.iconFont
-                        font.pixelSize: Theme.scaled(17)
-                        color: CaffeineService.active ? Colors.on_primary : "#ffffff"
+                        Text {
+                            anchors.centerIn: parent
+                            text: MediaPlayerService.mediaFocus ? "󰎆" : "󰎇"
+                            font.family: Theme.iconFont
+                            font.pixelSize: Theme.scaled(15)
+                            color: MediaPlayerService.mediaFocus ? Colors.on_primary : "#ffffff"
+                        }
+                        MouseArea { 
+                            id: focusMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: MediaPlayerService.mediaFocus = !MediaPlayerService.mediaFocus
+                        }
+                        ToolTip {
+                            visible: focusMouse.containsMouse
+                            delay: 350; timeout: 3000
+                            y: parent.height + Theme.scaled(6)
+                            contentItem: Text { text: "Media Auto-Focus: " + (MediaPlayerService.mediaFocus ? "ON" : "OFF"); color: "#ffffff"; font.pixelSize: Theme.scaled(10.5); font.weight: Font.DemiBold }
+                            background: Rectangle { color: Qt.rgba(18/255, 18/255, 26/255, 0.95); border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7) }
+                        }
                     }
-                    MouseArea { 
-                        id: caffeineMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: CaffeineService.toggle() 
+
+                    // 2. Caffeine (Keep Awake)
+                    Rectangle {
+                        id: caffeineRect
+                        width: Theme.scaled(34); height: Theme.scaled(34)
+                        radius: 999
+                        color: CaffeineService.active ? Theme.accentColor : (caffeineMouse.containsMouse ? Qt.rgba(255,255,255,0.14) : Qt.rgba(0,0,0,0.35))
+                        border.color: CaffeineService.active ? Theme.accentColor : Theme.glassBorder
+                        border.width: 1
+                        scale: caffeineMouse.pressed ? 0.91 : (caffeineMouse.containsMouse ? 1.08 : 1.0)
+                        
+                        Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                        Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.animEasing } }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: CaffeineService.active ? "󰅶" : "󰛊"
+                            font.family: Theme.iconFont
+                            font.pixelSize: Theme.scaled(15)
+                            color: CaffeineService.active ? Colors.on_primary : "#ffffff"
+                        }
+                        MouseArea { 
+                            id: caffeineMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: CaffeineService.toggle() 
+                        }
+                        ToolTip {
+                            visible: caffeineMouse.containsMouse
+                            delay: 350; timeout: 3000
+                            y: parent.height + Theme.scaled(6)
+                            contentItem: Text { text: "Caffeine (Prevent Sleep): " + (CaffeineService.active ? "ACTIVE" : "OFF"); color: "#ffffff"; font.pixelSize: Theme.scaled(10.5); font.weight: Font.DemiBold }
+                            background: Rectangle { color: Qt.rgba(18/255, 18/255, 26/255, 0.95); border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7) }
+                        }
+                    }
+
+                    // 3. Night Light Toggle (Gammastep)
+                    Rectangle {
+                        id: nlRect
+                        width: Theme.scaled(34); height: Theme.scaled(34)
+                        radius: 999
+                        color: PowerToolsService.nightLight ? Qt.rgba(250/255, 179/255, 135/255, 0.3) : (nlMouse.containsMouse ? Qt.rgba(255,255,255,0.14) : Qt.rgba(0,0,0,0.35))
+                        border.color: PowerToolsService.nightLight ? "#fab387" : Theme.glassBorder
+                        border.width: 1
+                        scale: nlMouse.pressed ? 0.91 : (nlMouse.containsMouse ? 1.08 : 1.0)
+                        
+                        Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                        Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.animEasing } }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: PowerToolsService.nightLight ? "󱩌" : "󱩍"
+                            font.family: Theme.iconFont
+                            font.pixelSize: Theme.scaled(15)
+                            color: PowerToolsService.nightLight ? "#fab387" : "#ffffff"
+                        }
+                        MouseArea { 
+                            id: nlMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: PowerToolsService.toggleNightLight()
+                        }
+                        ToolTip {
+                            visible: nlMouse.containsMouse
+                            delay: 350; timeout: 3000
+                            y: parent.height + Theme.scaled(6)
+                            contentItem: Text { text: "Night Light: " + (PowerToolsService.nightLight ? "WARM (3800K)" : "OFF"); color: "#ffffff"; font.pixelSize: Theme.scaled(10.5); font.weight: Font.DemiBold }
+                            background: Rectangle { color: Qt.rgba(18/255, 18/255, 26/255, 0.95); border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7) }
+                        }
+                    }
+
+                    // 4. Do Not Disturb Toggle
+                    Rectangle {
+                        id: dndRect
+                        width: Theme.scaled(34); height: Theme.scaled(34)
+                        radius: 999
+                        color: PowerToolsService.dnd ? Qt.rgba(203/255, 166/255, 247/255, 0.3) : (dndMouse.containsMouse ? Qt.rgba(255,255,255,0.14) : Qt.rgba(0,0,0,0.35))
+                        border.color: PowerToolsService.dnd ? "#cba6f7" : Theme.glassBorder
+                        border.width: 1
+                        scale: dndMouse.pressed ? 0.91 : (dndMouse.containsMouse ? 1.08 : 1.0)
+                        
+                        Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                        Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.animEasing } }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: PowerToolsService.dnd ? "󰂛" : "󰂚"
+                            font.family: Theme.iconFont
+                            font.pixelSize: Theme.scaled(15)
+                            color: PowerToolsService.dnd ? "#cba6f7" : "#ffffff"
+                        }
+                        MouseArea { 
+                            id: dndMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: PowerToolsService.toggleDnd()
+                        }
+                        ToolTip {
+                            visible: dndMouse.containsMouse
+                            delay: 350; timeout: 3000
+                            y: parent.height + Theme.scaled(6)
+                            contentItem: Text { text: "Do Not Disturb: " + (PowerToolsService.dnd ? "SILENCED" : "NORMAL"); color: "#ffffff"; font.pixelSize: Theme.scaled(10.5); font.weight: Font.DemiBold }
+                            background: Rectangle { color: Qt.rgba(18/255, 18/255, 26/255, 0.95); border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7) }
+                        }
+                    }
+
+                    // 5. Region Screenshot Snip
+                    Rectangle {
+                        id: snipRect
+                        width: Theme.scaled(34); height: Theme.scaled(34)
+                        radius: 999
+                        color: snipMouse.containsMouse ? Qt.rgba(255,255,255,0.14) : Qt.rgba(0,0,0,0.35)
+                        border.color: Theme.glassBorder
+                        border.width: 1
+                        scale: snipMouse.pressed ? 0.91 : (snipMouse.containsMouse ? 1.08 : 1.0)
+                        
+                        Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                        Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.animEasing } }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "󰹑"
+                            font.family: Theme.iconFont
+                            font.pixelSize: Theme.scaled(15)
+                            color: snipMouse.containsMouse ? Theme.accentColor : "#ffffff"
+                        }
+                        MouseArea { 
+                            id: snipMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: PowerToolsService.triggerScreenshot("region")
+                        }
+                        ToolTip {
+                            visible: snipMouse.containsMouse
+                            delay: 350; timeout: 3000
+                            y: parent.height + Theme.scaled(6)
+                            contentItem: Text { text: "Region Screenshot (grim + slurp)"; color: "#ffffff"; font.pixelSize: Theme.scaled(10.5); font.weight: Font.DemiBold }
+                            background: Rectangle { color: Qt.rgba(18/255, 18/255, 26/255, 0.95); border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7) }
+                        }
+                    }
+
+                    // 6. Color Picker
+                    Rectangle {
+                        id: pickRect
+                        width: Theme.scaled(34); height: Theme.scaled(34)
+                        radius: 999
+                        color: pickMouse.containsMouse ? Qt.rgba(255,255,255,0.14) : Qt.rgba(0,0,0,0.35)
+                        border.color: Theme.glassBorder
+                        border.width: 1
+                        scale: pickMouse.pressed ? 0.91 : (pickMouse.containsMouse ? 1.08 : 1.0)
+                        
+                        Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                        Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.animEasing } }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "󰈊"
+                            font.family: Theme.iconFont
+                            font.pixelSize: Theme.scaled(15)
+                            color: pickMouse.containsMouse ? Theme.accentColor : "#ffffff"
+                        }
+                        MouseArea { 
+                            id: pickMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: PowerToolsService.triggerColorPicker()
+                        }
+                        ToolTip {
+                            visible: pickMouse.containsMouse
+                            delay: 350; timeout: 3000
+                            y: parent.height + Theme.scaled(6)
+                            contentItem: Text { text: "Color Picker (hyprpicker to clipboard)"; color: "#ffffff"; font.pixelSize: Theme.scaled(10.5); font.weight: Font.DemiBold }
+                            background: Rectangle { color: Qt.rgba(18/255, 18/255, 26/255, 0.95); border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7) }
+                        }
                     }
                 }
             }

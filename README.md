@@ -167,7 +167,9 @@ Every surface is a Hyprland **global shortcut** named `zenith:<action>`, so a ke
 | **App Launcher** | `~/.config/quickshell/launch.sh launcher` | Search apps, calculator; Tab cycles to clipboard and emoji |
 | **Clipboard / Emoji** | `~/.config/quickshell/launch.sh clipboard` / `emoji` | Clipboard history (cliphist) and emoji picker |
 | **Dashboard** | `~/.config/quickshell/launch.sh dashboard` | Overview: notifications, media, calendar, weather |
+| **Theme Studio** | `~/.config/quickshell/launch.sh theme` / `launch.sh theme <preset>` | Open Theme Studio or apply curated presets / dynamic wallpaper palette |
 | **Wallpaper Selector** | `~/.config/quickshell/launch.sh wallpaper` | Open static & live wallpaper chooser |
+| **Power Tools** | `~/.config/quickshell/launch.sh screenshot` / `colorpicker` / `nightlight` / `dnd` | Quick power actions for screenshots, color picker, night light, DND |
 | **Wi-Fi / Network** | `~/.config/quickshell/launch.sh wifi` | Open Wi-Fi scan and connection menu |
 | **Bluetooth** | `~/.config/quickshell/launch.sh bluetooth` | Open Bluetooth paired & available devices menu |
 | **Volume / Audio** | `~/.config/quickshell/launch.sh volume` | Open audio output/input sliders popup |
@@ -190,6 +192,7 @@ Every surface is a Hyprland **global shortcut** named `zenith:<action>`, so a ke
 ```ini
 # Zenith Shell Keybindings -- no script in between
 bind = SUPER, A, global, zenith:dashboard
+bind = SUPER, T, global, zenith:theme
 bind = CTRL SUPER, T, global, zenith:wallpaper
 bind = CTRL SUPER, S, global, zenith:volume
 bind = SUPER, V, global, zenith:clipboard
@@ -206,14 +209,16 @@ The launcher shortcut (`zenith:launcher`) toggles on the *release* edge so it ca
 
 <h2><sub><img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Gear.png" alt="Features" width="25" height="25" /></sub> Key Features</h2>
 
-- [x] **Dynamic Top Bar**: Active workspace indicator, window title, system stats, media ticker, tray icons, and clock.
+- [x] **Dynamic Top Bar**: Active workspace indicator, window title, system stats, media ticker with live 4-bar reactive audio equalizer, and clock.
+- [x] **Theme Studio & Changeable Presets Engine**: 10 curated dotfile themes (Catppuccin Mocha/Macchiato, Tokyo Night, Nord, Gruvbox, Rosé Pine, Cyberpunk, OLED Pitch Black, Dracula, Midnight) + dynamic Material 3 wallpaper palette extraction, custom accent tint overrides, and live zero-restart recoloring.
+- [x] **Power-User Quick Action Hub**: Integrated 1-click region screenshot snippet tool, color pipette (`hyprpicker`), Night Light (`gammastep`), Caffeine idle inhibitor, and Do Not Disturb (DND) notification mode.
 - [x] **Wallpaper Manager**: Real-time thumbnail preview for images and live video wallpapers (`.mp4`, `.mkv`, `.webm`) using `mpvpaper`.
-- [x] **Control Center**: Integrated quick toggles for Wi-Fi, Bluetooth, Airplane mode, Night Light, and Volume.
+- [x] **Dynamic Island & Universal Runner**: Smooth animated pill with app search, cliphist clipboard manager, emoji picker, inline math calculator, and terminal command launcher.
+- [x] **Control Center**: Integrated quick toggles for Wi-Fi, Bluetooth, Airplane mode, Night Light, Volume, Notifications, Calendar, and Weather.
 - [x] **Workspaces Overview**: Visual app launcher grid and workspace switcher integrated with Hyprland IPC.
-- [x] **System Stats & Monitoring**: Live CPU, RAM, Disk, Temperature, and Network speed meters.
+- [x] **System Stats & Monitoring**: Live CPU, RAM, Disk, Temperature with spring-loaded hover expansion and cat animation power profiles.
 - [x] **MPRIS Media Controller**: Album artwork, track info, seekbar, and playback controls.
 - [x] **Pomodoro & Todo Widget**: Built-in focus timer with task list management.
-- [x] **Adaptive Theme System**: Modular Catppuccin color palette with smooth glassmorphism borders and blur.
 
 ---
 

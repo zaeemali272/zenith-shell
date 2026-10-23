@@ -51,8 +51,9 @@ Scope {
     // in keybinds.lua fires from a release bind, which delivers `released`
     // alone.
     Instantiator {
-        model: ["dashboard", "wallpaper", "pomodoro", "volume",
-                "close", "clipboard", "emoji", "power", "settings", "lock"]
+        model: ["dashboard", "wallpaper", "theme", "pomodoro", "volume",
+                "close", "clipboard", "emoji", "power", "settings", "lock",
+                "screenshot", "colorpicker", "nightlight", "dnd"]
         delegate: GlobalShortcut {
             required property string modelData
             appid: "zenith"
@@ -105,6 +106,23 @@ Scope {
             CenterState.toggle("Mail");
         } else if (lowerAction === "wallpaper" || lowerAction === "wallpapers") {
             CenterState.toggle("Wallpaper");
+        } else if (lowerAction === "theme" || lowerAction === "themes") {
+            if (arg !== "") {
+                if (lowerArg === "dynamic") ThemeService.applyDynamic();
+                else ThemeService.applyPreset(arg);
+            } else {
+                CenterState.toggle("Theme");
+            }
+        } else if (lowerAction === "screenshot" || lowerAction === "snip") {
+            PowerToolsService.triggerScreenshot(arg || "region");
+        } else if (lowerAction === "colorpicker" || lowerAction === "color" || lowerAction === "pipette") {
+            PowerToolsService.triggerColorPicker();
+        } else if (lowerAction === "nightlight" || lowerAction === "night") {
+            PowerToolsService.toggleNightLight();
+        } else if (lowerAction === "dnd") {
+            PowerToolsService.toggleDnd();
+        } else if (lowerAction === "micmute" || lowerAction === "togglemic") {
+            PowerToolsService.toggleMicMute();
         } else if (lowerAction === "roadmap" || lowerAction === "roadmaps") {
             // Roadmap lives inside the Focus tab now, alongside the todo list.
             CenterState.focusTool = "Roadmap";
