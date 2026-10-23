@@ -21,3 +21,7 @@ RoadmapContent RoadmapContent.qml
 FastWheel FastWheel.qml
 MailContent MailContent.qml
 RoadmapDetail RoadmapDetail.qml
+ThemeContent ThemeContent.qml
+QuickActionsContent QuickActionsContent.qml
+
+

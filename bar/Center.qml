@@ -122,42 +122,133 @@ RowLayout {
                     spacing: Theme.scaled(6)
                     visible: MediaPlayerService.trackedPlayer && MediaPlayerService.isActuallyPlaying
 
-                    Text {
-                        id: mediaIconText
-                        font.family: Theme.iconFont
-                        font.pixelSize: Theme.scaled(13)
-                        text: "󰎆"
-                        color: Theme.accentColor
+                    // Live 4-bar reactive audio equalizer
+                    Row {
+                        id: eqBars
+                        spacing: Theme.scaled(2.5)
+                        height: Theme.scaled(14)
                         Layout.alignment: Qt.AlignVCenter
 
-                        property bool isPulse: false
-                        property real breathScale: 1.0
+                        Repeater {
+                            model: [
+                                { minH: 4, maxH: 13, d1: 340, d2: 420 },
+                                { minH: 3, maxH: 15, d1: 220, d2: 310 },
+                                { minH: 5, maxH: 12, d1: 390, d2: 270 },
+                                { minH: 3, maxH: 14, d1: 280, d2: 360 }
+                            ]
+                            delegate: Rectangle {
+                                width: Theme.scaled(2.8)
+                                height: Theme.scaled(modelData.minH)
+                                radius: width / 2
+                                color: Theme.accentColor
+                                anchors.bottom: parent.bottom
 
-                        scale: isPulse ? 1.28 : breathScale
-
-                        Behavior on scale {
-                            NumberAnimation { duration: 180; easing.type: Easing.OutBack }
+                                SequentialAnimation on height {
+                                    running: MediaPlayerService.isActuallyPlaying
+                                    loops: Animation.Infinite
+                                    NumberAnimation { to: Theme.scaled(modelData.maxH); duration: modelData.d1; easing.type: Easing.InOutQuad }
+                                    NumberAnimation { to: Theme.scaled(modelData.minH); duration: modelData.d2; easing.type: Easing.InOutQuad }
+                                }
+                            }
                         }
+                    }
 
-                        Connections {
-                            target: MediaPlayerService
-                            function onIsActuallyPlayingChanged() {
-                                mediaIconText.isPulse = true;
-                                pulseTimer.restart();
+                    // Hover-revealed micro media controls
+                    RowLayout {
+                        id: mediaControls
+                        spacing: Theme.scaled(3)
+                        visible: pillMouse.containsMouse
+                        opacity: pillMouse.containsMouse ? 1.0 : 0.0
+                        Behavior on opacity { NumberAnimation { duration: 120 } }
+
+                        // Previous Track Button
+                        Rectangle {
+                            width: Theme.scaled(18)
+                            height: Theme.scaled(18)
+                            radius: 999
+                            color: prevMouse.pressed ? Qt.rgba(255, 255, 255, 0.2) : (prevMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : "transparent")
+                            scale: prevMouse.pressed ? 0.9 : (prevMouse.containsMouse ? 1.1 : 1.0)
+                            Behavior on scale { NumberAnimation { duration: 80 } }
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "󰒮"
+                                font.family: Theme.iconFont
+                                font.pixelSize: Theme.scaled(11)
+                                color: Theme.accentColor
+                            }
+
+                            MouseArea {
+                                id: prevMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    let p = MediaPlayerService.trackedPlayer;
+                                    if (p && p.previous) p.previous();
+                                }
                             }
                         }
 
-                        Timer {
-                            id: pulseTimer
-                            interval: 220
-                            onTriggered: mediaIconText.isPulse = false
+                        // Play/Pause Button
+                        Rectangle {
+                            width: Theme.scaled(18)
+                            height: Theme.scaled(18)
+                            radius: 999
+                            color: ppMouse.pressed ? Qt.rgba(255, 255, 255, 0.2) : (ppMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : "transparent")
+                            scale: ppMouse.pressed ? 0.9 : (ppMouse.containsMouse ? 1.1 : 1.0)
+                            Behavior on scale { NumberAnimation { duration: 80 } }
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: MediaPlayerService.isActuallyPlaying ? "󰏤" : "󰐊"
+                                font.family: Theme.iconFont
+                                font.pixelSize: Theme.scaled(12)
+                                color: Theme.accentColor
+                            }
+
+                            MouseArea {
+                                id: ppMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    let p = MediaPlayerService.trackedPlayer;
+                                    if (!p) return;
+                                    if (p.playPause) p.playPause();
+                                    else if (MediaPlayerService.isActuallyPlaying) p.pause();
+                                    else p.play();
+                                }
+                            }
                         }
 
-                        SequentialAnimation {
-                            running: MediaPlayerService.isActuallyPlaying
-                            loops: Animation.Infinite
-                            NumberAnimation { target: mediaIconText; property: "breathScale"; from: 1.0; to: 1.15; duration: 800; easing.type: Easing.InOutQuad }
-                            NumberAnimation { target: mediaIconText; property: "breathScale"; from: 1.15; to: 1.0; duration: 800; easing.type: Easing.InOutQuad }
+                        // Next Track Button
+                        Rectangle {
+                            width: Theme.scaled(18)
+                            height: Theme.scaled(18)
+                            radius: 999
+                            color: nextMouse.pressed ? Qt.rgba(255, 255, 255, 0.2) : (nextMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : "transparent")
+                            scale: nextMouse.pressed ? 0.9 : (nextMouse.containsMouse ? 1.1 : 1.0)
+                            Behavior on scale { NumberAnimation { duration: 80 } }
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "󰒭"
+                                font.family: Theme.iconFont
+                                font.pixelSize: Theme.scaled(11)
+                                color: Theme.accentColor
+                            }
+
+                            MouseArea {
+                                id: nextMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    let p = MediaPlayerService.trackedPlayer;
+                                    if (p && p.next) p.next();
+                                }
+                            }
                         }
                     }
 
@@ -591,6 +682,16 @@ RowLayout {
                     if (p.playPause) p.playPause();
                     else if (MediaPlayerService.isActuallyPlaying) p.pause();
                     else p.play();
+                }
+            }
+            onWheel: (wheel) => {
+                let p = MediaPlayerService.trackedPlayer;
+                if (p && MediaPlayerService.isActuallyPlaying) {
+                    if (wheel.angleDelta.y < 0) {
+                        if (p.next) p.next();
+                    } else if (wheel.angleDelta.y > 0) {
+                        if (p.previous) p.previous();
+                    }
                 }
             }
         }

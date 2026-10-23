@@ -133,7 +133,9 @@ Item {
             if (!isBattery && !isCaffeine) {
                 historyModel.insert(0, notifData);
             }
-            root.notificationReceived(notifData);
+            if (!PowerToolsService.dnd) {
+                root.notificationReceived(notifData);
+            }
         }
     }
 }

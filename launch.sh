@@ -126,6 +126,10 @@ case "${1:-}" in
         ;;
     *)
         # shell.qml normalises aliases (bt, prof, sys, ...) itself.
-        send_cmd "$1"
+        if [ -n "${2:-}" ]; then
+            send_cmd "$1:$2"
+        else
+            send_cmd "$1"
+        fi
         ;;
 esac

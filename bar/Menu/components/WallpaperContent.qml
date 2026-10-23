@@ -16,26 +16,33 @@ ColumnLayout {
 
     property var selectedWalls: []
     property int refreshTrigger: 0
-    property string activeSubTab: "Wallpaper"
+    property string activeSubTab: CenterState.wallpaperSubTab
+    onActiveSubTabChanged: {
+        if (CenterState.wallpaperSubTab !== activeSubTab) {
+            CenterState.wallpaperSubTab = activeSubTab;
+        }
+    }
     property bool thumbnailsReady: false
     property int selectedIndex: 0
 
     function handleKeys(event) {
         if (event.key === Qt.Key_Tab) {
-            let subTabs = ["Wallpaper", "Slideshow", "Animated"];
+            let subTabs = ["Wallpaper", "Themes", "Slideshow", "Animated"];
             let sIdx = subTabs.indexOf(root.activeSubTab);
             root.activeSubTab = subTabs[(sIdx + 1) % subTabs.length];
             root.selectedIndex = 0;
             event.accepted = true;
             return;
         } else if (event.key === Qt.Key_Backtab) {
-            let subTabs = ["Wallpaper", "Slideshow", "Animated"];
+            let subTabs = ["Wallpaper", "Themes", "Slideshow", "Animated"];
             let sIdx = subTabs.indexOf(root.activeSubTab);
             root.activeSubTab = subTabs[(sIdx - 1 + subTabs.length) % subTabs.length];
             root.selectedIndex = 0;
             event.accepted = true;
             return;
         }
+
+        if (root.activeSubTab === "Themes") return;
 
         let cols = 4;
         let isAnimated = (root.activeSubTab === "Animated");
@@ -85,7 +92,7 @@ ColumnLayout {
         spacing: Theme.scaled(10)
         
         Repeater {
-            model: ["Wallpaper", "Slideshow", "Animated"]
+            model: ["Wallpaper", "Themes", "Slideshow", "Animated"]
             delegate: Rectangle {
                 width: Theme.scaled(100); height: Theme.scaled(32); radius: Theme.scaled(10)
                 color: root.activeSubTab === modelData ? Theme.accentColor : (subTabMouse.containsMouse ? Theme.surface1 : Theme.surface0)
@@ -117,7 +124,7 @@ ColumnLayout {
         // Thumbnail Generation Status
         RowLayout {
             spacing: Theme.scaled(8)
-            visible: thumbGen.running
+            visible: root.activeSubTab !== "Themes" && thumbGen.running
             Text {
                 text: "󱑐"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(14); color: Theme.blue
                 RotationAnimator on rotation { from: 0; to: 360; duration: 1000; loops: Animation.Infinite; running: thumbGen.running }
@@ -129,7 +136,7 @@ ColumnLayout {
         Rectangle {
             width: Theme.scaled(32); height: Theme.scaled(32); radius: Theme.scaled(8)
             color: refreshMouse.containsMouse ? Qt.rgba(1,1,1,0.1) : "transparent"
-            visible: !thumbGen.running
+            visible: root.activeSubTab !== "Themes" && !thumbGen.running
             Text { anchors.centerIn: parent; text: "󰑐"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(16); color: refreshMouse.containsMouse ? Theme.text : Theme.subtext1 }
             MouseArea { id: refreshMouse; anchors.fill: parent; hoverEnabled: true; onClicked: refreshThumbnails() }
         }
@@ -141,12 +148,18 @@ ColumnLayout {
         Layout.fillHeight: true
         clip: true
 
+        ThemeContent {
+            id: themeSubContent
+            anchors.fill: parent
+            visible: root.activeSubTab === "Themes"
+        }
+
         Flickable {
             FastWheel {}
             id: wallFlickable
             anchors.fill: parent
             contentHeight: wallFlow.height
-            visible: root.activeSubTab !== "Animated"
+            visible: root.activeSubTab === "Wallpaper" || root.activeSubTab === "Slideshow"
             clip: true
             ScrollBar.vertical: ScrollBar { width: 4; policy: ScrollBar.AsNeeded }
 

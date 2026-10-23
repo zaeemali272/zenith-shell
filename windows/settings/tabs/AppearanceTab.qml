@@ -25,6 +25,47 @@ ColumnLayout {
     }
     
     SettingRow {
+        label: "Theme Studio"
+        Rectangle {
+            width: Shell.Theme.scaled(130)
+            height: Shell.Theme.scaled(32)
+            radius: height / 2
+            color: Shell.Theme.accentColor
+            scale: studioMouse.pressed ? 0.94 : (studioMouse.containsMouse ? 1.04 : 1.0)
+            Behavior on scale { NumberAnimation { duration: 100 } }
+
+            RowLayout {
+                anchors.centerIn: parent
+                spacing: Shell.Theme.scaled(6)
+
+                Text {
+                    text: "󰏘"
+                    font.family: Shell.Theme.iconFont
+                    font.pixelSize: Shell.Theme.scaled(13)
+                    color: Shell.Colors.on_primary
+                }
+                Text {
+                    text: "Open Studio"
+                    font.pixelSize: Shell.Theme.scaled(11)
+                    font.weight: Font.Bold
+                    color: Shell.Colors.on_primary
+                }
+            }
+
+            MouseArea {
+                id: studioMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    win.visible = false;
+                    CenterState.open("Theme");
+                }
+            }
+        }
+    }
+
+    SettingRow {
         label: "Menu Opacity"
         MaterialSlider {
             from: 0; to: 1; stepSize: 0.05

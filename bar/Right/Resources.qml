@@ -14,10 +14,11 @@ Item {
     readonly property int temp: ResourceService.temp
     readonly property string currentProfile: PowerProfileService.currentProfile
 
-    // Dynamic thresholds: CPU visible > 30%, RAM visible > 60%, Temp visible > 90°C
-    readonly property bool showCpu: cpu > 30
-    readonly property bool showMem: mem > 60
-    readonly property bool showTemp: temp > 90
+    // Dynamic thresholds: CPU visible > 30%, RAM visible > 60%, Temp visible > 85°C, or on mouse hover
+    readonly property bool isHovered: resMouse.containsMouse
+    readonly property bool showCpu: cpu > 30 || isHovered
+    readonly property bool showMem: mem > 60 || isHovered
+    readonly property bool showTemp: temp > 85 || isHovered
 
     height: Theme.pillHeight
     implicitHeight: Theme.pillHeight
@@ -38,7 +39,15 @@ Item {
         border.width: 1
         clip: true
 
+        Behavior on width {
+            NumberAnimation {
+                duration: 220
+                easing.type: Easing.OutCubic
+            }
+        }
+
         MouseArea {
+            id: resMouse
             anchors.fill: parent
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor

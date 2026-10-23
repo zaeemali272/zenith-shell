@@ -211,18 +211,19 @@ PanelWindow {
                                 height: 26
                                 anchors.verticalCenter: parent.verticalCenter
 
-                                Text {
-                                    anchors.centerIn: parent
-                                    visible: !!(appDelegate.modelData && appDelegate.modelData.isMath)
-                                    text: "🧮"
-                                    font.pixelSize: 18
-                                }
+                                Rectangle {
+                                    anchors.fill: parent
+                                    radius: Shell.Theme.scaled(7)
+                                    visible: !!(appDelegate.modelData && (appDelegate.modelData.isMath || appDelegate.modelData.isTerminal))
+                                    color: (appDelegate.modelData && appDelegate.modelData.isMath) ? Qt.rgba(Shell.Theme.accentColor.r, Shell.Theme.accentColor.g, Shell.Theme.accentColor.b, 0.2) : Qt.rgba(255, 255, 255, 0.1)
 
-                                Text {
-                                    anchors.centerIn: parent
-                                    visible: !!(appDelegate.modelData && appDelegate.modelData.isTerminal)
-                                    text: "💻"
-                                    font.pixelSize: 18
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: (appDelegate.modelData && appDelegate.modelData.isMath) ? "󰪚" : "󰆍"
+                                        font.family: Shell.Theme.iconFont
+                                        font.pixelSize: Shell.Theme.scaled(15)
+                                        color: (appDelegate.modelData && appDelegate.modelData.isMath) ? Shell.Theme.accentColor : Shell.Theme.text
+                                    }
                                 }
 
                                 Loader {
