@@ -77,7 +77,7 @@ PanelWindow {
     }
 
 
-    // Fast, crisp entrance animation
+    // Fast, buttery-smooth entrance animation
     ParallelAnimation {
         id: showAnim
         NumberAnimation {
@@ -85,24 +85,25 @@ PanelWindow {
             property: "opacity"
             from: 0
             to: 1
-            duration: 60
-            easing.type: Easing.OutQuad
+            duration: Shell.Theme.animFast
+            easing.type: Easing.OutCubic
         }
         NumberAnimation {
             target: mainCard
             property: "scale"
-            from: 0.98
+            from: 0.94
             to: 1.0
-            duration: 70
-            easing.type: Easing.OutQuad
+            duration: Shell.Theme.animFast
+            easing.type: Easing.OutBack
+            easing.overshoot: 1.04
         }
         NumberAnimation {
             target: mainCard
             property: "y"
-            from: 0
+            from: -4
             to: Shell.Theme.scaled(6)
-            duration: 70
-            easing.type: Easing.OutQuad
+            duration: Shell.Theme.animFast
+            easing.type: Easing.OutCubic
         }
     }
 
@@ -130,7 +131,7 @@ PanelWindow {
         anchors.horizontalCenter: parent.horizontalCenter
         y: Shell.Theme.scaled(6)
         width: DynamicIslandService.activeMode === "launcher" ? Shell.Theme.scaled(480) : Shell.Theme.scaled(593)
-        Behavior on width { NumberAnimation { duration: 80; easing.type: Easing.OutQuad } }
+        Behavior on width { NumberAnimation { duration: Shell.Theme.animFast; easing.type: Easing.OutCubic } }
         height: cardColumn.implicitHeight
         opacity: 0
         scale: 0.95
@@ -185,7 +186,11 @@ PanelWindow {
                         border.color: isSelected
                             ? ((Shell.Colors && Shell.Colors.primary) ? Shell.Colors.primary : Shell.Theme.accentColor)
                             : "transparent"
-                        border.width: isSelected ? 1 : 0
+                        scale: hoverArea.pressed ? 0.98 : (hoverArea.containsMouse ? 1.01 : 1.0)
+
+                        Behavior on scale { NumberAnimation { duration: Shell.Theme.animInstant; easing.type: Easing.OutCubic } }
+                        Behavior on color { ColorAnimation { duration: Shell.Theme.animInstant } }
+                        Behavior on border.color { ColorAnimation { duration: Shell.Theme.animInstant } }
 
                         MouseArea {
                             id: hoverArea
@@ -318,7 +323,11 @@ PanelWindow {
                         border.color: isSelected
                             ? ((Shell.Colors && Shell.Colors.primary) ? Shell.Colors.primary : Shell.Theme.accentColor)
                             : "transparent"
-                        border.width: isSelected ? 1 : 0
+                        scale: clipHover.pressed ? 0.98 : (clipHover.containsMouse ? 1.01 : 1.0)
+
+                        Behavior on scale { NumberAnimation { duration: Shell.Theme.animInstant; easing.type: Easing.OutCubic } }
+                        Behavior on color { ColorAnimation { duration: Shell.Theme.animInstant } }
+                        Behavior on border.color { ColorAnimation { duration: Shell.Theme.animInstant } }
 
                         MouseArea {
                             id: clipHover
@@ -434,6 +443,10 @@ PanelWindow {
                                         : (catMouse.containsMouse ? Shell.Theme.surfaceContainerHigh : "transparent")
                                     border.color: Shell.Theme.glassBorder
                                     border.width: 1
+                                    scale: catMouse.pressed ? 0.94 : (catMouse.containsMouse ? 1.04 : 1.0)
+
+                                    Behavior on scale { NumberAnimation { duration: Shell.Theme.animInstant; easing.type: Easing.OutCubic } }
+                                    Behavior on color { ColorAnimation { duration: Shell.Theme.animInstant } }
 
                                     Text {
                                         id: catText
@@ -488,6 +501,10 @@ PanelWindow {
                                 color: isSelected
                                     ? Shell.Theme.accentColor
                                     : (eMouse.containsMouse ? Shell.Theme.surfaceContainerHigh : "transparent")
+                                scale: eMouse.pressed ? 0.90 : (eMouse.containsMouse ? 1.12 : 1.0)
+
+                                Behavior on scale { NumberAnimation { duration: Shell.Theme.animInstant; easing.type: Theme.elasticEasing } }
+                                Behavior on color { ColorAnimation { duration: Shell.Theme.animInstant } }
 
                                 Text {
                                     anchors.centerIn: parent

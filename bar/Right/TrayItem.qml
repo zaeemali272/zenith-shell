@@ -32,7 +32,7 @@ MouseArea {
     cursorShape: Qt.PointingHandCursor
 
     scale: root.pressed ? 0.90 : (root.containsMouse ? 1.15 : 1.0)
-    Behavior on scale { NumberAnimation { duration: 160; easing.type: Theme.elasticEasing } }
+    Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Theme.elasticEasing; easing.overshoot: 1.15 } }
 
     onClicked: (mouse) => {
         if (!root.item) return;

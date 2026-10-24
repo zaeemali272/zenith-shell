@@ -64,6 +64,12 @@ send_cmd() {
         return 0
     fi
 
+    # Native Hyprland global shortcut dispatcher (fastest Wayland protocol IPC)
+    local base_cmd="${cmd%%:*}"
+    if command -v hyprctl >/dev/null 2>&1 && hyprctl dispatch "hl.dsp.global(\"zenith:$base_cmd\")" >/dev/null 2>&1; then
+        return 0
+    fi
+
     local qs_pid
     qs_pid="$(shell_pids | head -1)"
     { [ -n "$qs_pid" ] && quickshell ipc --pid "$qs_pid" call zenith:menu toggle "$cmd" >/dev/null 2>&1; } \

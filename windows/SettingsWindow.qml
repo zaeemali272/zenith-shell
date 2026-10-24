@@ -73,11 +73,16 @@ Window {
                             { name: "Hyprland", icon: "󱓞" }
                         ]
                         delegate: Rectangle {
+                            id: tabBtn
                             Layout.fillWidth: true
                             height: 50
                             radius: 14
-                            color: view.currentIndex === index ? Shell.Theme.surface1 : "transparent"
-                            
+                            color: view.currentIndex === index ? Shell.Theme.surface1 : (tabMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.08) : "transparent")
+                            scale: tabMouse.pressed ? 0.96 : (tabMouse.containsMouse ? 1.02 : 1.0)
+
+                            Behavior on color { ColorAnimation { duration: Shell.Theme.animInstant } }
+                            Behavior on scale { NumberAnimation { duration: Shell.Theme.animInstant; easing.type: Easing.OutCubic } }
+
                             RowLayout {
                                 anchors.fill: parent
                                 anchors.leftMargin: 20
@@ -95,21 +100,26 @@ Window {
                                     color: view.currentIndex === index ? Shell.Theme.text : Shell.Theme.subtext1
                                 }
                             }
-                            
+
                             MouseArea {
+                                id: tabMouse
                                 anchors.fill: parent
                                 hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
                                 onClicked: view.currentIndex = index
                             }
                         }
                     }
-                    
+
                     Item { Layout.fillHeight: true }
-                    
+
                     Button {
+                        id: closeBtn
                         text: "Close"
                         Layout.fillWidth: true
                         flat: true
+                        scale: closeBtn.pressed ? 0.96 : (closeBtn.hovered ? 1.02 : 1.0)
+                        Behavior on scale { NumberAnimation { duration: Shell.Theme.animInstant; easing.type: Easing.OutCubic } }
                         contentItem: Text {
                             text: parent.text
                             color: parent.hovered ? "white" : Shell.Theme.subtext1
@@ -120,6 +130,7 @@ Window {
                             radius: 12
                             color: parent.hovered ? Shell.Theme.red : "transparent"
                             border.color: parent.hovered ? "transparent" : Shell.Theme.surface1
+                            Behavior on color { ColorAnimation { duration: Shell.Theme.animInstant } }
                         }
                         onClicked: win.visible = false
                     }

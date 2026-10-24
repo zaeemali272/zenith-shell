@@ -98,8 +98,8 @@ ColumnLayout {
                 color: root.activeSubTab === modelData ? Theme.accentColor : (subTabMouse.containsMouse ? Theme.surface1 : Theme.surface0)
                 border.color: Theme.glassBorder
                 scale: subTabMouse.pressed ? 0.95 : 1.0
-                Behavior on scale { NumberAnimation { duration: 100 } }
-                Behavior on color { ColorAnimation { duration: 200 } }
+                Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
+                Behavior on color { ColorAnimation { duration: Theme.animInstant } }
 
                 Text { 
                     anchors.centerIn: parent
@@ -226,7 +226,7 @@ ColumnLayout {
                                     source: (fileName && fileName.lastIndexOf('.') > 0) ? ("file://" + Quickshell.env("HOME") + "/.cache/wallpaper_thumbs/" + fileName.substring(0, fileName.lastIndexOf('.')) + ".png") : ""
                                     fillMode: Image.PreserveAspectCrop; cache: false; asynchronous: true
                                     opacity: status === Image.Ready ? 1.0 : 0.0
-                                    Behavior on opacity { NumberAnimation { duration: 400 } }
+                                    Behavior on opacity { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
                                 }
                             }
                         }
@@ -333,7 +333,7 @@ ColumnLayout {
                                     source: (fileName && fileName.lastIndexOf('.') > 0) ? ("file://" + Quickshell.env("HOME") + "/.cache/animation_thumbs/" + fileName.substring(0, fileName.lastIndexOf('.')) + ".png") : ""
                                     fillMode: Image.PreserveAspectCrop; cache: false; asynchronous: true
                                     opacity: status === Image.Ready ? 1.0 : 0.0
-                                    Behavior on opacity { NumberAnimation { duration: 400 } }
+                                    Behavior on opacity { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
                                 }
                             }
                         }

@@ -436,7 +436,7 @@ Rectangle {
             border.width: 1
 
             Behavior on Layout.preferredHeight {
-                NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
+                NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic }
             }
 
             ColumnLayout {
@@ -476,7 +476,7 @@ Rectangle {
                                ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.25)
                                : Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.15)
 
-                        Behavior on color { ColorAnimation { duration: 150 } }
+                        Behavior on color { ColorAnimation { duration: Theme.animInstant } }
 
                         Text {
                             anchors.centerIn: parent
@@ -548,7 +548,7 @@ Rectangle {
                         implicitHeight: Theme.scaled(28)
                         radius: Theme.scaled(8)
                         color: tokenInput.text.length > 0 ? Theme.accentColor : Theme.surface1
-                        Behavior on color { ColorAnimation { duration: 150 } }
+                        Behavior on color { ColorAnimation { duration: Theme.animInstant } }
 
                         Text {
                             anchors.centerIn: parent
@@ -592,7 +592,7 @@ Rectangle {
                             font.family: Theme.iconFont
                             font.pixelSize: Theme.scaled(10)
                             color: linkMouse.containsMouse ? Theme.accentColor : Theme.subtext0
-                            Behavior on color { ColorAnimation { duration: 150 } }
+                            Behavior on color { ColorAnimation { duration: Theme.animInstant } }
                         }
 
                         Text {
@@ -602,7 +602,7 @@ Rectangle {
                             color: linkMouse.containsMouse ? Theme.accentColor : Theme.subtext0
                             elide: Text.ElideRight
                             Layout.fillWidth: true
-                            Behavior on color { ColorAnimation { duration: 150 } }
+                            Behavior on color { ColorAnimation { duration: Theme.animInstant } }
                         }
                     }
 
@@ -646,7 +646,7 @@ Rectangle {
             FastWheel {}
             
             displaced: Transition {
-                NumberAnimation { properties: "y"; duration: 150; easing.type: Easing.OutQuad }
+                NumberAnimation { properties: "y"; duration: Theme.animFast; easing.type: Easing.OutCubic }
             }
 
             delegate: Item {

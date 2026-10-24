@@ -130,9 +130,9 @@ ColumnLayout {
                     border.width: 1
                     
                     scale: m.pressed ? 0.92 : (isSelected || m.containsMouse ? 1.00 : 0.95)
-                    Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-                    Behavior on color { ColorAnimation { duration: 200 } }
-                    Behavior on border.color { ColorAnimation { duration: 200 } }
+                    Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
+                    Behavior on color { ColorAnimation { duration: Theme.animInstant } }
+                    Behavior on border.color { ColorAnimation { duration: Theme.animInstant } }
 
                     MouseArea {
                         id: m

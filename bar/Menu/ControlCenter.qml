@@ -119,8 +119,8 @@ MenuWindow {
                                 color: CenterState.activeTab === modelData ? Theme.accentColor : (tabMouse.containsMouse ? Qt.rgba(255,255,255,0.12) : "transparent")
                                 scale: tabMouse.pressed ? 0.94 : (tabMouse.containsMouse ? 1.03 : 1.0)
                                 
-                                Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.animEasing } }
-                                Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                                Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
+                                Behavior on color { ColorAnimation { duration: Theme.animInstant } }
 
                                 Text {
                                     id: tabText
@@ -158,8 +158,8 @@ MenuWindow {
                         border.width: 1
                         scale: focusMouse.pressed ? 0.91 : (focusMouse.containsMouse ? 1.08 : 1.0)
                         
-                        Behavior on color { ColorAnimation { duration: Theme.animFast } }
-                        Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.animEasing } }
+                        Behavior on color { ColorAnimation { duration: Theme.animInstant } }
+                        Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Theme.elasticEasing; easing.overshoot: 1.15 } }
 
                         Text {
                             anchors.centerIn: parent
@@ -194,8 +194,8 @@ MenuWindow {
                         border.width: 1
                         scale: caffeineMouse.pressed ? 0.91 : (caffeineMouse.containsMouse ? 1.08 : 1.0)
                         
-                        Behavior on color { ColorAnimation { duration: Theme.animFast } }
-                        Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.animEasing } }
+                        Behavior on color { ColorAnimation { duration: Theme.animInstant } }
+                        Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Theme.elasticEasing; easing.overshoot: 1.15 } }
 
                         Text {
                             anchors.centerIn: parent
@@ -230,8 +230,8 @@ MenuWindow {
                         border.width: 1
                         scale: nlMouse.pressed ? 0.91 : (nlMouse.containsMouse ? 1.08 : 1.0)
                         
-                        Behavior on color { ColorAnimation { duration: Theme.animFast } }
-                        Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.animEasing } }
+                        Behavior on color { ColorAnimation { duration: Theme.animInstant } }
+                        Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Theme.elasticEasing; easing.overshoot: 1.15 } }
 
                         Text {
                             anchors.centerIn: parent
@@ -266,8 +266,8 @@ MenuWindow {
                         border.width: 1
                         scale: dndMouse.pressed ? 0.91 : (dndMouse.containsMouse ? 1.08 : 1.0)
                         
-                        Behavior on color { ColorAnimation { duration: Theme.animFast } }
-                        Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.animEasing } }
+                        Behavior on color { ColorAnimation { duration: Theme.animInstant } }
+                        Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Theme.elasticEasing; easing.overshoot: 1.15 } }
 
                         Text {
                             anchors.centerIn: parent
@@ -302,8 +302,8 @@ MenuWindow {
                         border.width: 1
                         scale: snipMouse.pressed ? 0.91 : (snipMouse.containsMouse ? 1.08 : 1.0)
                         
-                        Behavior on color { ColorAnimation { duration: Theme.animFast } }
-                        Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.animEasing } }
+                        Behavior on color { ColorAnimation { duration: Theme.animInstant } }
+                        Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Theme.elasticEasing; easing.overshoot: 1.15 } }
 
                         Text {
                             anchors.centerIn: parent
@@ -338,8 +338,8 @@ MenuWindow {
                         border.width: 1
                         scale: pickMouse.pressed ? 0.91 : (pickMouse.containsMouse ? 1.08 : 1.0)
                         
-                        Behavior on color { ColorAnimation { duration: Theme.animFast } }
-                        Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.animEasing } }
+                        Behavior on color { ColorAnimation { duration: Theme.animInstant } }
+                        Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Theme.elasticEasing; easing.overshoot: 1.15 } }
 
                         Text {
                             anchors.centerIn: parent
@@ -368,8 +368,8 @@ MenuWindow {
 
             ParallelAnimation {
                 id: fadeAnim
-                NumberAnimation { target: contentStack; property: "opacity"; from: 0; to: 1; duration: 70; easing.type: Easing.OutQuad }
-                NumberAnimation { target: contentTranslate; property: "y"; from: 4; to: 0; duration: 70; easing.type: Easing.OutQuad }
+                NumberAnimation { target: contentStack; property: "opacity"; from: 0; to: 1; duration: Theme.animFast; easing.type: Easing.OutCubic }
+                NumberAnimation { target: contentTranslate; property: "y"; from: 8; to: 0; duration: Theme.animFast; easing.type: Easing.OutCubic }
             }
 
             // --- CONTENT AREA ---

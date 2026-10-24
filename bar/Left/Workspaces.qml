@@ -29,7 +29,7 @@ Item {
         color: pillHoverArea.containsMouse ? Theme.pillHoverColor : Theme.pillColor
         radius: height / 2
 
-        Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.OutBack } }
+        Behavior on width { NumberAnimation { duration: Theme.animNormal; easing.type: Easing.OutBack; easing.overshoot: 1.1 } }
         Behavior on color { ColorAnimation { duration: Theme.animFast } }
 
         MouseArea {
@@ -72,14 +72,14 @@ Item {
                     border.color: isCurrentActive ? "transparent" : (isOccupied ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.35) : Theme.glassBorder)
 
                     // Bouncy Morphing Animations
-                    Behavior on width { NumberAnimation { duration: 250; easing.type: Easing.OutBack } }
-                    Behavior on height { NumberAnimation { duration: 250; easing.type: Easing.OutBack } }
-                    Behavior on color { ColorAnimation { duration: 200 } }
-                    Behavior on radius { NumberAnimation { duration: 200 } }
+                    Behavior on width { NumberAnimation { duration: Theme.animNormal; easing.type: Easing.OutBack; easing.overshoot: 1.1 } }
+                    Behavior on height { NumberAnimation { duration: Theme.animNormal; easing.type: Easing.OutBack; easing.overshoot: 1.1 } }
+                    Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                    Behavior on radius { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
 
                     // Elastic Bubble Bounce on Hover & Click
                     scale: wsMouse.pressed ? 0.8 : (wsMouse.containsMouse ? 1.25 : 1.0)
-                    Behavior on scale { NumberAnimation { duration: 180; easing.type: Theme.elasticEasing } }
+                    Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.elasticEasing; easing.overshoot: 1.15 } }
 
                     MouseArea {
                         id: wsMouse
@@ -107,8 +107,8 @@ Item {
                         color: Theme.accentColor
                         opacity: isOccupied ? 0.9 : 0.0
 
-                        Behavior on opacity { NumberAnimation { duration: 150 } }
-                        Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutBack } }
+                        Behavior on opacity { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
+                        Behavior on width { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutBack; easing.overshoot: 1.1 } }
                     }
 
                     // Workspace Number Text for Active Bubble
@@ -121,7 +121,7 @@ Item {
                         visible: isCurrentActive && WorkspaceSettings.displayStyle === "numbers"
                         opacity: isCurrentActive ? 1.0 : 0.0
 
-                        Behavior on opacity { NumberAnimation { duration: 150 } }
+                        Behavior on opacity { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
                     }
                 }
             }

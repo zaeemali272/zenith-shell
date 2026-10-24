@@ -109,17 +109,17 @@ PanelWindow {
 
     ParallelAnimation {
         id: showAnim
-        NumberAnimation { target: menuWindow.card; property: "opacity"; from: 0; to: 1; duration: Theme.animFast; easing.type: Theme.animEasing }
-        NumberAnimation { target: menuWindow.card; property: "scale"; from: 0.94; to: 1.0; duration: Theme.animFast; easing.type: Theme.animEasing }
-        NumberAnimation { target: menuWindow._cardTranslate; property: "y"; from: -6; to: 0; duration: Theme.animFast; easing.type: Theme.animEasing }
+        NumberAnimation { target: menuWindow.card; property: "opacity"; from: 0; to: 1; duration: Theme.animFast; easing.type: Easing.OutCubic }
+        NumberAnimation { target: menuWindow.card; property: "scale"; from: 0.94; to: 1.0; duration: Theme.animFast; easing.type: Easing.OutBack; easing.overshoot: 1.05 }
+        NumberAnimation { target: menuWindow._cardTranslate; property: "y"; from: -8; to: 0; duration: Theme.animFast; easing.type: Easing.OutCubic }
     }
 
     SequentialAnimation {
         id: hideAnim
         ParallelAnimation {
-            NumberAnimation { target: menuWindow.card; property: "opacity"; to: 0; duration: Theme.animFast * 0.6; easing.type: Easing.InCubic }
-            NumberAnimation { target: menuWindow.card; property: "scale"; to: 0.96; duration: Theme.animFast * 0.6; easing.type: Easing.InCubic }
-            NumberAnimation { target: menuWindow._cardTranslate; property: "y"; to: -4; duration: Theme.animFast * 0.6; easing.type: Easing.InCubic }
+            NumberAnimation { target: menuWindow.card; property: "opacity"; to: 0; duration: Math.round(Theme.animFast * 0.7); easing.type: Easing.InCubic }
+            NumberAnimation { target: menuWindow.card; property: "scale"; to: 0.96; duration: Math.round(Theme.animFast * 0.7); easing.type: Easing.InCubic }
+            NumberAnimation { target: menuWindow._cardTranslate; property: "y"; to: -6; duration: Math.round(Theme.animFast * 0.7); easing.type: Easing.InCubic }
         }
         ScriptAction { script: if (!menuWindow.shown) menuWindow.visible = false }
     }
