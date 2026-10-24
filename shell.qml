@@ -67,7 +67,8 @@ Scope {
             "volume", "audio", "powerprofile", "prof", "battery", "pwr",
             "power", "sys", "quicksettings", "close", "close_all",
             "clipboard", "clip", "emoji", "settings", "config", "lock",
-            "screenshot", "snip", "colorpicker", "nightlight", "dnd", "micmute"
+            "screenshot", "snip", "colorpicker", "nightlight", "dnd", "micmute",
+            "services", "daemons"
         ]
         delegate: GlobalShortcut {
             required property string modelData
@@ -136,6 +137,7 @@ Scope {
             if (lowerArg === "pomodoro") tab = "Pomodoro";
             else if (lowerArg === "wallpaper" || lowerArg === "wallpapers") tab = "Wallpaper";
             else if (lowerArg === "roadmap" || lowerArg === "roadmaps") { tab = "Pomodoro"; CenterState.focusTool = "Roadmap"; }
+            else if (lowerArg === "services" || lowerArg === "service" || lowerArg === "daemons") { tab = "Pomodoro"; CenterState.focusTool = "Services"; }
             CenterState.toggle(tab);
         } else if (lowerAction === "quicksettings" || lowerAction === "toggle_quicksettings") {
             let tab = arg || "network";
@@ -164,6 +166,9 @@ Scope {
         } else if (lowerAction === "roadmap" || lowerAction === "roadmaps") {
             // Roadmap lives inside the Focus tab now, alongside the todo list.
             CenterState.focusTool = "Roadmap";
+            CenterState.toggle("Pomodoro");
+        } else if (lowerAction === "services" || lowerAction === "daemons" || lowerAction === "servicemanager") {
+            CenterState.focusTool = "Services";
             CenterState.toggle("Pomodoro");
         } else if (lowerAction === "pomodoro") {
             CenterState.toggle("Pomodoro");

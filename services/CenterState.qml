@@ -10,7 +10,7 @@ Item {
 
     property bool qsVisible: false
     property string activeTab: "Default"
-    // Sub-tool for the Focus tab: "Todo", "Roadmap" or "Timer".
+    // Sub-tool for the Focus tab: "Todo", "Roadmap", "Timer", or "Services".
     property string focusTool: "Todo"
     // Sub-tab for the Wallpaper page: "Wallpaper", "Themes", "Slideshow", "Animated"
     property string wallpaperSubTab: "Wallpaper"
