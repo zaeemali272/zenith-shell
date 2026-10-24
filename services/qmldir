@@ -23,5 +23,7 @@ singleton IdleService IdleService.qml
 singleton LockService LockService.qml
 singleton ThemeService ThemeService.qml
 singleton PowerToolsService PowerToolsService.qml
+singleton SystemServicesService SystemServicesService.qml
+
 
 
