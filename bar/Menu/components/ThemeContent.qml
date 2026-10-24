@@ -67,8 +67,8 @@ ColumnLayout {
                     color: ThemeService.themeMode === "dynamic" ? Theme.accentColor : "transparent"
                     scale: dynMouse.pressed ? 0.95 : 1.0
 
-                    Behavior on color { ColorAnimation { duration: 150 } }
-                    Behavior on scale { NumberAnimation { duration: 100 } }
+                    Behavior on color { ColorAnimation { duration: Theme.animInstant } }
+                    Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
 
                     RowLayout {
                         anchors.centerIn: parent
@@ -106,8 +106,8 @@ ColumnLayout {
                     color: ThemeService.themeMode === "preset" ? Theme.accentColor : "transparent"
                     scale: presetMouse.pressed ? 0.95 : 1.0
 
-                    Behavior on color { ColorAnimation { duration: 150 } }
-                    Behavior on scale { NumberAnimation { duration: 100 } }
+                    Behavior on color { ColorAnimation { duration: Theme.animInstant } }
+                    Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
 
                     RowLayout {
                         anchors.centerIn: parent
@@ -283,9 +283,9 @@ ColumnLayout {
                         border.width: isSelected ? 2 : 1
 
                         scale: cardMouse.pressed ? 0.97 : (cardMouse.containsMouse ? 1.02 : 1.0)
-                        Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
-                        Behavior on color { ColorAnimation { duration: 150 } }
-                        Behavior on border.color { ColorAnimation { duration: 150 } }
+                        Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
+                        Behavior on color { ColorAnimation { duration: Theme.animInstant } }
+                        Behavior on border.color { ColorAnimation { duration: Theme.animInstant } }
 
                         RowLayout {
                             anchors.fill: parent
@@ -416,7 +416,7 @@ ColumnLayout {
                     radius: height / 2
                     color: Theme.accentColor
                     scale: reextractMouse.pressed ? 0.95 : (reextractMouse.containsMouse ? 1.04 : 1.0)
-                    Behavior on scale { NumberAnimation { duration: 100 } }
+                    Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
 
                     RowLayout {
                         anchors.centerIn: parent
@@ -455,7 +455,7 @@ ColumnLayout {
                     border.color: Theme.glassBorder
                     border.width: 1
                     scale: wallTabMouse.pressed ? 0.95 : (wallTabMouse.containsMouse ? 1.04 : 1.0)
-                    Behavior on scale { NumberAnimation { duration: 100 } }
+                    Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
 
                     RowLayout {
                         anchors.centerIn: parent
@@ -541,7 +541,7 @@ ColumnLayout {
                         border.width: isSelected ? 2 : 1
 
                         scale: accMouse.pressed ? 0.9 : (accMouse.containsMouse ? 1.2 : 1.0)
-                        Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutBack } }
+                        Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Theme.elasticEasing; easing.overshoot: 1.15 } }
 
                         Text {
                             anchors.centerIn: parent

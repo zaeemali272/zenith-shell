@@ -125,8 +125,8 @@ MenuWindow {
                             
                             scale: tabMouse.pressed ? 0.94 : (tabMouse.containsMouse ? 1.03 : 1.0)
                             
-                            Behavior on color { ColorAnimation { duration: Theme.animFast } }
-                            Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.animEasing } }
+                            Behavior on color { ColorAnimation { duration: Theme.animInstant } }
+                            Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
 
                             RowLayout {
                                 anchors.centerIn: parent
@@ -180,8 +180,8 @@ MenuWindow {
 
                 ParallelAnimation {
                     id: transitionAnim
-                    NumberAnimation { target: contentStack; property: "opacity"; from: 0; to: 1; duration: 70; easing.type: Easing.OutQuad }
-                    NumberAnimation { target: contentTranslate; property: "y"; from: 4; to: 0; duration: 70; easing.type: Easing.OutQuad }
+                    NumberAnimation { target: contentStack; property: "opacity"; from: 0; to: 1; duration: Theme.animFast; easing.type: Easing.OutCubic }
+                    NumberAnimation { target: contentTranslate; property: "y"; from: 8; to: 0; duration: Theme.animFast; easing.type: Easing.OutCubic }
                 }
 
                 StackLayout {

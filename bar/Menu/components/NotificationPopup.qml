@@ -65,7 +65,7 @@ PanelWindow {
 
         y: (popupStack.tucked && !popupStack.stackHovered) ? -popupStack.tuckDepth : 0
         Behavior on y {
-            NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic }
         }
 
         // Covers the stack including the visible strip while tucked, so the

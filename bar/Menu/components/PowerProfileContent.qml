@@ -16,8 +16,8 @@ ColumnLayout {
     }
     ParallelAnimation {
         id: entryAnim
-        NumberAnimation { target: root; property: "opacity"; to: 1; duration: 400; easing.type: Easing.OutCubic }
-        NumberAnimation { target: root; property: "scale"; to: 1; duration: 500; easing.type: Theme.elasticEasing }
+        NumberAnimation { target: root; property: "opacity"; to: 1; duration: Theme.animNormal; easing.type: Theme.animEasing }
+        NumberAnimation { target: root; property: "scale"; to: 1; duration: Theme.animNormal; easing.type: Theme.elasticEasing; easing.overshoot: 1.05 }
     }
 
     // Header Row
@@ -94,8 +94,8 @@ ColumnLayout {
                 border.color: PowerProfileService.currentProfile === modelData.id ? profileCard.accent : Theme.glassBorder
 
                 scale: m.pressed ? 0.96 : (m.containsMouse ? 1.015 : 1.0)
-                Behavior on scale { NumberAnimation { duration: 180; easing.type: Theme.elasticEasing } }
-                Behavior on color { ColorAnimation { duration: 250 } }
+                Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Theme.elasticEasing; easing.overshoot: 1.15 } }
+                Behavior on color { ColorAnimation { duration: Theme.animInstant } }
 
                 MouseArea {
                     id: m
@@ -167,7 +167,7 @@ ColumnLayout {
         border.width: PowerProfileService.conservativeActive ? 2 : 1
         border.color: PowerProfileService.conservativeActive ? Theme.accentColor : Theme.glassBorder
 
-        Behavior on color { ColorAnimation { duration: 250 } }
+        Behavior on color { ColorAnimation { duration: Theme.animInstant } }
 
         RowLayout {
             anchors.fill: parent
@@ -248,8 +248,8 @@ ColumnLayout {
                 border.color: PowerProfileService.conservativeActive ? Theme.accentColor : Theme.glassBorder
 
                 scale: btnMouse.pressed ? 0.95 : (btnMouse.containsMouse ? 1.03 : 1.0)
-                Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-                Behavior on color { ColorAnimation { duration: 200 } }
+                Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
+                Behavior on color { ColorAnimation { duration: Theme.animInstant } }
 
                 RowLayout {
                     anchors.centerIn: parent

@@ -97,10 +97,10 @@ RowLayout {
 
         scale: DynamicIslandService.active ? 1.0 : (pillMouse.pressed ? 0.95 : (pillMouse.containsMouse ? 1.04 : 1.0))
 
-        Behavior on width { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
-        Behavior on scale { NumberAnimation { duration: 60; easing.type: Easing.OutQuad } }
-        Behavior on color { ColorAnimation { duration: 60 } }
-        Behavior on border.color { ColorAnimation { duration: 60 } }
+        Behavior on width { NumberAnimation { duration: Theme.animNormal; easing.type: Easing.OutCubic } }
+        Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
+        Behavior on color { ColorAnimation { duration: Theme.animInstant } }
+        Behavior on border.color { ColorAnimation { duration: Theme.animInstant } }
 
         // --- DEFAULT CENTER CONTENT (Clock/Media/Weather) ---
         RowLayout {
@@ -109,7 +109,7 @@ RowLayout {
             spacing: Theme.pillGap
             opacity: DynamicIslandService.active ? 0.0 : 1.0
             visible: opacity > 0.01
-            Behavior on opacity { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
+            Behavior on opacity { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
 
             // --- MEDIA / WEATHER SECTION ---
             RowLayout {

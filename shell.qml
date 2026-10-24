@@ -31,11 +31,23 @@ Scope {
         function wallpaper(): void { handleCommand("wallpaper"); }
         function mail(): void { handleCommand("mail"); }
         function pomodoro(): void { handleCommand("pomodoro"); }
+        function roadmap(): void { handleCommand("roadmap"); }
         function volume(): void { handleCommand("volume"); }
+        function wifi(): void { handleCommand("wifi"); }
+        function bluetooth(): void { handleCommand("bluetooth"); }
+        function powerprofile(): void { handleCommand("powerprofile"); }
+        function battery(): void { handleCommand("battery"); }
+        function quicksettings(): void { handleCommand("quicksettings"); }
         function clipboard(): void { handleCommand("clipboard"); }
         function emoji(): void { handleCommand("emoji"); }
         function power(): void { handleCommand("power"); }
         function settings(): void { handleCommand("settings"); }
+        function lock(): void { handleCommand("lock"); }
+        function screenshot(): void { handleCommand("screenshot"); }
+        function colorpicker(): void { handleCommand("colorpicker"); }
+        function nightlight(): void { handleCommand("nightlight"); }
+        function dnd(): void { handleCommand("dnd"); }
+        function micmute(): void { handleCommand("micmute"); }
         function close(): void { handleCommand("close"); }
     }
 
@@ -45,15 +57,18 @@ Scope {
     // --- NATIVE HYPRLAND GLOBAL SHORTCUTS ---
     //
     // Hyprland-dots binds keys to these with hl.dsp.global("zenith:<name>"):
-    // no script and no IPC client per keypress. A normal bind delivers
-    // `pressed` when the chord goes down and `released` when it comes up, so
-    // only one edge may toggle. The launcher is the exception: the Super tap
-    // in keybinds.lua fires from a release bind, which delivers `released`
-    // alone.
+    // no shell scripts, no IPC client start-up, nothing forked per keypress.
+    // Every single surface, menu, drawer, and tool in Zenith Shell is connected
+    // natively to Hyprland's compositor protocol.
     Instantiator {
-        model: ["dashboard", "wallpaper", "theme", "pomodoro", "volume",
-                "close", "clipboard", "emoji", "power", "settings", "lock",
-                "screenshot", "colorpicker", "nightlight", "dnd"]
+        model: [
+            "dashboard", "overview", "wallpaper", "theme", "pomodoro",
+            "roadmap", "mail", "wifi", "network", "bluetooth", "bt",
+            "volume", "audio", "powerprofile", "prof", "battery", "pwr",
+            "power", "sys", "quicksettings", "close", "close_all",
+            "clipboard", "clip", "emoji", "settings", "config", "lock",
+            "screenshot", "snip", "colorpicker", "nightlight", "dnd", "micmute"
+        ]
         delegate: GlobalShortcut {
             required property string modelData
             appid: "zenith"
@@ -61,7 +76,30 @@ Scope {
             onPressed: handleCommand(modelData)
         }
     }
-    GlobalShortcut { appid: "zenith"; name: "launcher"; onReleased: handleCommand("launcher") }
+
+    // Launcher supports both press-based binds (e.g. SUPER+D, hyprctl dispatch)
+    // and release-based binds (the Hyprland Super-key solo tap release bind).
+    property bool _launcherPressed: false
+    GlobalShortcut {
+        appid: "zenith"
+        name: "launcher"
+        onPressed: {
+            _launcherPressed = true;
+            handleCommand("launcher");
+        }
+        onReleased: {
+            if (_launcherPressed) {
+                _launcherPressed = false;
+            } else {
+                handleCommand("launcher");
+            }
+        }
+    }
+    GlobalShortcut {
+        appid: "zenith"
+        name: "applauncher"
+        onPressed: handleCommand("launcher")
+    }
 
     property bool settingsVisible: false
     

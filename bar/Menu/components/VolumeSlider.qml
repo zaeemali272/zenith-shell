@@ -82,7 +82,7 @@ ColumnLayout {
             // Interaction feedback
             scale: control.pressed ? 1.15 : (control.hovered ? 1.05 : 1.0)
             
-            Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
+            Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Theme.elasticEasing; easing.overshoot: 1.15 } }
             
             // Subtle inner dot for that "pro" look
             Rectangle {
