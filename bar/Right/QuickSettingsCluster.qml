@@ -65,8 +65,8 @@ Item {
 
         Behavior on width {
             NumberAnimation {
-                duration: 350
-                easing.type: Easing.OutExpo
+                duration: Theme.animNormal
+                easing.type: Easing.OutCubic
             }
         }
 
@@ -88,12 +88,15 @@ Item {
                 Layout.alignment: Qt.AlignVCenter
                 visible: VolumeService.micActive
 
+                scale: micMouse.pressed ? 0.92 : (micMouse.containsMouse ? 1.05 : 1.0)
+                Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
+
                 Rectangle {
                     anchors.fill: parent
                     radius: height / 2
                     color: micMouse.containsMouse ? Theme.surfaceContainerHigh : "transparent"
 
-                    Behavior on color { ColorAnimation { duration: 150 } }
+                    Behavior on color { ColorAnimation { duration: Theme.animInstant } }
                 }
 
                 RowLayout {
@@ -154,12 +157,15 @@ Item {
                     }
                 }
 
+                scale: volMouse.pressed ? 0.92 : (volMouse.containsMouse ? 1.05 : 1.0)
+                Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
+
                 Rectangle {
                     anchors.fill: parent
                     radius: height / 2
                     color: volMouse.containsMouse ? Theme.surfaceContainerHigh : "transparent"
 
-                    Behavior on color { ColorAnimation { duration: 150 } }
+                    Behavior on color { ColorAnimation { duration: Theme.animInstant } }
                 }
 
                 RowLayout {
@@ -231,12 +237,15 @@ Item {
                 // sitting there permanently off.
                 visible: HardwareService.hasBluetooth && BluetoothService.powered
 
+                scale: btMouse.pressed ? 0.92 : (btMouse.containsMouse ? 1.05 : 1.0)
+                Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
+
                 Rectangle {
                     anchors.fill: parent
                     radius: height / 2
                     color: btMouse.containsMouse ? Theme.surfaceContainerHigh : "transparent"
 
-                    Behavior on color { ColorAnimation { duration: 150 } }
+                    Behavior on color { ColorAnimation { duration: Theme.animInstant } }
                 }
 
                 RowLayout {
@@ -280,12 +289,15 @@ Item {
                 visible: HardwareService.hasBattery && WidgetSettings.enableBattery
                          && !HyprlandService.isFullscreen
 
+                scale: batMouse.pressed ? 0.92 : (batMouse.containsMouse ? 1.05 : 1.0)
+                Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
+
                 Rectangle {
                     anchors.fill: parent
                     radius: height / 2
                     color: batMouse.containsMouse ? Theme.surfaceContainerHigh : "transparent"
 
-                    Behavior on color { ColorAnimation { duration: 150 } }
+                    Behavior on color { ColorAnimation { duration: Theme.animInstant } }
                 }
 
                 RowLayout {
@@ -304,8 +316,8 @@ Item {
                         SequentialAnimation on opacity {
                             running: root.batState === "charging"
                             loops: Animation.Infinite
-                            NumberAnimation { from: 1.0; to: 0.4; duration: 600 }
-                            NumberAnimation { from: 0.4; to: 1.0; duration: 600 }
+                            NumberAnimation { from: 1.0; to: 0.4; duration: 500; easing.type: Easing.InOutQuad }
+                            NumberAnimation { from: 0.4; to: 1.0; duration: 500; easing.type: Easing.InOutQuad }
                         }
                     }
 
@@ -343,12 +355,15 @@ Item {
                 Layout.preferredHeight: implicitHeight
                 Layout.alignment: Qt.AlignVCenter
 
+                scale: pwrMouse.pressed ? 0.92 : (pwrMouse.containsMouse ? 1.08 : 1.0)
+                Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
+
                 Rectangle {
                     anchors.fill: parent
                     radius: height / 2
                     color: pwrMouse.containsMouse ? Theme.surfaceContainerHigh : "transparent"
 
-                    Behavior on color { ColorAnimation { duration: 150 } }
+                    Behavior on color { ColorAnimation { duration: Theme.animInstant } }
                 }
 
                 Text {
@@ -360,7 +375,7 @@ Item {
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
 
-                    Behavior on color { ColorAnimation { duration: 150 } }
+                    Behavior on color { ColorAnimation { duration: Theme.animInstant } }
                 }
 
                 MouseArea {

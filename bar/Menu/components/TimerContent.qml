@@ -83,7 +83,7 @@ Item {
                         radiusX: ring.radius; radiusY: ring.radius
                         startAngle: -90
                         sweepAngle: 360 * root.progress
-                        Behavior on sweepAngle { NumberAnimation { duration: 400; easing.type: Easing.OutQuad } }
+                        Behavior on sweepAngle { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
                     }
                 }
             }
@@ -102,7 +102,7 @@ Item {
                     minimumPixelSize: 10
                     font.weight: Font.Black
                     color: root.done ? Theme.powerRed : Theme.text
-                    Behavior on color { ColorAnimation { duration: 300 } }
+                    Behavior on color { ColorAnimation { duration: Theme.animInstant } }
                 }
                 Text {
                     Layout.alignment: Qt.AlignHCenter
@@ -143,9 +143,9 @@ Item {
                     readonly property bool active: ProductivityService.duration === modelData
                     width: presetFlow.chipW; height: Theme.scaled(34)
                     radius: height / 2
-                    color: active ? Theme.accentColor
-                                  : (presetMouse.containsMouse ? Theme.surfaceContainerHigh : Theme.surface1)
-                    Behavior on color { ColorAnimation { duration: 120 } }
+                    scale: presetMouse.pressed ? 0.94 : (presetMouse.containsMouse ? 1.05 : 1.0)
+                    Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
+                    Behavior on color { ColorAnimation { duration: Theme.animInstant } }
 
                     Text {
                         anchors.centerIn: parent
@@ -176,7 +176,9 @@ Item {
             Rectangle {
                 width: Theme.scaled(72); height: Theme.scaled(72); radius: width / 2
                 color: ProductivityService.running ? Theme.powerRed : Theme.accentColor
-                Behavior on color { ColorAnimation { duration: 150 } }
+                scale: playMouse.pressed ? 0.92 : (playMouse.containsMouse ? 1.06 : 1.0)
+                Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Theme.elasticEasing; easing.overshoot: 1.15 } }
+                Behavior on color { ColorAnimation { duration: Theme.animInstant } }
 
                 Text {
                     anchors.centerIn: parent
@@ -189,7 +191,9 @@ Item {
                     color: Theme.base
                 }
                 MouseArea {
+                    id: playMouse
                     anchors.fill: parent
+                    hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: ProductivityService.isBeeping ? ProductivityService.dismissAlarm()
                                                              : ProductivityService.toggleTimer()

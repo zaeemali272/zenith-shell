@@ -145,12 +145,12 @@ PanelWindow {
                     color: Theme.text; border.color: Theme.surface1
 
                     scale: osdSlider.pressed ? 1.3 : (osdSlider.hovered ? 1.2 : 1.1)
-                    Behavior on scale { NumberAnimation { duration: 100 } }
+                    Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutBack; easing.overshoot: 1.1 } }
                 }
             }
         }
 
-        Behavior on opacity { NumberAnimation { duration: 200 } }
+        Behavior on opacity { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
     }
 
     Timer {

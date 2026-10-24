@@ -61,7 +61,7 @@ Rectangle {
                      : (doneM.containsMouse ? Theme.surfaceContainerHigh : Qt.rgba(0, 0, 0, 0.35))
                 border.color: detail.isDone ? Theme.accentColor : Theme.glassBorder
                 border.width: 1
-                Behavior on color { ColorAnimation { duration: 120 } }
+                Behavior on color { ColorAnimation { duration: Theme.animInstant } }
                 Text {
                     id: doneLabel
                     anchors.centerIn: parent

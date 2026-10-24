@@ -53,15 +53,16 @@ PanelWindow {
                 target: barVisual
                 property: "y"
                 to: 0
-                duration: BarSettings.animationDuration
-                easing.type: Easing.OutExpo
+                duration: Theme.animFast
+                easing.type: Easing.OutCubic
             }
 
             NumberAnimation {
                 target: barVisual
                 property: "opacity"
                 to: 1
-                duration: BarSettings.animationDuration * 0.75
+                duration: Theme.animFast
+                easing.type: Easing.OutCubic
             }
         }
 
@@ -88,7 +89,8 @@ PanelWindow {
             targets: [leftSide, centerSide, rightLayout]
             property: "opacity"
             from: 0; to: 1
-            duration: BarSettings.animationDuration * 1.5
+            duration: Theme.animNormal
+            easing.type: Easing.OutCubic
         }
 
         // --- LEFT SIDE ---

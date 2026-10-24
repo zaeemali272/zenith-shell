@@ -49,8 +49,11 @@ Item {
         radius: height / 2
         color: Theme.pillColor
         border.color: Theme.glassBorder
-        border.width: 1
-        clip: true
+        scale: netMouse.pressed ? 0.95 : (netMouse.containsMouse ? 1.02 : 1.0)
+
+        Behavior on width { NumberAnimation { duration: Theme.animNormal; easing.type: Easing.OutCubic } }
+        Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
+        Behavior on color { ColorAnimation { duration: Theme.animInstant } }
 
         MouseArea {
             id: netMouse

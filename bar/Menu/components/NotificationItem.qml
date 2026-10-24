@@ -96,7 +96,7 @@ Rectangle {
 
     Behavior on implicitHeight {
         enabled: root.animateHeight
-        NumberAnimation { duration: 300; easing.type: Easing.OutExpo }
+        NumberAnimation { duration: Theme.animNormal; easing.type: Easing.OutCubic }
     }
 
     // --- AUTO DISMISS LOGIC ---
@@ -291,8 +291,9 @@ Rectangle {
             radius: Theme.scaled(8)
             color: dismissMouse.containsMouse ? Theme.surface0 : "transparent"
             border.color: dismissMouse.containsMouse ? Theme.surface1 : "transparent"
-            border.width: 1
-            Behavior on color { ColorAnimation { duration: 100 } }
+            scale: dismissMouse.pressed ? 0.90 : (dismissMouse.containsMouse ? 1.10 : 1.0)
+            Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
+            Behavior on color { ColorAnimation { duration: Theme.animInstant } }
             
             Text {
                 anchors.centerIn: parent

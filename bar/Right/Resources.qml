@@ -38,13 +38,16 @@ Item {
         border.color: Theme.glassBorder
         border.width: 1
         clip: true
+        scale: resMouse.pressed ? 0.95 : (resMouse.containsMouse ? 1.02 : 1.0)
 
         Behavior on width {
             NumberAnimation {
-                duration: 220
+                duration: Theme.animNormal
                 easing.type: Easing.OutCubic
             }
         }
+        Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
+        Behavior on color { ColorAnimation { duration: Theme.animInstant } }
 
         MouseArea {
             id: resMouse

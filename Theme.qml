@@ -38,12 +38,13 @@ QtObject {
     readonly property color glassBorder: Qt.rgba(1, 1, 1, 0.15)
     readonly property real glassBlur: AppearanceSettings.glassBlur
     
-    // ===== Animation Defaults =====
-    readonly property int animFast: 60
-    readonly property int animNormal: 90
-    readonly property int animSlow: 120
-    readonly property int animEasing: Easing.OutQuad
-    readonly property int elasticEasing: Easing.OutQuad
+    // ===== Animation Defaults (Fast, fluid & ultra-smooth 120Hz/60Hz curves) =====
+    readonly property int animInstant: 90
+    readonly property int animFast: 150
+    readonly property int animNormal: 210
+    readonly property int animSlow: 280
+    readonly property int animEasing: Easing.OutCubic
+    readonly property int elasticEasing: Easing.OutBack
 
     // ===== Material 3 Expressive & Bubble Tokens =====
     readonly property int bubbleRadiusSmall: scaled(12)

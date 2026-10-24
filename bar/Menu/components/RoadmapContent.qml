@@ -497,7 +497,7 @@ ColumnLayout {
                             : (tabMouse.containsMouse ? Theme.surfaceContainerHigh : Qt.rgba(0, 0, 0, 0.25))
             border.color: isActive ? Theme.accentColor : Theme.glassBorder
             border.width: 1
-            Behavior on color { ColorAnimation { duration: 120 } }
+            Behavior on color { ColorAnimation { duration: Theme.animInstant } }
 
             readonly property int chipDone: root.doneFor(slug)
             readonly property int chipTotal: root.totalFor(slug)
@@ -543,7 +543,7 @@ ColumnLayout {
                 radius: height / 2
                 color: tabItem.isActive ? Theme.base : Theme.accentColor
                 opacity: tabItem.isActive ? 0.65 : 0.85
-                Behavior on width { NumberAnimation { duration: 200 } }
+                Behavior on width { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
             }
             MouseArea {
                 id: tabMouse
@@ -763,7 +763,7 @@ ColumnLayout {
                                                       : Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.4)
 
                         opacity: nodeMouse.containsMouse && togglable ? 0.85 : 1.0
-                        Behavior on color { ColorAnimation { duration: 130 } }
+                        Behavior on color { ColorAnimation { duration: Theme.animInstant } }
 
                         Text {
                             anchors.fill: parent

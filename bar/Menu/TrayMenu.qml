@@ -93,10 +93,10 @@ PopupWindow {
             implicitWidth: currentItem ? currentItem.implicitWidth : Theme.scaled(220)
             implicitHeight: currentItem ? currentItem.implicitHeight : Theme.scaled(100)
 
-            pushEnter: Transition { NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 120 } }
-            pushExit: Transition { NumberAnimation { property: "opacity"; from: 1; to: 0; duration: 120 } }
-            popEnter: Transition { NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 120 } }
-            popExit: Transition { NumberAnimation { property: "opacity"; from: 1; to: 0; duration: 120 } }
+            pushEnter: Transition { NumberAnimation { property: "opacity"; from: 0; to: 1; duration: Theme.animFast; easing.type: Easing.OutCubic } }
+            pushExit: Transition { NumberAnimation { property: "opacity"; from: 1; to: 0; duration: Theme.animInstant; easing.type: Easing.InCubic } }
+            popEnter: Transition { NumberAnimation { property: "opacity"; from: 0; to: 1; duration: Theme.animFast; easing.type: Easing.OutCubic } }
+            popExit: Transition { NumberAnimation { property: "opacity"; from: 1; to: 0; duration: Theme.animInstant; easing.type: Easing.InCubic } }
         }
 
         Component {
@@ -168,6 +168,10 @@ PopupWindow {
                             Layout.preferredHeight: entry.isSeparator ? Theme.scaled(11) : Theme.scaled(34)
                             radius: Theme.scaled(10)
                             color: entry.isSeparator ? "transparent" : (itemMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : "transparent")
+                            scale: itemMouse.pressed ? 0.97 : (itemMouse.containsMouse ? 1.01 : 1.0)
+
+                            Behavior on color { ColorAnimation { duration: Theme.animInstant } }
+                            Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
 
                             Rectangle {
                                 anchors.centerIn: parent
