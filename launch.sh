@@ -11,6 +11,8 @@
 set -uo pipefail
 
 SHELL_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-1}"
 export ZENITH_ROOT="$SHELL_DIR"
 export QML_IMPORT_PATH="$SHELL_DIR"
 export QML2_IMPORT_PATH="$SHELL_DIR"
@@ -45,7 +47,13 @@ stop_shell() {
 
 start_shell() {
     echo "Starting Quickshell..."
-    (cd "$SHELL_DIR" && setsid quickshell -d -p "$SHELL_DIR" >/dev/null 2>&1 &)
+    (
+        cd "$SHELL_DIR"
+        export QSG_RHI_BACKEND=opengl
+        export MALLOC_ARENA_MAX=2
+        export MALLOC_TRIM_THRESHOLD_=131072
+        setsid quickshell -d -p "$SHELL_DIR" >/dev/null 2>&1 &
+    )
 }
 
 # Fastest first. Writing to the FIFO the shell already reads is a single

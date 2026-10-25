@@ -96,6 +96,13 @@ PanelWindow {
         card.scale = 0.94;
     }
 
+    Component.onCompleted: {
+        if (shown) {
+            visible = true;
+            showAnim.restart();
+        }
+    }
+
     onShownChanged: {
         if (shown) {
             hideAnim.stop();
