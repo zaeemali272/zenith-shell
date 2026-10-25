@@ -207,6 +207,7 @@ Scope {
             CenterState.close();
             QuickSettingsService.close();
             DynamicIslandService.close();
+            gc();
         }
     }
 
@@ -221,10 +222,23 @@ Scope {
         id: bar
     }
 
-    // Each menu binds its own `shown` to its service flag; MenuWindow owns
-    // `visible` so the exit animation can finish before the surface unmaps.
-    ControlCenter { id: controlCenterMenu }
-    QuickSettingsMenu { id: quickSettingsMenu }
+    // Lazy-load ControlCenter and QuickSettingsMenu on-demand to minimize idle RAM.
+    // Instantiated only when opened, and unloaded when dismiss animation completes.
+    Loader {
+        id: controlCenterLoader
+        active: CenterState.qsVisible || (item && item.visible)
+        sourceComponent: Component {
+            ControlCenter { id: controlCenterMenu }
+        }
+    }
+
+    Loader {
+        id: quickSettingsLoader
+        active: QuickSettingsService.qsVisible || (item && item.visible)
+        sourceComponent: Component {
+            QuickSettingsMenu { id: quickSettingsMenu }
+        }
+    }
 
     NotificationPopup {
         id: notificationPopup

@@ -84,7 +84,7 @@ def read_net(iface):
         pass
     return 0, 0
 
-INTERVAL = 1.5
+INTERVAL = 3.0
 last_t, last_i = read_cpu()
 iface = default_iface()
 last_rx, last_tx = read_net(iface)
