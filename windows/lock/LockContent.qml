@@ -716,42 +716,6 @@ RowLayout {
                     }
 
                     Item { Layout.fillWidth: true }
-
-                    Rectangle {
-                        implicitWidth: liveBadgeRow.implicitWidth + Theme.scaled(14)
-                        implicitHeight: Theme.scaled(20)
-                        radius: height / 2
-                        color: Qt.alpha(Colors.primary, 0.16)
-                        border.color: Qt.alpha(Colors.primary, 0.35)
-                        border.width: 1
-
-                        RowLayout {
-                            id: liveBadgeRow
-                            anchors.centerIn: parent
-                            spacing: Theme.scaled(5)
-
-                            Rectangle {
-                                implicitWidth: Theme.scaled(6)
-                                implicitHeight: Theme.scaled(6)
-                                radius: width / 2
-                                color: Theme.powerGreen
-
-                                SequentialAnimation on opacity {
-                                    loops: Animation.Infinite
-                                    NumberAnimation { from: 1.0; to: 0.3; duration: 800; easing.type: Easing.InOutQuad }
-                                    NumberAnimation { from: 0.3; to: 1.0; duration: 800; easing.type: Easing.InOutQuad }
-                                }
-                            }
-
-                            Text {
-                                text: "LIVE"
-                                color: Colors.primary
-                                font.pixelSize: Theme.scaled(9)
-                                font.weight: Font.Black
-                                font.letterSpacing: 0.5
-                            }
-                        }
-                    }
                 }
 
                 // 2x2 Grid of Metrics
@@ -796,21 +760,11 @@ RowLayout {
                                     Layout.fillWidth: true
                                     spacing: Theme.scaled(6)
 
-                                    Rectangle {
-                                        implicitWidth: Theme.scaled(22)
-                                        implicitHeight: Theme.scaled(22)
-                                        radius: Theme.scaled(6)
-                                        color: Qt.alpha(modelData.col, 0.16)
-                                        border.color: Qt.alpha(modelData.col, 0.3)
-                                        border.width: 1
-
-                                        Text {
-                                            anchors.centerIn: parent
-                                            text: modelData.icon
-                                            font.family: Theme.iconFont
-                                            font.pixelSize: Theme.scaled(12)
-                                            color: modelData.col
-                                        }
+                                    Text {
+                                        text: modelData.icon
+                                        font.family: Theme.iconFont
+                                        font.pixelSize: Theme.scaled(20)
+                                        color: modelData.col
                                     }
 
                                     Text {
