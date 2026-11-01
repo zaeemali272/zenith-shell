@@ -140,10 +140,13 @@ Item {
                 model: [300, 600, 900, 1500, 1800, 3600]
                 delegate: Rectangle {
                     required property int modelData
+                    required property int index
                     readonly property bool active: ProductivityService.duration === modelData
                     width: presetFlow.chipW; height: Theme.scaled(34)
                     radius: height / 2
-                    scale: presetMouse.pressed ? 0.94 : (presetMouse.containsMouse ? 1.05 : 1.0)
+                    color: active ? Theme.accentColor : (presetMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground)
+                    border.width: 0
+                    scale: presetMouse.pressed ? 0.94 : 1.0
                     Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
                     Behavior on color { ColorAnimation { duration: Theme.animInstant } }
 
@@ -152,7 +155,7 @@ Item {
                         text: modelData >= 3600 ? (modelData / 3600) + "h" : (modelData / 60) + "m"
                         font.pixelSize: Theme.scaled(13)
                         font.weight: Font.Bold
-                        color: parent.active ? Theme.base : Theme.subtext1
+                        color: parent.active ? Colors.on_primary : (presetMouse.containsMouse ? Theme.text : Theme.subtext0)
                     }
                     MouseArea {
                         id: presetMouse
@@ -176,7 +179,7 @@ Item {
             Rectangle {
                 width: Theme.scaled(72); height: Theme.scaled(72); radius: width / 2
                 color: ProductivityService.running ? Theme.powerRed : Theme.accentColor
-                scale: playMouse.pressed ? 0.92 : (playMouse.containsMouse ? 1.06 : 1.0)
+                scale: playMouse.pressed ? 0.92 : 1.0
                 Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Theme.elasticEasing; easing.overshoot: 1.15 } }
                 Behavior on color { ColorAnimation { duration: Theme.animInstant } }
 
@@ -187,8 +190,8 @@ Item {
                     anchors.horizontalCenterOffset: ProductivityService.running ? 0 : Theme.scaled(2)
                     text: ProductivityService.running ? "󰏤" : "󰐊"
                     font.family: Theme.iconFont
-                    font.pixelSize: Theme.scaled(30)
-                    color: Theme.base
+                    font.pixelSize: Theme.scaled(34)
+                    color: Colors.on_primary
                 }
                 MouseArea {
                     id: playMouse
@@ -205,13 +208,14 @@ Item {
 
             Rectangle {
                 width: Theme.scaled(46); height: Theme.scaled(46); radius: width / 2
-                color: resetMouse.containsMouse ? Theme.surfaceContainerHigh : Theme.surface1
+                color: resetMouse.containsMouse ? Theme.menuDarkHover : "transparent"
+                border.width: 0
                 Text {
                     anchors.centerIn: parent
                     text: "󰜉"
                     font.family: Theme.iconFont
-                    font.pixelSize: Theme.scaled(20)
-                    color: Theme.subtext1
+                    font.pixelSize: Theme.scaled(24)
+                    color: resetMouse.containsMouse ? Theme.text : Theme.subtext0
                 }
                 MouseArea {
                     id: resetMouse
@@ -231,7 +235,9 @@ Item {
         signal triggered()
 
         width: Theme.scaled(40); height: Theme.scaled(40); radius: width / 2
-        color: nudgeMouse.containsMouse ? Theme.surfaceContainerHigh : Theme.surface1
+        color: nudgeMouse.containsMouse ? Theme.menuBackground2Hover : "transparent"
+        border.color: Theme.glassBorder
+        border.width: 1
         visible: !ProductivityService.running
 
         Text {
@@ -239,7 +245,7 @@ Item {
             text: parent.label
             font.pixelSize: Theme.scaled(13)
             font.weight: Font.Black
-            color: Theme.subtext1
+            color: nudgeMouse.containsMouse ? Theme.text : Theme.subtext0
         }
         MouseArea {
             id: nudgeMouse

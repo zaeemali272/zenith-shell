@@ -222,22 +222,16 @@ Scope {
         id: bar
     }
 
-    // Lazy-load ControlCenter and QuickSettingsMenu on-demand to minimize idle RAM.
-    // Instantiated only when opened, and unloaded when dismiss animation completes.
-    Loader {
-        id: controlCenterLoader
-        active: CenterState.qsVisible || (item && item.visible)
-        sourceComponent: Component {
-            ControlCenter { id: controlCenterMenu }
-        }
+    // Each menu binds its own `shown` to its service flag; MenuWindow owns
+    // `visible` so the exit animation can finish before the surface unmaps.
+    // Kept resident in memory like DynamicIslandOverlay to guarantee instant,
+    // buttery-smooth 60/120Hz opening animations without on-demand surface allocation lag.
+    ControlCenter {
+        id: controlCenterMenu
     }
 
-    Loader {
-        id: quickSettingsLoader
-        active: QuickSettingsService.qsVisible || (item && item.visible)
-        sourceComponent: Component {
-            QuickSettingsMenu { id: quickSettingsMenu }
-        }
+    QuickSettingsMenu {
+        id: quickSettingsMenu
     }
 
     NotificationPopup {
@@ -255,6 +249,17 @@ Scope {
     DynamicIslandOverlay {
         id: dynamicIslandOverlay
         visible: DynamicIslandService.active
+    }
+
+    HyprlandFocusGrab {
+        id: dynamicIslandGrab
+        active: DynamicIslandService.active
+        windows: [bar, dynamicIslandOverlay]
+        onCleared: {
+            if (DynamicIslandService.active) {
+                DynamicIslandService.close();
+            }
+        }
     }
 
     Loader {

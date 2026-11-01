@@ -8,8 +8,8 @@ Rectangle {
     id: root
     Layout.fillWidth: true
     height: Theme.scaled(56)
-    radius: Theme.scaled(16)
-    color: Qt.rgba(0, 0, 0, 0.3)
+    radius: Theme.bubbleRadiusMedium
+    color: Theme.cardBackground
     border.color: Theme.glassBorder
     border.width: 1
     clip: true
@@ -77,21 +77,17 @@ Rectangle {
                 id: btn
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                radius: Theme.scaled(12)
+                radius: Theme.bubbleRadiusSmall
 
                 color: modelData.active
-                    ? Qt.rgba(modelData.color.r, modelData.color.g, modelData.color.b, 0.25)
-                    : (btnMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.1) : "transparent")
+                    ? Qt.rgba(modelData.color.r, modelData.color.g, modelData.color.b, 0.20)
+                    : (btnMouse.containsMouse ? Theme.cardBackgroundHover : "transparent")
 
-                border.color: modelData.active
-                    ? modelData.color
-                    : (btnMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.2) : "transparent")
-                border.width: 1
+                border.width: 0
 
-                scale: btnMouse.pressed ? 0.94 : (btnMouse.containsMouse ? 1.04 : 1.0)
+                scale: btnMouse.pressed ? 0.94 : 1.0
                 Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.animEasing } }
                 Behavior on color { ColorAnimation { duration: Theme.animFast } }
-                Behavior on border.color { ColorAnimation { duration: Theme.animFast } }
 
                 RowLayout {
                     anchors.centerIn: parent
@@ -100,7 +96,7 @@ Rectangle {
                     Text {
                         text: modelData.icon
                         font.family: Theme.iconFont
-                        font.pixelSize: Theme.scaled(15)
+                        font.pixelSize: Theme.scaled(20)
                         color: modelData.active ? modelData.color : (btnMouse.containsMouse ? Theme.text : Theme.subtext0)
                         Layout.alignment: Qt.AlignVCenter
                     }

@@ -23,11 +23,11 @@ ColumnLayout {
 
         Rectangle {
             width: Theme.scaled(38); height: Theme.scaled(38); radius: Theme.scaled(12)
-            color: Theme.surface0; border.color: Theme.surface1
+            color: "transparent"; border.width: 0
             Text {
                 anchors.centerIn: parent
                 text: root.icon; font.family: Theme.iconFont
-                font.pixelSize: Theme.scaled(18); color: root.sliderColor
+                font.pixelSize: Theme.scaled(24); color: root.sliderColor
             }
         }
 
@@ -80,7 +80,7 @@ ColumnLayout {
             border.width: Theme.scaled(3)
             
             // Interaction feedback
-            scale: control.pressed ? 1.15 : (control.hovered ? 1.05 : 1.0)
+            scale: control.pressed ? 1.08 : 1.0
             
             Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Theme.elasticEasing; easing.overshoot: 1.15 } }
             
@@ -100,8 +100,8 @@ ColumnLayout {
             width: control.availableWidth - control.handleWidth
             height: Theme.scaled(12) 
             radius: Theme.scaled(6)
-            color: Theme.surface0
-            border.color: Theme.surface1; border.width: 1
+            color: Qt.rgba(255, 255, 255, 0.08)
+            border.color: Theme.glassBorder; border.width: 1
 
             // The Progress Fill
             Rectangle {

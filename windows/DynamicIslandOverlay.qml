@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Io
@@ -119,12 +120,12 @@ PanelWindow {
     Item {
         id: mainCard
 
-        // Swallows clicks that land on the card but miss a control. Without it
-        // they fall through to the backdrop and close the launcher -- the exact
-        // bug the menus had, where clicking padding dismissed the window.
+        // Swallows clicks that land on the card padding but miss a control.
+        // With z: -1 it sits underneath child controls so it never blocks them.
         MouseArea {
             anchors.fill: parent
             acceptedButtons: Qt.AllButtons
+            z: -1
             onPressed: (mouse) => mouse.accepted = true
         }
 
@@ -132,29 +133,32 @@ PanelWindow {
         y: Shell.Theme.scaled(6)
         width: DynamicIslandService.activeMode === "launcher" ? Shell.Theme.scaled(480) : Shell.Theme.scaled(593)
         Behavior on width { NumberAnimation { duration: Shell.Theme.animFast; easing.type: Easing.OutCubic } }
-        height: cardColumn.implicitHeight
+        height: {
+            if (DynamicIslandService.activeMode === "launcher") return launcherResultsView.height;
+            if (DynamicIslandService.activeMode === "clipboard") return clipboardResultsView.height;
+            if (DynamicIslandService.activeMode === "emoji") return emojiResultsView.height;
+            return 0;
+        }
         opacity: 0
         scale: 0.95
 
         Column {
             id: cardColumn
             width: parent.width
+            height: parent.height
             spacing: Shell.Theme.scaled(8)
 
             // --- LAUNCHER RESULTS VIEW ---
             Rectangle {
+                id: launcherResultsView
                 width: parent.width
                 height: Math.max(54, DynamicIslandService.displayedApps.length * 52 + 12)
+                implicitHeight: height
                 radius: Shell.Theme.scaled(14)
                 visible: DynamicIslandService.activeMode === "launcher"
-                color: (Shell.Colors && Shell.Colors.surface_container_low) ? Shell.Colors.surface_container_low : "#221a15"
+                color: Shell.Theme.glassBackground
                 border.color: Shell.Theme.glassBorder
                 border.width: 1
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: (mouse) => mouse.accepted = true
-                }
 
                 ListView {
                     id: appListView
@@ -180,13 +184,13 @@ PanelWindow {
                         readonly property bool isSelected: index === DynamicIslandService.selectedIndex
 
                         color: isSelected
-                            ? ((Shell.Colors && Shell.Colors.primary_container) ? Shell.Colors.primary_container : "#6f3812")
-                            : (hoverArea.containsMouse ? Shell.Theme.surfaceContainerHigh : "transparent")
+                            ? Qt.rgba(Shell.Theme.accentColor.r, Shell.Theme.accentColor.g, Shell.Theme.accentColor.b, 0.20)
+                            : (hoverArea.containsMouse ? Shell.Theme.cardBackgroundHover : "transparent")
 
                         border.color: isSelected
-                            ? ((Shell.Colors && Shell.Colors.primary) ? Shell.Colors.primary : Shell.Theme.accentColor)
+                            ? Shell.Theme.accentColor
                             : "transparent"
-                        scale: hoverArea.pressed ? 0.98 : (hoverArea.containsMouse ? 1.01 : 1.0)
+                        scale: hoverArea.pressed ? 0.96 : 1.0
 
                         Behavior on scale { NumberAnimation { duration: Shell.Theme.animInstant; easing.type: Easing.OutCubic } }
                         Behavior on color { ColorAnimation { duration: Shell.Theme.animInstant } }
@@ -212,8 +216,8 @@ PanelWindow {
 
                             // Math, Web, Terminal, or App Icon
                             Item {
-                                width: 26
-                                height: 26
+                                width: 28
+                                height: 28
                                 anchors.verticalCenter: parent.verticalCenter
 
                                 Rectangle {
@@ -221,12 +225,13 @@ PanelWindow {
                                     radius: Shell.Theme.scaled(7)
                                     visible: !!(appDelegate.modelData && (appDelegate.modelData.isMath || appDelegate.modelData.isTerminal))
                                     color: (appDelegate.modelData && appDelegate.modelData.isMath) ? Qt.rgba(Shell.Theme.accentColor.r, Shell.Theme.accentColor.g, Shell.Theme.accentColor.b, 0.2) : Qt.rgba(255, 255, 255, 0.1)
+                                    border.width: 0
 
                                     Text {
                                         anchors.centerIn: parent
                                         text: (appDelegate.modelData && appDelegate.modelData.isMath) ? "󰪚" : "󰆍"
                                         font.family: Shell.Theme.iconFont
-                                        font.pixelSize: Shell.Theme.scaled(15)
+                                        font.pixelSize: Shell.Theme.scaled(20)
                                         color: (appDelegate.modelData && appDelegate.modelData.isMath) ? Shell.Theme.accentColor : Shell.Theme.text
                                     }
                                 }
@@ -281,18 +286,15 @@ PanelWindow {
 
             // --- CLIPBOARD RESULTS VIEW ---
             Rectangle {
+                id: clipboardResultsView
                 width: parent.width
                 height: Math.min(360, Math.max(54, DynamicIslandService.displayedClips.length * 48 + 12))
+                implicitHeight: height
                 radius: Shell.Theme.scaled(14)
                 visible: DynamicIslandService.activeMode === "clipboard"
-                color: (Shell.Colors && Shell.Colors.surface_container_low) ? Shell.Colors.surface_container_low : "#221a15"
+                color: Shell.Theme.glassBackground
                 border.color: Shell.Theme.glassBorder
                 border.width: 1
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: (mouse) => mouse.accepted = true
-                }
 
                 ListView {
                     id: clipListView
@@ -315,44 +317,57 @@ PanelWindow {
                         required property int index
 
                         readonly property bool isSelected: index === DynamicIslandService.selectedIndex
+                        readonly property bool isDeleteFocused: isSelected && (delMouse.containsMouse || DynamicIslandService.deleteFocused)
 
                         color: isSelected
-                            ? ((Shell.Colors && Shell.Colors.primary_container) ? Shell.Colors.primary_container : "#6f3812")
-                            : (clipHover.containsMouse ? Shell.Theme.surfaceContainerHigh : "transparent")
+                            ? Qt.rgba(Shell.Theme.accentColor.r, Shell.Theme.accentColor.g, Shell.Theme.accentColor.b, 0.20)
+                            : ((rowMouse.containsMouse || delMouse.containsMouse) ? Shell.Theme.cardBackgroundHover : "transparent")
 
                         border.color: isSelected
-                            ? ((Shell.Colors && Shell.Colors.primary) ? Shell.Colors.primary : Shell.Theme.accentColor)
+                            ? Shell.Theme.accentColor
                             : "transparent"
-                        scale: clipHover.pressed ? 0.98 : (clipHover.containsMouse ? 1.01 : 1.0)
+                        scale: (rowMouse.pressed || delMouse.pressed) ? 0.98 : 1.0
 
                         Behavior on scale { NumberAnimation { duration: Shell.Theme.animInstant; easing.type: Easing.OutCubic } }
                         Behavior on color { ColorAnimation { duration: Shell.Theme.animInstant } }
                         Behavior on border.color { ColorAnimation { duration: Shell.Theme.animInstant } }
 
+                        // 1. Primary row click & hover area (Copies clip to clipboard, stops before deleteBtn)
                         MouseArea {
-                            id: clipHover
-                            anchors.fill: parent
+                            id: rowMouse
+                            anchors.left: parent.left
+                            anchors.top: parent.top
+                            anchors.bottom: parent.bottom
+                            anchors.right: deleteBtn.left
+                            anchors.rightMargin: Shell.Theme.scaled(4)
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
 
-                            onEntered: DynamicIslandService.selectedIndex = index
-                            onClicked: DynamicIslandService.copyClipItem(clipDelegate.modelData)
+                            onEntered: {
+                                DynamicIslandService.selectedIndex = index;
+                                DynamicIslandService.deleteFocused = false;
+                            }
+                            onClicked: {
+                                let item = DynamicIslandService.displayedClips[index] || clipDelegate.modelData;
+                                DynamicIslandService.copyClipItem(item);
+                            }
                         }
 
-                        Row {
-                            anchors.verticalCenter: parent.verticalCenter
+                        // 2. Row Content: Icon & Preview Text
+                        RowLayout {
                             anchors.left: parent.left
                             anchors.leftMargin: 12
-                            anchors.right: parent.right
-                            anchors.rightMargin: 12
+                            anchors.right: deleteBtn.left
+                            anchors.rightMargin: Shell.Theme.scaled(8)
+                            anchors.verticalCenter: parent.verticalCenter
                             spacing: 10
 
                             Text {
                                 text: "󰅍"
                                 font.family: Shell.Theme.iconFont
-                                font.pixelSize: Shell.Theme.scaled(14)
+                                font.pixelSize: Shell.Theme.scaled(20)
                                 color: clipDelegate.isSelected ? Shell.Theme.accentColor : Shell.Theme.subtext0
-                                anchors.verticalCenter: parent.verticalCenter
+                                Layout.alignment: Qt.AlignVCenter
                             }
 
                             Text {
@@ -360,27 +375,65 @@ PanelWindow {
                                 color: clipDelegate.isSelected ? Shell.Theme.text : Shell.Theme.subtext0
                                 font.pixelSize: Shell.Theme.scaled(12)
                                 elide: Text.ElideRight
-                                width: parent.width - 60
-                                anchors.verticalCenter: parent.verticalCenter
+                                Layout.fillWidth: true
+                                Layout.alignment: Qt.AlignVCenter
                             }
+                        }
+
+                        // 3. Dedicated Delete Bin Button (Shows focus pill on hover/focus, dulls text icon)
+                        Rectangle {
+                            id: deleteBtn
+                            anchors.right: parent.right
+                            anchors.rightMargin: Shell.Theme.scaled(6)
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: Shell.Theme.scaled(32)
+                            height: Shell.Theme.scaled(32)
+                            radius: Shell.Theme.scaled(8)
+                            z: 20
+
+                            color: clipDelegate.isDeleteFocused
+                                ? Qt.rgba(255, 255, 255, 0.16)
+                                : "transparent"
+                            border.color: clipDelegate.isDeleteFocused
+                                ? Qt.rgba(255, 255, 255, 0.32)
+                                : "transparent"
+                            border.width: 1
+
+                            scale: delMouse.pressed ? 0.90 : (clipDelegate.isDeleteFocused ? 1.05 : 1.0)
+
+                            Behavior on scale { NumberAnimation { duration: Shell.Theme.animInstant; easing.type: Easing.OutCubic } }
+                            Behavior on color { ColorAnimation { duration: Shell.Theme.animInstant } }
+                            Behavior on border.color { ColorAnimation { duration: Shell.Theme.animInstant } }
 
                             Text {
+                                anchors.centerIn: parent
                                 text: "󰆴"
                                 font.family: Shell.Theme.iconFont
-                                font.pixelSize: Shell.Theme.scaled(13)
-                                color: delMouse.containsMouse ? Shell.Theme.powerRed : Shell.Theme.subtext0
-                                anchors.verticalCenter: parent.verticalCenter
+                                font.pixelSize: Shell.Theme.scaled(17)
+                                color: clipDelegate.isDeleteFocused ? Shell.Theme.subtext0 : (clipDelegate.isSelected ? Shell.Theme.text : Shell.Theme.subtext0)
+                                opacity: delMouse.pressed ? 0.6 : 1.0
+                                Behavior on color { ColorAnimation { duration: Shell.Theme.animInstant } }
+                                Behavior on opacity { NumberAnimation { duration: Shell.Theme.animInstant } }
+                            }
 
-                                MouseArea {
-                                    id: delMouse
-                                    anchors.fill: parent
-                                    anchors.margins: -4
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: (mouse) => {
-                                        mouse.accepted = true;
-                                        DynamicIslandService.deleteClipItem(clipDelegate.modelData);
-                                    }
+                            MouseArea {
+                                id: delMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                preventStealing: true
+
+                                onEntered: {
+                                    DynamicIslandService.selectedIndex = index;
+                                    DynamicIslandService.deleteFocused = true;
+                                }
+                                onExited: {
+                                    DynamicIslandService.deleteFocused = false;
+                                }
+                                onClicked: (mouse) => {
+                                    mouse.accepted = true;
+                                    let item = DynamicIslandService.displayedClips[index] || clipDelegate.modelData;
+                                    DynamicIslandService.deleteClipItem(item);
                                 }
                             }
                         }
@@ -398,18 +451,15 @@ PanelWindow {
 
             // --- EMOJI RESULTS VIEW ---
             Rectangle {
+                id: emojiResultsView
                 width: parent.width
                 height: 320
+                implicitHeight: height
                 radius: Shell.Theme.scaled(14)
                 visible: DynamicIslandService.activeMode === "emoji"
-                color: (Shell.Colors && Shell.Colors.surface_container_low) ? Shell.Colors.surface_container_low : "#221a15"
+                color: Shell.Theme.glassBackground
                 border.color: Shell.Theme.glassBorder
                 border.width: 1
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: (mouse) => mouse.accepted = true
-                }
 
                 Column {
                     id: emojiColumn
@@ -440,10 +490,9 @@ PanelWindow {
                                     radius: 12
                                     color: DynamicIslandService.selectedCategory === modelData
                                         ? Shell.Theme.accentColor
-                                        : (catMouse.containsMouse ? Shell.Theme.surfaceContainerHigh : "transparent")
-                                    border.color: Shell.Theme.glassBorder
-                                    border.width: 1
-                                    scale: catMouse.pressed ? 0.94 : (catMouse.containsMouse ? 1.04 : 1.0)
+                                        : (catMouse.containsMouse ? Shell.Theme.cardBackgroundHover : "transparent")
+                                    border.width: 0
+                                    scale: catMouse.pressed ? 0.94 : 1.0
 
                                     Behavior on scale { NumberAnimation { duration: Shell.Theme.animInstant; easing.type: Easing.OutCubic } }
                                     Behavior on color { ColorAnimation { duration: Shell.Theme.animInstant } }
@@ -500,10 +549,10 @@ PanelWindow {
 
                                 color: isSelected
                                     ? Shell.Theme.accentColor
-                                    : (eMouse.containsMouse ? Shell.Theme.surfaceContainerHigh : "transparent")
-                                scale: eMouse.pressed ? 0.90 : (eMouse.containsMouse ? 1.12 : 1.0)
+                                    : (eMouse.containsMouse ? Shell.Theme.cardBackgroundHover : "transparent")
+                                scale: eMouse.pressed ? 0.92 : 1.0
 
-                                Behavior on scale { NumberAnimation { duration: Shell.Theme.animInstant; easing.type: Theme.elasticEasing } }
+                                Behavior on scale { NumberAnimation { duration: Shell.Theme.animInstant; easing.type: Easing.OutCubic } }
                                 Behavior on color { ColorAnimation { duration: Shell.Theme.animInstant } }
 
                                 Text {

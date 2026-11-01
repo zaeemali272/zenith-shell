@@ -278,16 +278,16 @@ Rectangle {
                     Repeater {
                         model: tabsModel
                         delegate: Rectangle {
-                            width: Math.max(50, tabText.implicitWidth + 20); height: 28; radius: 14
-                            color: activeTabIndex === index ? Theme.mauve : "transparent"
-                            border.color: activeTabIndex === index ? "transparent" : Theme.surface2
+                            width: Math.max(50, tabText.implicitWidth + 20); height: 28; radius: Theme.bubbleRadiusPill
+                            color: activeTabIndex === index ? Theme.accentColor : "transparent"
+                            border.color: activeTabIndex === index ? Theme.accentColor : Theme.glassBorder
                             border.width: 1
                             
                             Text {
                                 id: tabText
                                 anchors.centerIn: parent
                                 text: model.name
-                                color: activeTabIndex === index ? Theme.base : Theme.surface2
+                                color: activeTabIndex === index ? Colors.on_primary : Theme.subtext0
                                 font.pixelSize: 11; font.weight: activeTabIndex === index ? Font.Bold : Font.Normal
                             }
                             MouseArea {
@@ -300,8 +300,8 @@ Rectangle {
             }
 
             Rectangle {
-                width: 28; height: 28; radius: 14; color: "transparent"; border.color: Theme.mauve; border.width: 1
-                Text { anchors.centerIn: parent; text: "󰐕"; font.family: Theme.iconFont; color: Theme.mauve; font.pixelSize: 12 }
+                width: 28; height: 28; radius: 14; color: "transparent"; border.color: Theme.accentColor; border.width: 1
+                Text { anchors.centerIn: parent; text: "󰐕"; font.family: Theme.iconFont; color: Theme.accentColor; font.pixelSize: 12 }
                 MouseArea { 
                     anchors.fill: parent
                     onClicked: { 
@@ -430,9 +430,9 @@ Rectangle {
             Layout.bottomMargin: Theme.scaled(8)
             visible: !TodoistService.hasToken
 
-            radius: Theme.scaled(12)
-            color: Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.10)
-            border.color: Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.35)
+            radius: Theme.bubbleRadiusMedium
+            color: Theme.menuBackground2
+            border.color: Theme.glassBorder
             border.width: 1
 
             Behavior on Layout.preferredHeight {
@@ -657,9 +657,10 @@ Rectangle {
 
                 Rectangle {
                     id: visualContent
-                    anchors.fill: parent; radius: 8; color: Theme.glassBackground
-                    border.color: (todoRoot.selectedIndex === index) ? Theme.accentColor : "transparent"
-                    border.width: (todoRoot.selectedIndex === index) ? 2 : 0
+                    anchors.fill: parent; radius: Theme.bubbleRadiusMedium
+                    color: (todoRoot.selectedIndex === index) ? Theme.cardBackgroundHover : Theme.cardBackground
+                    border.color: (todoRoot.selectedIndex === index) ? Theme.accentColor : Theme.glassBorder
+                    border.width: 1
                     y: 0
                     
                     ColumnLayout {
@@ -707,8 +708,8 @@ Rectangle {
                             }
 
                             Rectangle {
-                                width: 20; height: 20; radius: 4; color: model.completed ? Theme.blue : Theme.surface1
-                                Text { anchors.centerIn: parent; text: model.completed ? "✓" : ""; color: Theme.base; font.pixelSize: 12 }
+                                width: 22; height: 22; radius: 6; color: model.completed ? Theme.accentColor : Qt.rgba(255, 255, 255, 0.12); border.width: 0
+                                Text { anchors.centerIn: parent; text: model.completed ? "✓" : ""; color: Colors.on_primary; font.pixelSize: 14; font.bold: true }
                                 MouseArea {
                                     anchors.fill: parent
                                     onClicked: {
@@ -727,7 +728,7 @@ Rectangle {
                             }
 
                             Text { 
-                                text: "󰏫"; font.family: Theme.iconFont; color: Theme.blue
+                                text: "󰏫"; font.family: Theme.iconFont; color: Theme.accentColor; font.pixelSize: Theme.scaled(18)
                                 MouseArea { 
                                     anchors.fill: parent; 
                                     onClicked: { 
@@ -741,7 +742,7 @@ Rectangle {
                             }
                             
                             Text { 
-                                text: "󰆴"; font.family: Theme.iconFont; color: Theme.powerRed
+                                text: "󰆴"; font.family: Theme.iconFont; color: Theme.powerRed; font.pixelSize: Theme.scaled(18)
                                 MouseArea {
                                     anchors.fill: parent
                                     onClicked: {

@@ -45,8 +45,7 @@ Window {
             Rectangle {
                 Layout.fillHeight: true
                 Layout.preferredWidth: 240
-                color: Qt.rgba(0, 0, 0, 0.2)
-                radius: 24
+                color: "transparent"
                 
                 ColumnLayout {
                     anchors.fill: parent
@@ -77,8 +76,8 @@ Window {
                             Layout.fillWidth: true
                             height: 50
                             radius: 14
-                            color: view.currentIndex === index ? Shell.Theme.surface1 : (tabMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.08) : "transparent")
-                            scale: tabMouse.pressed ? 0.96 : (tabMouse.containsMouse ? 1.02 : 1.0)
+                            color: view.currentIndex === index ? Shell.Theme.accentColor : (tabMouse.containsMouse ? Shell.Theme.menuBackground2Hover : "transparent")
+                            scale: tabMouse.pressed ? 0.96 : 1.0
 
                             Behavior on color { ColorAnimation { duration: Shell.Theme.animInstant } }
                             Behavior on scale { NumberAnimation { duration: Shell.Theme.animInstant; easing.type: Easing.OutCubic } }
@@ -91,13 +90,13 @@ Window {
                                     text: modelData.icon
                                     font.family: Shell.Theme.iconFont
                                     font.pixelSize: 20
-                                    color: view.currentIndex === index ? Shell.Theme.blue : Shell.Theme.subtext1
+                                    color: view.currentIndex === index ? Shell.Colors.on_primary : (tabMouse.containsMouse ? Shell.Theme.text : Shell.Theme.subtext1)
                                 }
                                 Text {
                                     text: modelData.name
                                     font.pixelSize: 15
                                     font.weight: view.currentIndex === index ? Font.Bold : Font.Normal
-                                    color: view.currentIndex === index ? Shell.Theme.text : Shell.Theme.subtext1
+                                    color: view.currentIndex === index ? Shell.Colors.on_primary : (tabMouse.containsMouse ? Shell.Theme.text : Shell.Theme.subtext1)
                                 }
                             }
 
@@ -118,23 +117,31 @@ Window {
                         text: "Close"
                         Layout.fillWidth: true
                         flat: true
-                        scale: closeBtn.pressed ? 0.96 : (closeBtn.hovered ? 1.02 : 1.0)
+                        scale: closeBtn.pressed ? 0.96 : 1.0
                         Behavior on scale { NumberAnimation { duration: Shell.Theme.animInstant; easing.type: Easing.OutCubic } }
                         contentItem: Text {
                             text: parent.text
-                            color: parent.hovered ? "white" : Shell.Theme.subtext1
+                            color: parent.hovered ? Shell.Theme.powerRed : Shell.Theme.subtext1
                             font.bold: true
                             horizontalAlignment: Text.AlignHCenter
                         }
                         background: Rectangle {
                             radius: 12
-                            color: parent.hovered ? Shell.Theme.red : "transparent"
-                            border.color: parent.hovered ? "transparent" : Shell.Theme.surface1
+                            color: parent.hovered ? Shell.Theme.menuBackground2Hover : "transparent"
+                            border.color: Shell.Theme.glassBorder
+                            border.width: 1
                             Behavior on color { ColorAnimation { duration: Shell.Theme.animInstant } }
                         }
                         onClicked: win.visible = false
                     }
                 }
+            }
+
+            // Hairline separator
+            Rectangle {
+                Layout.fillHeight: true
+                width: 1
+                color: Shell.Theme.glassBorder
             }
             
             // --- MAIN CONTENT AREA ---

@@ -38,7 +38,7 @@ Item {
         border.color: Theme.glassBorder
         border.width: 1
         clip: true
-        scale: resMouse.pressed ? 0.95 : (resMouse.containsMouse ? 1.02 : 1.0)
+        scale: resMouse.pressed ? 0.95 : 1.0
 
         Behavior on width {
             NumberAnimation {
@@ -123,11 +123,12 @@ Item {
 
                 Text {
                     text: root.cpu + "%"
-                    color: Theme.fontColor
+                    color: resMouse.containsMouse ? Theme.subtext0 : Theme.fontColor
                     font.pixelSize: Theme.fontSize
                     font.family: "JetBrains Mono"
                     font.weight: Font.DemiBold
                     Layout.alignment: Qt.AlignVCenter
+                    Behavior on color { ColorAnimation { duration: Theme.animFast } }
                 }
             }
 
@@ -156,11 +157,12 @@ Item {
 
                 Text {
                     text: root.mem + "%"
-                    color: Theme.fontColor
+                    color: resMouse.containsMouse ? Theme.subtext0 : Theme.fontColor
                     font.pixelSize: Theme.fontSize
                     font.family: "JetBrains Mono"
                     font.weight: Font.DemiBold
                     Layout.alignment: Qt.AlignVCenter
+                    Behavior on color { ColorAnimation { duration: Theme.animFast } }
                 }
             }
 
@@ -189,11 +191,12 @@ Item {
 
                 Text {
                     text: root.temp + "°C"
-                    color: Theme.fontColor
+                    color: resMouse.containsMouse ? Theme.subtext0 : Theme.fontColor
                     font.pixelSize: Theme.fontSize
                     font.family: "JetBrains Mono"
                     font.weight: Font.DemiBold
                     Layout.alignment: Qt.AlignVCenter
+                    Behavior on color { ColorAnimation { duration: Theme.animFast } }
                 }
             }
         }

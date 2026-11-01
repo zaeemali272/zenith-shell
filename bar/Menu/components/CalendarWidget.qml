@@ -60,10 +60,10 @@ Rectangle {
 
     implicitHeight: Theme.scaled(340)
     implicitWidth: Theme.scaled(340)
-    color: Theme.menuBackground
+    color: "transparent"
     radius: Theme.scaled(16)
-    border.color: Theme.surface1
-    border.width: 1
+    border.color: Theme.glassBorder
+    border.width: 0
 
     ColumnLayout {
         anchors.fill: parent
@@ -94,40 +94,86 @@ Rectangle {
             
             // Events Toggle Button
             Button {
+                id: showAllBtn
                 flat: true
                 implicitWidth: Theme.scaled(72)
                 implicitHeight: Theme.scaled(30)
+                hoverEnabled: true
+                HoverHandler { cursorShape: Qt.PointingHandCursor }
+                scale: pressed ? 0.94 : 1.0
+                Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
                 onClicked: root.toggleEvents()
                 background: Rectangle {
-                    color: root.showAllEvents ? Theme.accentColor : Theme.surface0
+                    color: root.showAllEvents 
+                        ? Theme.accentColor 
+                        : (showAllBtn.hovered ? Theme.cardBackgroundHover : "transparent")
                     radius: Theme.scaled(8)
-                    border.color: Theme.glassBorder
-                    border.width: 1
+                    border.width: 0
+                    Behavior on color { ColorAnimation { duration: Theme.animFast } }
                 }
                 contentItem: Text {
                     text: root.showAllEvents ? "Calendar" : "Holidays"
-                    color: root.showAllEvents ? "#ffffff" : Theme.accentColor
+                    color: root.showAllEvents ? Colors.on_primary : (showAllBtn.hovered ? Theme.subtext1 : Theme.text)
                     font.pixelSize: Theme.scaled(11)
                     font.bold: true
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
+                    Behavior on color { ColorAnimation { duration: Theme.animFast } }
                 }
             }
 
             // Month Navigation Buttons
             RowLayout {
-                spacing: Theme.scaled(4)
+                spacing: Theme.scaled(6)
                 Button {
-                    flat: true; implicitWidth: Theme.scaled(30); implicitHeight: Theme.scaled(30)
+                    id: calPrevBtn
+                    flat: true; implicitWidth: Theme.scaled(32); implicitHeight: Theme.scaled(32)
+                    hoverEnabled: true
+                    HoverHandler { cursorShape: Qt.PointingHandCursor }
+                    scale: pressed ? 0.90 : 1.0
+                    Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
                     onClicked: root.prevMonth()
-                    background: Rectangle { color: parent.hovered ? Theme.surface1 : "transparent"; radius: Theme.scaled(6) }
-                    contentItem: Text { text: "󰁍"; color: Theme.subtext0; font.pixelSize: Theme.scaled(15); horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                    background: Rectangle { 
+                        color: calPrevBtn.pressed 
+                            ? Theme.accentColor 
+                            : (calPrevBtn.hovered ? Theme.cardBackgroundHover : "transparent")
+                        border.width: 0
+                        radius: Theme.scaled(6) 
+                        Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                    }
+                    contentItem: Text { 
+                        text: "󰁍"
+                        color: calPrevBtn.hovered ? Theme.subtext1 : Theme.subtext0
+                        font.pixelSize: Theme.scaled(20)
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter 
+                        Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                    }
                 }
                 Button {
-                    flat: true; implicitWidth: Theme.scaled(30); implicitHeight: Theme.scaled(30)
+                    id: calNextBtn
+                    flat: true; implicitWidth: Theme.scaled(32); implicitHeight: Theme.scaled(32)
+                    hoverEnabled: true
+                    HoverHandler { cursorShape: Qt.PointingHandCursor }
+                    scale: pressed ? 0.90 : 1.0
+                    Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
                     onClicked: root.nextMonth()
-                    background: Rectangle { color: parent.hovered ? Theme.surface1 : "transparent"; radius: Theme.scaled(6) }
-                    contentItem: Text { text: "󰁔"; color: Theme.subtext0; font.pixelSize: Theme.scaled(15); horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                    background: Rectangle { 
+                        color: calNextBtn.pressed 
+                            ? Theme.accentColor 
+                            : (calNextBtn.hovered ? Theme.cardBackgroundHover : "transparent")
+                        border.width: 0
+                        radius: Theme.scaled(6) 
+                        Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                    }
+                    contentItem: Text { 
+                        text: "󰁔"
+                        color: calNextBtn.hovered ? Theme.subtext1 : Theme.subtext0
+                        font.pixelSize: Theme.scaled(20)
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter 
+                        Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                    }
                 }
             }
         }
@@ -141,7 +187,7 @@ Rectangle {
             Rectangle {
                 visible: root.showAllEvents
                 anchors.fill: parent
-                color: Theme.menuBackground
+                color: "transparent"
 
                 ScrollView {
                     anchors.fill: parent
@@ -156,7 +202,7 @@ Rectangle {
                             width: ListView.view.width - Theme.scaled(8)
                             height: Theme.scaled(40)
                             radius: Theme.scaled(8)
-                            color: Theme.surface0
+                            color: Theme.menuBackground2Hover
                             border.color: Theme.glassBorder
                             border.width: 1
 
@@ -234,15 +280,13 @@ Rectangle {
                         Layout.fillHeight: true
                         radius: Theme.scaled(8)
 
-                        color: {
-                            if (!isCurrentMonth) return "transparent";
-                            if (hasEvent) return "transparent";
-                            if (isToday) return "transparent";
-                            return "transparent";
-                        }
+                        color: (!isCurrentMonth) ? "transparent" : (dayMouse.containsMouse ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.20) : "transparent")
+                        scale: dayMouse.pressed ? 0.94 : 1.0
+                        Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                        Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
 
                         border.color: {
-                            if (isSelected) return "#ffffff";
+                            if (isSelected) return Theme.accentColor;
                             if (isToday) return Theme.accentColor;
                             return "transparent";
                         }
@@ -255,15 +299,19 @@ Rectangle {
                             font.bold: dayCell.isToday || dayCell.isSelected || dayCell.hasEvent
                             color: {
                                 if (!dayCell.isCurrentMonth) return Theme.surface2;
-                                if (dayCell.hasEvent) return Theme.accentColor;
-                                if (dayCell.isToday) return "#ffffffff";
+                                if (dayCell.hasEvent) return dayMouse.containsMouse ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.70) : Theme.accentColor;
+                                if (dayCell.isToday) return dayMouse.containsMouse ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.70) : Theme.accentColor;
+                                if (dayMouse.containsMouse) return Theme.subtext1;
                                 return Theme.text;
                             }
+                            Behavior on color { ColorAnimation { duration: Theme.animFast } }
                         }
 
                         MouseArea { 
+                            id: dayMouse
                             anchors.fill: parent
                             hoverEnabled: true
+                            cursorShape: isCurrentMonth ? Qt.PointingHandCursor : Qt.ArrowCursor
                             onClicked: root.selectedDate = dayCell.dateValue
                         }
                     }
@@ -275,7 +323,7 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             implicitHeight: Theme.scaled(32)
-            color: Theme.surface0
+            color: "transparent"
             radius: Theme.scaled(8)
             visible: !root.showAllEvents
             border.color: Theme.glassBorder

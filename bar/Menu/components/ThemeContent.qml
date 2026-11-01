@@ -50,9 +50,8 @@ ColumnLayout {
             height: Theme.scaled(36)
             width: Theme.scaled(280)
             radius: height / 2
-            color: Qt.rgba(0, 0, 0, 0.4)
-            border.color: Theme.glassBorder
-            border.width: 1
+            color: Theme.cardBackground
+            border.width: 0
 
             RowLayout {
                 anchors.fill: parent
@@ -64,7 +63,7 @@ ColumnLayout {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     radius: height / 2
-                    color: ThemeService.themeMode === "dynamic" ? Theme.accentColor : "transparent"
+                    color: ThemeService.themeMode === "dynamic" ? Theme.accentColor : (dynMouse.containsMouse ? Theme.menuDarkHover : "transparent")
                     scale: dynMouse.pressed ? 0.95 : 1.0
 
                     Behavior on color { ColorAnimation { duration: Theme.animInstant } }
@@ -77,7 +76,7 @@ ColumnLayout {
                         Text {
                             text: "󰔎"
                             font.family: Theme.iconFont
-                            font.pixelSize: Theme.scaled(13)
+                            font.pixelSize: Theme.scaled(18)
                             color: ThemeService.themeMode === "dynamic" ? Colors.on_primary : Theme.text
                         }
                         Text {
@@ -103,7 +102,7 @@ ColumnLayout {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     radius: height / 2
-                    color: ThemeService.themeMode === "preset" ? Theme.accentColor : "transparent"
+                    color: ThemeService.themeMode === "preset" ? Theme.accentColor : (presetMouse.containsMouse ? Theme.menuDarkHover : "transparent")
                     scale: presetMouse.pressed ? 0.95 : 1.0
 
                     Behavior on color { ColorAnimation { duration: Theme.animInstant } }
@@ -116,7 +115,7 @@ ColumnLayout {
                         Text {
                             text: "󰏘"
                             font.family: Theme.iconFont
-                            font.pixelSize: Theme.scaled(13)
+                            font.pixelSize: Theme.scaled(18)
                             color: ThemeService.themeMode === "preset" ? Colors.on_primary : Theme.text
                         }
                         Text {
@@ -149,7 +148,7 @@ ColumnLayout {
             Layout.preferredWidth: Theme.scaled(180)
             height: Theme.scaled(36)
             radius: height / 2
-            color: Qt.rgba(0, 0, 0, 0.4)
+            color: "transparent"
             border.color: searchInput.activeFocus ? Theme.accentColor : Theme.glassBorder
             border.width: 1
 
@@ -193,7 +192,7 @@ ColumnLayout {
             height: Theme.scaled(36)
             width: activeRow.implicitWidth + Theme.scaled(20)
             radius: height / 2
-            color: Qt.rgba(0, 0, 0, 0.3)
+            color: "transparent"
             border.color: Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.4)
             border.width: 1
 
@@ -269,20 +268,20 @@ ColumnLayout {
                         id: card
                         Layout.fillWidth: true
                         height: Theme.scaled(80)
-                        radius: Theme.scaled(14)
+                        radius: Theme.bubbleRadiusMedium
 
                         readonly property bool isSelected: (ThemeService.themeMode === "preset" && ThemeService.currentPreset === modelData.id)
 
                         color: isSelected
-                            ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.18)
-                            : (cardMouse.containsMouse ? Theme.surfaceContainerHigh : Qt.rgba(0, 0, 0, 0.35))
+                            ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.20)
+                            : (cardMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground)
 
                         border.color: isSelected
                             ? Theme.accentColor
                             : (cardMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.25) : Theme.glassBorder)
-                        border.width: isSelected ? 2 : 1
+                        border.width: 1
 
-                        scale: cardMouse.pressed ? 0.97 : (cardMouse.containsMouse ? 1.02 : 1.0)
+                        scale: cardMouse.pressed ? 0.97 : 1.0
                         Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
                         Behavior on color { ColorAnimation { duration: Theme.animInstant } }
                         Behavior on border.color { ColorAnimation { duration: Theme.animInstant } }
@@ -296,10 +295,9 @@ ColumnLayout {
                             Rectangle {
                                 width: Theme.scaled(44)
                                 height: Theme.scaled(44)
-                                radius: Theme.scaled(10)
-                                color: modelData.background || "#1e1e2e"
-                                border.color: Qt.rgba(255, 255, 255, 0.15)
-                                border.width: 1
+                                radius: Theme.bubbleRadiusSmall
+                                color: "transparent"
+                                border.width: 0
 
                                 GridLayout {
                                     anchors.centerIn: parent
@@ -339,14 +337,13 @@ ColumnLayout {
                                 height: Theme.scaled(28)
                                 radius: 999
                                 color: card.isSelected ? Theme.accentColor : "transparent"
-                                border.color: card.isSelected ? "transparent" : Qt.rgba(255, 255, 255, 0.15)
-                                border.width: 1
+                                border.width: 0
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: card.isSelected ? "󰄬" : ""
                                     font.family: Theme.iconFont
-                                    font.pixelSize: Theme.scaled(14)
+                                    font.pixelSize: Theme.scaled(18)
                                     font.bold: true
                                     color: Colors.on_primary
                                 }
@@ -415,7 +412,7 @@ ColumnLayout {
                     height: Theme.scaled(38)
                     radius: height / 2
                     color: Theme.accentColor
-                    scale: reextractMouse.pressed ? 0.95 : (reextractMouse.containsMouse ? 1.04 : 1.0)
+                    scale: reextractMouse.pressed ? 0.95 : 1.0
                     Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
 
                     RowLayout {
@@ -451,10 +448,10 @@ ColumnLayout {
                     width: wallTabBtnText.implicitWidth + Theme.scaled(32)
                     height: Theme.scaled(38)
                     radius: height / 2
-                    color: Qt.rgba(255, 255, 255, 0.12)
+                    color: wallTabMouse.containsMouse ? Theme.menuBackground2Hover : Theme.menuBackground2
                     border.color: Theme.glassBorder
                     border.width: 1
-                    scale: wallTabMouse.pressed ? 0.95 : (wallTabMouse.containsMouse ? 1.04 : 1.0)
+                    scale: wallTabMouse.pressed ? 0.95 : 1.0
                     Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
 
                     RowLayout {
@@ -492,8 +489,8 @@ ColumnLayout {
     Rectangle {
         Layout.fillWidth: true
         height: Theme.scaled(58)
-        radius: Theme.scaled(16)
-        color: Qt.rgba(0, 0, 0, 0.3)
+        radius: Theme.bubbleRadiusMedium
+        color: Theme.menuBackground2
         border.color: Theme.glassBorder
         border.width: 1
 
@@ -540,7 +537,7 @@ ColumnLayout {
                         border.color: isSelected ? "#ffffff" : Theme.glassBorder
                         border.width: isSelected ? 2 : 1
 
-                        scale: accMouse.pressed ? 0.9 : (accMouse.containsMouse ? 1.2 : 1.0)
+                        scale: accMouse.pressed ? 0.92 : 1.0
                         Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Theme.elasticEasing; easing.overshoot: 1.15 } }
 
                         Text {

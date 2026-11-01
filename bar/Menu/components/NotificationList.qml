@@ -29,6 +29,7 @@ Flickable {
                 model: NotificationService.notifications
                 delegate: NotificationItem {
                     notification: NotificationService.notifications.get(index)
+                    itemIndex: index
                     Layout.fillWidth: true
                     enableAutoDismiss: false
                     animateOut: false

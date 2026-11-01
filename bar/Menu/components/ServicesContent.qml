@@ -34,8 +34,8 @@ Item {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: Theme.scaled(38)
-                radius: Theme.scaled(19)
-                color: Qt.rgba(0, 0, 0, 0.35)
+                radius: Theme.bubbleRadiusMedium
+                color: "transparent"
                 border.color: searchInput.activeFocus ? Theme.accentColor : Theme.glassBorder
                 border.width: 1
 
@@ -103,8 +103,8 @@ Item {
             Rectangle {
                 Layout.preferredHeight: Theme.scaled(38)
                 implicitWidth: statsRow.implicitWidth + Theme.scaled(20)
-                radius: Theme.scaled(19)
-                color: Qt.rgba(0, 0, 0, 0.35)
+                radius: Theme.bubbleRadiusMedium
+                color: "transparent"
                 border.color: Theme.glassBorder
                 border.width: 1
 
@@ -144,10 +144,10 @@ Item {
                 id: refreshBtn
                 width: Theme.scaled(38); height: Theme.scaled(38)
                 radius: 999
-                color: refreshMouse.pressed ? Qt.rgba(255, 255, 255, 0.1) : (refreshMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.16) : Qt.rgba(0, 0, 0, 0.35))
+                color: refreshMouse.containsMouse ? Theme.menuBackground2Hover : Theme.menuBackground2
                 border.color: Theme.glassBorder
                 border.width: 1
-                scale: refreshMouse.pressed ? 0.92 : (refreshMouse.containsMouse ? 1.06 : 1.0)
+                scale: refreshMouse.pressed ? 0.94 : 1.0
 
                 Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
                 Behavior on color { ColorAnimation { duration: Theme.animInstant } }
@@ -195,11 +195,10 @@ Item {
                     id: chipRect
                     implicitWidth: chipText.implicitWidth + Theme.scaled(16)
                     height: Theme.scaled(26)
-                    radius: Theme.scaled(13)
-                    color: root.activeCategoryFilter === modelData ? Theme.accentColor : (chipMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : Qt.rgba(0, 0, 0, 0.25))
-                    border.color: root.activeCategoryFilter === modelData ? Theme.accentColor : Theme.glassBorder
-                    border.width: 1
-                    scale: chipMouse.pressed ? 0.94 : (chipMouse.containsMouse ? 1.03 : 1.0)
+                    radius: Theme.bubbleRadiusPill
+                    color: root.activeCategoryFilter === modelData ? Theme.accentColor : (chipMouse.containsMouse ? Theme.cardBackgroundHover : "transparent")
+                    border.width: 0
+                    scale: chipMouse.pressed ? 0.94 : 1.0
 
                     Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
                     Behavior on color { ColorAnimation { duration: Theme.animInstant } }
@@ -230,8 +229,8 @@ Item {
         Rectangle {
             Layout.fillWidth: true
             height: Theme.scaled(24)
-            radius: Theme.scaled(6)
-            color: Qt.rgba(40/255, 40/255, 60/255, 0.6)
+            radius: Theme.bubbleRadiusSmall
+            color: Theme.menuBackground2
             border.color: Theme.glassBorder
             border.width: 1
             visible: SystemServicesService.lastActionMessage !== ""
@@ -284,10 +283,10 @@ Item {
                     id: serviceCard
                     width: servicesListView.width - Theme.scaled(6)
                     height: isExpanded ? (cardContentCol.implicitHeight + Theme.scaled(20)) : Theme.scaled(58)
-                    radius: Theme.scaled(14)
-                    color: Qt.rgba(0, 0, 0, isExpanded ? 0.45 : (itemHoverMouse.containsMouse ? 0.32 : 0.22))
+                    radius: Theme.bubbleRadiusMedium
+                    color: isExpanded ? Theme.cardBackgroundHover : (itemHoverMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground)
                     border.color: isExpanded ? Theme.accentColor : (modelData.isRunning ? Qt.rgba(166/255, 227/255, 161/255, 0.35) : Theme.glassBorder)
-                    border.width: isExpanded ? 1.5 : 1
+                    border.width: 1
                     clip: true
 
                     readonly property bool isExpanded: root.expandedServiceId === modelData.id
@@ -333,14 +332,13 @@ Item {
                                 width: Theme.scaled(38); height: Theme.scaled(38)
                                 radius: Theme.scaled(10)
                                 color: modelData.isRunning ? Qt.rgba(166/255, 227/255, 161/255, 0.15) : (modelData.activeState === "failed" ? Qt.rgba(243/255, 139/255, 168/255, 0.15) : Qt.rgba(255, 255, 255, 0.08))
-                                border.color: modelData.isRunning ? Qt.rgba(166/255, 227/255, 161/255, 0.35) : Theme.glassBorder
-                                border.width: 1
+                                border.width: 0
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: modelData.icon || "󰒍"
                                     font.family: Theme.iconFont
-                                    font.pixelSize: Theme.scaled(18)
+                                    font.pixelSize: Theme.scaled(24)
                                     color: modelData.isRunning ? "#a6e3a1" : (modelData.activeState === "failed" ? "#f38ba8" : "#ffffff")
                                 }
                             }
@@ -476,8 +474,7 @@ Item {
                                     height: Theme.scaled(28)
                                     radius: Theme.scaled(14)
                                     color: modelData.isRunning ? Qt.rgba(166/255, 227/255, 161/255, 0.18) : (modelData.activeState === "failed" ? Qt.rgba(243/255, 139/255, 168/255, 0.18) : Qt.rgba(255, 255, 255, 0.08))
-                                    border.color: modelData.isRunning ? "#a6e3a1" : (modelData.activeState === "failed" ? "#f38ba8" : Qt.rgba(255, 255, 255, 0.15))
-                                    border.width: 1
+                                    border.width: 0
 
                                     RowLayout {
                                         anchors.centerIn: parent
@@ -504,9 +501,8 @@ Item {
                                     height: Theme.scaled(28)
                                     radius: Theme.scaled(14)
                                     color: modelData.isEnabled ? Qt.rgba(137/255, 180/255, 250/255, 0.2) : Qt.rgba(255, 255, 255, 0.08)
-                                    border.color: modelData.isEnabled ? "#89b4fa" : Theme.glassBorder
-                                    border.width: 1
-                                    scale: enableMouse.pressed ? 0.93 : (enableMouse.containsMouse ? 1.04 : 1.0)
+                                    border.width: 0
+                                    scale: enableMouse.pressed ? 0.93 : 1.0
 
                                     Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
                                     Behavior on color { ColorAnimation { duration: Theme.animInstant } }
@@ -518,7 +514,7 @@ Item {
                                         Text {
                                             text: modelData.isEnabled ? "󰄲" : "󰄱"
                                             font.family: Theme.iconFont
-                                            font.pixelSize: Theme.scaled(12)
+                                            font.pixelSize: Theme.scaled(16)
                                             color: modelData.isEnabled ? "#89b4fa" : Theme.subtext0
                                         }
 
@@ -559,9 +555,8 @@ Item {
                                     height: Theme.scaled(28)
                                     radius: Theme.scaled(14)
                                     color: serviceCard.isBusy ? Qt.rgba(255, 255, 255, 0.1) : (modelData.isRunning ? (actionMouse.containsMouse ? Qt.rgba(243/255, 139/255, 168/255, 0.35) : Qt.rgba(243/255, 139/255, 168/255, 0.2)) : (actionMouse.containsMouse ? Qt.rgba(166/255, 227/255, 161/255, 0.35) : Qt.rgba(166/255, 227/255, 161/255, 0.2)))
-                                    border.color: modelData.isRunning ? "#f38ba8" : "#a6e3a1"
-                                    border.width: 1
-                                    scale: actionMouse.pressed ? 0.93 : (actionMouse.containsMouse ? 1.04 : 1.0)
+                                    border.width: 0
+                                    scale: actionMouse.pressed ? 0.93 : 1.0
 
                                     Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
                                     Behavior on color { ColorAnimation { duration: Theme.animInstant } }
@@ -573,7 +568,7 @@ Item {
                                         Text {
                                             text: serviceCard.isBusy ? "󰑐" : (modelData.isRunning ? "󰓛" : "󰐊")
                                             font.family: Theme.iconFont
-                                            font.pixelSize: Theme.scaled(12)
+                                            font.pixelSize: Theme.scaled(16)
                                             color: modelData.isRunning ? "#f38ba8" : "#a6e3a1"
 
                                             RotationAnimation on rotation {
@@ -624,10 +619,9 @@ Item {
                                     width: Theme.scaled(28); height: Theme.scaled(28)
                                     radius: 999
                                     visible: modelData.isRunning
-                                    color: restartMouse.pressed ? Qt.rgba(255, 255, 255, 0.2) : (restartMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : Qt.rgba(0, 0, 0, 0.2))
-                                    border.color: Theme.glassBorder
-                                    border.width: 1
-                                    scale: restartMouse.pressed ? 0.91 : (restartMouse.containsMouse ? 1.08 : 1.0)
+                                    color: restartMouse.containsMouse ? Theme.menuDarkHover : "transparent"
+                                    border.width: 0
+                                    scale: restartMouse.pressed ? 0.91 : 1.0
 
                                     Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
 
@@ -635,7 +629,7 @@ Item {
                                         anchors.centerIn: parent
                                         text: "󰑐"
                                         font.family: Theme.iconFont
-                                        font.pixelSize: Theme.scaled(13)
+                                        font.pixelSize: Theme.scaled(18)
                                         color: "#ffffff"
                                     }
 

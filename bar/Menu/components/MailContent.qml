@@ -336,8 +336,8 @@ ColumnLayout {
             width: Theme.scaled(56); height: Theme.scaled(24)
             radius: Theme.scaled(8)
             visible: MailService.hasConfig
-            color: refreshMouse.containsMouse ? Theme.surfaceContainerHigh : Qt.rgba(0, 0, 0, 0.3)
-            border.color: Theme.glassBorder; border.width: 1
+            color: refreshMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground
+            border.width: 0
             Text {
                 anchors.centerIn: parent
                 text: root.loading ? "..." : "refresh"
@@ -360,8 +360,8 @@ ColumnLayout {
             width: Theme.scaled(50); height: Theme.scaled(24)
             radius: Theme.scaled(8)
             visible: MailService.hasConfig
-            color: resetMouse.containsMouse ? Theme.powerRed : Qt.rgba(0, 0, 0, 0.3)
-            border.color: Theme.glassBorder; border.width: 1
+            color: resetMouse.containsMouse ? Theme.powerRed : Theme.cardBackground
+            border.width: 0
             Text {
                 anchors.centerIn: parent
                 text: "reset"
@@ -403,9 +403,8 @@ ColumnLayout {
                 height: Theme.scaled(22)
                 radius: height / 2
                 color: active ? Theme.accentColor
-                              : (accMouse.containsMouse ? Theme.surfaceContainerHigh : Qt.rgba(0, 0, 0, 0.3))
-                border.color: active ? Theme.accentColor : Theme.glassBorder
-                border.width: 1
+                              : (accMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground)
+                border.width: 0
                 Text {
                     id: accLabel
                     anchors.centerIn: parent
@@ -427,9 +426,8 @@ ColumnLayout {
         Rectangle {
             width: Theme.scaled(64); height: Theme.scaled(22)
             radius: height / 2
-            color: addMouse.containsMouse ? Theme.accentColor : Qt.rgba(0, 0, 0, 0.3)
-            border.color: Theme.glassBorder
-            border.width: 1
+            color: addMouse.containsMouse ? Theme.accentColor : Theme.cardBackground
+            border.width: 0
             Text {
                 anchors.centerIn: parent
                 text: root.addingAccount ? "cancel" : "+ account"
@@ -457,9 +455,9 @@ ColumnLayout {
         // Only when there is something to connect: no accounts at all, the
         // "+ account" button was pressed, or the server rejected what we have.
         visible: root.needsConfig || root.addingAccount || MailService.authFailed
-        radius: Theme.cardRadius
-        color: Qt.rgba(0, 0, 0, 0.35)
-        border.color: Theme.accentColor
+        radius: Theme.bubbleRadiusMedium
+        color: Theme.menuBackground2
+        border.color: Theme.glassBorder
         border.width: 1
 
         ColumnLayout {
@@ -499,7 +497,7 @@ ColumnLayout {
                     Layout.fillWidth: true
                     Layout.preferredHeight: Theme.scaled(28)
                     radius: Theme.scaled(8)
-                    color: Qt.rgba(0, 0, 0, 0.4)
+                    color: "transparent"
                     border.color: userInput.activeFocus ? Theme.accentColor : Theme.glassBorder
                     border.width: 1
                     TextInput {
@@ -524,7 +522,7 @@ ColumnLayout {
                     Layout.fillWidth: true
                     Layout.preferredHeight: Theme.scaled(28)
                     radius: Theme.scaled(8)
-                    color: Qt.rgba(0, 0, 0, 0.4)
+                    color: "transparent"
                     border.color: passInput.activeFocus ? Theme.accentColor : Theme.glassBorder
                     border.width: 1
                     TextInput {
@@ -606,8 +604,8 @@ ColumnLayout {
     Rectangle {
         Layout.fillWidth: true
         Layout.fillHeight: true
-        radius: Theme.cardRadius
-        color: Qt.rgba(0, 0, 0, 0.3)
+        radius: Theme.bubbleRadiusMedium
+        color: Theme.cardBackground
         border.color: Theme.glassBorder
         border.width: 1
         clip: true
@@ -634,7 +632,8 @@ ColumnLayout {
                 width: mailList.width
                 height: rowCol.implicitHeight + Theme.scaled(14)
                 radius: Theme.scaled(8)
-                color: rowMouse.containsMouse ? Theme.surfaceContainerHigh : "transparent"
+                color: rowMouse.containsMouse ? Theme.cardBackgroundHover : "transparent"
+                border.width: 0
 
                 Rectangle {
                     anchors.left: parent.left
@@ -724,8 +723,10 @@ ColumnLayout {
         Rectangle {
             anchors.fill: parent
             visible: root.openUid !== ""
-            color: Theme.menuBackground
-            radius: Theme.cardRadius
+            color: Theme.cardBackground
+            radius: Theme.bubbleRadiusMedium
+            border.color: Theme.glassBorder
+            border.width: 1
 
             ColumnLayout {
                 anchors.fill: parent
@@ -739,8 +740,8 @@ ColumnLayout {
                     Rectangle {
                         width: Theme.scaled(46); height: Theme.scaled(24)
                         radius: Theme.scaled(8)
-                        color: backMouse.containsMouse ? Theme.surfaceContainerHigh : Qt.rgba(0, 0, 0, 0.35)
-                        border.color: Theme.glassBorder; border.width: 1
+                        color: backMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground
+                        border.width: 0
                         Text {
                             anchors.centerIn: parent
                             text: "back"; color: Theme.subtext1
@@ -757,8 +758,8 @@ ColumnLayout {
                     Rectangle {
                         width: Theme.scaled(54); height: Theme.scaled(24)
                         radius: Theme.scaled(8)
-                        color: delReaderMouse.containsMouse ? Theme.powerRed : Qt.rgba(0, 0, 0, 0.35)
-                        border.color: Theme.glassBorder; border.width: 1
+                        color: delReaderMouse.containsMouse ? Theme.powerRed : Theme.cardBackground
+                        border.width: 0
                         Text {
                             anchors.centerIn: parent
                             text: "delete"
@@ -782,8 +783,8 @@ ColumnLayout {
                     Rectangle {
                         width: Theme.scaled(74); height: Theme.scaled(24)
                         radius: Theme.scaled(8)
-                        color: browserMouse.containsMouse ? Theme.accentColor : Qt.rgba(0, 0, 0, 0.35)
-                        border.color: Theme.glassBorder; border.width: 1
+                        color: browserMouse.containsMouse ? Theme.accentColor : Theme.cardBackground
+                        border.width: 0
                         Text {
                             anchors.centerIn: parent
                             text: "in browser"

@@ -169,8 +169,9 @@ Item {
                     width: Theme.scaled(110)
                     height: Theme.scaled(42)
                     radius: Theme.bubbleRadiusMedium
-                    color: speedMouse.containsMouse ? Theme.surfaceContainerHigh : Theme.surfaceContainerLow
+                    color: speedMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground
                     border.color: wifiSvc.isTesting ? Theme.powerYellow : Theme.glassBorder
+                    border.width: 1
                     clip: true
 
                     Behavior on color { ColorAnimation { duration: Theme.animFast } }
@@ -183,7 +184,7 @@ Item {
                             text: wifiSvc.isTesting ? "󱐋" : "󰓅"
                             font.family: Theme.iconFont
                             color: wifiSvc.isTesting ? Theme.powerYellow : Theme.accentColor
-                            font.pixelSize: Theme.scaled(16)
+                            font.pixelSize: Theme.scaled(20)
                         }
 
                         Text {
@@ -207,8 +208,8 @@ Item {
                     width: Theme.scaled(42)
                     height: Theme.scaled(42)
                     radius: Theme.bubbleRadiusPill
-                    color: refreshMouse.containsMouse ? Theme.surfaceContainerHigh : Theme.surfaceContainerLow
-                    border.color: Theme.glassBorder
+                    color: refreshMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground
+                    border.width: 0
                     clip: true
 
                     Behavior on color { ColorAnimation { duration: Theme.animFast } }
@@ -218,7 +219,7 @@ Item {
                         anchors.centerIn: parent
                         text: "󰑐"
                         font.family: Theme.iconFont
-                        font.pixelSize: Theme.scaled(18)
+                        font.pixelSize: Theme.scaled(22)
                         color: Theme.powerGreen
                     }
 
@@ -243,8 +244,8 @@ Item {
                     width: Theme.scaled(42)
                     height: Theme.scaled(42)
                     radius: Theme.bubbleRadiusPill
-                    color: root.isAirplane ? Qt.rgba(Theme.red.r, Theme.red.g, Theme.red.b, 0.25) : (airplaneMouse.containsMouse ? Theme.surfaceContainerHigh : Theme.surfaceContainerLow)
-                    border.color: root.isAirplane ? Theme.powerRed : Theme.glassBorder
+                    color: root.isAirplane ? Qt.rgba(Theme.red.r, Theme.red.g, Theme.red.b, 0.25) : (airplaneMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground)
+                    border.width: 0
                     clip: true
 
                     Behavior on color { ColorAnimation { duration: Theme.animFast } }
@@ -253,7 +254,7 @@ Item {
                         anchors.centerIn: parent
                         text: "󰀞"
                         font.family: Theme.iconFont
-                        font.pixelSize: Theme.scaled(20)
+                        font.pixelSize: Theme.scaled(24)
                         color: root.isAirplane ? Theme.powerRed : Theme.text
                     }
 
@@ -367,10 +368,10 @@ Item {
                 Rectangle {
                     id: backgroundRect
                     anchors.fill: parent
-                    color: isConnected ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.12) : ((delegateMouse.containsMouse || root.selectedIndex === index) ? Theme.surfaceContainerHigh : Theme.surfaceContainerLow)
+                    color: isConnected ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.18) : ((delegateMouse.containsMouse || root.selectedIndex === index) ? Theme.cardBackgroundHover : Theme.cardBackground)
                     radius: Theme.bubbleRadiusMedium
                     border.color: isConnected ? Theme.powerGreen : ((selectedSsid === modelData.ssid || root.selectedIndex === index) ? Theme.accentColor : Theme.glassBorder)
-                    border.width: (selectedSsid === modelData.ssid || root.selectedIndex === index || isConnected) ? 2 : 1
+                    border.width: 1
                     clip: true
 
                     Behavior on color { ColorAnimation { duration: Theme.animFast } }
@@ -400,13 +401,14 @@ Item {
                                 width: Theme.scaled(38)
                                 height: Theme.scaled(38)
                                 radius: Theme.bubbleRadiusSmall
-                                color: Qt.rgba(1, 1, 1, 0.06)
+                                color: "transparent"
+                                border.width: 0
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: isConnected ? "󰤨" : (modelData.signal >= 4 ? "󰤨" : (modelData.signal >= 3 ? "󰤥" : (modelData.signal >= 2 ? "󰤢" : (modelData.signal >= 1 ? "󰤟" : "󰤯"))))
                                     font.family: Theme.iconFont
-                                    font.pixelSize: Theme.scaled(18)
+                                    font.pixelSize: Theme.scaled(22)
                                     color: isConnected ? Theme.powerGreen : Theme.text
                                 }
                             }
@@ -440,14 +442,13 @@ Item {
                                     height: Theme.scaled(34)
                                     radius: Theme.bubbleRadiusSmall
                                     color: Qt.rgba(Theme.red.r, Theme.red.g, Theme.red.b, 0.15)
-                                    border.color: Qt.rgba(Theme.red.r, Theme.red.g, Theme.red.b, 0.4)
-                                    border.width: 1
+                                    border.width: 0
 
                                     Text {
                                         anchors.centerIn: parent
                                         text: "󰆴"
                                         font.family: Theme.iconFont
-                                        font.pixelSize: Theme.scaled(14)
+                                        font.pixelSize: Theme.scaled(18)
                                         color: Theme.powerRed
                                     }
 
@@ -520,7 +521,7 @@ Item {
                                 Rectangle {
                                     Layout.fillWidth: true
                                     height: Theme.scaled(38)
-                                    color: Qt.rgba(0, 0, 0, 0.25)
+                                    color: "transparent"
                                     radius: Theme.bubbleRadiusSmall
                                     border.color: lastFailedSsid === modelData.ssid ? Theme.powerRed : (passInput.activeFocus ? Theme.accentColor : Theme.glassBorder)
                                     border.width: 1
@@ -558,7 +559,9 @@ Item {
                                     width: Theme.scaled(38)
                                     height: Theme.scaled(38)
                                     radius: Theme.bubbleRadiusSmall
-                                    color: Qt.rgba(1, 1, 1, 0.08)
+                                    color: "transparent"
+                                    border.color: Theme.glassBorder
+                                    border.width: 1
 
                                     Text {
                                         anchors.centerIn: parent
