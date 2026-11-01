@@ -101,7 +101,7 @@ ColumnLayout {
                 // array makes the array itself a palette binding, so a recolour
                 // destroys and rebuilds every delegate. Resolved per delegate below.
                 model: [
-                    { icon: "󰌾", label: "LOCK",     cmd: "hyprlock --immediate-render --no-fade-in" },
+                    { icon: "󰌾", label: "LOCK",     cmd: "zenith lock" },
                     { icon: "󰒲", label: "BIOS",     cmd: "systemctl reboot --firmware-setup" },
                     { icon: "󰗼", label: "LOGOUT",   cmd: "hyprctl dispatch exit" },
                     { icon: "󰤄", label: "SUSPEND",  cmd: "systemctl suspend" },
@@ -138,7 +138,14 @@ ColumnLayout {
                         id: m
                         anchors.fill: parent; hoverEnabled: true
                         onEntered: root.selectedIndex = index
-                        onClicked: { powerProc.command = ["sh", "-c", modelData.cmd]; powerProc.running = true; }
+                        onClicked: {
+                            if (modelData.label === "LOCK") {
+                                LockService.lock();
+                            } else {
+                                powerProc.command = ["sh", "-c", modelData.cmd];
+                                powerProc.running = true;
+                            }
+                        }
                     }
 
                     RowLayout {

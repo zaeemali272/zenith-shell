@@ -33,7 +33,7 @@ PanelWindow {
     implicitHeight: Theme.barHeight
     implicitWidth: screen ? screen.width : Theme.screenWidth
     color: "transparent"
-    visible: !HyprlandService.isFullscreen
+    visible: !HyprlandService.isFullscreen && !LockService.locked
 
     Rectangle {
         id: barVisual
