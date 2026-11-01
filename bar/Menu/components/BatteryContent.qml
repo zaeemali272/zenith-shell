@@ -38,8 +38,8 @@ ColumnLayout {
     Rectangle {
         Layout.fillWidth: true
         height: Theme.scaled(140)
-        color: Qt.rgba(0,0,0,0.2)
-        radius: Theme.scaled(24)
+        color: Theme.cardBackground
+        radius: Theme.bubbleRadiusMedium
         border.color: Theme.glassBorder
         border.width: 1
 
@@ -50,13 +50,14 @@ ColumnLayout {
 
             Rectangle {
                 width: Theme.scaled(80); height: Theme.scaled(80); radius: 40
-                color: Qt.rgba(1,1,1,0.05)
+                color: "transparent"
+                border.width: 0
                 Text {
                     anchors.centerIn: parent
                     text: BatteryService.acOnline ? "󱐋" : "󰁹"
                     font.family: Theme.iconFont
-                    font.pixelSize: Theme.scaled(32)
-                    color: BatteryService.acOnline ? Theme.powerGreen : Theme.blue
+                    font.pixelSize: Theme.scaled(38)
+                    color: BatteryService.acOnline ? Theme.powerGreen : Theme.accentColor
                 }
             }
 
@@ -67,14 +68,15 @@ ColumnLayout {
                     Text { text: BatteryService.percentage + "%"; font.pixelSize: Theme.scaled(38); font.weight: Font.Black; color: Theme.text }
                     Rectangle {
                         height: 22; width: pillText.implicitWidth + 30; radius: 11
-                        color: BatteryService.acOnline ? Theme.powerGreen : Theme.surface1
+                        color: BatteryService.acOnline ? Theme.powerGreen : Theme.menuDarkHover
+                        border.width: 0
                         Text { id: pillText; anchors.centerIn: parent; text: BatteryService.acOnline ? "PLUGGED" : "DISCHARGING"; color: BatteryService.acOnline ? Colors.background : Theme.text; font.weight: Font.Black; font.pixelSize: 9 }
                     }
                 }
-                Text { text: (root.isLimitActive ? "Conservative" : BatteryService.status).toUpperCase(); font.pixelSize: 10; font.weight: Font.Black; color: Theme.subtext1 }
+                Text { text: (root.isLimitActive ? "Conservative" : BatteryService.status).toUpperCase(); font.pixelSize: 10; font.weight: Font.Black; color: Theme.subtext0 }
                 
                 Rectangle {
-                    Layout.fillWidth: true; Layout.topMargin: 10; height: 8; radius: 4; color: Qt.rgba(1,1,1,0.1)
+                    Layout.fillWidth: true; Layout.topMargin: 10; height: 8; radius: 4; color: Qt.rgba(1,1,1,0.08)
                     Rectangle {
                         width: parent.width * (BatteryService.percentage / 100); height: parent.height; radius: 4
                         color: BatteryService.acOnline ? Theme.powerGreen : (BatteryService.percentage <= 20 ? Theme.red : Theme.accentColor)
@@ -89,17 +91,17 @@ ColumnLayout {
     RowLayout {
         Layout.fillWidth: true; spacing: 15
         StatCard { label: "CYCLES"; value: BatteryService.cycleCount; icon: "󱂇"; accent: Theme.mauve }
-        StatCard { label: "REMAINING"; value: root.isLimitActive ? "N/A" : (BatteryService.timeRemaining || "..."); icon: "󰥔"; accent: Theme.blue }
+        StatCard { label: "REMAINING"; value: root.isLimitActive ? "N/A" : (BatteryService.timeRemaining || "..."); icon: "󰥔"; accent: Theme.accentColor }
     }
 
     component StatCard: Rectangle {
         property string label; property var value; property string icon; property color accent
-        Layout.fillWidth: true; height: 90; color: Qt.rgba(1,1,1,0.03); radius: 20; border.color: Theme.glassBorder
+        Layout.fillWidth: true; height: 90; color: Theme.cardBackground; radius: Theme.bubbleRadiusMedium; border.color: Theme.glassBorder; border.width: 1
         ColumnLayout {
             anchors.centerIn: parent; spacing: 5
-            Text { text: icon; font.family: Theme.iconFont; font.pixelSize: 24; color: accent; Layout.alignment: Qt.AlignHCenter }
+            Text { text: icon; font.family: Theme.iconFont; font.pixelSize: 28; color: accent; Layout.alignment: Qt.AlignHCenter }
             Text { text: value; color: Theme.text; font.weight: Font.Black; font.pixelSize: 14; Layout.alignment: Qt.AlignHCenter }
-            Text { text: label; color: Theme.subtext1; font.pixelSize: 8; font.weight: Font.Black; Layout.alignment: Qt.AlignHCenter }
+            Text { text: label; color: Theme.subtext0; font.pixelSize: 8; font.weight: Font.Black; Layout.alignment: Qt.AlignHCenter }
         }
     }
 
@@ -107,9 +109,10 @@ ColumnLayout {
     Rectangle {
         Layout.fillWidth: true
         Layout.preferredHeight: Theme.scaled(60) 
-        color: Theme.surface0
-        radius: Theme.scaled(18)
-        border.color: Theme.surface1
+        color: Theme.cardBackground
+        radius: Theme.bubbleRadiusMedium
+        border.color: Theme.glassBorder
+        border.width: 1
 
         RowLayout {
             anchors.fill: parent

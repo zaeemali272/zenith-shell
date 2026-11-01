@@ -49,7 +49,7 @@ Item {
         radius: height / 2
         color: Theme.pillColor
         border.color: Theme.glassBorder
-        scale: netMouse.pressed ? 0.95 : (netMouse.containsMouse ? 1.02 : 1.0)
+        scale: netMouse.pressed ? 0.95 : 1.0
 
         Behavior on width { NumberAnimation { duration: Theme.animNormal; easing.type: Easing.OutCubic } }
         Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
@@ -79,8 +79,9 @@ Item {
                 text: airplaneMode ? "󰀞" : (!online ? "󰤮" : (showUpload ? Theme.netUpIcon : Theme.netDownIcon))
                 font.family: Theme.iconFont
                 font.pixelSize: Theme.iconSize
-                color: airplaneMode ? Theme.powerRed : (!wifiConnected ? Theme.powerRed : Theme.accentColor)
+                color: airplaneMode ? Theme.powerRed : (!wifiConnected ? Theme.powerRed : (netMouse.containsMouse ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.65) : Theme.accentColor))
                 Layout.alignment: Qt.AlignVCenter
+                Behavior on color { ColorAnimation { duration: Theme.animFast } }
             }
 
             Text {
@@ -88,8 +89,9 @@ Item {
                 font.pixelSize: Theme.fontSize
                 font.family: "JetBrains Mono"
                 font.weight: (airplaneMode || !wifiConnected) ? Font.Bold : Font.DemiBold
-                color: airplaneMode ? Theme.powerRed : (!wifiConnected ? Theme.powerRed : Theme.fontColor)
+                color: airplaneMode ? Theme.powerRed : (!wifiConnected ? Theme.powerRed : (netMouse.containsMouse ? Theme.subtext0 : Theme.fontColor))
                 Layout.alignment: Qt.AlignVCenter
+                Behavior on color { ColorAnimation { duration: Theme.animFast } }
             }
         }
     }

@@ -124,12 +124,12 @@ ColumnLayout {
                     
                     property bool isSelected: index === root.selectedIndex
                     
-                    color: isSelected ? Qt.rgba(1,1,1,0.1) : (m.containsMouse ? Qt.rgba(1,1,1,0.05) : Qt.rgba(0,0,0,0.2))
-                    radius: Theme.scaled(20)
+                    color: isSelected ? Qt.rgba(powerBtn.accent.r, powerBtn.accent.g, powerBtn.accent.b, 0.20) : (m.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground)
+                    radius: Theme.bubbleRadiusMedium
                     border.color: isSelected ? powerBtn.accent : (m.containsMouse ? powerBtn.accent : Theme.glassBorder)
                     border.width: 1
                     
-                    scale: m.pressed ? 0.92 : (isSelected || m.containsMouse ? 1.00 : 0.95)
+                    scale: m.pressed ? 0.94 : 1.0
                     Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
                     Behavior on color { ColorAnimation { duration: Theme.animInstant } }
                     Behavior on border.color { ColorAnimation { duration: Theme.animInstant } }
@@ -144,10 +144,10 @@ ColumnLayout {
                     RowLayout {
                         anchors.centerIn: parent; spacing: 15
                         Rectangle {
-                            width: 44; height: 44; radius: 12; color: Qt.rgba(powerBtn.accent.r, powerBtn.accent.g, powerBtn.accent.b, 0.1)
-                            Text { anchors.centerIn: parent; text: modelData.icon; font.family: Theme.iconFont; font.pixelSize: 22; color: powerBtn.accent }
+                            width: 44; height: 44; radius: 12; color: "transparent"; border.width: 0
+                            Text { anchors.centerIn: parent; text: modelData.icon; font.family: Theme.iconFont; font.pixelSize: 28; color: powerBtn.accent }
                         }
-                        Text { text: modelData.label; font.pixelSize: 11; font.weight: Font.Black; color: Theme.text; opacity: 0.8 }
+                        Text { text: modelData.label; font.pixelSize: 11; font.weight: Font.Black; color: m.containsMouse ? Theme.text : Theme.subtext0 }
                     }
                 }
             }

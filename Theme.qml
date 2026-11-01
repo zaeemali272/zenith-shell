@@ -34,9 +34,25 @@ QtObject {
 
     // ===== Glassmorphism & Effects =====
     readonly property real menuOpacity: AppearanceSettings.menuOpacity
-    readonly property color glassBackground: Qt.alpha(Colors.background, menuOpacity)
-    readonly property color glassBorder: Qt.rgba(1, 1, 1, 0.15)
+    readonly property color glassBackground: Qt.alpha(Colors.surface_container_lowest, Math.max(0.88, menuOpacity))
+    readonly property color glassBorder: Qt.rgba(255, 255, 255, 0.08)
     readonly property real glassBlur: AppearanceSettings.glassBlur
+
+    // ===== Production-Grade Consistent Dark Theme Tokens =====
+    // Unified, minimal card background (clean, dark, consistent elevation)
+    readonly property color cardBackground: Qt.rgba(255, 255, 255, 0.035)
+    readonly property color cardBackgroundHover: Qt.rgba(255, 255, 255, 0.07)
+    readonly property color cardBorder: Qt.rgba(255, 255, 255, 0.06)
+    readonly property color itemHover: Qt.rgba(255, 255, 255, 0.06)
+    readonly property color itemResting: "transparent"
+
+    // Aliases ensuring unified consistency across all shell menus & subcomponents
+    readonly property color menuDark1: cardBackground
+    readonly property color menuDark2: cardBackground
+    readonly property color menuDarkHover: cardBackgroundHover
+    readonly property color menuBackground1: cardBackground
+    readonly property color menuBackground2: cardBackground
+    readonly property color menuBackground2Hover: cardBackgroundHover
     
     // ===== Animation Defaults (Fast, fluid & ultra-smooth 120Hz/60Hz curves) =====
     readonly property int animInstant: 90
@@ -70,6 +86,7 @@ QtObject {
     readonly property color overlay2: Colors.outline
     readonly property color subtext0: Colors.on_surface_variant
     readonly property color subtext1: Colors.on_surface_variant
+    readonly property color subtext2: Qt.rgba(Colors.on_surface_variant.r, Colors.on_surface_variant.g, Colors.on_surface_variant.b, 0.65)
     readonly property color text: Colors.on_background
     readonly property color lavender: Colors.secondary
     readonly property color blue: Colors.primary

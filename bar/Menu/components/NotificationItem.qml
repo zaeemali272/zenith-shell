@@ -13,6 +13,7 @@ Rectangle {
     property var notification: null
     property bool enableAutoDismiss: true
     property bool animateHeight: true
+    property int itemIndex: 0
     
     // Stability: Debounced hovered state
     property bool realHovered: false
@@ -28,10 +29,14 @@ Rectangle {
     }
 
     // --- ZENITH THEMEING ---
-    color: Theme.glassBackground
-    radius: Theme.scaled(20)
-    border.color: Theme.glassBorder
-    border.width: 2
+    color: enableAutoDismiss 
+        ? Theme.glassBackground 
+        : (mainMouseArea.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground)
+    radius: Theme.scaled(14)
+    border.color: enableAutoDismiss 
+        ? Theme.glassBorder 
+        : (mainMouseArea.containsMouse ? Theme.glassBorder : Theme.cardBorder)
+    border.width: 1
     clip: true
 
     implicitHeight: layout.implicitHeight + Theme.scaled(24)
@@ -165,17 +170,16 @@ Rectangle {
             Layout.preferredHeight: Theme.scaled(50)
             Layout.alignment: Qt.AlignVCenter 
             
-            color: Theme.mantle
+            color: "transparent"
             radius: Theme.scaled(12)
-            border.color: Theme.surface1
-            border.width: 1
+            border.width: 0
 
             Image {
                 id: iconImg
                 anchors.centerIn: parent
                 
-                width: Theme.scaled(32)
-                height: Theme.scaled(32)
+                width: Theme.scaled(36)
+                height: Theme.scaled(36)
                 
                 fillMode: Image.PreserveAspectFit
                 asynchronous: true
@@ -203,7 +207,7 @@ Rectangle {
                 anchors.centerIn: parent
                 visible: root.showFallbackLetter
                 text: (notification && notification.appName && notification.appName !== "") ? notification.appName.charAt(0).toUpperCase() : "!"
-                font.pixelSize: Theme.scaled(20)
+                font.pixelSize: Theme.scaled(24)
                 font.bold: true
                 color: Theme.accentColor
             }
@@ -289,9 +293,9 @@ Rectangle {
         Rectangle {
             anchors.fill: parent
             radius: Theme.scaled(8)
-            color: dismissMouse.containsMouse ? Theme.surface0 : "transparent"
-            border.color: dismissMouse.containsMouse ? Theme.surface1 : "transparent"
-            scale: dismissMouse.pressed ? 0.90 : (dismissMouse.containsMouse ? 1.10 : 1.0)
+            color: dismissMouse.containsMouse ? Theme.menuDarkHover : "transparent"
+            border.width: 0
+            scale: dismissMouse.pressed ? 0.92 : 1.0
             Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
             Behavior on color { ColorAnimation { duration: Theme.animInstant } }
             
@@ -299,7 +303,7 @@ Rectangle {
                 anchors.centerIn: parent
                 text: "󰅖"
                 color: dismissMouse.containsMouse ? Theme.powerRed : Theme.subtext0
-                font.pixelSize: Theme.scaled(16)
+                font.pixelSize: Theme.scaled(20)
             }
         }
 

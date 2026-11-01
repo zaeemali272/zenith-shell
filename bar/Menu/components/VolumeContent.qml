@@ -51,7 +51,7 @@ ColumnLayout {
             implicitHeight: targetHeight
             Layout.preferredHeight: targetHeight
             height: targetHeight
-            color: Theme.surfaceContainerLow
+            color: Theme.cardBackground
             radius: Theme.bubbleRadiusLarge
             border.color: Theme.glassBorder
             border.width: 1
@@ -83,8 +83,9 @@ ColumnLayout {
                         Layout.fillWidth: true
                         height: Theme.scaled(38)
                         radius: Theme.bubbleRadiusSmall
-                        color: outputCard.dropdownOpen ? Theme.surfaceContainerHighest : Theme.surfaceContainerHigh
+                        color: outputCard.dropdownOpen ? Theme.menuDarkHover : "transparent"
                         border.color: Theme.glassBorder
+                        border.width: 1
 
                         RowLayout {
                             anchors.fill: parent
@@ -94,7 +95,7 @@ ColumnLayout {
                             Text {
                                 text: "󰓃"
                                 font.family: Theme.iconFont
-                                font.pixelSize: Theme.scaled(14)
+                                font.pixelSize: Theme.scaled(20)
                                 color: Theme.accentColor
                             }
 
@@ -115,7 +116,7 @@ ColumnLayout {
                             Text {
                                 text: outputCard.dropdownOpen ? "󰅀" : "󰅂"
                                 font.family: Theme.iconFont
-                                font.pixelSize: Theme.scaled(12)
+                                font.pixelSize: Theme.scaled(14)
                                 color: Theme.subtext0
                             }
                         }
@@ -128,22 +129,24 @@ ColumnLayout {
 
                     // Mute Output Toggle
                     Rectangle {
-                        width: Theme.scaled(38)
-                        height: Theme.scaled(38)
+                        width: Theme.scaled(40)
+                        height: Theme.scaled(40)
                         radius: Theme.bubbleRadiusSmall
-                        color: VolumeService.muted ? Qt.rgba(Theme.red.r, Theme.red.g, Theme.red.b, 0.2) : Theme.surfaceContainerHigh
-                        border.color: VolumeService.muted ? Theme.powerRed : Theme.glassBorder
+                        color: VolumeService.muted ? Qt.rgba(Theme.red.r, Theme.red.g, Theme.red.b, 0.25) : (muteMouse.containsMouse ? Theme.menuDarkHover : "transparent")
+                        border.width: 0
 
                         Text {
                             anchors.centerIn: parent
                             text: VolumeService.muted ? "󰝟" : "󰕾"
                             font.family: Theme.iconFont
-                            font.pixelSize: Theme.scaled(16)
+                            font.pixelSize: Theme.scaled(22)
                             color: VolumeService.muted ? Theme.powerRed : Theme.text
                         }
 
                         MouseArea {
+                            id: muteMouse
                             anchors.fill: parent
+                            hoverEnabled: true
                             onClicked: VolumeService.toggleMute()
                         }
                     }
@@ -162,7 +165,7 @@ ColumnLayout {
                         width: ListView.view.width
                         height: Theme.scaled(32)
                         radius: Theme.bubbleRadiusSmall
-                        color: modelData.isDefault ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.2) : (devMouse.containsMouse ? Theme.surfaceContainerHighest : "transparent")
+                        color: modelData.isDefault ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.2) : (devMouse.containsMouse ? Theme.menuBackground2Hover : "transparent")
 
                         RowLayout {
                             anchors.fill: parent
@@ -209,7 +212,7 @@ ColumnLayout {
             implicitHeight: targetHeight
             Layout.preferredHeight: targetHeight
             height: targetHeight
-            color: Theme.surfaceContainerLow
+            color: Theme.cardBackground
             radius: Theme.bubbleRadiusLarge
             border.color: Theme.glassBorder
             border.width: 1
@@ -241,8 +244,9 @@ ColumnLayout {
                         Layout.fillWidth: true
                         height: Theme.scaled(38)
                         radius: Theme.bubbleRadiusSmall
-                        color: inputCard.dropdownOpen ? Theme.surfaceContainerHighest : Theme.surfaceContainerHigh
+                        color: inputCard.dropdownOpen ? Theme.menuDarkHover : "transparent"
                         border.color: Theme.glassBorder
+                        border.width: 1
 
                         RowLayout {
                             anchors.fill: parent
@@ -252,7 +256,7 @@ ColumnLayout {
                             Text {
                                 text: "󰍬"
                                 font.family: Theme.iconFont
-                                font.pixelSize: Theme.scaled(14)
+                                font.pixelSize: Theme.scaled(20)
                                 color: Theme.accentColor
                             }
 
@@ -273,7 +277,7 @@ ColumnLayout {
                             Text {
                                 text: inputCard.dropdownOpen ? "󰅀" : "󰅂"
                                 font.family: Theme.iconFont
-                                font.pixelSize: Theme.scaled(12)
+                                font.pixelSize: Theme.scaled(14)
                                 color: Theme.subtext0
                             }
                         }
@@ -286,22 +290,24 @@ ColumnLayout {
 
                     // Mute Input Toggle
                     Rectangle {
-                        width: Theme.scaled(38)
-                        height: Theme.scaled(38)
+                        width: Theme.scaled(40)
+                        height: Theme.scaled(40)
                         radius: Theme.bubbleRadiusSmall
-                        color: VolumeService.micMuted ? Qt.rgba(Theme.red.r, Theme.red.g, Theme.red.b, 0.2) : Theme.surfaceContainerHigh
-                        border.color: VolumeService.micMuted ? Theme.powerRed : Theme.glassBorder
+                        color: VolumeService.micMuted ? Qt.rgba(Theme.red.r, Theme.red.g, Theme.red.b, 0.25) : (micMuteMouse.containsMouse ? Theme.menuDarkHover : "transparent")
+                        border.width: 0
 
                         Text {
                             anchors.centerIn: parent
                             text: VolumeService.micMuted ? "󰍭" : "󰍬"
                             font.family: Theme.iconFont
-                            font.pixelSize: Theme.scaled(16)
+                            font.pixelSize: Theme.scaled(22)
                             color: VolumeService.micMuted ? Theme.powerRed : Theme.text
                         }
 
                         MouseArea {
+                            id: micMuteMouse
                             anchors.fill: parent
+                            hoverEnabled: true
                             onClicked: VolumeService.toggleMicMute()
                         }
                     }
@@ -320,7 +326,7 @@ ColumnLayout {
                         width: ListView.view.width
                         height: Theme.scaled(32)
                         radius: Theme.bubbleRadiusSmall
-                        color: modelData.isDefault ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.2) : (srcMouse.containsMouse ? Theme.surfaceContainerHighest : "transparent")
+                        color: modelData.isDefault ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.2) : (srcMouse.containsMouse ? Theme.menuBackground2Hover : "transparent")
 
                         RowLayout {
                             anchors.fill: parent
@@ -384,7 +390,7 @@ ColumnLayout {
                 delegate: Rectangle {
                     Layout.fillWidth: true
                     height: Theme.scaled(110)
-                    color: Theme.surfaceContainerLow
+                    color: Theme.menuBackground2
                     radius: Theme.bubbleRadiusMedium
                     border.color: Theme.glassBorder
                     border.width: 1

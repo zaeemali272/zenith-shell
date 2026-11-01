@@ -31,7 +31,7 @@ ColumnLayout {
             height: Shell.Theme.scaled(32)
             radius: height / 2
             color: Shell.Theme.accentColor
-            scale: studioMouse.pressed ? 0.94 : (studioMouse.containsMouse ? 1.04 : 1.0)
+            scale: studioMouse.pressed ? 0.94 : 1.0
             Behavior on scale { NumberAnimation { duration: Shell.Theme.animInstant; easing.type: Easing.OutCubic } }
 
             RowLayout {

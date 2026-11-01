@@ -94,9 +94,9 @@ ColumnLayout {
         Repeater {
             model: ["Wallpaper", "Themes", "Slideshow", "Animated"]
             delegate: Rectangle {
-                width: Theme.scaled(100); height: Theme.scaled(32); radius: Theme.scaled(10)
-                color: root.activeSubTab === modelData ? Theme.accentColor : (subTabMouse.containsMouse ? Theme.surface1 : Theme.surface0)
-                border.color: Theme.glassBorder
+                width: Theme.scaled(100); height: Theme.scaled(32); radius: Theme.bubbleRadiusPill
+                color: root.activeSubTab === modelData ? Theme.accentColor : (subTabMouse.containsMouse ? Theme.cardBackgroundHover : "transparent")
+                border.width: 0
                 scale: subTabMouse.pressed ? 0.95 : 1.0
                 Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
                 Behavior on color { ColorAnimation { duration: Theme.animInstant } }
@@ -106,7 +106,7 @@ ColumnLayout {
                     text: modelData
                     font.pixelSize: Theme.scaled(11)
                     font.weight: Font.Black
-                    color: root.activeSubTab === modelData ? Theme.base : (subTabMouse.containsMouse ? Theme.text : Theme.subtext1)
+                    color: root.activeSubTab === modelData ? Colors.on_primary : (subTabMouse.containsMouse ? Theme.text : Theme.subtext0)
                 }
                 MouseArea { 
                     id: subTabMouse
@@ -190,14 +190,14 @@ ColumnLayout {
                     delegate: Rectangle {
                         width: (wallFlow.width - Theme.scaled(45)) / 4
                         height: width * 0.6
-                        radius: Theme.scaled(13)
-                        color: Theme.surface1
+                        radius: Theme.bubbleRadiusMedium
+                        color: Theme.cardBackground
                         clip: true
                         property bool isSelected: root.selectedWalls.indexOf(fileUrl) !== -1
                         property int selectionIndex: root.selectedWalls.indexOf(fileUrl)
                         property bool isFocused: index === root.selectedIndex
                         border.color: isFocused ? Theme.accentColor : (isSelected ? Theme.accentColor : Theme.glassBorder)
-                        border.width: isFocused ? 3 : (isSelected ? 4 : 1)
+                        border.width: 1
                         
                         // Darken if selected
                         Rectangle {
@@ -316,12 +316,12 @@ ColumnLayout {
                     delegate: Rectangle {
                         width: (animFlow.width - Theme.scaled(45)) / 4
                         height: width * 0.6
-                        radius: Theme.scaled(12)
-                        color: Theme.surface1
+                        radius: Theme.bubbleRadiusMedium
+                        color: Theme.cardBackground
                         clip: true
                         property bool isFocused: index === root.selectedIndex
                         border.color: isFocused ? Theme.accentColor : Theme.glassBorder
-                        border.width: isFocused ? 3 : 1
+                        border.width: 1
                         
                         Loader {
                             id: animThumbLoader; anchors.fill: parent

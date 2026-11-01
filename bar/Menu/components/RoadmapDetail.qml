@@ -24,8 +24,10 @@ Rectangle {
     signal toggleDone()
     signal openLink(string url)
 
-    color: Theme.menuBackground
-    radius: Theme.cardRadius
+    color: Theme.cardBackground
+    radius: Theme.bubbleRadiusMedium
+    border.color: Theme.glassBorder
+    border.width: 1
 
     ColumnLayout {
         anchors.fill: parent
@@ -39,8 +41,8 @@ Rectangle {
             Rectangle {
                 width: Theme.scaled(46); height: Theme.scaled(24)
                 radius: Theme.scaled(8)
-                color: backM.containsMouse ? Theme.surfaceContainerHigh : Qt.rgba(0, 0, 0, 0.35)
-                border.color: Theme.glassBorder; border.width: 1
+                color: backM.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground
+                border.width: 0
                 Text {
                     anchors.centerIn: parent; text: "back"
                     color: Theme.subtext1
@@ -58,9 +60,8 @@ Rectangle {
                 height: Theme.scaled(24)
                 radius: Theme.scaled(8)
                 color: detail.isDone ? Theme.accentColor
-                     : (doneM.containsMouse ? Theme.surfaceContainerHigh : Qt.rgba(0, 0, 0, 0.35))
-                border.color: detail.isDone ? Theme.accentColor : Theme.glassBorder
-                border.width: 1
+                     : (doneM.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground)
+                border.width: 0
                 Behavior on color { ColorAnimation { duration: Theme.animInstant } }
                 Text {
                     id: doneLabel
@@ -126,8 +127,8 @@ Rectangle {
                         Layout.fillWidth: true
                         implicitHeight: resRow.implicitHeight + Theme.scaled(14)
                         radius: Theme.scaled(8)
-                        color: resM.containsMouse ? Theme.surfaceContainerHigh : Qt.rgba(0, 0, 0, 0.3)
-                        border.color: Theme.glassBorder; border.width: 1
+                        color: resM.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground
+                        border.color: Theme.cardBorder; border.width: 1
 
                         RowLayout {
                             id: resRow

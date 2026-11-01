@@ -22,11 +22,11 @@ Rectangle {
     Layout.alignment: Qt.AlignVCenter
     width: trayRow.implicitWidth + Theme.pillPadding + Theme.extraPillPadding
     implicitWidth: width
-    color: trayHoverArea.containsMouse ? Theme.pillHoverColor : Theme.pillColor
+    color: Theme.pillColor
     radius: Theme.pillRadius
     border.color: Theme.glassBorder
     border.width: 1
-    scale: trayHoverArea.pressed ? 0.96 : (trayHoverArea.containsMouse ? 1.02 : 1.0)
+    scale: 1.0
 
     Behavior on width { NumberAnimation { duration: Theme.animNormal; easing.type: Easing.OutCubic } }
     Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }

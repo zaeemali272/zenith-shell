@@ -10,8 +10,8 @@ Switch {
         x: control.leftPadding
         y: parent.height / 2 - height / 2
         radius: Shell.Theme.scaled(10)
-        color: control.checked ? Shell.Theme.blue : Shell.Theme.surface1
-        scale: control.pressed ? 0.95 : (control.hovered ? 1.04 : 1.0)
+        color: control.checked ? Shell.Theme.accentColor : Qt.rgba(255, 255, 255, 0.15)
+        scale: control.pressed ? 0.95 : 1.0
 
         Behavior on color { ColorAnimation { duration: Shell.Theme.animInstant } }
         Behavior on scale { NumberAnimation { duration: Shell.Theme.animInstant; easing.type: Easing.OutCubic } }

@@ -44,7 +44,7 @@ MenuWindow {
         color: Theme.glassBackground
         radius: Theme.cardRadius
         border.color: Theme.glassBorder
-        border.width: 2
+        border.width: 1
         clip: true
 
         focus: true
@@ -96,13 +96,14 @@ MenuWindow {
                     visible: !Theme.isSmallScreen
                 }
 
-                // Bubble Tab Switcher Capsule
+                // Bubble Tab Switcher Capsule (Transparent on Base Canvas)
                 Rectangle {
                     height: Theme.scaled(38)
                     implicitWidth: tabRow.implicitWidth + Theme.scaled(8)
                     radius: 999
-                    color: Qt.rgba(0, 0, 0, 0.35)
-                    border.width: 0
+                    color: "transparent"
+                    border.color: Theme.glassBorder
+                    border.width: 1
 
                     RowLayout {
                         id: tabRow
@@ -116,8 +117,8 @@ MenuWindow {
                                 width: Math.max(Theme.scaled(82), tabText.implicitWidth + Theme.scaled(18))
                                 height: Theme.scaled(30)
                                 radius: 999
-                                color: CenterState.activeTab === modelData ? Theme.accentColor : (tabMouse.containsMouse ? Qt.rgba(255,255,255,0.12) : "transparent")
-                                scale: tabMouse.pressed ? 0.94 : (tabMouse.containsMouse ? 1.03 : 1.0)
+                                color: CenterState.activeTab === modelData ? Theme.accentColor : (tabMouse.containsMouse ? Theme.menuBackground2Hover : "transparent")
+                                scale: tabMouse.pressed ? 0.95 : 1.0
                                 
                                 Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
                                 Behavior on color { ColorAnimation { duration: Theme.animInstant } }
@@ -128,12 +129,14 @@ MenuWindow {
                                     text: root.tabLabel(modelData)
                                     font.pixelSize: Theme.scaled(11)
                                     font.weight: Font.Bold
-                                    color: CenterState.activeTab === modelData ? Colors.on_primary : "#ffffff"
+                                    color: CenterState.activeTab === modelData ? Colors.on_primary : (tabMouse.containsMouse ? Theme.subtext0 : "#ffffff")
+                                    Behavior on color { ColorAnimation { duration: Theme.animFast } }
                                 }
                                 MouseArea { 
                                     id: tabMouse
                                     anchors.fill: parent
                                     hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
                                     onClicked: CenterState.activeTab = modelData 
                                 }
                             }
@@ -151,22 +154,22 @@ MenuWindow {
                     // 1. Media Player Auto-Focus
                     Rectangle {
                         id: focusRect
-                        width: Theme.scaled(34); height: Theme.scaled(34)
+                        width: Theme.scaled(36); height: Theme.scaled(36)
                         radius: 999
-                        color: MediaPlayerService.mediaFocus ? Theme.accentColor : (focusMouse.containsMouse ? Qt.rgba(255,255,255,0.14) : Qt.rgba(0,0,0,0.35))
-                        border.color: MediaPlayerService.mediaFocus ? Theme.accentColor : Theme.glassBorder
-                        border.width: 1
-                        scale: focusMouse.pressed ? 0.91 : (focusMouse.containsMouse ? 1.08 : 1.0)
+                        color: MediaPlayerService.mediaFocus ? Theme.accentColor : (focusMouse.containsMouse ? Theme.menuDarkHover : "transparent")
+                        border.width: 0
+                        scale: focusMouse.pressed ? 0.94 : 1.0
                         
                         Behavior on color { ColorAnimation { duration: Theme.animInstant } }
-                        Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Theme.elasticEasing; easing.overshoot: 1.15 } }
+                        Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
 
                         Text {
                             anchors.centerIn: parent
                             text: MediaPlayerService.mediaFocus ? "󰎆" : "󰎇"
                             font.family: Theme.iconFont
-                            font.pixelSize: Theme.scaled(15)
-                            color: MediaPlayerService.mediaFocus ? Colors.on_primary : "#ffffff"
+                            font.pixelSize: Theme.scaled(20)
+                            color: MediaPlayerService.mediaFocus ? Colors.on_primary : (focusMouse.containsMouse ? Theme.subtext0 : "#ffffff")
+                            Behavior on color { ColorAnimation { duration: Theme.animFast } }
                         }
                         MouseArea { 
                             id: focusMouse
@@ -180,29 +183,29 @@ MenuWindow {
                             delay: 350; timeout: 3000
                             y: parent.height + Theme.scaled(6)
                             contentItem: Text { text: "Media Auto-Focus: " + (MediaPlayerService.mediaFocus ? "ON" : "OFF"); color: "#ffffff"; font.pixelSize: Theme.scaled(10.5); font.weight: Font.DemiBold }
-                            background: Rectangle { color: Qt.rgba(18/255, 18/255, 26/255, 0.95); border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7) }
+                            background: Rectangle { color: Theme.cardBackground; border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7) }
                         }
                     }
 
                     // 2. Caffeine (Keep Awake)
                     Rectangle {
                         id: caffeineRect
-                        width: Theme.scaled(34); height: Theme.scaled(34)
+                        width: Theme.scaled(36); height: Theme.scaled(36)
                         radius: 999
-                        color: CaffeineService.active ? Theme.accentColor : (caffeineMouse.containsMouse ? Qt.rgba(255,255,255,0.14) : Qt.rgba(0,0,0,0.35))
-                        border.color: CaffeineService.active ? Theme.accentColor : Theme.glassBorder
-                        border.width: 1
-                        scale: caffeineMouse.pressed ? 0.91 : (caffeineMouse.containsMouse ? 1.08 : 1.0)
+                        color: CaffeineService.active ? Theme.accentColor : (caffeineMouse.containsMouse ? Theme.cardBackgroundHover : "transparent")
+                        border.width: 0
+                        scale: caffeineMouse.pressed ? 0.94 : 1.0
                         
                         Behavior on color { ColorAnimation { duration: Theme.animInstant } }
-                        Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Theme.elasticEasing; easing.overshoot: 1.15 } }
+                        Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
 
                         Text {
                             anchors.centerIn: parent
                             text: CaffeineService.active ? "󰅶" : "󰛊"
                             font.family: Theme.iconFont
-                            font.pixelSize: Theme.scaled(15)
-                            color: CaffeineService.active ? Colors.on_primary : "#ffffff"
+                            font.pixelSize: Theme.scaled(20)
+                            color: CaffeineService.active ? Colors.on_primary : (caffeineMouse.containsMouse ? Theme.subtext0 : "#ffffff")
+                            Behavior on color { ColorAnimation { duration: Theme.animFast } }
                         }
                         MouseArea { 
                             id: caffeineMouse
@@ -216,29 +219,29 @@ MenuWindow {
                             delay: 350; timeout: 3000
                             y: parent.height + Theme.scaled(6)
                             contentItem: Text { text: "Caffeine (Prevent Sleep): " + (CaffeineService.active ? "ACTIVE" : "OFF"); color: "#ffffff"; font.pixelSize: Theme.scaled(10.5); font.weight: Font.DemiBold }
-                            background: Rectangle { color: Qt.rgba(18/255, 18/255, 26/255, 0.95); border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7) }
+                            background: Rectangle { color: Theme.cardBackground; border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7) }
                         }
                     }
 
                     // 3. Night Light Toggle (Gammastep)
                     Rectangle {
                         id: nlRect
-                        width: Theme.scaled(34); height: Theme.scaled(34)
+                        width: Theme.scaled(36); height: Theme.scaled(36)
                         radius: 999
-                        color: PowerToolsService.nightLight ? Qt.rgba(250/255, 179/255, 135/255, 0.3) : (nlMouse.containsMouse ? Qt.rgba(255,255,255,0.14) : Qt.rgba(0,0,0,0.35))
-                        border.color: PowerToolsService.nightLight ? "#fab387" : Theme.glassBorder
-                        border.width: 1
-                        scale: nlMouse.pressed ? 0.91 : (nlMouse.containsMouse ? 1.08 : 1.0)
+                        color: PowerToolsService.nightLight ? Qt.rgba(250/255, 179/255, 135/255, 0.3) : (nlMouse.containsMouse ? Theme.cardBackgroundHover : "transparent")
+                        border.width: 0
+                        scale: nlMouse.pressed ? 0.94 : 1.0
                         
                         Behavior on color { ColorAnimation { duration: Theme.animInstant } }
-                        Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Theme.elasticEasing; easing.overshoot: 1.15 } }
+                        Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
 
                         Text {
                             anchors.centerIn: parent
                             text: PowerToolsService.nightLight ? "󱩌" : "󱩍"
                             font.family: Theme.iconFont
-                            font.pixelSize: Theme.scaled(15)
-                            color: PowerToolsService.nightLight ? "#fab387" : "#ffffff"
+                            font.pixelSize: Theme.scaled(20)
+                            color: PowerToolsService.nightLight ? "#fab387" : (nlMouse.containsMouse ? Theme.subtext0 : "#ffffff")
+                            Behavior on color { ColorAnimation { duration: Theme.animFast } }
                         }
                         MouseArea { 
                             id: nlMouse
@@ -252,29 +255,29 @@ MenuWindow {
                             delay: 350; timeout: 3000
                             y: parent.height + Theme.scaled(6)
                             contentItem: Text { text: "Night Light: " + (PowerToolsService.nightLight ? "WARM (3800K)" : "OFF"); color: "#ffffff"; font.pixelSize: Theme.scaled(10.5); font.weight: Font.DemiBold }
-                            background: Rectangle { color: Qt.rgba(18/255, 18/255, 26/255, 0.95); border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7) }
+                            background: Rectangle { color: Theme.cardBackground; border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7) }
                         }
                     }
 
                     // 4. Do Not Disturb Toggle
                     Rectangle {
                         id: dndRect
-                        width: Theme.scaled(34); height: Theme.scaled(34)
+                        width: Theme.scaled(36); height: Theme.scaled(36)
                         radius: 999
-                        color: PowerToolsService.dnd ? Qt.rgba(203/255, 166/255, 247/255, 0.3) : (dndMouse.containsMouse ? Qt.rgba(255,255,255,0.14) : Qt.rgba(0,0,0,0.35))
-                        border.color: PowerToolsService.dnd ? "#cba6f7" : Theme.glassBorder
-                        border.width: 1
-                        scale: dndMouse.pressed ? 0.91 : (dndMouse.containsMouse ? 1.08 : 1.0)
+                        color: PowerToolsService.dnd ? Qt.rgba(203/255, 166/255, 247/255, 0.3) : (dndMouse.containsMouse ? Theme.cardBackgroundHover : "transparent")
+                        border.width: 0
+                        scale: dndMouse.pressed ? 0.94 : 1.0
                         
                         Behavior on color { ColorAnimation { duration: Theme.animInstant } }
-                        Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Theme.elasticEasing; easing.overshoot: 1.15 } }
+                        Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
 
                         Text {
                             anchors.centerIn: parent
                             text: PowerToolsService.dnd ? "󰂛" : "󰂚"
                             font.family: Theme.iconFont
-                            font.pixelSize: Theme.scaled(15)
-                            color: PowerToolsService.dnd ? "#cba6f7" : "#ffffff"
+                            font.pixelSize: Theme.scaled(20)
+                            color: PowerToolsService.dnd ? "#cba6f7" : (dndMouse.containsMouse ? Theme.subtext0 : "#ffffff")
+                            Behavior on color { ColorAnimation { duration: Theme.animFast } }
                         }
                         MouseArea { 
                             id: dndMouse
@@ -288,29 +291,29 @@ MenuWindow {
                             delay: 350; timeout: 3000
                             y: parent.height + Theme.scaled(6)
                             contentItem: Text { text: "Do Not Disturb: " + (PowerToolsService.dnd ? "SILENCED" : "NORMAL"); color: "#ffffff"; font.pixelSize: Theme.scaled(10.5); font.weight: Font.DemiBold }
-                            background: Rectangle { color: Qt.rgba(18/255, 18/255, 26/255, 0.95); border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7) }
+                            background: Rectangle { color: Theme.cardBackground; border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7) }
                         }
                     }
 
                     // 5. Region Screenshot Snip
                     Rectangle {
                         id: snipRect
-                        width: Theme.scaled(34); height: Theme.scaled(34)
+                        width: Theme.scaled(36); height: Theme.scaled(36)
                         radius: 999
-                        color: snipMouse.containsMouse ? Qt.rgba(255,255,255,0.14) : Qt.rgba(0,0,0,0.35)
-                        border.color: Theme.glassBorder
-                        border.width: 1
-                        scale: snipMouse.pressed ? 0.91 : (snipMouse.containsMouse ? 1.08 : 1.0)
+                        color: snipMouse.containsMouse ? Theme.cardBackgroundHover : "transparent"
+                        border.width: 0
+                        scale: snipMouse.pressed ? 0.94 : 1.0
                         
                         Behavior on color { ColorAnimation { duration: Theme.animInstant } }
-                        Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Theme.elasticEasing; easing.overshoot: 1.15 } }
+                        Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
 
                         Text {
                             anchors.centerIn: parent
                             text: "󰹑"
                             font.family: Theme.iconFont
-                            font.pixelSize: Theme.scaled(15)
+                            font.pixelSize: Theme.scaled(20)
                             color: snipMouse.containsMouse ? Theme.accentColor : "#ffffff"
+                            Behavior on color { ColorAnimation { duration: Theme.animFast } }
                         }
                         MouseArea { 
                             id: snipMouse
@@ -324,29 +327,29 @@ MenuWindow {
                             delay: 350; timeout: 3000
                             y: parent.height + Theme.scaled(6)
                             contentItem: Text { text: "Region Screenshot (grim + slurp)"; color: "#ffffff"; font.pixelSize: Theme.scaled(10.5); font.weight: Font.DemiBold }
-                            background: Rectangle { color: Qt.rgba(18/255, 18/255, 26/255, 0.95); border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7) }
+                            background: Rectangle { color: Theme.cardBackground; border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7) }
                         }
                     }
 
                     // 6. Color Picker
                     Rectangle {
                         id: pickRect
-                        width: Theme.scaled(34); height: Theme.scaled(34)
+                        width: Theme.scaled(36); height: Theme.scaled(36)
                         radius: 999
-                        color: pickMouse.containsMouse ? Qt.rgba(255,255,255,0.14) : Qt.rgba(0,0,0,0.35)
-                        border.color: Theme.glassBorder
-                        border.width: 1
-                        scale: pickMouse.pressed ? 0.91 : (pickMouse.containsMouse ? 1.08 : 1.0)
+                        color: pickMouse.containsMouse ? Theme.cardBackgroundHover : "transparent"
+                        border.width: 0
+                        scale: pickMouse.pressed ? 0.94 : 1.0
                         
                         Behavior on color { ColorAnimation { duration: Theme.animInstant } }
-                        Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Theme.elasticEasing; easing.overshoot: 1.15 } }
+                        Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
 
                         Text {
                             anchors.centerIn: parent
                             text: "󰈊"
                             font.family: Theme.iconFont
-                            font.pixelSize: Theme.scaled(15)
+                            font.pixelSize: Theme.scaled(20)
                             color: pickMouse.containsMouse ? Theme.accentColor : "#ffffff"
+                            Behavior on color { ColorAnimation { duration: Theme.animFast } }
                         }
                         MouseArea { 
                             id: pickMouse
@@ -360,7 +363,7 @@ MenuWindow {
                             delay: 350; timeout: 3000
                             y: parent.height + Theme.scaled(6)
                             contentItem: Text { text: "Color Picker (hyprpicker to clipboard)"; color: "#ffffff"; font.pixelSize: Theme.scaled(10.5); font.weight: Font.DemiBold }
-                            background: Rectangle { color: Qt.rgba(18/255, 18/255, 26/255, 0.95); border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7) }
+                            background: Rectangle { color: Theme.cardBackground; border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7) }
                         }
                     }
                 }
@@ -397,24 +400,29 @@ MenuWindow {
                         // 1. Notifications Bubble Card
                         Rectangle {
                             Layout.fillWidth: true; Layout.fillHeight: true
-                            color: Qt.rgba(0,0,0,0.3); radius: Theme.cardRadius; border.color: Theme.glassBorder; border.width: 1; clip: true
+                            color: Theme.cardBackground
+                            radius: Theme.cardRadius
+                            border.color: Theme.glassBorder
+                            border.width: 1
+                            clip: true
                             
                             ColumnLayout {
                                 anchors.fill: parent; anchors.margins: Theme.scaled(14); spacing: Theme.scaled(8)
                                 
                                 RowLayout {
                                     Layout.fillWidth: true; spacing: Theme.scaled(8)
-                                    Text { text: "󰂚"; font.family: Theme.iconFont; color: Theme.accentColor; font.pixelSize: Theme.scaled(16) }
+                                    Text { text: "󰂚"; font.family: Theme.iconFont; color: Theme.accentColor; font.pixelSize: Theme.scaled(20) }
                                     Text { text: "NOTIFICATIONS"; color: Theme.subtext0; font.pixelSize: Theme.scaled(10); font.weight: Font.Black; font.letterSpacing: 1 }
                                     Rectangle {
                                         width: Theme.scaled(22); height: Theme.scaled(22); radius: 999
-                                        color: Theme.surface1
+                                        color: "transparent"
+                                        border.width: 0
                                         Label {
-                                            anchors.centerIn: parent
-                                            text: NotificationService.notifications.count
-                                            color: Theme.accentColor
-                                            font.pixelSize: Theme.scaled(11); font.bold: true
-                                        }
+                                             anchors.centerIn: parent
+                                             text: NotificationService.notifications.count
+                                             color: Theme.accentColor
+                                             font.pixelSize: Theme.scaled(11); font.bold: true
+                                         }
                                     }
 
                                     Item { Layout.fillWidth: true }
@@ -430,11 +438,11 @@ MenuWindow {
                                                 text: NotificationSettings.fullscreenNotification ? "󰊓" : "󰊔"
                                                 font.family: Theme.iconFont
                                                 color: NotificationSettings.fullscreenNotification ? Theme.accentColor : "#ffffff"
-                                                font.pixelSize: 13
+                                                font.pixelSize: 16
                                             }
                                             Text { text: "NOTIFY"; font.pixelSize: 9; font.weight: Font.Black; color: "#ffffff" }
                                         }
-                                        background: Rectangle { color: fullscreenBtn.hovered ? Qt.rgba(255,255,255,0.1) : "transparent"; radius: 999 }
+                                        background: Rectangle { color: fullscreenBtn.hovered ? Theme.cardBackgroundHover : "transparent"; radius: 999; border.width: 0 }
                                         onClicked: NotificationSettings.fullscreenNotification = !NotificationSettings.fullscreenNotification
                                     }
                                     Button {
@@ -448,19 +456,19 @@ MenuWindow {
                                                 text: NotificationSettings.fullscreenOSD ? "󰊓" : "󰊔"
                                                 font.family: Theme.iconFont
                                                 color: NotificationSettings.fullscreenOSD ? Theme.accentColor : "#ffffff"
-                                                font.pixelSize: 13
+                                                font.pixelSize: 16
                                             }
                                             Text { text: "OSD"; font.pixelSize: 9; font.weight: Font.Black; color: "#ffffff" }
                                         }
-                                        background: Rectangle { color: osdFullscreenBtn.hovered ? Qt.rgba(255,255,255,0.1) : "transparent"; radius: 999 }
+                                        background: Rectangle { color: osdFullscreenBtn.hovered ? Theme.cardBackgroundHover : "transparent"; radius: 999; border.width: 0 }
                                         onClicked: NotificationSettings.fullscreenOSD = !NotificationSettings.fullscreenOSD
                                     }
                                     Button {
                                         id: clearBtn
                                         flat: true
                                         padding: Theme.scaled(3)
-                                        contentItem: Text { text: "󰃢"; font.family: Theme.iconFont; color: "#ffffff"; font.pixelSize: Theme.scaled(15) }
-                                        background: Rectangle { color: clearBtn.hovered ? Qt.rgba(255,255,255,0.1) : "transparent"; radius: 999 }
+                                        contentItem: Text { text: "󰃢"; font.family: Theme.iconFont; color: clearBtn.hovered ? Theme.subtext0 : "#ffffff"; font.pixelSize: Theme.scaled(18) }
+                                        background: Rectangle { color: clearBtn.hovered ? Theme.cardBackgroundHover : "transparent"; radius: 999; border.width: 0 }
                                         onClicked: NotificationService.clearAll()
                                     }
                                 }
@@ -474,45 +482,19 @@ MenuWindow {
                                 }
                             }
                         }
-
-                        // 2. Media Player Bubble Card (Positioned directly underneath notifications with increased height)
-                        Rectangle {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: Theme.scaled(170)
-                            color: Qt.rgba(0,0,0,0.3); radius: Theme.cardRadius; border.color: Theme.glassBorder; border.width: 1; clip: true
-
-                            ColumnLayout {
-                                anchors.fill: parent; anchors.margins: Theme.scaled(14); spacing: Theme.scaled(8)
-
-                                RowLayout {
-                                    Layout.fillWidth: true; spacing: Theme.scaled(8)
-                                    Text { text: "󰎆"; font.family: Theme.iconFont; color: Theme.accentColor; font.pixelSize: Theme.scaled(16) }
-                                    Text { text: "MEDIA PLAYER"; color: Theme.subtext0; font.pixelSize: Theme.scaled(10); font.weight: Font.Black; font.letterSpacing: 1 }
-
-                                    Item { Layout.fillWidth: true }
-                                }
-
-                                MprisPlayer {
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-                                    active: CenterState.qsVisible
-                                }
-                            }
-                        }
                     }
 
                     // RIGHT COLUMN: Calendar (Top) + Weather (Bottom)
                     Rectangle {
                         Layout.fillWidth: true; Layout.fillHeight: true
                         visible: !Theme.isSmallScreen || !Theme.isPortrait
-                        color: Qt.rgba(0,0,0,0.3); radius: Theme.cardRadius; border.color: Theme.glassBorder; border.width: 1; clip: true
+                        color: Theme.cardBackground
+                        radius: Theme.cardRadius
+                        border.color: Theme.glassBorder
+                        border.width: 1
+                        clip: true
                         ColumnLayout {
                             anchors.fill: parent; anchors.margins: Theme.scaled(14)
-                            RowLayout {
-                                spacing: Theme.scaled(8)
-                                Text { text: "󰃭"; font.family: Theme.iconFont; color: Theme.accentColor; font.pixelSize: Theme.scaled(16) }
-                                Text { text: "CALENDAR"; color: Theme.subtext0; font.pixelSize: Theme.scaled(10); font.weight: Font.Black; font.letterSpacing: 1 }
-                            }
                             CalendarWidget { Layout.fillWidth: true; Layout.fillHeight: true }
                         }
                     }
@@ -520,14 +502,13 @@ MenuWindow {
                     Rectangle {
                         Layout.fillWidth: true; Layout.fillHeight: true
                         visible: (!Theme.isSmallScreen || !Theme.isPortrait) && WidgetSettings.enableWeather
-                        color: Qt.rgba(0,0,0,0.3); radius: Theme.cardRadius; border.color: Theme.glassBorder; border.width: 1; clip: true
+                        color: Theme.cardBackground
+                        radius: Theme.cardRadius
+                        border.color: Theme.glassBorder
+                        border.width: 1
+                        clip: true
                         ColumnLayout {
                             anchors.fill: parent; anchors.margins: Theme.scaled(14)
-                            RowLayout {
-                                spacing: Theme.scaled(8)
-                                Text { text: "󰖐"; font.family: Theme.iconFont; color: Theme.accentColor; font.pixelSize: Theme.scaled(16) }
-                                Text { text: "WEATHER"; color: Theme.subtext0; font.pixelSize: Theme.scaled(10); font.weight: Font.Black; font.letterSpacing: 1 }
-                            }
                             WeatherWidget {
                                 Layout.fillWidth: true; Layout.fillHeight: true
                             }

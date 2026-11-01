@@ -122,7 +122,8 @@ PopupWindow {
                     Layout.fillWidth: true
                     implicitHeight: Theme.scaled(32)
                     radius: Theme.scaled(10)
-                    color: backMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.15) : Qt.rgba(255, 255, 255, 0.08)
+                    color: backMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground
+                    border.width: 0
 
                     RowLayout {
                         anchors.fill: parent
@@ -133,7 +134,7 @@ PopupWindow {
                         Text {
                             text: "󰅁"
                             font.family: Theme.iconFont
-                            font.pixelSize: Theme.scaled(14)
+                            font.pixelSize: Theme.scaled(18)
                             color: Theme.accentColor
                         }
                         Text {
@@ -167,8 +168,9 @@ PopupWindow {
                             Layout.fillWidth: true
                             Layout.preferredHeight: entry.isSeparator ? Theme.scaled(11) : Theme.scaled(34)
                             radius: Theme.scaled(10)
-                            color: entry.isSeparator ? "transparent" : (itemMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : "transparent")
-                            scale: itemMouse.pressed ? 0.97 : (itemMouse.containsMouse ? 1.01 : 1.0)
+                            color: entry.isSeparator ? "transparent" : (itemMouse.containsMouse ? Theme.menuDarkHover : "transparent")
+                            border.width: 0
+                            scale: itemMouse.pressed ? 0.97 : 1.0
 
                             Behavior on color { ColorAnimation { duration: Theme.animInstant } }
                             Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }

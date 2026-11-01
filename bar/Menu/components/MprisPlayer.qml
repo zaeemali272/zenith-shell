@@ -8,9 +8,9 @@ import "../../../"
 
 Rectangle {
     id: mprisPlayer
-    color: Theme.menuBackground
-    radius: Theme.scaled(16)
-    border.color: Theme.surface1
+    color: Theme.cardBackground
+    radius: Theme.bubbleRadiusMedium
+    border.color: Theme.glassBorder
     border.width: 1
     Layout.fillWidth: true
     implicitHeight: Theme.scaled(110)
@@ -22,6 +22,13 @@ Rectangle {
     // Bindings to unified service state
     readonly property real currentPos: MediaPlayerService.currentPos
     readonly property bool isActuallyPlaying: MediaPlayerService.isActuallyPlaying
+
+    property bool switcherHovered: false
+    readonly property bool isPlayerHovered: bgHover.hovered || posSlider.hovered || posSlider.pressed || prevBtn.hovered || prevBtn.pressed || playBtn.hovered || playBtn.pressed || nextBtn.hovered || nextBtn.pressed || switcherHovered
+
+    HoverHandler {
+        id: bgHover
+    }
 
     function formatTime(s) {
         if (s < 0 || isNaN(s)) return "0:00"
@@ -38,7 +45,7 @@ Rectangle {
         Rectangle {
             width: Theme.isSmallScreen ? Theme.scaled(60) : Theme.scaled(80)
             height: width
-            radius: Theme.scaled(12); color: Theme.mantle; clip: true
+            radius: Theme.bubbleRadiusSmall; color: "transparent"; border.color: Theme.glassBorder; border.width: 1; clip: true
             Layout.alignment: Qt.AlignVCenter
             Image {
                 anchors.fill: parent
@@ -48,7 +55,7 @@ Rectangle {
                 Behavior on opacity { NumberAnimation { duration: 250 } }
             }
             Text { 
-                anchors.centerIn: parent; text: "󰎆"; color: Theme.surface1; font.pixelSize: Theme.isSmallScreen ? Theme.scaled(20) : Theme.scaled(28)
+                anchors.centerIn: parent; text: "󰎆"; color: Theme.subtext0; font.pixelSize: Theme.isSmallScreen ? Theme.scaled(20) : Theme.scaled(28)
                 visible: !player || !player.trackArtUrl 
             }
         }
@@ -73,13 +80,13 @@ Rectangle {
                     padding: 0; leftPadding: 0; rightPadding: 0; topPadding: 0; bottomPadding: 0
                     background: Rectangle {
                         x: posSlider.leftPadding + Theme.scaled(6); y: posSlider.topPadding + (posSlider.availableHeight - height) / 2
-                        height: Theme.scaled(4); width: posSlider.availableWidth - Theme.scaled(12); radius: Theme.scaled(2); color: Theme.surface1
-                        Rectangle { width: posSlider.visualPosition * parent.width; height: Theme.scaled(4); color: Theme.blue; radius: Theme.scaled(2) }
+                        height: Theme.scaled(4); width: posSlider.availableWidth - Theme.scaled(12); radius: Theme.scaled(2); color: Qt.rgba(255, 255, 255, 0.08); border.color: Theme.glassBorder; border.width: 1
+                        Rectangle { width: posSlider.visualPosition * parent.width; height: Theme.scaled(4); color: Theme.accentColor; radius: Theme.scaled(2) }
                     }
                     handle: Rectangle {
                         x: posSlider.leftPadding + posSlider.visualPosition * (posSlider.availableWidth - width)
                         y: posSlider.topPadding + (posSlider.availableHeight - height) / 2
-                        width: Theme.scaled(10); height: Theme.scaled(10); radius: Theme.scaled(5); color: Theme.lavender
+                        width: Theme.scaled(10); height: Theme.scaled(10); radius: Theme.scaled(5); color: Theme.accentColor
                         visible: posSlider.hovered || posSlider.pressed
                     }
                 }
@@ -94,14 +101,43 @@ Rectangle {
             RowLayout {
                 Layout.fillWidth: true
                 RowLayout {
-                    spacing: 0
+                    spacing: Theme.scaled(6)
                     Button { 
-                        flat: true; implicitWidth: Theme.scaled(28); implicitHeight: Theme.scaled(28)
+                        id: prevBtn
+                        flat: true
+                        implicitWidth: Theme.scaled(34)
+                        implicitHeight: Theme.scaled(34)
+                        hoverEnabled: true
+                        HoverHandler { cursorShape: Qt.PointingHandCursor }
+                        scale: pressed ? 0.90 : 1.0
+                        Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
                         onClicked: { if(player) player.previous() }
-                        contentItem: Text { text: "󰒮"; color: Theme.text; font.pixelSize: Theme.scaled(14); horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter } 
+                        background: Rectangle {
+                            radius: height / 2
+                            color: prevBtn.pressed 
+                                ? Theme.accentColor
+                                : (prevBtn.hovered ? Theme.cardBackgroundHover : "transparent")
+                            border.width: 0
+                            Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                        }
+                        contentItem: Text { 
+                            text: "󰒮"
+                            color: prevBtn.hovered ? Theme.subtext1 : Theme.text
+                            font.pixelSize: Theme.scaled(20)
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter 
+                            Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                        } 
                     }
                     Button { 
-                        flat: true; implicitWidth: Theme.scaled(32); implicitHeight: Theme.scaled(32)
+                        id: playBtn
+                        flat: true
+                        implicitWidth: Theme.scaled(42)
+                        implicitHeight: Theme.scaled(42)
+                        hoverEnabled: true
+                        HoverHandler { cursorShape: Qt.PointingHandCursor }
+                        scale: pressed ? 0.90 : 1.0
+                        Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
                         onClicked: { 
                             if(player) {
                                 if (player.playPause) player.playPause();
@@ -109,15 +145,51 @@ Rectangle {
                                 else player.play();
                             }
                         }
+                        background: Rectangle {
+                            radius: height / 2
+                            color: playBtn.pressed 
+                                ? Qt.darker(Theme.accentColor, 1.25)
+                                : (playBtn.hovered ? Theme.accentColor : Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.20))
+                            border.width: 0
+                            Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                        }
                         contentItem: Text { 
                             text: mprisPlayer.isActuallyPlaying ? "󰏤" : "󰐊"
-                            color: Theme.blue; font.pixelSize: Theme.scaled(18); horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter 
+                            color: (playBtn.hovered || playBtn.pressed) ? Colors.on_primary : Theme.accentColor
+                            opacity: playBtn.hovered ? 0.80 : 1.0
+                            font.pixelSize: Theme.scaled(22)
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter 
+                            Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                            Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
                         } 
                     }
                     Button { 
-                        flat: true; implicitWidth: Theme.scaled(28); implicitHeight: Theme.scaled(28)
+                        id: nextBtn
+                        flat: true
+                        implicitWidth: Theme.scaled(34)
+                        implicitHeight: Theme.scaled(34)
+                        hoverEnabled: true
+                        HoverHandler { cursorShape: Qt.PointingHandCursor }
+                        scale: pressed ? 0.90 : 1.0
+                        Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
                         onClicked: { if(player) player.next() }
-                        contentItem: Text { text: "󰒭"; color: Theme.text; font.pixelSize: Theme.scaled(14); horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter } 
+                        background: Rectangle {
+                            radius: height / 2
+                            color: nextBtn.pressed 
+                                ? Theme.accentColor
+                                : (nextBtn.hovered ? Theme.cardBackgroundHover : "transparent")
+                            border.width: 0
+                            Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                        }
+                        contentItem: Text { 
+                            text: "󰒭"
+                            color: nextBtn.hovered ? Theme.subtext1 : Theme.text
+                            font.pixelSize: Theme.scaled(20)
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter 
+                            Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                        } 
                     }
                 }
                 
@@ -128,13 +200,30 @@ Rectangle {
                     Repeater {
                         model: Mpris.players.values
                         delegate: MouseArea {
-                            width: Theme.scaled(16); height: Theme.scaled(16)
+                            id: switchDelegate
+                            width: Theme.scaled(22); height: Theme.scaled(22)
                             cursorShape: Qt.PointingHandCursor
+                            hoverEnabled: true
+                            scale: pressed ? 0.90 : 1.0
+                            Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
+                            onContainsMouseChanged: mprisPlayer.switcherHovered = containsMouse
                             onClicked: MediaPlayerService.updateTrackedPlayer(modelData)
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: width / 2
+                                color: switchDelegate.pressed
+                                    ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.35)
+                                    : (switchDelegate.containsMouse ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.18) : "transparent")
+                                border.color: switchDelegate.containsMouse ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.40) : "transparent"
+                                border.width: 1
+                                Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                            }
                             Text {
                                 anchors.centerIn: parent
-                                font.pixelSize: Theme.scaled(14)
-                                color: (mprisPlayer.player === modelData) ? Theme.mauve : (modelData.playbackState === MprisPlaybackState.Playing ? Theme.green : Theme.surface2)
+                                font.pixelSize: Theme.scaled(13)
+                                color: (mprisPlayer.player === modelData) ? Theme.accentColor : (modelData.playbackState === MprisPlaybackState.Playing ? Theme.green : Theme.subtext0)
+                                opacity: switchDelegate.containsMouse ? 0.70 : 1.0
+                                Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
                                 text: {
                                     let id = modelData.identity.toLowerCase();
                                     if (id.includes("firefox")) return "󰈹";

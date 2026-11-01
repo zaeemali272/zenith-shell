@@ -14,7 +14,7 @@ PanelWindow {
     id: bar
 
 
-    WlrLayershell.keyboardFocus: DynamicIslandService.active ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.exclusionMode: ExclusionMode.Auto
     WlrLayershell.margins {

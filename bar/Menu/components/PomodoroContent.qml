@@ -25,9 +25,10 @@ Item {
                     id: toolTabRect
                     implicitWidth: Math.max(Theme.scaled(82), toolTabText.implicitWidth + Theme.scaled(22))
                     height: Theme.scaled(30)
-                    radius: Theme.scaled(15)
-                    color: root.activeTool === modelData ? Theme.accentColor : (toolTabMouse.containsMouse ? Qt.rgba(255,255,255,0.12) : Theme.surface1)
-                    scale: toolTabMouse.pressed ? 0.94 : (toolTabMouse.containsMouse ? 1.03 : 1.0)
+                    radius: Theme.bubbleRadiusPill
+                    color: root.activeTool === modelData ? Theme.accentColor : (toolTabMouse.containsMouse ? Theme.cardBackgroundHover : "transparent")
+                    border.width: 0
+                    scale: toolTabMouse.pressed ? 0.94 : 1.0
 
                     Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
                     Behavior on color { ColorAnimation { duration: Theme.animInstant } }
@@ -39,8 +40,8 @@ Item {
                         Text {
                             text: modelData === "Services" ? "󰒍" : (modelData === "Todo" ? "󰄲" : (modelData === "Roadmap" ? "󰙅" : "󱎫"))
                             font.family: Theme.iconFont
-                            font.pixelSize: Theme.scaled(12)
-                            color: root.activeTool === modelData ? Colors.on_primary : Theme.text
+                            font.pixelSize: Theme.scaled(18)
+                            color: root.activeTool === modelData ? Colors.on_primary : (toolTabMouse.containsMouse ? Theme.text : Theme.subtext0)
                         }
 
                         Text { 
@@ -48,7 +49,7 @@ Item {
                             text: modelData === "Services" ? "Services" : (modelData === "Todo" ? "Tasks" : modelData)
                             font.pixelSize: Theme.scaled(10.5)
                             font.weight: Font.Black
-                            color: root.activeTool === modelData ? Colors.on_primary : Theme.text 
+                            color: root.activeTool === modelData ? Colors.on_primary : (toolTabMouse.containsMouse ? Theme.text : Theme.subtext0) 
                         }
                     }
 

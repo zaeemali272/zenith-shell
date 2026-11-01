@@ -87,13 +87,13 @@ ColumnLayout {
                 Layout.fillWidth: true
                 height: Theme.scaled(82)
                 color: PowerProfileService.currentProfile === modelData.id ? 
-                       Qt.rgba(profileCard.accent.r, profileCard.accent.g, profileCard.accent.b, 0.18) : 
-                       Qt.rgba(Theme.surfaceContainerHigh.r, Theme.surfaceContainerHigh.g, Theme.surfaceContainerHigh.b, 0.4)
-                radius: Theme.scaled(18)
-                border.width: PowerProfileService.currentProfile === modelData.id ? 2 : 1
+                       Qt.rgba(profileCard.accent.r, profileCard.accent.g, profileCard.accent.b, 0.20) : 
+                       (m.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground)
+                radius: Theme.bubbleRadiusMedium
+                border.width: 1
                 border.color: PowerProfileService.currentProfile === modelData.id ? profileCard.accent : Theme.glassBorder
 
-                scale: m.pressed ? 0.96 : (m.containsMouse ? 1.015 : 1.0)
+                scale: m.pressed ? 0.96 : 1.0
                 Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Theme.elasticEasing; easing.overshoot: 1.15 } }
                 Behavior on color { ColorAnimation { duration: Theme.animInstant } }
 
@@ -110,15 +110,16 @@ ColumnLayout {
                     spacing: Theme.scaled(12)
 
                     Rectangle {
-                        width: Theme.scaled(44); height: Theme.scaled(44); radius: Theme.scaled(14)
-                        color: PowerProfileService.currentProfile === modelData.id ? profileCard.accent : Qt.rgba(1,1,1,0.06)
+                        width: Theme.scaled(44); height: Theme.scaled(44); radius: Theme.bubbleRadiusSmall
+                        color: "transparent"
+                        border.width: 0
 
                         Text {
                             anchors.centerIn: parent
                             text: modelData.icon
                             font.family: Theme.iconFont
-                            font.pixelSize: Theme.scaled(20)
-                            color: PowerProfileService.currentProfile === modelData.id ? Theme.base : profileCard.accent
+                            font.pixelSize: Theme.scaled(28)
+                            color: profileCard.accent
                         }
                     }
 
@@ -160,11 +161,11 @@ ColumnLayout {
         visible: Boolean(PowerProfileService.conservativeSupported)
         Layout.fillWidth: true
         height: Theme.scaled(82)
-        radius: Theme.scaled(18)
+        radius: Theme.bubbleRadiusMedium
         color: PowerProfileService.conservativeActive ? 
-               Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.16) : 
-               Qt.rgba(Theme.surfaceContainerHigh.r, Theme.surfaceContainerHigh.g, Theme.surfaceContainerHigh.b, 0.4)
-        border.width: PowerProfileService.conservativeActive ? 2 : 1
+               Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.22) : 
+               Theme.cardBackground
+        border.width: 1
         border.color: PowerProfileService.conservativeActive ? Theme.accentColor : Theme.glassBorder
 
         Behavior on color { ColorAnimation { duration: Theme.animInstant } }
@@ -176,15 +177,16 @@ ColumnLayout {
 
             // Icon Badge
             Rectangle {
-                width: Theme.scaled(44); height: Theme.scaled(44); radius: Theme.scaled(14)
-                color: PowerProfileService.conservativeActive ? Theme.accentColor : Qt.rgba(1,1,1,0.06)
+                width: Theme.scaled(44); height: Theme.scaled(44); radius: Theme.bubbleRadiusSmall
+                color: "transparent"
+                border.width: 0
 
                 Text {
                     anchors.centerIn: parent
                     text: PowerProfileService.conservativeActive ? "󰂄" : "󰁹"
                     font.family: Theme.iconFont
-                    font.pixelSize: Theme.scaled(22)
-                    color: PowerProfileService.conservativeActive ? Theme.base : Theme.accentColor
+                    font.pixelSize: Theme.scaled(28)
+                    color: Theme.accentColor
                 }
             }
 
@@ -212,7 +214,9 @@ ColumnLayout {
 
                     Rectangle {
                         radius: Theme.scaled(6)
-                        color: Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.2)
+                        color: "transparent"
+                        border.color: Theme.glassBorder
+                        border.width: 1
                         implicitHeight: Theme.scaled(16)
                         implicitWidth: brandText.implicitWidth + Theme.scaled(10)
 
@@ -242,12 +246,12 @@ ColumnLayout {
                 id: consBtn
                 width: Theme.scaled(84)
                 height: Theme.scaled(36)
-                radius: Theme.scaled(12)
-                color: PowerProfileService.conservativeActive ? Theme.accentColor : Qt.rgba(255, 255, 255, 0.12)
+                radius: Theme.bubbleRadiusSmall
+                color: PowerProfileService.conservativeActive ? Theme.accentColor : (btnMouse.containsMouse ? Theme.menuBackground2Hover : Theme.menuBackground2)
                 border.width: 1
                 border.color: PowerProfileService.conservativeActive ? Theme.accentColor : Theme.glassBorder
 
-                scale: btnMouse.pressed ? 0.95 : (btnMouse.containsMouse ? 1.03 : 1.0)
+                scale: btnMouse.pressed ? 0.95 : 1.0
                 Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
                 Behavior on color { ColorAnimation { duration: Theme.animInstant } }
 

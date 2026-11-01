@@ -13,6 +13,7 @@ QtObject {
     property string query: ""
     property int selectedIndex: 0
     property string selectedCategory: "All"
+    property bool deleteFocused: false
 
     // --- LAUNCHER DATA ---
     readonly property string storagePath: PathSettings.stateDir + "/app_usage.json"
@@ -78,6 +79,14 @@ QtObject {
         }
     }
 
+    // Cliphist deleter
+    property var deleteClipProc: Process {
+        id: deleteClip
+        onExited: (exitCode) => {
+            root.loadClipHistory();
+        }
+    }
+
     // Emoji loader
     property var loadEmojiProc: Process {
         id: loadEmoji
@@ -121,6 +130,7 @@ QtObject {
         query = "";
         selectedIndex = 0;
         selectedCategory = "All";
+        deleteFocused = false;
         activeMode = validMode;
 
         if (validMode === "launcher") {
@@ -142,6 +152,7 @@ QtObject {
         activeMode = "";
         query = "";
         selectedIndex = 0;
+        deleteFocused = false;
     }
 
     function toggle(mode) {
@@ -156,6 +167,7 @@ QtObject {
         if (activeMode === mode) return;
         query = "";
         selectedIndex = 0;
+        deleteFocused = false;
         activeMode = mode;
         if (mode === "clipboard" && rawClipHistory.length === 0) {
             loadClipHistory();
@@ -430,6 +442,7 @@ QtObject {
                 items.push({
                     id: clipId,
                     preview: clipText,
+                    rawLine: line,
                     searchKey: clipText.toLowerCase()
                 });
             }
@@ -465,11 +478,37 @@ QtObject {
         close();
     }
 
+    function deleteClipIndex(idx) {
+        if (typeof idx !== "number" || idx < 0 || idx >= displayedClips.length) return;
+        deleteClipItem(displayedClips[idx]);
+    }
+
     function deleteClipItem(clipItem) {
+        if (typeof clipItem === "number") {
+            if (clipItem >= 0 && clipItem < displayedClips.length) {
+                clipItem = displayedClips[clipItem];
+            } else {
+                return;
+            }
+        }
         if (!clipItem || !clipItem.id) return;
-        execProc.command = ["sh", "-c", "cliphist delete <<'EOF'\n" + clipItem.id + "\t" + clipItem.preview + "\nEOF"];
-        execProc.running = true;
-        loadClipHistory();
+
+        let targetId = clipItem.id;
+        let targetLine = clipItem.rawLine || (clipItem.id + "\t" + clipItem.preview);
+
+        // 1. Instantly remove from in-memory arrays so the UI updates immediately
+        rawClipHistory = rawClipHistory.filter(item => item && item.id !== targetId);
+        rebuildClipboardFiltered();
+
+        if (selectedIndex >= displayedClips.length) {
+            selectedIndex = Math.max(0, displayedClips.length - 1);
+        }
+        deleteFocused = false;
+
+        // 2. Safely execute cliphist delete on disk
+        deleteClip.running = false;
+        deleteClip.command = ["sh", "-c", "printf '%s\n' \"$1\" | cliphist delete", "_", targetLine];
+        deleteClip.running = true;
     }
 
     // --- EMOJI LOGIC ---

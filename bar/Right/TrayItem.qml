@@ -31,8 +31,8 @@ MouseArea {
     hoverEnabled: true
     cursorShape: Qt.PointingHandCursor
 
-    scale: root.pressed ? 0.90 : (root.containsMouse ? 1.15 : 1.0)
-    Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Theme.elasticEasing; easing.overshoot: 1.15 } }
+    scale: root.pressed ? 0.92 : 1.0
+    Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
 
     onClicked: (mouse) => {
         if (!root.item) return;
@@ -75,6 +75,8 @@ MouseArea {
         anchors.centerIn: parent
         width: Theme.iconSize
         height: Theme.iconSize
+        opacity: root.containsMouse ? 0.70 : 1.0
+        Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
 
         Image {
             id: trayIcon

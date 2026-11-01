@@ -88,16 +88,8 @@ Item {
                 Layout.alignment: Qt.AlignVCenter
                 visible: VolumeService.micActive
 
-                scale: micMouse.pressed ? 0.92 : (micMouse.containsMouse ? 1.05 : 1.0)
+                scale: micMouse.pressed ? 0.94 : 1.0
                 Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
-
-                Rectangle {
-                    anchors.fill: parent
-                    radius: height / 2
-                    color: micMouse.containsMouse ? Theme.surfaceContainerHigh : "transparent"
-
-                    Behavior on color { ColorAnimation { duration: Theme.animInstant } }
-                }
 
                 RowLayout {
                     id: micLayout
@@ -108,8 +100,11 @@ Item {
                         text: VolumeService.micMuted ? "\uf131" : "\uf130"
                         font.family: Theme.iconFont
                         font.pixelSize: Theme.scaled(Theme.iconSize + 1)
-                        color: VolumeService.micMuted ? Theme.red : Theme.accentColor
+                        color: micMouse.containsMouse
+                            ? (VolumeService.micMuted ? Qt.rgba(Theme.red.r, Theme.red.g, Theme.red.b, 0.65) : Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.65))
+                            : (VolumeService.micMuted ? Theme.red : Theme.accentColor)
                         Layout.alignment: Qt.AlignVCenter
+                        Behavior on color { ColorAnimation { duration: Theme.animFast } }
                     }
                 }
 
@@ -157,16 +152,8 @@ Item {
                     }
                 }
 
-                scale: volMouse.pressed ? 0.92 : (volMouse.containsMouse ? 1.05 : 1.0)
+                scale: volMouse.pressed ? 0.94 : 1.0
                 Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
-
-                Rectangle {
-                    anchors.fill: parent
-                    radius: height / 2
-                    color: volMouse.containsMouse ? Theme.surfaceContainerHigh : "transparent"
-
-                    Behavior on color { ColorAnimation { duration: Theme.animInstant } }
-                }
 
                 RowLayout {
                     id: volLayout
@@ -178,8 +165,11 @@ Item {
                         text: root.volumeIcon(VolumeService.outputVolume, VolumeService.muted)
                         font.family: Theme.iconFont
                         font.pixelSize: Theme.scaled(Theme.iconSize + 1)
-                        color: VolumeService.btActive ? Theme.bluetoothColor : Theme.fontColor
+                        color: volMouse.containsMouse
+                            ? Theme.subtext0
+                            : (VolumeService.btActive ? Theme.bluetoothColor : Theme.fontColor)
                         Layout.alignment: Qt.AlignVCenter
+                        Behavior on color { ColorAnimation { duration: Theme.animFast } }
                     }
 
                     // Percentage Text (Visible ONLY when volume changes or mouse hovers, hides after 3s)
@@ -188,8 +178,11 @@ Item {
                         text: VolumeService.muted ? "Muted" : VolumeService.outputVolume + "%"
                         font.pixelSize: Theme.fontSize
                         font.family: "JetBrains Mono"
-                        color: VolumeService.btActive ? Theme.bluetoothColor : Theme.fontColor
+                        color: volMouse.containsMouse
+                            ? Theme.subtext0
+                            : (VolumeService.btActive ? Theme.bluetoothColor : Theme.fontColor)
                         Layout.alignment: Qt.AlignVCenter
+                        Behavior on color { ColorAnimation { duration: Theme.animFast } }
                     }
                 }
 
@@ -237,16 +230,8 @@ Item {
                 // sitting there permanently off.
                 visible: HardwareService.hasBluetooth && BluetoothService.powered
 
-                scale: btMouse.pressed ? 0.92 : (btMouse.containsMouse ? 1.05 : 1.0)
+                scale: btMouse.pressed ? 0.94 : 1.0
                 Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
-
-                Rectangle {
-                    anchors.fill: parent
-                    radius: height / 2
-                    color: btMouse.containsMouse ? Theme.surfaceContainerHigh : "transparent"
-
-                    Behavior on color { ColorAnimation { duration: Theme.animInstant } }
-                }
 
                 RowLayout {
                     id: btLayout
@@ -257,8 +242,11 @@ Item {
                         text: BluetoothService.powered ? Theme.btIcon : "󰂲"
                         font.family: Theme.iconFont
                         font.pixelSize: Theme.scaled(Theme.iconSize + 1)
-                        color: BluetoothService.connected ? Theme.bluetoothColor : (BluetoothService.powered ? Theme.fontColor : Theme.inactiveTextColor)
+                        color: btMouse.containsMouse
+                            ? Theme.subtext0
+                            : (BluetoothService.connected ? Theme.bluetoothColor : (BluetoothService.powered ? Theme.fontColor : Theme.inactiveTextColor))
                         Layout.alignment: Qt.AlignVCenter
+                        Behavior on color { ColorAnimation { duration: Theme.animFast } }
                     }
                 }
 
@@ -289,21 +277,15 @@ Item {
                 visible: HardwareService.hasBattery && WidgetSettings.enableBattery
                          && !HyprlandService.isFullscreen
 
-                scale: batMouse.pressed ? 0.92 : (batMouse.containsMouse ? 1.05 : 1.0)
+                scale: batMouse.pressed ? 0.94 : 1.0
                 Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
-
-                Rectangle {
-                    anchors.fill: parent
-                    radius: height / 2
-                    color: batMouse.containsMouse ? Theme.surfaceContainerHigh : "transparent"
-
-                    Behavior on color { ColorAnimation { duration: Theme.animInstant } }
-                }
 
                 RowLayout {
                     id: batLayout
                     anchors.centerIn: parent
                     spacing: Theme.scaled(4)
+                    opacity: batMouse.containsMouse ? 0.70 : 1.0
+                    Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
 
                     // Vertical Battery Icon matching other cluster icons
                     Text {
@@ -355,27 +337,19 @@ Item {
                 Layout.preferredHeight: implicitHeight
                 Layout.alignment: Qt.AlignVCenter
 
-                scale: pwrMouse.pressed ? 0.92 : (pwrMouse.containsMouse ? 1.08 : 1.0)
+                scale: pwrMouse.pressed ? 0.94 : 1.0
                 Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
-
-                Rectangle {
-                    anchors.fill: parent
-                    radius: height / 2
-                    color: pwrMouse.containsMouse ? Theme.surfaceContainerHigh : "transparent"
-
-                    Behavior on color { ColorAnimation { duration: Theme.animInstant } }
-                }
 
                 Text {
                     anchors.centerIn: parent
                     text: ""
-                    color: pwrMouse.containsMouse ? Theme.powerRed : Theme.fontColor
+                    color: pwrMouse.containsMouse ? Theme.subtext0 : Theme.fontColor
                     font.family: Theme.iconFont
                     font.pixelSize: Theme.scaled(Theme.iconSize + 1)
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
 
-                    Behavior on color { ColorAnimation { duration: Theme.animInstant } }
+                    Behavior on color { ColorAnimation { duration: Theme.animFast } }
                 }
 
                 MouseArea {

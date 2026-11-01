@@ -89,7 +89,7 @@ MenuWindow {
         color: Theme.glassBackground
         radius: Theme.cardRadius
         border.color: Theme.glassBorder
-        border.width: 2
+        border.width: 1
         clip: true
 
         ColumnLayout {
@@ -97,13 +97,14 @@ MenuWindow {
             anchors.margins: Theme.scaled(16)
             spacing: Theme.scaled(14)
 
-            // --- MATERIAL 3 SEGMENTED TAB BAR ---
+            // --- MATERIAL 3 SEGMENTED TAB BAR (Transparent on Base Canvas) ---
             Rectangle {
                 Layout.fillWidth: true
-                height: Theme.scaled(50)
-                color: Qt.rgba(0, 0, 0, 0.35)
+                height: Theme.scaled(44)
+                color: "transparent"
                 radius: 999
-                border.width: 0
+                border.color: Theme.glassBorder
+                border.width: 1
 
                 RowLayout {
                     anchors.fill: parent
@@ -121,9 +122,9 @@ MenuWindow {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             radius: 999
-                            color: QuickSettingsService.activeTab === modelData.id ? Theme.accentColor : (tabMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : "transparent")
-                            
-                            scale: tabMouse.pressed ? 0.94 : (tabMouse.containsMouse ? 1.03 : 1.0)
+                            color: QuickSettingsService.activeTab === modelData.id ? Theme.accentColor : (tabMouse.containsMouse ? Theme.cardBackgroundHover : "transparent")
+                            border.width: 0
+                            scale: tabMouse.pressed ? 0.95 : 1.0
                             
                             Behavior on color { ColorAnimation { duration: Theme.animInstant } }
                             Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
@@ -134,9 +135,10 @@ MenuWindow {
                                 Text {
                                     text: modelData.icon
                                     font.family: Theme.iconFont
-                                    font.pixelSize: Theme.scaled(16)
-                                    color: QuickSettingsService.activeTab === modelData.id ? Colors.on_primary : "#ffffff"
+                                    font.pixelSize: Theme.scaled(20)
+                                    color: QuickSettingsService.activeTab === modelData.id ? Colors.on_primary : (tabMouse.containsMouse ? Theme.subtext0 : "#ffffff")
                                     Layout.alignment: Qt.AlignVCenter
+                                    Behavior on color { ColorAnimation { duration: Theme.animFast } }
                                 }
                                 Text {
                                     text: modelData.title
@@ -144,14 +146,16 @@ MenuWindow {
                                     font.weight: Font.Bold
                                     font.letterSpacing: 0.5
                                     visible: QuickSettingsService.activeTab === modelData.id || !Theme.isSmallScreen
-                                    color: QuickSettingsService.activeTab === modelData.id ? Colors.on_primary : "#ffffff"
+                                    color: QuickSettingsService.activeTab === modelData.id ? Colors.on_primary : (tabMouse.containsMouse ? Theme.subtext0 : "#ffffff")
                                     Layout.alignment: Qt.AlignVCenter
+                                    Behavior on color { ColorAnimation { duration: Theme.animFast } }
                                 }
                             }
 
                             MouseArea {
                                 id: tabMouse
                                 anchors.fill: parent; hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
                                 onClicked: QuickSettingsService.activeTab = modelData.id
                             }
                         }

@@ -400,8 +400,8 @@ ColumnLayout {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: Theme.scaled(32)
-            radius: Theme.scaled(8)
-            color: Qt.rgba(0, 0, 0, 0.3)
+            radius: Theme.bubbleRadiusSmall
+            color: "transparent"
             border.color: searchInput.activeFocus ? Theme.accentColor : Theme.glassBorder
             border.width: 1
 
@@ -433,8 +433,8 @@ ColumnLayout {
                 required property var modelData
                 width: Theme.scaled(22); height: Theme.scaled(22)
                 radius: Theme.scaled(6)
-                color: zoomMouse.containsMouse ? Theme.surfaceContainerHigh : Qt.rgba(0, 0, 0, 0.3)
-                border.color: Theme.glassBorder; border.width: 1
+                color: zoomMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground
+                border.width: 0
                 Text {
                     anchors.centerIn: parent
                     text: modelData[0]
@@ -455,8 +455,8 @@ ColumnLayout {
         Rectangle {
             width: Theme.scaled(30); height: Theme.scaled(22)
             radius: Theme.scaled(6)
-            color: fitMouse.containsMouse ? Theme.surfaceContainerHigh : Qt.rgba(0, 0, 0, 0.3)
-            border.color: Theme.glassBorder; border.width: 1
+            color: fitMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground
+            border.width: 0
             Text {
                 anchors.centerIn: parent
                 text: "fit"
@@ -494,9 +494,8 @@ ColumnLayout {
             height: Theme.scaled(23)
             radius: height / 2
             color: isActive ? Theme.accentColor
-                            : (tabMouse.containsMouse ? Theme.surfaceContainerHigh : Qt.rgba(0, 0, 0, 0.25))
-            border.color: isActive ? Theme.accentColor : Theme.glassBorder
-            border.width: 1
+                            : (tabMouse.containsMouse ? Theme.cardBackgroundHover : "transparent")
+            border.width: 0
             Behavior on color { ColorAnimation { duration: Theme.animInstant } }
 
             readonly property int chipDone: root.doneFor(slug)
@@ -615,8 +614,8 @@ ColumnLayout {
     Rectangle {
         Layout.fillWidth: true
         Layout.fillHeight: true
-        radius: Theme.cardRadius
-        color: Qt.rgba(0, 0, 0, 0.3)
+        radius: Theme.bubbleRadiusMedium
+        color: Theme.cardBackground
         border.color: Theme.glassBorder
         border.width: 1
         clip: true

@@ -70,8 +70,10 @@ PanelWindow {
                 Rectangle {
                     width: osdWindow.isFullscreen ? Theme.scaled(16) : Theme.scaled(32); 
                     height: osdWindow.isFullscreen ? Theme.scaled(16) : Theme.scaled(32); 
-                    radius: osdWindow.isFullscreen ? Theme.scaled(4) : Theme.scaled(8); 
-                    color: Theme.mantle
+                    radius: osdWindow.isFullscreen ? Theme.scaled(4) : Theme.bubbleRadiusSmall; 
+                    color: "transparent"
+                    border.color: Theme.glassBorder
+                    border.width: 1
                     Text {
                         anchors.centerIn: parent
                         font.pixelSize: osdWindow.isFullscreen ? Theme.scaled(14) : Theme.scaled(18)
@@ -125,11 +127,11 @@ PanelWindow {
                 }
 
                 background: Rectangle {
-                    x: osdSlider.leftPadding + osdSlider.handleWidth /1
+                    x: osdSlider.leftPadding + osdSlider.handleWidth / 1
                     y: osdWindow.isFullscreen ? osdSlider.topPadding + (osdSlider.availableHeight - height) / 5 : osdSlider.topPadding + (osdSlider.availableHeight - height) / 2
                     implicitHeight: osdWindow.isFullscreen ? Theme.scaled(8) : Theme.scaled(10)
                     width: osdSlider.availableWidth - osdSlider.handleWidth
-                    radius: Theme.scaled(3); color: Theme.mantle
+                    radius: Theme.scaled(3); color: Qt.rgba(255, 255, 255, 0.08); border.color: Theme.glassBorder; border.width: 1
                     Rectangle {
                         width: osdSlider.visualPosition * parent.width
                         height: osdWindow.isFullscreen ? Theme.scaled(12) : parent.height
@@ -142,9 +144,9 @@ PanelWindow {
                     x: osdSlider.leftPadding + osdSlider.visualPosition * (osdSlider.availableWidth - width)
                     y: osdSlider.topPadding + (osdSlider.availableHeight - height) / 2
                     implicitWidth: osdSlider.handleWidth; implicitHeight: osdWindow.isFullscreen ? Theme.scaled(12) : Theme.scaled(14); radius: width / 2
-                    color: Theme.text; border.color: Theme.surface1
+                    color: Theme.text; border.color: Theme.glassBorder; border.width: 1
 
-                    scale: osdSlider.pressed ? 1.3 : (osdSlider.hovered ? 1.2 : 1.1)
+                    scale: osdSlider.pressed ? 1.05 : 1.0
                     Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutBack; easing.overshoot: 1.1 } }
                 }
             }
