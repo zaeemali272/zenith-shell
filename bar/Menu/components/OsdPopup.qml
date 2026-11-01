@@ -34,7 +34,7 @@ PanelWindow {
     implicitHeight: osdWindow.isFullscreen ? Theme.scaled(65) : Theme.scaled(85)
     
     // Window stays visible if timer is running OR if the mouse is hovering/pressing
-    visible: (osdTimer.running || content.opacity > 0 || mainMouseArea.containsMouse) && (!osdWindow.isFullscreen || osdWindow.useFullscreenLayout)
+    visible: !LockService.locked && (osdTimer.running || content.opacity > 0 || mainMouseArea.containsMouse) && (!osdWindow.isFullscreen || osdWindow.useFullscreenLayout)
     color: "transparent"
 
     Rectangle {
