@@ -76,7 +76,8 @@ Scope {
             "power", "sys", "quicksettings", "close", "close_all",
             "clipboard", "clip", "emoji", "settings", "config", "lock",
             "screenshot", "snip", "colorpicker", "nightlight", "dnd", "micmute",
-            "services", "daemons"
+            "services", "daemons",
+            "display", "displays", "resolution", "project"
         ]
         delegate: GlobalShortcut {
             required property string modelData
@@ -111,10 +112,28 @@ Scope {
     }
 
     property bool settingsVisible: false
+    property int settingsTargetTab: 0
+
+    function openSettingsTab(tabIndex) {
+        let target = (tabIndex !== undefined && tabIndex >= 0) ? tabIndex : 0;
+        if (settingsVisible && settingsLoader.item) {
+            if (settingsLoader.item.currentIndex === target) {
+                settingsVisible = false;
+            } else {
+                settingsLoader.item.currentIndex = target;
+                if (typeof settingsLoader.item.requestActivate === "function") {
+                    settingsLoader.item.requestActivate();
+                }
+            }
+        } else {
+            settingsTargetTab = target;
+            settingsVisible = true;
+        }
+    }
     
     Process {
         id: ipcReader
-        command: ["sh", "-c", "mkdir -p $HOME/.cache && (rm -f " + cmdPath + " 2>/dev/null; mkfifo " + cmdPath + " 2>/dev/null || true) && while true; do cat " + cmdPath + " 2>/dev/null || sleep 0.1; done"]
+        command: ["sh", "-c", "mkdir -p $HOME/.cache && while true; do rm -f " + cmdPath + " 2>/dev/null; mkfifo " + cmdPath + " 2>/dev/null; cat <> " + cmdPath + "; sleep 0.2; done"]
         running: true
         
         stdout: SplitParser {
@@ -194,8 +213,27 @@ Scope {
             QuickSettingsService.toggle("power");
         } else if (lowerAction === "lock") {
             LockService.lock();
+        } else if (lowerAction === "display" || lowerAction === "displays" || lowerAction === "resolution" || lowerAction === "project") {
+            CenterState.toggle("Display");
         } else if (lowerAction === "settings" || lowerAction === "config") {
-            settingsVisible = !settingsVisible;
+            let targetTab = 0;
+            if (lowerArg === "display" || lowerArg === "displays" || lowerArg === "resolution" || lowerArg === "project" || lowerArg === "7") {
+                targetTab = 7;
+            } else if (lowerArg === "bar" || lowerArg === "1") {
+                targetTab = 1;
+            } else if (lowerArg === "appearance" || lowerArg === "2") {
+                targetTab = 2;
+            } else if (lowerArg === "workspace" || lowerArg === "3") {
+                targetTab = 3;
+            } else if (lowerArg === "battery" || lowerArg === "4") {
+                targetTab = 4;
+            } else if (lowerArg === "media" || lowerArg === "5") {
+                targetTab = 5;
+            } else if (lowerArg === "hyprland" || lowerArg === "6") {
+                targetTab = 6;
+            }
+            MenuService.closeAll();
+            openSettingsTab(targetTab);
         } else if (lowerAction === "close" || lowerAction === "close_all") {
             MenuService.closeAll();
         }
@@ -209,13 +247,21 @@ Scope {
     // click, click outside, fullscreen, the `close` command). It only emits
     // the request; the services that own the surfaces are closed here, so
     // MenuService itself never has to import them.
+    // Defer GC to idle time instead of freezing the UI thread on dismissal
+    Timer {
+        id: idleGcTimer
+        interval: 15000
+        repeat: false
+        onTriggered: gc()
+    }
+
     Connections {
         target: MenuService
         function onCloseRequested() {
             CenterState.close();
             QuickSettingsService.close();
             DynamicIslandService.close();
-            gc();
+            idleGcTimer.restart();
         }
     }
 
@@ -270,12 +316,23 @@ Scope {
         }
     }
 
+    Connections {
+        target: DisplayService
+        function onRequestOpenSettings(tabIndex) {
+            openSettingsTab(tabIndex);
+        }
+    }
+
     Loader {
         id: settingsLoader
         active: settingsVisible
         sourceComponent: Component {
             SettingsWindow {
-                Component.onCompleted: visible = true
+                targetTab: settingsTargetTab
+                Component.onCompleted: {
+                    if (targetTab > 0) currentIndex = targetTab;
+                    visible = true;
+                }
                 onVisibleChanged: {
                     if (!visible) settingsVisible = false;
                 }

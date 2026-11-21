@@ -26,6 +26,8 @@ Item {
         asynchronous: true
         visible: !root.showLetter
         source: root.resolvedSource
+        sourceSize: Qt.size(Math.max(16, Math.round((width > 0 ? width : 32) * (Screen.devicePixelRatio || 1))),
+                            Math.max(16, Math.round((height > 0 ? height : 32) * (Screen.devicePixelRatio || 1))))
         autoTransform: true
     }
 

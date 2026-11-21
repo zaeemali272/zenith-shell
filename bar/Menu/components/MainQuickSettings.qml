@@ -13,18 +13,9 @@ ColumnLayout {
     spacing: Theme.scaled(14)
     Layout.fillWidth: true
 
-    opacity: 0
-    scale: 0.98
     Component.onCompleted: {
-        entryAnim.start();
         if (HardwareService.hasBattery) BatteryService.update();
         if (HardwareService.hasBacklight) BrightnessService.update();
-    }
-
-    ParallelAnimation {
-        id: entryAnim
-        NumberAnimation { target: root; property: "opacity"; to: 1; duration: 300; easing.type: Easing.OutCubic }
-        NumberAnimation { target: root; property: "scale"; to: 1; duration: 400; easing.type: Theme.elasticEasing }
     }
 
     // ==========================================
@@ -680,6 +671,152 @@ ColumnLayout {
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: PowerToolsService.toggleDnd()
+            }
+        }
+
+        // --- TILE 7: PROJECT / DISPLAY ---
+        Rectangle {
+            Layout.fillWidth: true
+            height: Theme.scaled(58)
+            implicitHeight: Theme.scaled(58)
+            Layout.preferredHeight: Theme.scaled(58)
+            radius: Theme.bubbleRadiusMedium
+            color: projTileMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground
+            border.color: Theme.glassBorder
+            border.width: 1
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.margins: Theme.scaled(8)
+                spacing: Theme.scaled(8)
+
+                Rectangle {
+                    width: Theme.scaled(36)
+                    height: Theme.scaled(36)
+                    radius: Theme.scaled(10)
+                    color: Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.20)
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "󰍹"
+                        font.family: Theme.iconFont
+                        font.pixelSize: Theme.scaled(18)
+                        color: Theme.accentColor
+                    }
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 1
+
+                    Text {
+                        text: "Project"
+                        font.pixelSize: Theme.scaled(12)
+                        font.weight: Font.Bold
+                        color: Theme.text
+                        elide: Text.ElideRight
+                        Layout.fillWidth: true
+                    }
+
+                    Text {
+                        text: "Displays & Resolution"
+                        font.pixelSize: Theme.scaled(10)
+                        color: Theme.subtext0
+                        elide: Text.ElideRight
+                        Layout.fillWidth: true
+                    }
+                }
+
+                Text {
+                    text: "󰅂"
+                    font.family: Theme.iconFont
+                    font.pixelSize: Theme.scaled(16)
+                    color: projTileMouse.containsMouse ? Theme.text : Theme.subtext0
+                }
+            }
+
+            MouseArea {
+                id: projTileMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    QuickSettingsService.close();
+                    DisplayService.openDisplaySettings();
+                }
+            }
+        }
+
+        // --- TILE 8: SETTINGS ---
+        Rectangle {
+            Layout.fillWidth: true
+            height: Theme.scaled(58)
+            implicitHeight: Theme.scaled(58)
+            Layout.preferredHeight: Theme.scaled(58)
+            radius: Theme.bubbleRadiusMedium
+            color: settingsTileMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground
+            border.color: Theme.glassBorder
+            border.width: 1
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.margins: Theme.scaled(8)
+                spacing: Theme.scaled(8)
+
+                Rectangle {
+                    width: Theme.scaled(36)
+                    height: Theme.scaled(36)
+                    radius: Theme.scaled(10)
+                    color: Qt.rgba(1, 1, 1, 0.08)
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "󰒓"
+                        font.family: Theme.iconFont
+                        font.pixelSize: Theme.scaled(18)
+                        color: Theme.text
+                    }
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 1
+
+                    Text {
+                        text: "Settings"
+                        font.pixelSize: Theme.scaled(12)
+                        font.weight: Font.Bold
+                        color: Theme.text
+                        elide: Text.ElideRight
+                        Layout.fillWidth: true
+                    }
+
+                    Text {
+                        text: "System Preferences"
+                        font.pixelSize: Theme.scaled(10)
+                        color: Theme.subtext0
+                        elide: Text.ElideRight
+                        Layout.fillWidth: true
+                    }
+                }
+
+                Text {
+                    text: "󰅂"
+                    font.family: Theme.iconFont
+                    font.pixelSize: Theme.scaled(16)
+                    color: settingsTileMouse.containsMouse ? Theme.text : Theme.subtext0
+                }
+            }
+
+            MouseArea {
+                id: settingsTileMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    QuickSettingsService.close();
+                    DisplayService.requestOpenSettings(0);
+                }
             }
         }
     }

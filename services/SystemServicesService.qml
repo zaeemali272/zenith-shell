@@ -32,16 +32,12 @@ QtObject {
 
     readonly property string scriptPath: PathSettings.scriptsDir + "/services_manager.py"
 
-    // Timer only ticks while the Control Center dashboard is open
+    // Timer only ticks while the Services tab in Control Center is active
     property Timer autoRefreshTimer: Timer {
         interval: 8000
         repeat: true
-        running: CenterState.qsVisible && (CenterState.activeTab === "Pomodoro" || CenterState.activeTab === "Default")
+        running: CenterState.qsVisible && CenterState.activeTab === "Pomodoro" && CenterState.focusTool === "Services"
         onTriggered: root.refresh()
-    }
-
-    Component.onCompleted: {
-        root.refresh();
     }
 
     function refresh() {

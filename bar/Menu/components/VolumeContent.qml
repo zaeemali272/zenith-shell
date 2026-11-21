@@ -15,6 +15,9 @@ ColumnLayout {
 
     opacity: 0
     scale: 0.98
+    onVisibleChanged: {
+        if (visible) VolumeService.update();
+    }
     Component.onCompleted: {
         VolumeService.update();
         entryAnim.start();
@@ -50,7 +53,6 @@ ColumnLayout {
             radius: Theme.bubbleRadiusLarge
             border.color: Theme.glassBorder
             border.width: 1
-            clip: true
 
             Behavior on Layout.preferredHeight { NumberAnimation { duration: Theme.animNormal; easing.type: Theme.animEasing } }
             Behavior on implicitHeight { NumberAnimation { duration: Theme.animNormal; easing.type: Theme.animEasing } }
@@ -118,7 +120,10 @@ ColumnLayout {
 
                         MouseArea {
                             anchors.fill: parent
-                            onClicked: outputCard.dropdownOpen = !outputCard.dropdownOpen
+                            onClicked: {
+                                outputCard.dropdownOpen = !outputCard.dropdownOpen;
+                                if (outputCard.dropdownOpen) VolumeService.update();
+                            }
                         }
                     }
 
@@ -224,7 +229,6 @@ ColumnLayout {
             radius: Theme.bubbleRadiusLarge
             border.color: Theme.glassBorder
             border.width: 1
-            clip: true
 
             Behavior on Layout.preferredHeight { NumberAnimation { duration: Theme.animNormal; easing.type: Theme.animEasing } }
             Behavior on implicitHeight { NumberAnimation { duration: Theme.animNormal; easing.type: Theme.animEasing } }
@@ -292,7 +296,10 @@ ColumnLayout {
 
                         MouseArea {
                             anchors.fill: parent
-                            onClicked: inputCard.dropdownOpen = !inputCard.dropdownOpen
+                            onClicked: {
+                                inputCard.dropdownOpen = !inputCard.dropdownOpen;
+                                if (inputCard.dropdownOpen) VolumeService.update();
+                            }
                         }
                     }
 

@@ -14,6 +14,8 @@ Item {
     property string focusTool: "Todo"
     // Sub-tab for the Wallpaper page: "Wallpaper", "Themes", "Slideshow", "Animated"
     property string wallpaperSubTab: "Wallpaper"
+    // Sub-tab index for Settings page: 0=General, 1=Bar, 2=Appearance, 3=Workspace, 4=Battery, 5=Media, 6=Hyprland, 7=Displays
+    property int settingsSubTab: 0
     property rect anchorRect: Qt.rect(0, 0, 0, 0)
 
     function open(tab, rect) {
@@ -21,6 +23,9 @@ Item {
         if (targetTab === "Theme" || targetTab === "Themes") {
             targetTab = "Wallpaper";
             wallpaperSubTab = "Themes";
+        } else if (targetTab === "Display" || targetTab === "Displays" || targetTab === "Resolution" || targetTab === "Project") {
+            targetTab = "Settings";
+            settingsSubTab = 7;
         }
         activeTab = targetTab;
         if (rect !== undefined) anchorRect = rect;
@@ -38,6 +43,14 @@ Item {
                 return;
             }
             open("Theme", rect);
+            return;
+        }
+        if (targetTab === "Display" || targetTab === "Displays" || targetTab === "Resolution" || targetTab === "Project") {
+            if (qsVisible && activeTab === "Settings" && settingsSubTab === 7) {
+                close();
+                return;
+            }
+            open("Display", rect);
             return;
         }
         if (qsVisible && activeTab === targetTab) {

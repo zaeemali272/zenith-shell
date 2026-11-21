@@ -85,6 +85,8 @@ MouseArea {
             fillMode: Image.PreserveAspectFit
             asynchronous: true
             smooth: true
+            sourceSize: Qt.size(Math.max(16, Math.round(Theme.iconSize * (Screen.devicePixelRatio || 1))),
+                                Math.max(16, Math.round(Theme.iconSize * (Screen.devicePixelRatio || 1))))
 
             source: {
                 if (!root.item) return "";

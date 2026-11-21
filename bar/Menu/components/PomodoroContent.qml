@@ -76,10 +76,35 @@ Item {
             currentIndex: ["Todo", "Roadmap", "Timer", "Mail", "Services"].indexOf(root.activeTool)
 
             TodoContent { id: todoContent; Layout.fillWidth: true; Layout.fillHeight: true }
-            RoadmapContent { Layout.fillWidth: true; Layout.fillHeight: true }
+
+            Loader {
+                id: roadmapLoader
+                Layout.fillWidth: true; Layout.fillHeight: true
+                property bool hasBeenActive: false
+                active: root.activeTool === "Roadmap" || hasBeenActive
+                onActiveChanged: if (active) hasBeenActive = true
+                sourceComponent: Component { RoadmapContent {} }
+            }
+
             TimerContent { Layout.fillWidth: true; Layout.fillHeight: true }
-            MailContent { Layout.fillWidth: true; Layout.fillHeight: true }
-            ServicesContent { id: servicesContent; Layout.fillWidth: true; Layout.fillHeight: true }
+
+            Loader {
+                id: mailLoader
+                Layout.fillWidth: true; Layout.fillHeight: true
+                property bool hasBeenActive: false
+                active: root.activeTool === "Mail" || hasBeenActive
+                onActiveChanged: if (active) hasBeenActive = true
+                sourceComponent: Component { MailContent {} }
+            }
+
+            Loader {
+                id: servicesLoader
+                Layout.fillWidth: true; Layout.fillHeight: true
+                property bool hasBeenActive: false
+                active: root.activeTool === "Services" || hasBeenActive
+                onActiveChanged: if (active) hasBeenActive = true
+                sourceComponent: Component { ServicesContent {} }
+            }
         }
 
     }

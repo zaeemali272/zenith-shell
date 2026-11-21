@@ -67,9 +67,12 @@ MenuWindow {
         )
         readonly property real minMenuHeight: Theme.scaled(240)
 
-        readonly property Item activeTabItem: (contentStack && contentStack.children && contentStack.currentIndex >= 0 && contentStack.currentIndex < contentStack.children.length)
-            ? contentStack.children[contentStack.currentIndex]
-            : null
+        readonly property Item activeTabItem: {
+            if (!contentStack || !contentStack.children || contentStack.currentIndex < 0 || contentStack.currentIndex >= contentStack.children.length)
+                return null;
+            let child = contentStack.children[contentStack.currentIndex];
+            return (child && child.item) ? child.item : child;
+        }
 
         readonly property real activeItemHeight: {
             if (!activeTabItem) return Theme.scaled(480);
@@ -117,16 +120,20 @@ MenuWindow {
                 }
             }
             if (QuickSettingsService.activeTab === "power") {
-                powerContent.handleKeys(event);
-                if (event.accepted) return;
+                let pc = powerLoader.item;
+                if (pc && typeof pc.handleKeys === 'function') {
+                    pc.handleKeys(event);
+                    if (event.accepted) return;
+                }
             }
             if (QuickSettingsService.activeTab === "network") {
                 wifiContent.handleKeys(event);
                 if (event.accepted) return;
             }
             let currentContent = contentStack.children[contentStack.currentIndex];
-            if (currentContent && typeof currentContent.handleKeys === 'function') {
-                currentContent.handleKeys(event);
+            let targetContent = (currentContent && currentContent.item) ? currentContent.item : currentContent;
+            if (targetContent && typeof targetContent.handleKeys === 'function') {
+                targetContent.handleKeys(event);
                 if (event.accepted) return;
             }
             if (event.key === Qt.Key_Left || event.key === Qt.Key_Right) {
@@ -320,17 +327,59 @@ MenuWindow {
 
                     MainQuickSettings { id: mainQuickSettings }
                     WifiContent { id: wifiContent }
-                    BluetoothContent { }
-                    VolumeContent { }
-                    PowerProfileContent { }
-                    BatteryContent { }
-                    PowerContent { 
-                        id: powerContent
-                        Connections {
-                            target: QuickSettingsService
-                            function onActiveTabChanged() {
-                                if (QuickSettingsService.activeTab === "power") {
-                                    powerContent.forceActiveFocus();
+
+                    Loader {
+                        id: btLoader
+                        Layout.fillWidth: true
+                        property bool hasBeenActive: false
+                        active: QuickSettingsService.activeTab === "bluetooth" || hasBeenActive
+                        onActiveChanged: if (active) hasBeenActive = true
+                        sourceComponent: Component { BluetoothContent { } }
+                    }
+
+                    Loader {
+                        id: volLoader
+                        Layout.fillWidth: true
+                        property bool hasBeenActive: false
+                        active: QuickSettingsService.activeTab === "volume" || hasBeenActive
+                        onActiveChanged: if (active) hasBeenActive = true
+                        sourceComponent: Component { VolumeContent { } }
+                    }
+
+                    Loader {
+                        id: powerProfileLoader
+                        Layout.fillWidth: true
+                        property bool hasBeenActive: false
+                        active: QuickSettingsService.activeTab === "powerprofile" || hasBeenActive
+                        onActiveChanged: if (active) hasBeenActive = true
+                        sourceComponent: Component { PowerProfileContent { } }
+                    }
+
+                    Loader {
+                        id: batteryLoader
+                        Layout.fillWidth: true
+                        property bool hasBeenActive: false
+                        active: QuickSettingsService.activeTab === "battery" || hasBeenActive
+                        onActiveChanged: if (active) hasBeenActive = true
+                        sourceComponent: Component { BatteryContent { } }
+                    }
+
+                    Loader {
+                        id: powerLoader
+                        Layout.fillWidth: true
+                        property bool hasBeenActive: false
+                        active: QuickSettingsService.activeTab === "power" || hasBeenActive
+                        onActiveChanged: if (active) hasBeenActive = true
+                        sourceComponent: Component {
+                            PowerContent {
+                                id: powerContent
+                                Connections {
+                                    target: QuickSettingsService
+                                    function onActiveTabChanged() {
+                                        if (QuickSettingsService.activeTab === "power") {
+                                            powerContent.forceActiveFocus();
+                                        }
+                                    }
                                 }
                             }
                         }

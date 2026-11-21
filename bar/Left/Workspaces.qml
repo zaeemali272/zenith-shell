@@ -20,6 +20,13 @@ Item {
     readonly property HyprlandMonitor monitor: (QsWindow.window && QsWindow.window.monitor) ? QsWindow.window.monitor : null
     property int updateCounter: 0
 
+    Timer {
+        id: wsDebounceTimer
+        interval: 35
+        repeat: false
+        onTriggered: workspaceBar.updateCounter++
+    }
+
     Connections {
         target: Hyprland
         function onFocusedWorkspaceChanged() { workspaceBar.updateCounter++; }
@@ -28,7 +35,7 @@ Item {
             if (!event) return;
             let n = event.name || "";
             if (n.includes("window") || n.includes("workspace") || n.includes("mon")) {
-                workspaceBar.updateCounter++;
+                wsDebounceTimer.restart();
             }
         }
     }
@@ -96,7 +103,8 @@ Item {
                     }
 
                     readonly property bool isIconsMode: WorkspaceSettings.displayStyle === "icons"
-                    readonly property bool hasIcons: isIconsMode && wsGlyphs.length > 0
+                    readonly property bool isHybridMode: WorkspaceSettings.displayStyle === "hybrid"
+                    readonly property bool hasIcons: (isIconsMode || isHybridMode) && wsGlyphs.length > 0
 
                     // Bubble Dimensions
                     height: isCurrentActive 
@@ -105,6 +113,9 @@ Item {
 
                     width: {
                         if (isCurrentActive) {
+                            if (isHybridMode && wsGlyphs.length > 0) {
+                                return Math.max(Theme.scaled(WorkspaceSettings.activeWidth || 42), Theme.scaled(30 + Math.min(2, wsGlyphs.length) * 14));
+                            }
                             if (hasIcons) {
                                 return Math.max(Theme.scaled(WorkspaceSettings.activeWidth || 42), Theme.scaled(22 + wsGlyphs.length * 16));
                             }
@@ -184,11 +195,44 @@ Item {
                         Behavior on opacity { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
                     }
 
-                    // Content 2: Icons Row for Workspace (up to 3 distinct parent app glyphs)
+                    // Content 2: Active Hybrid Row (ID + App Icons)
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: Theme.scaled(4)
+                        visible: isCurrentActive && isHybridMode && wsBubble.wsGlyphs.length > 0
+                        opacity: visible ? 1.0 : 0.0
+
+                        Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
+
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: modelData ? modelData.id.toString() : ""
+                            font.family: Theme.fontFamily
+                            font.pixelSize: Theme.fontSize
+                            font.weight: Font.Bold
+                            color: Colors.on_primary
+                            antialiasing: true
+                        }
+
+                        Repeater {
+                            model: wsBubble.wsGlyphs.slice(0, 2)
+
+                            delegate: Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: modelData
+                                font.family: Theme.iconFont
+                                font.pixelSize: Theme.scaled(12)
+                                color: Colors.on_primary
+                                antialiasing: true
+                            }
+                        }
+                    }
+
+                    // Content 3: Icons Row for Workspace (inactive icons or pure icons mode active)
                     Row {
                         anchors.centerIn: parent
                         spacing: Theme.scaled(3)
-                        visible: hasIcons
+                        visible: hasIcons && !(isCurrentActive && isHybridMode)
                         opacity: visible ? 1.0 : 0.0
 
                         Behavior on opacity { NumberAnimation { duration: Theme.animFast } }

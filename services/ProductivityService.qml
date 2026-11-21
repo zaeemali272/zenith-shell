@@ -40,7 +40,14 @@ Item {
         refreshData();
     }
 
+    property bool _pendingSave: false
+
     function save() {
+        if (saveProcess.running) {
+            _pendingSave = true;
+            return;
+        }
+        _pendingSave = false;
         let data = {
             tasks: tasks,
             timer: {
@@ -186,5 +193,12 @@ Item {
             if (exitCode !== 0) initData(null);
         }
     }
-    Process { id: saveProcess }
+    Process {
+        id: saveProcess
+        onExited: {
+            if (service._pendingSave) {
+                service.save();
+            }
+        }
+    }
 }

@@ -60,12 +60,16 @@ MenuWindow {
         focus: true
         Keys.onPressed: (event) => {
             if (CenterState.activeTab === "Wallpaper") {
-                wallpaperContent.handleKeys(event);
-                if (event.accepted) return;
+                let wp = wallpaperLoader.item;
+                if (wp && typeof wp.handleKeys === 'function') {
+                    wp.handleKeys(event);
+                    if (event.accepted) return;
+                }
             }
             let currentContent = contentStack.children[contentStack.currentIndex];
-            if (currentContent && typeof currentContent.handleKeys === 'function') {
-                currentContent.handleKeys(event);
+            let activeItem = (currentContent && currentContent.item) ? currentContent.item : currentContent;
+            if (activeItem && typeof activeItem.handleKeys === 'function') {
+                activeItem.handleKeys(event);
                 if (event.accepted) return;
             }
             if (event.key === Qt.Key_Left || event.key === Qt.Key_Right) {
@@ -505,7 +509,6 @@ MenuWindow {
                             radius: Theme.cardRadius
                             border.color: Theme.glassBorder
                             border.width: 1
-                            clip: true
                             
                             ColumnLayout {
                                 anchors.fill: parent; anchors.margins: Theme.scaled(14); spacing: Theme.scaled(8)
@@ -591,7 +594,6 @@ MenuWindow {
                         radius: Theme.cardRadius
                         border.color: Theme.glassBorder
                         border.width: 1
-                        clip: true
                         ColumnLayout {
                             anchors.fill: parent; anchors.margins: Theme.scaled(14)
                             CalendarWidget { Layout.fillWidth: true; Layout.fillHeight: true }
@@ -605,7 +607,6 @@ MenuWindow {
                         radius: Theme.cardRadius
                         border.color: Theme.glassBorder
                         border.width: 1
-                        clip: true
                         ColumnLayout {
                             anchors.fill: parent; anchors.margins: Theme.scaled(14)
                             WeatherWidget {
@@ -616,20 +617,44 @@ MenuWindow {
                 }
 
                 // Pomodoro Tab (Focus: Tasks, Roadmap, Timer, Mail, Services)
-                PomodoroContent {
+                Loader {
+                    id: pomodoroLoader
                     Layout.fillWidth: true; Layout.fillHeight: true
+                    property bool hasBeenActive: false
+                    active: CenterState.activeTab === "Pomodoro" || hasBeenActive
+                    onActiveChanged: if (active) hasBeenActive = true
+                    sourceComponent: Component { PomodoroContent {} }
                 }
 
                 // Wallpaper Tab
-                WallpaperContent {
-                    id: wallpaperContent
+                Loader {
+                    id: wallpaperLoader
                     Layout.fillWidth: true; Layout.fillHeight: true
+                    property bool hasBeenActive: false
+                    active: CenterState.activeTab === "Wallpaper" || hasBeenActive
+                    onActiveChanged: if (active) hasBeenActive = true
+                    sourceComponent: Component { WallpaperContent { id: wallpaperContent } }
                 }
 
                 // Settings Tab
-                SettingsContent {
-                    id: settingsContent
+                Loader {
+                    id: settingsLoader
                     Layout.fillWidth: true; Layout.fillHeight: true
+                    property bool hasBeenActive: false
+                    active: CenterState.activeTab === "Settings" || hasBeenActive
+                    onActiveChanged: if (active) hasBeenActive = true
+                    sourceComponent: Component { 
+                        SettingsContent { 
+                            id: settingsContent 
+                            activeTab: CenterState.settingsSubTab
+                            Connections {
+                                target: CenterState
+                                function onSettingsSubTabChanged() {
+                                    settingsContent.activeTab = CenterState.settingsSubTab;
+                                }
+                            }
+                        } 
+                    }
                 }
             }
         }
@@ -639,7 +664,8 @@ MenuWindow {
         target: CenterState
         function onActiveTabChanged() {
             if (CenterState.activeTab === "Wallpaper") {
-                mainContent.Keys.forwardTo = [wallpaperContent];
+                let wp = wallpaperLoader.item;
+                if (wp) mainContent.Keys.forwardTo = [wp];
             } else {
                 mainContent.Keys.forwardTo = [];
             }
@@ -660,8 +686,8 @@ MenuWindow {
     }
 
     function updateFocusForTab(tab) {
-        if (tab === "Wallpaper") {
-            wallpaperContent.forceActiveFocus();
+        if (tab === "Wallpaper" && wallpaperLoader.item) {
+            wallpaperLoader.item.forceActiveFocus();
         }
     }
 }

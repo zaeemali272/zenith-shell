@@ -21,6 +21,10 @@ Item {
     property string expandedServiceId: ""
     property string logFilterLevel: "All"
 
+    Component.onCompleted: {
+        SystemServicesService.refresh();
+    }
+
     ColumnLayout {
         anchors.fill: parent
         spacing: Theme.scaled(12)
@@ -283,6 +287,7 @@ Item {
 
             ListView {
                 id: servicesListView
+                reuseItems: true
                 FastWheel {}
                 width: servicesScrollView.width
                 spacing: Theme.scaled(8)
@@ -718,7 +723,6 @@ Item {
                             color: Qt.rgba(12/255, 12/255, 18/255, 0.85)
                             border.color: Theme.glassBorder
                             border.width: 1
-                            clip: true
                             visible: isExpanded
 
                             ColumnLayout {
@@ -823,7 +827,6 @@ Item {
                                     color: Qt.rgba(0, 0, 0, 0.6)
                                     border.color: Qt.rgba(255, 255, 255, 0.08)
                                     border.width: 1
-                                    clip: true
 
                                     // Loading state
                                     ColumnLayout {

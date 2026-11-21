@@ -31,7 +31,6 @@ PanelWindow {
     }
 
     implicitHeight: Theme.barHeight
-    height: Theme.barHeight
     implicitWidth: screen ? screen.width : Theme.screenWidth
     color: "transparent"
     visible: !HyprlandService.isFullscreen && !LockService.locked
@@ -44,9 +43,8 @@ PanelWindow {
         color: Theme.barColor
         radius: Theme.barRadius || 0
         antialiasing: true
-        clip: true
         opacity: BarSettings.entryAnimation ? 0 : BarSettings.opacity
-        y: BarSettings.entryAnimation ? -height : 0
+        y: BarSettings.entryAnimation ? -Theme.barHeight : 0
 
         ParallelAnimation {
             id: barEntryAnim

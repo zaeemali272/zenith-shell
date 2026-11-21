@@ -58,6 +58,8 @@ Rectangle {
                 id: artImage
                 anchors.fill: parent
                 source: player ? String(player.trackArtUrl || "") : ""
+                sourceSize: Qt.size(Math.max(32, Math.round(artBox.width * (Screen.devicePixelRatio || 1))),
+                                    Math.max(32, Math.round(artBox.height * (Screen.devicePixelRatio || 1))))
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
                 visible: false

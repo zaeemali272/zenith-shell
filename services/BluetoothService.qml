@@ -339,7 +339,10 @@ print(json.dumps(result))
     }
 
     function action(mode, addr) {
-        if (isPerformingAction) return;
+        if (actionExec.running || powerExec.running || startupToggleExec.running) return;
+        if (scanExec.running) {
+            scanExec.running = false;
+        }
         root.state = mode.charAt(0).toUpperCase() + mode.slice(1) + "ing...";
 
         // Optimistic UI updates - respond in 0ms to user actions!
@@ -406,9 +409,9 @@ print(json.dumps(result))
 
         let cmd = "";
         if (mode === "connect") {
-             cmd = `(bluetoothctl trust ${addr} && (bluetoothctl pair ${addr} || true) && bluetoothctl connect ${addr}) || bluetoothctl connect ${addr}`;
+             cmd = `bluetoothctl scan off 2>/dev/null; bluetoothctl trust ${addr} && bluetoothctl connect ${addr}`;
         } else if (mode === "pair") {
-             cmd = `bluetoothctl trust ${addr} && (bluetoothctl pair ${addr} || true)`;
+             cmd = `bluetoothctl scan off 2>/dev/null; bluetoothctl trust ${addr} && bluetoothctl pair ${addr} && bluetoothctl connect ${addr}`;
         } else if (mode === "disconnect") {
              cmd = `bluetoothctl disconnect ${addr}`;
         } else if (mode === "remove") {
@@ -423,15 +426,16 @@ print(json.dumps(result))
     
     Timer {
         id: postActionPoll
-        interval: 350
+        interval: 400
         repeat: true
         property int count: 0
         onTriggered: {
             if (!root.isInteracting) {
                 refresh(true);
             }
+            VolumeService.update();
             count++;
-            if (count >= 3) stop();
+            if (count >= 4) stop();
         }
         function trigger() {
             count = 0;
@@ -439,9 +443,9 @@ print(json.dumps(result))
         }
     }
 
-    Process { id: powerExec; onExited: { _actionInProgress = false; root.state = "Idle"; root.refresh(true); postActionPoll.trigger(); } }
+    Process { id: powerExec; onExited: { _actionInProgress = false; root.state = "Idle"; root.refresh(true); postActionPoll.trigger(); VolumeService.update(); } }
     Process { id: scanExec; onExited: { root.state = "Idle"; root.refresh(true); postActionPoll.trigger(); } }
-    Process { id: actionExec; onExited: { root.state = "Idle"; root.refresh(true); postActionPoll.trigger(); } }
+    Process { id: actionExec; onExited: { root.state = "Idle"; root.refresh(true); postActionPoll.trigger(); VolumeService.update(); } }
 
     Timer {
         id: debouncedBtRefresh
@@ -463,6 +467,9 @@ print(json.dumps(result))
             onRead: (data) => {
                 if (data && data.trim() !== "") {
                     debouncedBtRefresh.restart();
+                    if (data.indexOf("Connected") !== -1 || data.indexOf("Device1") !== -1) {
+                        VolumeService.update();
+                    }
                 }
             }
         }

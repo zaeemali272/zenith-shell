@@ -82,30 +82,36 @@ PanelWindow {
     // Fast, buttery-smooth entrance animation
     ParallelAnimation {
         id: showAnim
+        onStarted: {
+            mainCard.layer.enabled = true;
+            mainCard.layer.smooth = true;
+        }
+        onFinished: {
+            mainCard.layer.enabled = false;
+        }
         NumberAnimation {
             target: mainCard
             property: "opacity"
             from: 0
             to: 1
-            duration: Shell.Theme.animFast
+            duration: 120
             easing.type: Easing.OutCubic
         }
         NumberAnimation {
             target: mainCard
             property: "scale"
-            from: 0.94
+            from: 0.96
             to: 1.0
-            duration: Shell.Theme.animFast
-            easing.type: Easing.OutBack
-            easing.overshoot: 1.04
+            duration: Shell.Theme.animNormal
+            easing.type: Easing.OutQuint
         }
         NumberAnimation {
             target: mainCard
             property: "y"
-            from: -4
+            from: -Shell.Theme.scaled(8)
             to: Shell.Theme.scaled(6)
-            duration: Shell.Theme.animFast
-            easing.type: Easing.OutCubic
+            duration: Shell.Theme.animNormal
+            easing.type: Easing.OutQuint
         }
     }
 
@@ -164,6 +170,7 @@ PanelWindow {
 
                 ListView {
                     id: appListView
+                    reuseItems: true
                     FastWheel {}
                     anchors.fill: parent
                     anchors.margins: 6
@@ -313,6 +320,7 @@ PanelWindow {
 
                 ListView {
                     id: clipListView
+                    reuseItems: true
                     FastWheel {}
                     anchors.fill: parent
                     anchors.margins: 6

@@ -19,6 +19,13 @@ Item {
     property int revertCountdown: 10
     property var pendingChange: null
 
+    signal requestOpenSettings(int tabIndex)
+
+    function openDisplaySettings() {
+        CenterState.open("Display");
+        requestOpenSettings(7);
+    }
+
     // Selected monitor object helper
     readonly property var currentMonitor: {
         for (let i = 0; i < monitors.length; i++) {

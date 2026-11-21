@@ -10,6 +10,21 @@ Item {
 
     property string currentProfile: "balanced"
     property bool available: false
+    property bool autoSwitchEnabled: true
+
+    Connections {
+        target: BatteryService
+        function onAcOnlineChanged() {
+            if (!service.available || !service.autoSwitchEnabled) return;
+            if (BatteryService.updatesReceived < 2) return;
+
+            if (BatteryService.acOnline) {
+                service.setProfile("performance");
+            } else {
+                service.setProfile("balanced");
+            }
+        }
+    }
 
     function setProfile(profile) {
         if (!available) return;

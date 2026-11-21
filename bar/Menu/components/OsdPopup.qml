@@ -15,40 +15,71 @@ PanelWindow {
 
     property string osdType: ""
     property real osdValue: 0
+    readonly property bool isVolume: osdType === "volume"
+
+    readonly property real visualPosition: {
+        if (isVolume) {
+            if (osdValue <= 1.0) return (osdValue / 1.0) * 0.75;
+            return 0.75 + Math.min(0.25, ((osdValue - 1.0) / 0.5) * 0.25);
+        }
+        return Math.max(0, Math.min(1.0, osdValue));
+    }
+
+    function setVisualPosition(pos) {
+        let clamped = Math.max(0, Math.min(1.0, pos));
+        let calculatedVal = clamped;
+        if (isVolume) {
+            if (clamped <= 0.75) calculatedVal = (clamped / 0.75) * 1.0;
+            else calculatedVal = 1.0 + ((clamped - 0.75) / 0.25) * 0.5;
+        }
+        osdWindow.osdValue = calculatedVal;
+        NotificationService.updateOSDValue(osdWindow.osdType, calculatedVal);
+        osdTimer.restart();
+    }
 
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
-    // Position (top-right)
+    // Position (top-right floating capsule)
     anchors {
         top: true
         right: true
     }
 
     WlrLayershell.margins {
-        top: Theme.scaled(10)
-        right: Theme.scaled(10)
+        top: Theme.scaled(12)
+        right: Theme.scaled(14)
     }
 
-    implicitWidth: Theme.scaled(400)
-    implicitHeight: osdWindow.isFullscreen ? Theme.scaled(65) : Theme.scaled(85)
+    implicitWidth: Theme.scaled(280)
+    implicitHeight: Theme.scaled(44)
     
     // Window stays visible if timer is running OR if the mouse is hovering/pressing
     visible: !LockService.locked && (osdTimer.running || content.opacity > 0 || mainMouseArea.containsMouse) && (!osdWindow.isFullscreen || osdWindow.useFullscreenLayout)
     color: "transparent"
 
+    mask: Region {
+        item: content
+    }
+
     Rectangle {
         id: content
         anchors.fill: parent
         color: Theme.glassBackground
-        radius: Theme.scaled(20)
+        radius: height / 2
         border.color: Theme.glassBorder
         border.width: 1
         antialiasing: true
-        // Fade logic: Stay visible on hover
-        opacity: (osdTimer.running || mainMouseArea.containsMouse) ? 1 : 0
 
-        // This mouse area detects hover to keep the OSD alive
+        // Smooth drop & fade physics
+        opacity: (osdTimer.running || mainMouseArea.containsMouse) ? 1.0 : 0.0
+        transform: Translate {
+            y: (osdTimer.running || mainMouseArea.containsMouse) ? 0 : -Theme.scaled(8)
+            Behavior on y { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
+        }
+        Behavior on opacity { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
+
+        // Hover detection to keep OSD alive while interacting
         MouseArea {
             id: mainMouseArea
             anchors.fill: parent
@@ -57,109 +88,56 @@ PanelWindow {
             onExited: osdTimer.restart()
         }
 
-        ColumnLayout {
+        RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: osdWindow.isFullscreen ? Theme.scaled(10) : Theme.scaled(16)
-            anchors.rightMargin: osdWindow.isFullscreen ? Theme.scaled(10) : Theme.scaled(16)
-            anchors.topMargin: osdWindow.isFullscreen ? Theme.scaled(8) : Theme.scaled(14)
-            anchors.bottomMargin: osdWindow.isFullscreen ? Theme.scaled(8) : Theme.scaled(14)
-            spacing: osdWindow.isFullscreen ? Theme.scaled(4) : Theme.scaled(8)
-            z: 2 // Keep content above mouse area
+            anchors.leftMargin: Theme.scaled(14)
+            anchors.rightMargin: Theme.scaled(14)
+            spacing: Theme.scaled(10)
+            z: 2
 
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: osdWindow.isFullscreen ? Theme.scaled(8) : Theme.scaled(12)
+            // OSD Icon
+            Text {
+                id: iconText
+                font.family: Theme.iconFont
+                font.pixelSize: Theme.scaled(18)
+                color: (osdValue <= 0) ? Theme.powerRed : Theme.accentColor
+                verticalAlignment: Text.AlignVCenter
+                horizontalAlignment: Text.AlignHCenter
+                Layout.preferredWidth: Theme.scaled(22)
+                antialiasing: true
 
-                Rectangle {
-                    width: osdWindow.isFullscreen ? Theme.scaled(20) : Theme.scaled(36); 
-                    height: osdWindow.isFullscreen ? Theme.scaled(20) : Theme.scaled(36); 
-                    radius: osdWindow.isFullscreen ? Theme.scaled(4) : Theme.bubbleRadiusSmall; 
-                    color: "transparent"
-                    border.width: 0
-                    Text {
-                        anchors.centerIn: parent
-                        font.family: Theme.iconFont
-                        font.pixelSize: osdWindow.isFullscreen ? Theme.scaled(18) : Theme.scaled(24)
-                        color: (osdValue <= 0) ? Theme.powerRed : Theme.accentColor
-                        text: {
-                            if (osdType === "brightness") {
-                                if (osdValue <= 0.33) return "󰃞"; if (osdValue <= 0.66) return "󰃟"; return "󰃠"
-                            } 
-                            if (osdType === "volume") {
-                                if (osdValue <= 0) return "󰝟"; if (osdValue <= 0.33) return "󰕿"; 
-                                if (osdValue <= 0.66) return "󰖀"; if (osdValue <= 1.0) return "󰕾"; return "󰓃"
-                            }
-                            if (osdType === "mic") {
-                                return osdValue <= 0 ? "󰍭" : "󰍬";
-                            }
-                            return "󰋽"
-                        }
+                text: {
+                    if (osdType === "brightness") {
+                        if (osdValue <= 0.33) return "󰃞"; 
+                        if (osdValue <= 0.66) return "󰃟"; 
+                        return "󰃠";
+                    } 
+                    if (osdType === "volume") {
+                        if (osdValue <= 0) return "󰝟"; 
+                        if (osdValue <= 0.33) return "󰕿"; 
+                        if (osdValue <= 0.66) return "󰖀"; 
+                        if (osdValue <= 1.0) return "󰕾"; 
+                        return "󰓃";
                     }
-                }
-
-                Text {
-                    text: osdType.toUpperCase()
-                    color: Theme.accentColor
-                    font.weight: Font.Black
-                    font.pixelSize: Theme.scaled(12)
-                    font.letterSpacing: 2
-                    Layout.fillWidth: true
-                }
-
-                Text {
-                    text: (osdType === "mic" && osdValue <= 0) ? "MUTED" : (Math.round(osdValue * 100) + "%")
-                    color: (osdValue <= 0) ? Theme.powerRed : Theme.text
-                    font.family: "JetBrains Mono"
-                    font.weight: Font.Bold
-                    font.pixelSize: osdWindow.isFullscreen ? Theme.scaled(11) : Theme.scaled(13)
+                    if (osdType === "mic") {
+                        return osdValue <= 0 ? "󰍭" : "󰍬";
+                    }
+                    return "󰋽";
                 }
             }
 
-            Slider {
-                id: osdSlider
+            // Interactive Progress Bar
+            Item {
+                id: trackContainer
                 Layout.fillWidth: true
-                from: 0
-                to: 1.0
-                value: {
-                    if (isVolume) {
-                        if (osdWindow.osdValue <= 1.0) return (osdWindow.osdValue / 1.0) * 0.75;
-                        return 0.75 + Math.min(0.25, ((osdWindow.osdValue - 1.0) / 0.5) * 0.25);
-                    } else {
-                        return Math.max(0, Math.min(1.0, osdWindow.osdValue));
-                    }
-                }
-                hoverEnabled: true
+                Layout.fillHeight: true
 
-                // Reset all paddings for pixel-perfect alignment
-                padding: 0
-                leftPadding: 0
-                rightPadding: 0
-                topPadding: 0
-                bottomPadding: 0
-
-                readonly property real handleWidth: osdWindow.isFullscreen ? Theme.scaled(12) : Theme.scaled(14)
-                readonly property bool isVolume: osdWindow.osdType === "volume"
-                readonly property real line100X: isVolume ? (0.75 * (track.width - handleWidth) + handleWidth / 2) : track.width
-                readonly property real currentFillX: Math.max(0, Math.min(track.width, visualPosition * (track.width - handleWidth) + handleWidth / 2))
-
-                // --- Re-enabled functionality ---
-                onMoved: {
-                    osdTimer.restart();
-                    let calculatedVol = value;
-                    if (isVolume) {
-                        if (value <= 0.75) calculatedVol = (value / 0.75) * 1.0;
-                        else calculatedVol = 1.0 + ((value - 0.75) / 0.25) * 0.5;
-                    }
-                    osdWindow.osdValue = calculatedVol;
-                    NotificationService.updateOSDValue(osdWindow.osdType, calculatedVol);
-                }
-
-                background: Rectangle {
+                Rectangle {
                     id: track
-                    x: 0
-                    y: (osdSlider.availableHeight - height) / 2
-                    implicitHeight: osdWindow.isFullscreen ? Theme.scaled(8) : Theme.scaled(10)
-                    width: osdSlider.availableWidth
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    height: Theme.scaled(6)
                     radius: height / 2
                     color: Qt.rgba(255, 255, 255, 0.08)
                     border.color: Theme.glassBorder
@@ -167,65 +145,85 @@ PanelWindow {
                     antialiasing: true
                     clip: true
 
-                    // 1. Single continuous solid slider fill (with rounded edge at start and end)
+                    // 1. Continuous solid fill
                     Rectangle {
                         id: baseFill
                         anchors.left: parent.left
                         anchors.top: parent.top
                         anchors.bottom: parent.bottom
-                        width: osdSlider.currentFillX
+                        width: Math.max(0, Math.min(track.width, osdWindow.visualPosition * track.width))
                         radius: parent.radius
                         color: (osdValue <= 0) ? Theme.powerRed : Theme.accentColor
                         antialiasing: true
+
+                        Behavior on width { NumberAnimation { duration: 60; easing.type: Easing.OutQuad } }
                     }
 
-                    // 2. Subtle brightened overlay ONLY on the part after the 100% line
+                    // 2. Brightened boost overlay beyond 100%
                     Rectangle {
                         id: boostOverlay
-                        visible: osdSlider.isVolume && (osdSlider.currentFillX > osdSlider.line100X)
-                        x: osdSlider.line100X
+                        visible: osdWindow.isVolume && (osdWindow.visualPosition > 0.75)
+                        x: Math.round(0.75 * track.width)
                         anchors.top: parent.top
                         anchors.bottom: parent.bottom
-                        width: Math.max(0, osdSlider.currentFillX - osdSlider.line100X)
-                        color: Qt.rgba(255, 255, 255, 0.22)
+                        width: Math.max(0, (osdWindow.visualPosition * track.width) - x)
+                        color: Qt.rgba(255, 255, 255, 0.28)
+                        z: 2
                     }
 
-                    // 3. The 100% threshold marker line (placed at 75% of slider)
+                    // 3. 100% threshold marker line
                     Rectangle {
                         id: line100
-                        visible: osdSlider.isVolume
-                        x: Math.round(osdSlider.line100X - width / 2)
+                        visible: osdWindow.isVolume
+                        x: Math.round(0.75 * track.width - width / 2)
                         width: Theme.scaled(2)
                         anchors.top: parent.top
                         anchors.bottom: parent.bottom
                         color: Qt.rgba(255, 255, 255, 0.55)
-                        z: 4
+                        z: 3
                     }
                 }
 
-                handle: Rectangle {
-                    x: osdSlider.visualPosition * (osdSlider.availableWidth - width)
-                    y: (osdSlider.availableHeight - height) / 2
-                    implicitWidth: osdSlider.handleWidth
-                    implicitHeight: osdWindow.isFullscreen ? Theme.scaled(12) : Theme.scaled(14)
-                    radius: width / 2
-                    color: Theme.text
-                    border.color: (osdValue <= 0) ? Theme.powerRed : Theme.accentColor
-                    border.width: 1
-                    antialiasing: true
+                // Interactive click/drag/wheel area for track
+                MouseArea {
+                    id: trackMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
 
-                    scale: osdSlider.pressed ? 1.05 : 1.0
-                    Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutBack; easing.overshoot: 1.1 } }
+                    function updatePos(mouseX) {
+                        let clampedX = Math.max(0, Math.min(track.width, mouseX));
+                        osdWindow.setVisualPosition(clampedX / track.width);
+                    }
+
+                    onPressed: (mouse) => updatePos(mouse.x)
+                    onPositionChanged: (mouse) => {
+                        if (pressed) updatePos(mouse.x);
+                    }
+                    onWheel: (wheel) => {
+                        let step = wheel.angleDelta.y > 0 ? 0.02 : -0.02;
+                        osdWindow.setVisualPosition(osdWindow.visualPosition + step);
+                    }
                 }
             }
-        }
 
-        Behavior on opacity { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
+            // Value Label
+            Text {
+                text: (osdType === "mic" && osdValue <= 0) ? "MUTED" : (Math.round(osdValue * 100) + "%")
+                color: (osdValue <= 0) ? Theme.powerRed : Theme.text
+                font.family: "JetBrains Mono"
+                font.weight: Font.Bold
+                font.pixelSize: Theme.scaled(12)
+                Layout.alignment: Qt.AlignVCenter
+                horizontalAlignment: Text.AlignRight
+                Layout.preferredWidth: Theme.scaled(38)
+            }
+        }
     }
 
     Timer {
         id: osdTimer
-        interval: 2500 // Increased slightly for comfort
+        interval: 2200
     }
 
     Connections {

@@ -64,10 +64,10 @@ Item {
     property bool tempShowLoad: false
 
     function formatSpeed(kb) {
-        if (kb <= 0) return "0 KB/s";
-        if (kb < 1024) return kb + " KB/s";
-        if (kb < 1048576) return (kb / 1024).toFixed(1) + " MB/s";
-        return (kb / 1048576).toFixed(1) + " GB/s";
+        if (kb <= 0) return "0K";
+        if (kb < 1000) return kb + "K";
+        if (kb < 1000000) return (kb / 1024).toFixed(1) + "M";
+        return (kb / 1048576).toFixed(1) + "G";
     }
 
     function formatSpeedCompact(kb) {
@@ -124,7 +124,6 @@ Item {
         color: Theme.pillColor
         border.color: Theme.glassBorder
         border.width: 1
-        clip: true
         antialiasing: true
 
         Behavior on width {
@@ -197,14 +196,16 @@ Item {
                         text: {
                             if (root.airplaneMode) return "OFF";
                             if (!root.online) return "DISC";
-                            if (root.netMode === 0) return root.formatSpeed(root.downSpeed);
-                            if (root.netMode === 1) return root.formatSpeed(root.upSpeed);
-                            return root.formatSpeedCompact(root.downSpeed) + " / " + root.formatSpeedCompact(root.upSpeed);
+                            if (root.netMode === 0) return "↓ " + root.formatSpeed(root.downSpeed);
+                            if (root.netMode === 1) return "↑ " + root.formatSpeed(root.upSpeed);
+                            return "↓" + root.formatSpeedCompact(root.downSpeed) + " ↑" + root.formatSpeedCompact(root.upSpeed);
                         }
                         font.pixelSize: Theme.fontSize
-                        font.family: Theme.fontFamily
+                        font.family: "JetBrains Mono"
                         font.weight: Font.DemiBold
-                        color: (root.airplaneMode || !root.online) ? Theme.powerRed : Theme.fontColor
+                        color: (root.airplaneMode || !root.online)
+                               ? Theme.powerRed
+                               : ((root.downSpeed < 5 && root.upSpeed < 5) ? Theme.subtext0 : Theme.fontColor)
                         Layout.alignment: Qt.AlignVCenter
                         Behavior on color { ColorAnimation { duration: Theme.animFast } }
                     }

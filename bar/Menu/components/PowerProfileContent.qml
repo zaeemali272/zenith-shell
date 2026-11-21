@@ -10,17 +10,6 @@ ColumnLayout {
     Layout.fillWidth: true
     implicitHeight: profileGrid.implicitHeight + (consCard.visible ? (consCard.implicitHeight + root.spacing) : 0)
 
-    opacity: 0
-    scale: 0.98
-    Component.onCompleted: {
-        entryAnim.start();
-    }
-    ParallelAnimation {
-        id: entryAnim
-        NumberAnimation { target: root; property: "opacity"; to: 1; duration: Theme.animNormal; easing.type: Theme.animEasing }
-        NumberAnimation { target: root; property: "scale"; to: 1; duration: Theme.animNormal; easing.type: Theme.elasticEasing; easing.overshoot: 1.05 }
-    }
-
     // 2x2 Grid of Power Profile Cards
     GridLayout {
         id: profileGrid

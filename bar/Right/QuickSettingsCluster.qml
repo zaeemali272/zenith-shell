@@ -104,6 +104,22 @@ Item {
                         Layout.alignment: Qt.AlignVCenter
                         Behavior on color { ColorAnimation { duration: Theme.animFast } }
                     }
+
+                    // Active recording privacy indicator dot
+                    Rectangle {
+                        width: Theme.scaled(5)
+                        height: Theme.scaled(5)
+                        radius: width / 2
+                        color: "#ff9e3b"
+                        visible: VolumeService.micActive && !VolumeService.micMuted
+                        Layout.alignment: Qt.AlignVCenter
+                        SequentialAnimation on opacity {
+                            running: VolumeService.micActive && !VolumeService.micMuted
+                            loops: Animation.Infinite
+                            NumberAnimation { from: 1.0; to: 0.4; duration: 600; easing.type: Easing.InOutQuad }
+                            NumberAnimation { from: 0.4; to: 1.0; duration: 600; easing.type: Easing.InOutQuad }
+                        }
+                    }
                 }
 
                 MouseArea {
@@ -116,6 +132,69 @@ Item {
                         micMuteExec.running = false;
                         micMuteExec.running = true;
                         VolumeService.update();
+                    }
+                }
+            }
+
+            // ================= VOLUME SUB-WIDGET =================
+            Item {
+                id: volSubBtn
+                height: Theme.scaled(28)
+                implicitHeight: Theme.scaled(28)
+                implicitWidth: volLayout.implicitWidth + Theme.scaled(8)
+                Layout.preferredWidth: implicitWidth
+                Layout.preferredHeight: implicitHeight
+                Layout.alignment: Qt.AlignVCenter
+                visible: !HyprlandService.isFullscreen
+
+                scale: volMouse.pressed ? 0.94 : 1.0
+                Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
+
+                RowLayout {
+                    id: volLayout
+                    anchors.centerIn: parent
+                    spacing: Theme.scaled(4)
+                    opacity: volMouse.containsMouse ? 0.70 : 1.0
+                    Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
+
+                    Text {
+                        text: VolumeService.muted ? "󰝟" : (VolumeService.btActive ? "󰓃" : (VolumeService.outputVolume >= 60 ? "󰕾" : (VolumeService.outputVolume >= 20 ? "󰖀" : "󰕿")))
+                        font.family: Theme.iconFont
+                        font.pixelSize: Theme.scaled(16)
+                        color: VolumeService.muted ? Theme.red : Theme.barIconColor
+                        Layout.alignment: Qt.AlignVCenter
+                    }
+
+                    Text {
+                        visible: volMouse.containsMouse || VolumeService.muted
+                        text: VolumeService.muted ? "Mute" : (VolumeService.outputVolume + "%")
+                        font.pixelSize: Theme.fontSize
+                        font.family: "JetBrains Mono"
+                        font.weight: Font.Bold
+                        color: VolumeService.muted ? Theme.red : Theme.barIconColor
+                        Layout.alignment: Qt.AlignVCenter
+                    }
+                }
+
+                MouseArea {
+                    id: volMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
+                    onClicked: (mouse) => {
+                        if (mouse.button === Qt.MiddleButton) {
+                            VolumeService.cycleOutputSink();
+                        } else if (mouse.button === Qt.RightButton) {
+                            VolumeService.toggleMute();
+                        } else {
+                            QuickSettingsService.toggle("volume");
+                        }
+                    }
+                    onWheel: (wheel) => {
+                        let delta = wheel.angleDelta.y > 0 ? 5 : -5;
+                        let newVol = Math.max(0, Math.min(100, VolumeService.outputVolume + delta));
+                        VolumeService.setOutputVolume(newVol);
                     }
                 }
             }

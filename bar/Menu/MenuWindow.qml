@@ -88,13 +88,21 @@ PanelWindow {
 
     property Translate _cardTranslate: Translate {}
 
+    readonly property bool animating: showAnim.running || hideAnim.running
+    onAnimatingChanged: {
+        if (card) {
+            card.layer.enabled = animating;
+            card.layer.smooth = true;
+        }
+    }
+
     function resetCard() {
         if (!card) return;
         card.transformOrigin = menuWindow.cardOrigin;
         card.transform = [menuWindow._cardTranslate];
         card.opacity = 0;
-        card.scale = 0.94;
-        _cardTranslate.y = -Theme.scaled(8);
+        card.scale = 0.96;
+        _cardTranslate.y = -Theme.scaled(14);
     }
 
     onCardChanged: resetCard()
@@ -125,17 +133,61 @@ PanelWindow {
 
     ParallelAnimation {
         id: showAnim
-        NumberAnimation { target: menuWindow.card; property: "opacity"; from: 0; to: 1; duration: Theme.animFast; easing.type: Easing.OutCubic }
-        NumberAnimation { target: menuWindow.card; property: "scale"; from: 0.94; to: 1.0; duration: Theme.animFast; easing.type: Easing.OutBack; easing.overshoot: 1.04 }
-        NumberAnimation { target: menuWindow._cardTranslate; property: "y"; from: -Theme.scaled(8); to: 0; duration: Theme.animFast; easing.type: Easing.OutCubic }
+        onStarted: {
+            Qt.callLater(() => {
+                if (menuWindow.card) menuWindow.card.forceActiveFocus();
+            });
+        }
+        NumberAnimation {
+            target: menuWindow.card
+            property: "opacity"
+            from: 0
+            to: 1
+            duration: 120
+            easing.type: Easing.OutCubic
+        }
+        NumberAnimation {
+            target: menuWindow.card
+            property: "scale"
+            from: 0.96
+            to: 1.0
+            duration: Theme.animNormal
+            easing.type: Easing.OutQuint
+        }
+        NumberAnimation {
+            target: menuWindow._cardTranslate
+            property: "y"
+            from: -Theme.scaled(14)
+            to: 0
+            duration: Theme.animNormal
+            easing.type: Easing.OutQuint
+        }
     }
 
     SequentialAnimation {
         id: hideAnim
         ParallelAnimation {
-            NumberAnimation { target: menuWindow.card; property: "opacity"; to: 0; duration: Math.round(Theme.animFast * 0.7); easing.type: Easing.InCubic }
-            NumberAnimation { target: menuWindow.card; property: "scale"; to: 0.94; duration: Math.round(Theme.animFast * 0.7); easing.type: Easing.InCubic }
-            NumberAnimation { target: menuWindow._cardTranslate; property: "y"; to: -Theme.scaled(8); duration: Math.round(Theme.animFast * 0.7); easing.type: Easing.InCubic }
+            NumberAnimation {
+                target: menuWindow.card
+                property: "opacity"
+                to: 0
+                duration: 100
+                easing.type: Easing.InQuad
+            }
+            NumberAnimation {
+                target: menuWindow.card
+                property: "scale"
+                to: 0.97
+                duration: 100
+                easing.type: Easing.InQuad
+            }
+            NumberAnimation {
+                target: menuWindow._cardTranslate
+                property: "y"
+                to: -Theme.scaled(8)
+                duration: 100
+                easing.type: Easing.InQuad
+            }
         }
         ScriptAction {
             script: {

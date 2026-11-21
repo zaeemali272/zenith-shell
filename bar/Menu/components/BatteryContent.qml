@@ -11,10 +11,7 @@ ColumnLayout {
     Layout.fillWidth: true
     implicitHeight: mainCard.implicitHeight + infoGrid.implicitHeight + bottomGrid.implicitHeight + (root.spacing * 2)
 
-    opacity: 0
-    scale: 0.98
     Component.onCompleted: {
-        entryAnim.start();
         BatteryService.update();
     }
     Timer {
@@ -22,11 +19,6 @@ ColumnLayout {
         running: root.visible
         repeat: true
         onTriggered: BatteryService.update()
-    }
-    ParallelAnimation {
-        id: entryAnim
-        NumberAnimation { target: root; property: "opacity"; to: 1; duration: 400; easing.type: Easing.OutCubic }
-        NumberAnimation { target: root; property: "scale"; to: 1; duration: 500; easing.type: Theme.elasticEasing }
     }
 
     readonly property bool isLimitActive: (BatteryService.status === "not charging" || BatteryService.status === "full") && BatteryService.acOnline

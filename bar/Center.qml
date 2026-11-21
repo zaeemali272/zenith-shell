@@ -69,7 +69,7 @@ RowLayout {
                     return m + ":" + s.toString().padStart(2, '0');
                 }
                 font.weight: Font.Bold
-                font.family: Theme.fontFamily
+                font.family: "JetBrains Mono"
                 font.pixelSize: Theme.fontSize
                 color: (ProductivityService.running || ProductivityService.isBeeping) ? Colors.on_primary : Theme.text
                 Layout.alignment: Qt.AlignVCenter
@@ -106,7 +106,6 @@ RowLayout {
             ? Theme.scaled(480)
             : (centerContent.implicitWidth + Theme.pillPadding + Theme.extraPillPadding)
         implicitWidth: width
-        clip: true
 
         scale: DynamicIslandService.active ? 1.0 : ((mprisMouse.pressed || clockMouse.pressed) ? 0.96 : 1.0)
 
@@ -870,7 +869,6 @@ RowLayout {
                             : Theme.glassBorder
                         border.width: 1
                         radius: Theme.cardRadius
-                        clip: true
 
                         Behavior on border.color { ColorAnimation { duration: Theme.animFast } }
 
@@ -981,7 +979,6 @@ RowLayout {
                             : Theme.glassBorder
                         border.width: 1
                         radius: Theme.cardRadius
-                        clip: true
 
                         Behavior on border.color { ColorAnimation { duration: Theme.animFast } }
 

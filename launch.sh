@@ -24,7 +24,7 @@ FIFO_FILE="${XDG_CACHE_HOME:-$HOME/.cache}/zenith_fifo"
 # matched anything and every "restart" started a second shell beside the
 # first (two bars, every keybind firing twice).
 shell_pids() {
-    pgrep -f '^quickshell( |$)' 2>/dev/null
+    pgrep -f '(^|/)(\.?)quickshell(-wra)?( |$)' 2>/dev/null
 }
 
 is_running() {
@@ -50,9 +50,35 @@ start_shell() {
     (
         cd "$SHELL_DIR"
         export QSG_RHI_BACKEND=opengl
+        export QSG_RENDER_LOOP=threaded
+        export QML_DISABLE_DISK_CACHE=0
+        export QT_QUICK_CONTROLS_STYLE=Basic
+        export QSG_RHI_PREFER_SOFTWARE_RENDERER=0
         export MALLOC_ARENA_MAX=2
         export MALLOC_TRIM_THRESHOLD_=131072
-        setsid quickshell -d -p "$SHELL_DIR" >/dev/null 2>&1 &
+
+        # Opportunistic high-performance allocator preload (jemalloc / mimalloc)
+        # Prevents heap fragmentation and minimizes thread contention in multi-threaded QSG
+        if [ -z "${LD_PRELOAD:-}" ]; then
+            for _lib in \
+                "${ZENITH_MALLOC_LIB:-}" \
+                /usr/lib/libjemalloc.so \
+                /usr/lib64/libjemalloc.so \
+                /usr/lib/libmimalloc.so \
+                /usr/lib64/libmimalloc.so \
+                /run/current-system/sw/lib/libjemalloc.so \
+                /run/current-system/sw/lib/libmimalloc.so \
+                /nix/store/*-jemalloc-*/lib/libjemalloc.so \
+                /nix/store/*-mimalloc-*/lib/libmimalloc.so
+            do
+                if [ -n "$_lib" ] && [ -f "$_lib" ]; then
+                    export LD_PRELOAD="$_lib"
+                    break
+                fi
+            done
+        fi
+
+        quickshell -d -p "$SHELL_DIR" >/dev/null 2>&1
     )
 }
 
@@ -113,6 +139,7 @@ Surfaces (each toggles):
   battery | pwr               Battery quick settings
   power | sys                 Session / power menu
   settings | config           Settings window
+  display | resolution | project Displays & screen resolution settings
   lock                        Lock the session
   close | close_all           Close every open menu
 

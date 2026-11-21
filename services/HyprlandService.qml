@@ -8,7 +8,19 @@ Item {
     id: root
 
     property int _trigger: 0
-    function trigger() { _trigger++; }
+
+    Timer {
+        id: debounceTimer
+        interval: 25
+        repeat: false
+        onTriggered: root._trigger++
+    }
+
+    function trigger() {
+        if (!debounceTimer.running) {
+            debounceTimer.restart();
+        }
+    }
 
     Connections {
         target: Hyprland

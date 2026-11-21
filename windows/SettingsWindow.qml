@@ -18,6 +18,13 @@ Window {
     flags: Qt.FramelessWindowHint | Qt.Window
 
     property alias currentIndex: view.currentIndex
+    property int targetTab: 0
+
+    Component.onCompleted: {
+        if (targetTab > 0) {
+            view.currentIndex = targetTab;
+        }
+    }
 
     Rectangle {
         id: container

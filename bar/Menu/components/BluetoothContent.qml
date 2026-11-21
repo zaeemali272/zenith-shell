@@ -108,7 +108,6 @@ Item {
                 color: refreshMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground
                 border.color: spinning ? Theme.powerYellow : Theme.glassBorder
                 border.width: 1
-                clip: true
                 visible: BluetoothService.powered
 
                 Behavior on color { ColorAnimation { duration: 200 } }
@@ -159,7 +158,6 @@ Item {
                        : (powerMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground)
                 border.color: BluetoothService.powered ? Theme.accentColor : Theme.glassBorder
                 border.width: 1
-                clip: true
                 Behavior on color { ColorAnimation { duration: 200 } }
 
                 Text {
@@ -286,7 +284,6 @@ Item {
                     color: Theme.cardBackground
                     border.color: Theme.glassBorder
                     border.width: 1
-                    clip: true
 
                     SequentialAnimation on opacity {
                         loops: Animation.Infinite
@@ -350,7 +347,6 @@ Item {
             visible: BluetoothService.powered && BluetoothService.serviceActive && displayDevices.length > 0
             model: displayDevices
             spacing: Theme.scaled(10)
-            clip: true
             interactive: false
 
             delegate: Rectangle {

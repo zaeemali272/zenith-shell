@@ -69,13 +69,13 @@ Item {
         onTriggered: if (root.isShowing) WifiService.rescan()
     }
 
-    // Connection state, signal strength and IP are cheap (~70ms) so they can
+    // Connection state, signal strength and IP are cheap (~14ms) so they can
     // poll briskly and keep the panel feeling live.
     Timer {
-        running: root.isShowing && !WifiService.isUserTyping && root.selectedSsid === ""
+        running: root.isShowing && !WifiService.isUserTyping
         interval: 3000
         repeat: true
-        onTriggered: WifiService.refresh(false)
+        onTriggered: WifiService.listCached()
     }
 
     // A full rescan drives the radio for ~5s, so it runs far less often --
@@ -92,14 +92,13 @@ Item {
     readonly property bool isAirplane: wifiSvc.isAirplane
     property string selectedSsid: ""
     onSelectedSsidChanged: {
-        WifiService.isUserTyping = (selectedSsid !== "");
-        if (selectedSsid !== "") {
-            WifiService.cancelScan();
+        if (selectedSsid === "") {
+            WifiService.isUserTyping = false;
         }
     }
     property string lastFailedSsid: ""
 
-    property bool isInputActive: selectedSsid !== ""
+    property bool isInputActive: false
     onIsInputActiveChanged: WifiService.isUserTyping = isInputActive
 
     property int selectedIndex: 0
@@ -167,7 +166,6 @@ Item {
                 color: refreshMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground
                 border.color: wifiSvc.isRefreshing ? Theme.powerGreen : Theme.glassBorder
                 border.width: 1
-                clip: true
 
                 Behavior on color { ColorAnimation { duration: Theme.animFast } }
 
@@ -209,7 +207,6 @@ Item {
                 color: speedMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground
                 border.color: wifiSvc.isTesting ? Theme.powerYellow : Theme.glassBorder
                 border.width: 1
-                clip: true
 
                 Behavior on color { ColorAnimation { duration: Theme.animFast } }
 
@@ -250,7 +247,6 @@ Item {
                 color: root.isAirplane ? Qt.rgba(Theme.red.r, Theme.red.g, Theme.red.b, 0.25) : (airplaneMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground)
                 border.color: root.isAirplane ? Theme.powerRed : Theme.glassBorder
                 border.width: 1
-                clip: true
 
                 Behavior on color { ColorAnimation { duration: Theme.animFast } }
 
@@ -378,7 +374,6 @@ Item {
                     color: Theme.cardBackground
                     border.color: Theme.glassBorder
                     border.width: 1
-                    clip: true
 
                     SequentialAnimation on opacity {
                         loops: Animation.Infinite
@@ -477,7 +472,6 @@ Item {
             Layout.preferredHeight: contentHeight
             model: wifiSvc.networks
             spacing: Theme.scaled(10)
-            clip: true
             interactive: false
 
             delegate: FocusScope {
@@ -485,7 +479,7 @@ Item {
                 width: list.width
 
                 property bool isKnown: !!(modelData && modelData.isKnown)
-                property bool isConnected: !!(modelData && modelData.connected)
+                readonly property bool isConnected: (modelData && modelData.ssid === wifiSvc.currentSsid && wifiSvc.currentState === "connected") || !!(modelData && modelData.connected && wifiSvc.currentState === "connected")
                 readonly property bool isExpanded: selectedSsid === modelData.ssid
                 property string knownPass: (modelData && modelData.password) || (wifiSvc.knownPasswords && wifiSvc.knownPasswords[modelData.ssid]) || ""
 
@@ -584,8 +578,10 @@ Item {
                                 Text {
                                     text: isConnected
                                         ? "Connected"
-                                        : (isKnown ? "Saved" : ("Signal " + modelData.signalPct + "%"))
-                                    color: isConnected ? Theme.powerGreen : Theme.subtext0
+                                        : (wifiSvc.isConnecting && modelData && modelData.ssid === wifiSvc.connectingSsid
+                                            ? "Connecting..."
+                                            : (isKnown ? "Saved" : ("Signal " + modelData.signalPct + "%")))
+                                    color: isConnected ? Theme.powerGreen : (wifiSvc.isConnecting && modelData && modelData.ssid === wifiSvc.connectingSsid ? Theme.accentColor : Theme.subtext0)
                                     font.pixelSize: Theme.scaled(9)
                                     font.weight: Font.Bold
                                     Layout.fillWidth: true
@@ -767,7 +763,10 @@ Item {
                                             anchors.fill: parent
                                             hoverEnabled: true
                                             cursorShape: Qt.PointingHandCursor
-                                            onClicked: wifiSvc.disconnect()
+                                            onClicked: {
+                                                wifiSvc.disconnect();
+                                                selectedSsid = "";
+                                            }
                                         }
                                     }
                                 }
@@ -925,6 +924,10 @@ Item {
                                             font.pixelSize: Theme.scaled(11)
                                             anchors.verticalCenter: parent.verticalCenter
                                             anchors.left: parent.left
+                                        }
+
+                                        onActiveFocusChanged: {
+                                            WifiService.isUserTyping = passInput.activeFocus;
                                         }
 
                                         onAccepted: {

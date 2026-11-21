@@ -115,10 +115,14 @@ def get_wifi_state(do_scan=True, list_cached=False):
                     signal_level = 0
                     
                 security = parts[2].strip().lower()
-                is_active = (parts[3].strip() == "*")
+                is_nm_active = (parts[3].strip() == "*")
+                if current_state == "connected":
+                    is_active = (ssid == current_ssid) if current_ssid else is_nm_active
+                else:
+                    is_active = False
                 is_known = bool(known_dict.get(ssid, False))
                 
-                if is_active:
+                if is_active and not current_ssid:
                     current_ssid = ssid
                     current_state = "connected"
 

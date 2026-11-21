@@ -32,6 +32,19 @@ Item {
         setDevProc.running = true;
     }
 
+    function cycleOutputSink() {
+        if (!sinks || sinks.length <= 1) return;
+        let currentIdx = -1;
+        for (let i = 0; i < sinks.length; i++) {
+            if (sinks[i].isDefault) {
+                currentIdx = i;
+                break;
+            }
+        }
+        let nextIdx = (currentIdx + 1) % sinks.length;
+        setDefaultDevice(sinks[nextIdx].id);
+    }
+
     function toggleMute() {
         setMuteProc.command = ["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"];
         setMuteProc.running = false;
@@ -69,9 +82,14 @@ Item {
     // that connected while the panel was closed did not appear until some
     // later event (a volume key) happened to fire with the panel open.
     // Per-application streams are only needed by the panel itself.
+    property bool _pendingDevUpdate: false
     function _performUpdate() {
         if (!volExec.running) volExec.running = true;
-        if (!devExec.running) devExec.running = true;
+        if (devExec.running) {
+            _pendingDevUpdate = true;
+        } else {
+            devExec.running = true;
+        }
         if (Variables.activeMenuOpen && !appVolExec.running) appVolExec.running = true;
     }
 
@@ -247,6 +265,12 @@ Item {
                     if (data.activeSinkId !== undefined) service.activeSinkId = data.activeSinkId;
                     if (data.activeSourceId !== undefined) service.activeSourceId = data.activeSourceId;
                 } catch (e) {}
+            }
+        }
+        onExited: {
+            if (service._pendingDevUpdate) {
+                service._pendingDevUpdate = false;
+                devExec.running = true;
             }
         }
     }

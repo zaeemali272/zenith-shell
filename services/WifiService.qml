@@ -34,21 +34,44 @@ Item {
     signal connectionSuccess(string ssid)
 
     readonly property string helperScript: PathSettings.scriptsDir + "/wifi_nm.py"
+    property bool _pendingRefresh: false
+
+    function updateNetworksConnectedState(ssid, isConnected) {
+        if (!service.networks || service.networks.length === 0) return;
+        let modified = false;
+        let list = [];
+        for (let i = 0; i < service.networks.length; i++) {
+            let item = Object.assign({}, service.networks[i]);
+            let shouldBeConnected = (isConnected && item.ssid === ssid);
+            if (item.connected !== shouldBeConnected) {
+                item.connected = shouldBeConnected;
+                modified = true;
+            }
+            list.push(item);
+        }
+        if (modified) {
+            list.sort((a, b) => {
+                if (a.connected !== b.connected) return a.connected ? -1 : 1;
+                let aKnown = Boolean(a.isKnown);
+                let bKnown = Boolean(b.isKnown);
+                if (aKnown !== bKnown) return aKnown ? -1 : 1;
+                return (b.signalPct || 0) - (a.signalPct || 0);
+            });
+            service.networks = list;
+        }
+    }
 
     // A full scan passes --rescan yes to nmcli, which takes ~5 seconds because
-    // it drives an actual hardware rescan. A cheap status read is ~70ms.
-    //
-    // Restarting the process mid-flight (what this used to do unconditionally)
-    // threw away an in-progress 5 second scan and started another, so a burst
-    // of refresh requests could keep cancelling each other and the list would
-    // never actually arrive. Let whatever is already running finish instead.
+    // it drives an actual hardware rescan. A cheap status/cached read is ~14ms.
     function refresh(fullScan) {
-        if (stateProc.running) return;
-        if (isUserTyping) return;
+        if (stateProc.running) {
+            _pendingRefresh = true;
+            return;
+        }
 
-        let doScan = (fullScan !== undefined) ? fullScan : (Variables.quickSettingsOpen || Variables.controlCenterOpen);
+        let doScan = (fullScan !== undefined) ? fullScan : false;
         _requestScanned = doScan;
-        stateProc.command = ["python3", helperScript, doScan ? "json" : "status"];
+        stateProc.command = ["python3", helperScript, doScan ? "json" : "cached"];
         stateProc.running = true;
     }
 
@@ -58,34 +81,27 @@ Item {
         }
     }
 
-    // What NetworkManager already knows, without touching the radio. Opening
-    // the panel used to jump straight to a five second rescan, so the header
-    // said "0 NETWORKS IN RANGE" for five seconds -- stating as fact that
-    // nothing was there, when it simply had not looked yet.
+    // What NetworkManager already knows, without touching the radio.
+    // Instant ~14ms query that returns the cached network list with connected status.
     function listCached() {
-        if (stateProc.running) return;
+        if (stateProc.running) {
+            _pendingRefresh = true;
+            return;
+        }
         _requestScanned = true;
         stateProc.command = ["python3", helperScript, "cached"];
         stateProc.running = true;
     }
 
-    // Force a full rescan even if a cheap status read is in flight -- used
-    // when the user explicitly opens the panel or hits the refresh button,
-    // where waiting on an unrelated poll would feel broken.
+    // Force a full rescan even if a cheap read is in flight -- used
+    // when the user explicitly hits the refresh button.
     function rescan() {
-        if (isUserTyping) return;
         stateProc.running = false;
         _requestScanned = true;
         stateProc.command = ["python3", helperScript, "json"];
         stateProc.running = true;
     }
 
-    // True when the reply currently being awaited came from a request that
-    // actually scanned. The helper always emits a `networks` key, but in
-    // status mode it emits an empty list because it never looked -- and an
-    // empty JS array is truthy, so the old check happily assigned it and
-    // wiped every network off the panel. Visible symptom: the list appeared
-    // when the 5 second scan landed, then vanished on the next cheap poll.
     property bool _requestScanned: false
 
     function toggleAirplane(block) {
@@ -102,6 +118,9 @@ Item {
 
     function connect(ssid, password) {
         _pendingConnectSsid = ssid;
+        currentState = "connecting";
+        currentSsid = ssid;
+        updateNetworksConnectedState(ssid, false);
         if (password && password !== "") {
             actionProc.command = ["python3", helperScript, "connect", ssid, password];
         } else {
@@ -111,6 +130,10 @@ Item {
     }
 
     function disconnect() {
+        let prev = currentSsid;
+        currentState = "disconnected";
+        currentSsid = "";
+        updateNetworksConnectedState(prev, false);
         actionProc.command = ["python3", helperScript, "disconnect"];
         actionProc.running = true;
     }
@@ -125,7 +148,7 @@ Item {
 
     Process {
         id: stateProc
-        command: ["python3", helperScript, "json"]
+        command: ["python3", helperScript, "cached"]
         stdout: StdioCollector {
             onStreamFinished: {
                 if (!text || text.trim() === "") return;
@@ -138,16 +161,25 @@ Item {
                     if (data.ipv4Address !== undefined) service.ipv4Address = data.ipv4Address;
                     if (data.knownDict) service.knownNetworks = data.knownDict;
                     if (data.knownPasswords) service.knownPasswords = data.knownPasswords;
-                    // Only a real scan can authoritatively say what is on the
-                    // air. A status read reports networks: [] purely because
-                    // it did not scan, which must not be mistaken for "no
-                    // networks in range".
-                    if (service._requestScanned && Array.isArray(data.networks) && !service.isUserTyping) {
-                        service.networks = data.networks;
+
+                    if (Array.isArray(data.networks) && data.networks.length > 0) {
+                        if (!service.isUserTyping) {
+                            service.networks = data.networks;
+                        } else {
+                            service.updateNetworksConnectedState(service.currentSsid, service.currentState === "connected");
+                        }
+                    } else {
+                        service.updateNetworksConnectedState(service.currentSsid, service.currentState === "connected");
                     }
                 } catch (e) {
                     console.log("WifiService JSON parse error:", e);
                 }
+            }
+        }
+        onExited: {
+            if (service._pendingRefresh) {
+                service._pendingRefresh = false;
+                service.listCached();
             }
         }
     }
@@ -159,15 +191,21 @@ Item {
         onExited: (exitCode) => {
             if (exitCode === 0) {
                 if (_pendingConnectSsid !== "") {
+                    service.currentState = "connected";
+                    service.currentSsid = _pendingConnectSsid;
+                    service.updateNetworksConnectedState(_pendingConnectSsid, true);
                     service.connectionSuccess(_pendingConnectSsid);
                 }
             } else {
                 if (_pendingConnectSsid !== "") {
+                    service.currentState = "disconnected";
+                    service.currentSsid = "";
+                    service.updateNetworksConnectedState(_pendingConnectSsid, false);
                     service.connectionFailed(_pendingConnectSsid);
                 }
             }
             _pendingConnectSsid = "";
-            service.refresh();
+            service.listCached();
         }
     }
 
@@ -194,15 +232,7 @@ Item {
         command: ["nmcli", "monitor"]
         running: true
         stdout: SplitParser {
-            // Cheap status read only. This used to pass
-            // Variables.quickSettingsOpen, so while the panel was open every
-            // single nmcli event kicked off a full 5 second hardware rescan --
-            // and because scanning itself changes NetworkManager state, those
-            // scans re-triggered each other. The radio ended up scanning
-            // essentially non-stop and the cheap polls were permanently
-            // starved behind the guard. Full rescans are driven deliberately
-            // instead: on panel open, on the refresh button, and every 20s.
-            onRead: (data) => service.refresh(false)
+            onRead: (data) => service.listCached()
         }
         onExited: restartNmMon.start()
     }
