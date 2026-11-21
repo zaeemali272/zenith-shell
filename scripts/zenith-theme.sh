@@ -386,6 +386,87 @@ fi
 mv -f "$PALETTE_STAGE" "$PALETTE"
 log_ok "Palette written to $PALETTE"
 
+# Generate Kitty colors matching the active Zenith palette
+python3 - "$PALETTE" "$CACHE_DIR/kitty-colors.conf" <<'KITTY_PY' 2>/dev/null || true
+import json, sys
+pal = json.load(open(sys.argv[1]))
+out_path = sys.argv[2]
+content = f"""# Zenith Shell Kitty Colors
+foreground            {pal.get('on_surface', '#f1dfdb')}
+background            {pal.get('background', '#1a1110')}
+selection_foreground  {pal.get('on_primary', '#561e15')}
+selection_background  {pal.get('primary', '#ffb4a7')}
+
+cursor                {pal.get('primary', '#ffb4a7')}
+cursor_text_color     {pal.get('on_primary', '#561e15')}
+
+url_color             {pal.get('tertiary', '#ddc48c')}
+
+active_border_color   {pal.get('primary', '#ffb4a7')}
+inactive_border_color {pal.get('surface_container_highest', '#3d3230')}
+bell_border_color     {pal.get('error', '#ffb4ab')}
+
+# Tab bar
+active_tab_foreground   {pal.get('on_primary', '#561e15')}
+active_tab_background   {pal.get('primary', '#ffb4a7')}
+inactive_tab_foreground {pal.get('on_surface_variant', '#d8c2be')}
+inactive_tab_background {pal.get('surface_container', '#271d1c')}
+tab_bar_background      {pal.get('surface_container_lowest', '#140c0b')}
+
+# 16 terminal colors
+color0 {pal.get('surface_container_lowest', '#140c0b')}
+color1 {pal.get('error', '#ffb4ab')}
+color2 {pal.get('tertiary', '#ddc48c')}
+color3 #fae0a6
+color4 {pal.get('secondary', '#e7bdb5')}
+color5 {pal.get('primary', '#ffb4a7')}
+color6 {pal.get('on_primary_container', '#ffdad4')}
+color7 {pal.get('on_surface', '#f1dfdb')}
+
+color8  {pal.get('surface_variant', '#534340')}
+color9  {pal.get('error', '#ffb4ab')}
+color10 #fae0a6
+color11 #fae0a6
+color12 {pal.get('secondary', '#e7bdb5')}
+color13 {pal.get('primary', '#ffb4a7')}
+color14 {pal.get('on_primary_container', '#ffdad4')}
+color15 #ffffff
+"""
+with open(out_path, 'w') as f:
+    f.write(content)
+KITTY_PY
+
+# Update Starship palette if starship.toml is in place
+if [[ -f "$HOME/.config/starship.toml" ]]; then
+    python3 - "$PALETTE" "$HOME/.config/starship.toml" <<'STARSHIP_PY' 2>/dev/null || true
+import json, re, sys
+pal = json.load(open(sys.argv[1]))
+starship_path = sys.argv[2]
+try:
+    content = open(starship_path).read()
+    new_palette = f"""[palettes.zenith]
+primary = "{pal.get('primary', '#ffb4a7')}"
+secondary = "{pal.get('secondary', '#e7bdb5')}"
+tertiary = "{pal.get('tertiary', '#ddc48c')}"
+accent = "{pal.get('on_primary_container', '#ffdad4')}"
+subtext = "{pal.get('on_surface_variant', '#d8c2be')}"
+surface = "{pal.get('surface_container', '#271d1c')}"
+background = "{pal.get('background', '#1a1110')}"
+red = "{pal.get('error', '#ffb4ab')}"
+green = "#a6d189"
+yellow = "#fae0a6"
+blue = "#89b4fa"
+purple = "#cba6f7"
+"""
+    if "[palettes.zenith]" in content:
+        content = re.sub(r'\[palettes\.zenith\][^\[]*', new_palette + "\n", content)
+        with open(starship_path, 'w') as f:
+            f.write(content)
+except Exception:
+    pass
+STARSHIP_PY
+fi
+
 if [[ "${THEME_HYPRLAND:-0}" == "1" && -f "$HYPR_STAGE" ]]; then
     if ! validate_scheme "$HYPR_STAGE"; then
         log_err "Generated Hyprland scheme is malformed; keeping the existing one."
