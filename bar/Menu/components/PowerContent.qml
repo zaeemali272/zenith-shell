@@ -75,19 +75,7 @@ ColumnLayout {
     ColumnLayout {
         id: mainLayout
         Layout.fillWidth: true
-        spacing: Theme.scaled(25)
-        
-        // ... (existing content)
-
-
-        Text {
-            text: "SESSION"
-            color: Theme.blue
-            font.pixelSize: 10
-            font.weight: Font.Black
-            font.letterSpacing: 2
-            Layout.leftMargin: Theme.scaled(5)
-        }
+        spacing: Theme.scaled(12)
 
         GridLayout {
             columns: 2

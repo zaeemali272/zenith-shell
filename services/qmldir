@@ -1,5 +1,6 @@
 singleton BatteryService BatteryService.qml
 singleton BluetoothService BluetoothService.qml
+singleton BrightnessService BrightnessService.qml
 singleton CaffeineService CaffeineService.qml
 singleton CenterState CenterState.qml
 singleton HyprlandService HyprlandService.qml
@@ -24,6 +25,7 @@ singleton LockService LockService.qml
 singleton ThemeService ThemeService.qml
 singleton PowerToolsService PowerToolsService.qml
 singleton SystemServicesService SystemServicesService.qml
+singleton DisplayService DisplayService.qml
 
 
 

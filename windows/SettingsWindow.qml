@@ -7,6 +7,7 @@ import Quickshell
 import "../" as Shell
 import "../Settings" as Settings
 import "./settings/tabs" as Tabs
+import "../bar/Menu/components" as MenuComponents
 
 Window {
     id: win
@@ -69,7 +70,8 @@ Window {
                             { name: "Workspace", icon: "󰨇" },
                             { name: "Battery", icon: "󰁹" },
                             { name: "Media", icon: "󰎆" },
-                            { name: "Hyprland", icon: "󱓞" }
+                            { name: "Hyprland", icon: "󱓞" },
+                            { name: "Displays", icon: "󰍹" }
                         ]
                         delegate: Rectangle {
                             id: tabBtn
@@ -119,11 +121,22 @@ Window {
                         flat: true
                         scale: closeBtn.pressed ? 0.96 : 1.0
                         Behavior on scale { NumberAnimation { duration: Shell.Theme.animInstant; easing.type: Easing.OutCubic } }
-                        contentItem: Text {
-                            text: parent.text
-                            color: parent.hovered ? Shell.Theme.powerRed : Shell.Theme.subtext1
-                            font.bold: true
-                            horizontalAlignment: Text.AlignHCenter
+                        contentItem: RowLayout {
+                            anchors.centerIn: parent
+                            spacing: Shell.Theme.scaled(8)
+                            Text {
+                                text: "󰅖"
+                                font.family: Shell.Theme.iconFont
+                                font.pixelSize: Shell.Theme.scaled(14)
+                                color: closeBtn.hovered ? Shell.Theme.powerRed : Shell.Theme.subtext1
+                                Layout.alignment: Qt.AlignVCenter
+                            }
+                            Text {
+                                text: "Close"
+                                color: closeBtn.hovered ? Shell.Theme.powerRed : Shell.Theme.subtext1
+                                font.bold: true
+                                Layout.alignment: Qt.AlignVCenter
+                            }
                         }
                         background: Rectangle {
                             radius: 12
@@ -145,25 +158,52 @@ Window {
             }
             
             // --- MAIN CONTENT AREA ---
-            Rectangle {
+            Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                color: "transparent"
                 clip: true
 
-                StackLayout {
-                    id: view
+                Flickable {
+                    id: settingsFlickable
+                    MenuComponents.FastWheel {}
                     anchors.fill: parent
                     anchors.margins: 10
-                    currentIndex: 0
-                    
-                    Tabs.GeneralTab { }
-                    Tabs.BarTab { }
-                    Tabs.AppearanceTab { }
-                    Tabs.WorkspaceTab { }
-                    Tabs.BatteryTab { }
-                    Tabs.MediaTab { }
-                    Tabs.HyprlandTab { }
+                    clip: true
+                    boundsBehavior: Flickable.StopAtBounds
+                    contentWidth: width
+                    contentHeight: (view.children && view.children[view.currentIndex] ? view.children[view.currentIndex].implicitHeight : 0) + 40
+
+                    ScrollBar.vertical: ScrollBar {
+                        parent: settingsFlickable
+                        anchors.top: settingsFlickable.top
+                        anchors.bottom: settingsFlickable.bottom
+                        anchors.right: settingsFlickable.right
+                        anchors.rightMargin: 2
+                        policy: ScrollBar.AsNeeded
+                        width: 4
+                        contentItem: Rectangle {
+                            radius: 999
+                            color: Shell.Theme.accentColor
+                            opacity: 0.7
+                        }
+                    }
+
+                    StackLayout {
+                        id: view
+                        width: settingsFlickable.width - 14
+                        currentIndex: 0
+                        
+                        onCurrentIndexChanged: settingsFlickable.contentY = 0
+
+                        Tabs.GeneralTab { Layout.fillWidth: true }
+                        Tabs.BarTab { Layout.fillWidth: true }
+                        Tabs.AppearanceTab { Layout.fillWidth: true }
+                        Tabs.WorkspaceTab { Layout.fillWidth: true }
+                        Tabs.BatteryTab { Layout.fillWidth: true }
+                        Tabs.MediaTab { Layout.fillWidth: true }
+                        Tabs.HyprlandTab { Layout.fillWidth: true }
+                        Tabs.DisplayTab { Layout.fillWidth: true }
+                    }
                 }
             }
         }

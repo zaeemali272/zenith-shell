@@ -269,10 +269,21 @@ Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
-            ScrollBar.vertical.policy: ScrollBar.AsNeeded
+
+            ScrollBar.vertical: ScrollBar {
+                parent: servicesScrollView
+                anchors.top: servicesScrollView.top
+                anchors.bottom: servicesScrollView.bottom
+                anchors.right: servicesScrollView.right
+                anchors.rightMargin: 1
+                policy: ScrollBar.AsNeeded
+                width: 3
+                contentItem: Rectangle { radius: 999; color: Theme.accentColor; opacity: 0.6 }
+            }
 
             ListView {
                 id: servicesListView
+                FastWheel {}
                 width: servicesScrollView.width
                 spacing: Theme.scaled(8)
                 boundsBehavior: Flickable.StopAtBounds
@@ -848,13 +859,26 @@ Item {
 
                                     // Log Lines List
                                     ScrollView {
+                                        id: logScrollView
                                         anchors.fill: parent
                                         anchors.margins: Theme.scaled(6)
                                         visible: !SystemServicesService.logsLoading && root.getFilteredLogs().length > 0
                                         clip: true
 
+                                        ScrollBar.vertical: ScrollBar {
+                                            parent: logScrollView
+                                            anchors.top: logScrollView.top
+                                            anchors.bottom: logScrollView.bottom
+                                            anchors.right: logScrollView.right
+                                            anchors.rightMargin: 1
+                                            policy: ScrollBar.AsNeeded
+                                            width: 3
+                                            contentItem: Rectangle { radius: 999; color: Theme.accentColor; opacity: 0.6 }
+                                        }
+
                                         ListView {
                                             id: logLinesView
+                                            FastWheel {}
                                             width: parent.width
                                             spacing: Theme.scaled(2)
                                             model: root.getFilteredLogs()

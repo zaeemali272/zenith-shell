@@ -131,6 +131,17 @@ def get_wifi_state(do_scan=True, list_cached=False):
                     "isKnown": is_known
                 })
 
+        # If connected to a network that wasn't returned by scan, ensure it's in the list
+        if current_state == "connected" and current_ssid and not any(n["ssid"] == current_ssid for n in networks):
+            networks.insert(0, {
+                "ssid": current_ssid,
+                "signalPct": 100,
+                "signal": 4,
+                "security": "",
+                "connected": True,
+                "isKnown": True
+            })
+
         # Sort networks: active first, then known, then signal strength, then name
         networks.sort(key=lambda x: (
             not x["connected"],
@@ -139,13 +150,41 @@ def get_wifi_state(do_scan=True, list_cached=False):
             x["ssid"].lower()
         ))
 
+    current_password = ""
+    if current_ssid and current_state == "connected":
+        try:
+            psk_out = run_cmd(["nmcli", "-s", "-g", "802-11-wireless-security.psk", "connection", "show", current_ssid]).strip()
+            if psk_out:
+                current_password = psk_out
+        except Exception:
+            pass
+
+    known_passwords = {}
+    if current_ssid and current_password:
+        known_passwords[current_ssid] = current_password
+
+    for n in networks:
+        ssid = n.get("ssid")
+        if n.get("connected"):
+            n["password"] = current_password
+        elif n.get("isKnown") and ssid:
+            if ssid not in known_passwords:
+                try:
+                    psk = run_cmd(["nmcli", "-s", "-g", "802-11-wireless-security.psk", "connection", "show", ssid]).strip()
+                    known_passwords[ssid] = psk
+                except Exception:
+                    known_passwords[ssid] = ""
+            n["password"] = known_passwords.get(ssid, "")
+
     return {
         "isAirplane": is_airplane,
         "currentState": current_state,
         "currentSsid": current_ssid,
+        "currentPassword": current_password,
         "ipv4Address": ipv4_address,
         "knownNetworks": known_networks,
         "knownDict": known_dict,
+        "knownPasswords": known_passwords,
         "networks": networks
     }
 
@@ -183,6 +222,11 @@ def main():
             enable = sys.argv[2].lower() if len(sys.argv) >= 3 else "off"
             state = "off" if enable in ["true", "on", "1", "yes"] else "on"
             res = run_cmd(["nmcli", "radio", "wifi", state])
+            print(res)
+            return
+        elif cmd == "get_password" and len(sys.argv) >= 3:
+            ssid = sys.argv[2]
+            res = run_cmd(["nmcli", "-s", "-g", "802-11-wireless-security.psk", "connection", "show", ssid])
             print(res)
             return
 

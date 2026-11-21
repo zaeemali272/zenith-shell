@@ -13,6 +13,14 @@ import "windows"
 import "windows/lock"
 
 Scope {
+    FontLoader { source: "./assets/fonts/Quicksand-Regular.ttf" }
+    FontLoader { source: "./assets/fonts/Quicksand-Medium.ttf" }
+    FontLoader { source: "./assets/fonts/Quicksand-SemiBold.ttf" }
+    FontLoader { source: "./assets/fonts/Quicksand-Bold.ttf" }
+    FontLoader { source: "./assets/fonts/Nunito-Regular.ttf" }
+    FontLoader { source: "./assets/fonts/Nunito-SemiBold.ttf" }
+    FontLoader { source: "./assets/fonts/Nunito-Bold.ttf" }
+
     readonly property var _notifications: NotificationService
     readonly property var _battery: BatteryService
     readonly property var _media: MediaPlayerService
@@ -139,8 +147,8 @@ Scope {
             else if (lowerArg === "roadmap" || lowerArg === "roadmaps") { tab = "Pomodoro"; CenterState.focusTool = "Roadmap"; }
             else if (lowerArg === "services" || lowerArg === "service" || lowerArg === "daemons") { tab = "Pomodoro"; CenterState.focusTool = "Services"; }
             CenterState.toggle(tab);
-        } else if (lowerAction === "quicksettings" || lowerAction === "toggle_quicksettings") {
-            let tab = arg || "network";
+        } else if (lowerAction === "quicksettings" || lowerAction === "toggle_quicksettings" || lowerAction === "qs") {
+            let tab = arg || "main";
             QuickSettingsService.toggle(tab);
         } else if (lowerAction === "mail" || lowerAction === "email" || lowerAction === "inbox") {
             CenterState.toggle("Mail");

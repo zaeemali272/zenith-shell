@@ -72,7 +72,7 @@ PopupWindow {
         border.color: Theme.glassBorder
         border.width: 1
         radius: Theme.scaled(14)
-        clip: true
+        antialiasing: true
         focus: true
 
         Keys.onPressed: (event) => {
@@ -84,6 +84,19 @@ PopupWindow {
 
         implicitWidth: Math.max(Theme.scaled(220), stackView.implicitWidth)
         implicitHeight: stackView.implicitHeight + Theme.scaled(16)
+
+        Behavior on implicitHeight {
+            NumberAnimation {
+                duration: Theme.animFast
+                easing.type: Easing.OutCubic
+            }
+        }
+        Behavior on implicitWidth {
+            NumberAnimation {
+                duration: Theme.animFast
+                easing.type: Easing.OutCubic
+            }
+        }
 
         StackView {
             id: stackView

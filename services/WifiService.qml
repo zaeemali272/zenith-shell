@@ -10,10 +10,12 @@ Item {
 
     property var networks: []
     property var knownNetworks: ({})
+    property var knownPasswords: ({})
 
     // Station & Connection Info
     property string currentState: "disconnected"
     property string currentSsid: ""
+    property string currentPassword: ""
     property string ipv4Address: ""
     property string rssi: ""
     property string txBitrate: ""
@@ -25,6 +27,8 @@ Item {
     property bool isTesting: false
     property bool isUserTyping: false
     readonly property bool isRefreshing: stateProc.running
+    readonly property bool isConnecting: actionProc.running && _pendingConnectSsid !== ""
+    readonly property string connectingSsid: _pendingConnectSsid
 
     signal connectionFailed(string ssid)
     signal connectionSuccess(string ssid)
@@ -40,11 +44,18 @@ Item {
     // never actually arrive. Let whatever is already running finish instead.
     function refresh(fullScan) {
         if (stateProc.running) return;
+        if (isUserTyping) return;
 
         let doScan = (fullScan !== undefined) ? fullScan : (Variables.quickSettingsOpen || Variables.controlCenterOpen);
         _requestScanned = doScan;
         stateProc.command = ["python3", helperScript, doScan ? "json" : "status"];
         stateProc.running = true;
+    }
+
+    function cancelScan() {
+        if (stateProc.running) {
+            stateProc.running = false;
+        }
     }
 
     // What NetworkManager already knows, without touching the radio. Opening
@@ -62,6 +73,7 @@ Item {
     // when the user explicitly opens the panel or hits the refresh button,
     // where waiting on an unrelated poll would feel broken.
     function rescan() {
+        if (isUserTyping) return;
         stateProc.running = false;
         _requestScanned = true;
         stateProc.command = ["python3", helperScript, "json"];
@@ -122,13 +134,15 @@ Item {
                     if (data.isAirplane !== undefined) service.isAirplane = data.isAirplane;
                     if (data.currentState !== undefined) service.currentState = data.currentState;
                     if (data.currentSsid !== undefined) service.currentSsid = data.currentSsid;
+                    if (data.currentPassword !== undefined) service.currentPassword = data.currentPassword;
                     if (data.ipv4Address !== undefined) service.ipv4Address = data.ipv4Address;
                     if (data.knownDict) service.knownNetworks = data.knownDict;
+                    if (data.knownPasswords) service.knownPasswords = data.knownPasswords;
                     // Only a real scan can authoritatively say what is on the
                     // air. A status read reports networks: [] purely because
                     // it did not scan, which must not be mistaken for "no
                     // networks in range".
-                    if (service._requestScanned && Array.isArray(data.networks)) {
+                    if (service._requestScanned && Array.isArray(data.networks) && !service.isUserTyping) {
                         service.networks = data.networks;
                     }
                 } catch (e) {

@@ -34,7 +34,9 @@ QtObject {
 
     // ===== Glassmorphism & Effects =====
     readonly property real menuOpacity: AppearanceSettings.menuOpacity
-    readonly property color glassBackground: Qt.alpha(Colors.surface_container_lowest, Math.max(0.88, menuOpacity))
+    readonly property real tooltipOpacity: AppearanceSettings.tooltipOpacity
+    readonly property color glassBackground: Qt.alpha(Colors.surface_container_lowest, Math.max(0.1, Math.min(1.0, AppearanceSettings.menuOpacity)))
+    readonly property color tooltipBackground: Qt.alpha(Colors.surface_container_lowest, Math.max(0.1, Math.min(1.0, AppearanceSettings.tooltipOpacity)))
     readonly property color glassBorder: Qt.rgba(255, 255, 255, 0.08)
     readonly property real glassBlur: AppearanceSettings.glassBlur
 
@@ -95,6 +97,8 @@ QtObject {
     readonly property color red: Colors.error
     readonly property color mauve: Colors.primary
     readonly property color accentColor: Colors.primary
+    readonly property color barIconColor: AppearanceSettings.themedBarIcons ? accentColor : AppearanceSettings.barIconsColor
+    readonly property color catColor: AppearanceSettings.themeCatColor ? accentColor : AppearanceSettings.catPermanentColor
     readonly property color accentGlow: {
         try {
             return Qt.rgba(Colors.primary.r, Colors.primary.g, Colors.primary.b, 0.3);
@@ -128,11 +132,11 @@ QtObject {
     readonly property color wsEmptyColor: pillColor
 
     // ===== Pills =====
-    readonly property int pillHeight: scaled(PillSettings.height)
-    readonly property int pillRadius: scaled(PillSettings.radius)
+    readonly property int pillHeight: scaled(BarSettings.height ? BarSettings.height : PillSettings.height)
+    readonly property int pillRadius: scaled(BarSettings.radius ? BarSettings.radius : PillSettings.radius)
     readonly property int pillPadding: scaled(PillSettings.padding)
     readonly property int extraPillPadding: scaled(PillSettings.extraPadding)
-    readonly property color pillColor: Colors.background
+    readonly property color pillColor: Qt.rgba(Colors.background.r, Colors.background.g, Colors.background.b, Math.max(0.05, Math.min(1.0, BarSettings.opacity)))
     readonly property int pillSpacing: scaled(PillSettings.spacing)
     readonly property int pillGap: scaled(PillSettings.gap)
     readonly property color pillBorderColor: Colors.outline
@@ -143,7 +147,8 @@ QtObject {
     // ===== Typography =====
     readonly property int fontSize: scaled(AppearanceSettings.fontSize)
     readonly property int iconSize: scaled(AppearanceSettings.iconSize)
-    readonly property string iconFont: AppearanceSettings.iconFont
+    readonly property string fontFamily: AppearanceSettings.fontFamily ? AppearanceSettings.fontFamily : "Quicksand"
+    readonly property string iconFont: AppearanceSettings.iconFont ? AppearanceSettings.iconFont : "JetBrainsMono Nerd Font"
     readonly property color fontColor: Colors.on_background
     
     // ===== Menu / Popup Styling =====
@@ -192,7 +197,7 @@ QtObject {
 
     // ===== Icons (Nerd Font) =====
     readonly property string chargingIcon: "󰂄"
-    readonly property string pluggedIcon: ""
+    readonly property string pluggedIcon: "󰚥"
     readonly property string iconHigh: "󰁹"
     readonly property string iconMidHigh: "󰂀"
     readonly property string iconMid: "󰁿"
@@ -203,8 +208,12 @@ QtObject {
     readonly property string volMid: "󰖀"
     readonly property string volHigh: "󰕾"
     readonly property string btIcon: "󰂯"
-    readonly property string netUpIcon: ""
-    readonly property string netDownIcon: ""
+    readonly property string netIcon: "󰤨"
+    readonly property string netUpIcon: ""
+    readonly property string netDownIcon: ""
+    readonly property string cpuIcon: ""
+    readonly property string memIcon: ""
+    readonly property string tempIcon: ""
 
     function batteryLevel(percent) {
         if (percent <= critical) return "critical";

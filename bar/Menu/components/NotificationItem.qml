@@ -14,14 +14,17 @@ Rectangle {
     property bool enableAutoDismiss: true
     property bool animateHeight: true
     property int itemIndex: 0
-    
+    property bool animateOut: true
+
     // Stability: Debounced hovered state
     property bool realHovered: false
+    property bool isReplying: false
+
     Timer {
         id: unhoverTimer
         interval: 250
         onTriggered: {
-            if (!mainMouseArea.containsMouse && !dismissMouse.containsMouse) {
+            if (!mainMouseArea.containsMouse && !dismissMouse.containsMouse && !isReplying) {
                 root.realHovered = false;
                 autoDismissTimer.restart();
             }
@@ -33,14 +36,22 @@ Rectangle {
         ? Theme.glassBackground 
         : (mainMouseArea.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground)
     radius: Theme.scaled(14)
-    border.color: enableAutoDismiss 
-        ? Theme.glassBorder 
-        : (mainMouseArea.containsMouse ? Theme.glassBorder : Theme.cardBorder)
+    border.color: isReplying 
+        ? Theme.accentColor 
+        : (enableAutoDismiss 
+            ? Theme.glassBorder 
+            : (mainMouseArea.containsMouse ? Theme.glassBorder : Theme.cardBorder))
     border.width: 1
+    antialiasing: true
     clip: true
 
     implicitHeight: layout.implicitHeight + Theme.scaled(24)
     Layout.fillWidth: true
+
+    Behavior on implicitHeight {
+        enabled: root.animateHeight
+        NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic }
+    }
 
     // --- ANIMATIONS ---
     opacity: 0
@@ -59,9 +70,6 @@ Rectangle {
         NumberAnimation { target: trans; property: "x"; to: 0; duration: Theme.animSlow; easing.type: Theme.elasticEasing }
     }
 
-    // Leaving mirrors arriving: slide out to the right and fade, then let the
-    // model drop the row. Removing the row first made popups blink out of
-    // existence while everything else in the shell animates.
     property bool _leaving: false
     signal leaveFinished()
 
@@ -82,11 +90,6 @@ Rectangle {
         ScriptAction { script: root.leaveFinished() }
     }
 
-    // Popup rows animate out; the dashboard history list (animateOut false)
-    // removes rows directly, since it is a scrolling list rather than a stack
-    // of toasts.
-    property bool animateOut: true
-
     function dismiss(removeFromHistory) {
         if (!notification) return;
         const id = notification.id;
@@ -99,19 +102,21 @@ Rectangle {
         leave();
     }
 
-    Behavior on implicitHeight {
-        enabled: root.animateHeight
-        NumberAnimation { duration: Theme.animNormal; easing.type: Easing.OutCubic }
+    function submitReply() {
+        if (!replyInput.text || replyInput.text.trim() === "") return;
+        NotificationService.sendReply(notification.id, replyInput.text.trim());
+        root.isReplying = false;
+        root.dismiss(false);
     }
 
     // --- AUTO DISMISS LOGIC ---
     Timer {
         id: autoDismissTimer
-        interval: 3000
-        running: !!notification && enableAutoDismiss
+        interval: 4000
+        running: !!notification && enableAutoDismiss && !root.realHovered && !root.isReplying
         repeat: false
         onTriggered: {
-            if (!root.realHovered) root.dismiss(false);
+            if (!root.realHovered && !root.isReplying) root.dismiss(false);
         }
     }
 
@@ -119,6 +124,23 @@ Rectangle {
     property var iconCandidates: []
     property int currentCandidateIndex: -1
     property bool showFallbackLetter: false
+
+    function getFallbackGlyph(appName, summary, body) {
+        let text = ((appName || "") + " " + (summary || "") + " " + (body || "")).toLowerCase();
+        if (text.includes("screenshot") || text.includes("snip") || text.includes("photo") || text.includes("camera") || text.includes("capture")) return "󰄄";
+        if (text.includes("record") || text.includes("video") || text.includes("screencast")) return "󰕧";
+        if (text.includes("terminal") || text.includes("shell") || text.includes("bash") || text.includes("zsh") || text.includes("cmd") || text.includes("console")) return "󰆍";
+        if (text.includes("audio") || text.includes("volume") || text.includes("sound") || text.includes("music") || text.includes("speaker") || text.includes("song")) return "󰕾";
+        if (text.includes("battery") || text.includes("power") || text.includes("charge")) return "󰁹";
+        if (text.includes("bluetooth")) return "󰂯";
+        if (text.includes("wifi") || text.includes("network") || text.includes("ethernet") || text.includes("internet")) return "󰤨";
+        if (text.includes("bright") || text.includes("display")) return "󰃠";
+        if (text.includes("color") || text.includes("pipette") || text.includes("picker")) return "󰈊";
+        if (text.includes("mail") || text.includes("email") || text.includes("message") || text.includes("chat") || text.includes("discord") || text.includes("telegram")) return "󰭹";
+        if (text.includes("system") || text.includes("setting") || text.includes("update") || text.includes("config")) return "󰒓";
+        if (text.includes("download") || text.includes("save")) return "󰇚";
+        return "󰂚";
+    }
 
     function tryNextIcon() {
         currentCandidateIndex++;
@@ -130,7 +152,6 @@ Rectangle {
                 Qt.callLater(tryNextIcon);
             }
         } else {
-            // All candidates exhausted, show letter fallback
             showFallbackLetter = true;
         }
     }
@@ -158,7 +179,7 @@ Rectangle {
         id: layout
         anchors.fill: parent
         anchors.margins: Theme.scaled(12)
-        spacing: Theme.scaled(8)
+        spacing: Theme.scaled(10)
         z: 2
         
         Layout.alignment: Qt.AlignVCenter 
@@ -166,21 +187,19 @@ Rectangle {
         // Icon Container
         Rectangle {
             id: iconContainer
-            Layout.preferredWidth: Theme.scaled(50)
-            Layout.preferredHeight: Theme.scaled(50)
-            Layout.alignment: Qt.AlignVCenter 
+            Layout.preferredWidth: Theme.scaled(44)
+            Layout.preferredHeight: Theme.scaled(44)
+            Layout.alignment: Qt.AlignTop
             
             color: "transparent"
-            radius: Theme.scaled(12)
+            radius: Theme.scaled(10)
             border.width: 0
 
             Image {
                 id: iconImg
                 anchors.centerIn: parent
-                
-                width: Theme.scaled(36)
-                height: Theme.scaled(36)
-                
+                width: Theme.scaled(38)
+                height: Theme.scaled(38)
                 fillMode: Image.PreserveAspectFit
                 asynchronous: true
                 smooth: true
@@ -188,7 +207,6 @@ Rectangle {
                 
                 onStatusChanged: {
                     if (status === Image.Ready) {
-                        // Detect Qt's 100x100 missing icon checkerboard pattern
                         if (iconImg.source.toString().startsWith("image://icon/") &&
                             iconImg.implicitWidth === 100 && iconImg.implicitHeight === 100) {
                             let iconName = iconImg.source.toString().replace("image://icon/", "");
@@ -202,32 +220,55 @@ Rectangle {
                 }
             }
 
-            // Fallback Letter Container
             Text {
                 anchors.centerIn: parent
                 visible: root.showFallbackLetter
-                text: (notification && notification.appName && notification.appName !== "") ? notification.appName.charAt(0).toUpperCase() : "!"
-                font.pixelSize: Theme.scaled(24)
-                font.bold: true
+                font.family: Theme.iconFont
+                font.pixelSize: Theme.scaled(26)
                 color: Theme.accentColor
+                text: root.getFallbackGlyph(
+                    notification ? notification.appName : "",
+                    notification ? notification.summary : "",
+                    notification ? notification.body : ""
+                )
             }
         }
 
-        // Text Section
+        // Text & Content Section
         ColumnLayout {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignVCenter
-            spacing: Theme.scaled(2)
+            spacing: Theme.scaled(4)
 
-            Label {
-                text: notification ? (notification.appName || "SYSTEM").toUpperCase() : ""
-                color: Theme.accentColor
-                font.pixelSize: Theme.scaled(10)
-                font.weight: Font.Black
-                font.letterSpacing: 1.5
+            // Header line: App Name + Timestamp
+            RowLayout {
                 Layout.fillWidth: true
+                spacing: Theme.scaled(6)
+
+                Label {
+                    text: notification ? (notification.appName || "SYSTEM").toUpperCase() : ""
+                    color: Theme.accentColor
+                    font.pixelSize: Theme.scaled(10)
+                    font.weight: Font.Black
+                    font.letterSpacing: 1.2
+                }
+
+                Text {
+                    text: "•"
+                    color: Theme.subtext0
+                    font.pixelSize: Theme.scaled(10)
+                }
+
+                Text {
+                    text: notification ? (notification.timeStr || "now") : "now"
+                    color: Theme.subtext0
+                    font.pixelSize: Theme.scaled(10)
+                }
+
+                Item { Layout.fillWidth: true }
             }
 
+            // Summary / Title
             Label {
                 text: notification ? (notification.summary || "Notification") : ""
                 color: "#ffffff"
@@ -238,6 +279,7 @@ Rectangle {
                 Layout.fillWidth: true
             }
 
+            // Body
             Label {
                 text: notification ? (notification.body || "") : ""
                 color: Theme.subtext0
@@ -246,22 +288,162 @@ Rectangle {
                 elide: root.realHovered ? Text.ElideNone : Text.ElideRight
                 maximumLineCount: root.realHovered ? 20 : 2
                 Layout.fillWidth: true
+                visible: text !== ""
+            }
+
+            // Inline Reply Field
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Theme.scaled(6)
+                visible: root.isReplying
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: Theme.scaled(28)
+                    radius: Theme.scaled(6)
+                    color: Theme.cardBackground
+                    border.color: replyInput.activeFocus ? Theme.accentColor : Theme.glassBorder
+                    border.width: 1
+
+                    TextInput {
+                        id: replyInput
+                        anchors.fill: parent
+                        anchors.leftMargin: Theme.scaled(8)
+                        anchors.rightMargin: Theme.scaled(8)
+                        verticalAlignment: TextInput.AlignVCenter
+                        color: "#ffffff"
+                        font.pixelSize: Theme.scaled(11)
+                        selectByMouse: true
+                        clip: true
+                        onAccepted: root.submitReply()
+                        Keys.onEscapePressed: root.isReplying = false
+
+                        Text {
+                            anchors.fill: parent
+                            verticalAlignment: Text.AlignVCenter
+                            text: notification ? (notification.inlineReplyPlaceholder || "Reply...") : "Reply..."
+                            color: Theme.subtext0
+                            font.pixelSize: Theme.scaled(11)
+                            visible: replyInput.text === "" && !replyInput.activeFocus
+                        }
+                    }
+                }
+
+                // Send Button
+                Rectangle {
+                    width: Theme.scaled(28)
+                    height: Theme.scaled(28)
+                    radius: Theme.scaled(6)
+                    color: sendMouse.containsMouse ? Qt.lighter(Theme.accentColor, 1.1) : Theme.accentColor
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "󰒭"
+                        font.family: Theme.iconFont
+                        font.pixelSize: Theme.scaled(12)
+                        color: Colors.on_primary
+                    }
+
+                    MouseArea {
+                        id: sendMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.submitReply()
+                    }
+                }
+            }
+
+            // Action Buttons Row (Click-to-action & Reply)
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Theme.scaled(6)
+                visible: !root.isReplying && ((notification && notification.actions && notification.actions.length > 0) || (notification && notification.hasInlineReply))
+
+                // Reply Action Button
+                Rectangle {
+                    visible: Boolean(notification && notification.hasInlineReply)
+                    height: Theme.scaled(24)
+                    implicitWidth: replyBtnText.implicitWidth + Theme.scaled(16)
+                    radius: Theme.scaled(6)
+                    color: replyBtnMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground
+                    border.color: Theme.glassBorder
+                    border.width: 1
+
+                    Text {
+                        id: replyBtnText
+                        anchors.centerIn: parent
+                        text: "Reply"
+                        font.pixelSize: Theme.scaled(10)
+                        font.weight: Font.DemiBold
+                        color: Theme.accentColor
+                    }
+
+                    MouseArea {
+                        id: replyBtnMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            root.isReplying = true;
+                            Qt.callLater(() => replyInput.forceActiveFocus());
+                        }
+                    }
+                }
+
+                // Dynamic Action Buttons
+                Repeater {
+                    model: (notification && notification.actions) ? notification.actions : []
+                    delegate: Rectangle {
+                        height: Theme.scaled(24)
+                        implicitWidth: actBtnText.implicitWidth + Theme.scaled(16)
+                        radius: Theme.scaled(6)
+                        color: actBtnMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground
+                        border.color: Theme.glassBorder
+                        border.width: 1
+
+                        Text {
+                            id: actBtnText
+                            anchors.centerIn: parent
+                            text: modelData.text || modelData.identifier || "Action"
+                            font.pixelSize: Theme.scaled(10)
+                            font.weight: Font.DemiBold
+                            color: Theme.text
+                        }
+
+                        MouseArea {
+                            id: actBtnMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                if (modelData.identifier === "inline-reply" || (modelData.text && modelData.text.toLowerCase().includes("reply"))) {
+                                    root.isReplying = true;
+                                    Qt.callLater(() => replyInput.forceActiveFocus());
+                                } else {
+                                    NotificationService.invokeAction(notification ? notification.id : 0, modelData.identifier, notification);
+                                    root.dismiss(false);
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
         Item {
-            Layout.preferredWidth: root.realHovered ? Theme.scaled(42) : Theme.scaled(10)
+            Layout.preferredWidth: root.realHovered ? Theme.scaled(36) : Theme.scaled(8)
             Layout.minimumWidth: Layout.preferredWidth
         }
     }
 
-    // Main Hover & Click Area
+    // Main Hover & Click-to-Action Area
     MouseArea {
         id: mainMouseArea
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
         hoverEnabled: true
-        z: 5
+        z: 1
         
         onEntered: {
             unhoverTimer.stop();
@@ -272,27 +454,26 @@ Rectangle {
         onExited: unhoverTimer.restart();
 
         onClicked: {
-            if (notification?.originalNotif) {
-                notification.originalNotif.invokeAction("default");
-                notification.originalNotif.dismiss();
+            if (!root.isReplying) {
+                NotificationService.invokeDefault(notification ? notification.id : 0, notification);
                 root.dismiss(false);
             }
         }
     }
 
-    // Dismiss Button
+    // Dismiss Button (Top-Right)
     Item {
         id: dismissButton
-        width: Theme.scaled(32); height: Theme.scaled(32)
+        width: Theme.scaled(28); height: Theme.scaled(28)
         anchors.right: parent.right
-        anchors.verticalCenter: parent.verticalCenter
-        anchors.rightMargin: Theme.scaled(10)
+        anchors.top: parent.top
+        anchors.margins: Theme.scaled(8)
         z: 100
         visible: root.realHovered
 
         Rectangle {
             anchors.fill: parent
-            radius: Theme.scaled(8)
+            radius: Theme.scaled(6)
             color: dismissMouse.containsMouse ? Theme.menuDarkHover : "transparent"
             border.width: 0
             scale: dismissMouse.pressed ? 0.92 : 1.0
@@ -302,8 +483,9 @@ Rectangle {
             Text {
                 anchors.centerIn: parent
                 text: "󰅖"
+                font.family: Theme.iconFont
                 color: dismissMouse.containsMouse ? Theme.powerRed : Theme.subtext0
-                font.pixelSize: Theme.scaled(20)
+                font.pixelSize: Theme.scaled(16)
             }
         }
 
@@ -317,10 +499,7 @@ Rectangle {
             }
             onExited: unhoverTimer.restart();
             onClicked: {
-                if (notification) {
-                    notification.originalNotif?.dismiss();
-                    root.dismiss(true);
-                }
+                root.dismiss(true);
             }
         }
     }

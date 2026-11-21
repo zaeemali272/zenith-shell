@@ -236,27 +236,27 @@ ColumnLayout {
         clip: true
 
         // --- PRESET THEMES GRID ---
-        ScrollView {
-            id: presetScrollView
+        Flickable {
+            id: presetFlickable
             anchors.fill: parent
             anchors.margins: Theme.scaled(12)
             visible: ThemeService.themeMode === "preset"
             clip: true
+            contentWidth: width
+            contentHeight: presetGrid.implicitHeight + Theme.scaled(20)
+            boundsBehavior: Flickable.StopAtBounds
 
             FastWheel {}
 
             ScrollBar.vertical: ScrollBar {
-                parent: presetScrollView
-                anchors.top: presetScrollView.top
-                anchors.bottom: presetScrollView.bottom
-                anchors.right: presetScrollView.right
-                width: 3
+                width: 4
                 policy: ScrollBar.AsNeeded
                 contentItem: Rectangle { radius: 999; color: Theme.accentColor; opacity: 0.6 }
             }
 
             GridLayout {
-                width: presetScrollView.availableWidth
+                id: presetGrid
+                width: presetFlickable.width - Theme.scaled(14)
                 columns: Theme.isSmallScreen ? 1 : 2
                 columnSpacing: Theme.scaled(12)
                 rowSpacing: Theme.scaled(12)
@@ -355,6 +355,7 @@ ColumnLayout {
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
+                            acceptedButtons: Qt.LeftButton
                             onClicked: ThemeService.applyPreset(modelData.id)
                         }
                     }
@@ -543,7 +544,8 @@ ColumnLayout {
                         Text {
                             anchors.centerIn: parent
                             visible: modelData.color === ""
-                            text: "↺"
+                            text: "󰑐"
+                            font.family: Theme.iconFont
                             font.pixelSize: Theme.scaled(13)
                             font.bold: true
                             color: Theme.text
@@ -552,8 +554,9 @@ ColumnLayout {
                         Text {
                             anchors.centerIn: parent
                             visible: modelData.color !== "" && accDot.isSelected
-                            text: "✓"
-                            font.pixelSize: Theme.scaled(12)
+                            text: "󰄬"
+                            font.family: Theme.iconFont
+                            font.pixelSize: Theme.scaled(13)
                             font.bold: true
                             color: "#11111b"
                         }

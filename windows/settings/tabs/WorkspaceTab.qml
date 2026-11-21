@@ -12,6 +12,7 @@ ColumnLayout {
     
     SettingRow {
         label: "Background Style"
+        description: "Visual container styling around workspaces ('pills' for individual chips or 'full' bar)"
         SelectionBox {
             model: ["pills", "full"]
             currentIndex: model.indexOf(WorkspaceSettings.backgroundStyle)
@@ -22,9 +23,10 @@ ColumnLayout {
     
     SettingRow {
         label: "Display Style"
+        description: "Choose whether workspace indicators display numerical digits or custom glyph icons"
         SelectionBox {
-            model: ["numbers", "dots"]
-            currentIndex: model.indexOf(WorkspaceSettings.displayStyle)
+            model: ["numbers", "icons"]
+            currentIndex: Math.max(0, model.indexOf(WorkspaceSettings.displayStyle))
             onActivated: WorkspaceSettings.displayStyle = model[index]
             Layout.preferredWidth: Shell.Theme.scaled(150)
         }
@@ -32,6 +34,7 @@ ColumnLayout {
 
     SettingRow {
         label: "Active Width"
+        description: "Expanded horizontal width in pixels of the currently active workspace pill"
         NumberInput {
             from: 10; to: 100; step: 2
             value: WorkspaceSettings.activeWidth
@@ -42,6 +45,7 @@ ColumnLayout {
 
     SettingRow {
         label: "Spacing"
+        description: "Horizontal margin separation between adjacent workspace pills"
         NumberInput {
             from: 0; to: 20; step: 1
             value: WorkspaceSettings.spacing
@@ -52,10 +56,15 @@ ColumnLayout {
 
     SettingRow {
         label: "Bar Margins"
+        description: "Outer lateral offset margin for the workspace widget cluster"
         NumberInput {
             from: 0; to: 50; step: 1
             value: WorkspaceSettings.barMargins
-            onValueModified: WorkspaceSettings.barMargins = value
+            onValueModified: {
+                WorkspaceSettings.barMargins = value;
+                BarSettings.marginLeft = value;
+                BarSettings.marginRight = value;
+            }
             Layout.preferredWidth: Shell.Theme.scaled(150)
         }
     }

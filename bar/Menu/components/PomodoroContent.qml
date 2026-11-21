@@ -20,35 +20,39 @@ Item {
             Layout.fillWidth: true
             spacing: Theme.scaled(8)
             Repeater {
-                model: ["Todo", "Roadmap", "Timer", "Services"]
+                model: ["Todo", "Roadmap", "Timer", "Mail", "Services"]
                 delegate: Rectangle {
                     id: toolTabRect
-                    implicitWidth: Math.max(Theme.scaled(82), toolTabText.implicitWidth + Theme.scaled(22))
-                    height: Theme.scaled(30)
+                    implicitWidth: tabRow.implicitWidth + Theme.scaled(26)
+                    height: Theme.scaled(32)
                     radius: Theme.bubbleRadiusPill
                     color: root.activeTool === modelData ? Theme.accentColor : (toolTabMouse.containsMouse ? Theme.cardBackgroundHover : "transparent")
                     border.width: 0
+                    antialiasing: true
                     scale: toolTabMouse.pressed ? 0.94 : 1.0
 
                     Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
                     Behavior on color { ColorAnimation { duration: Theme.animInstant } }
 
-                    RowLayout {
+                    Row {
+                        id: tabRow
                         anchors.centerIn: parent
-                        spacing: Theme.scaled(5)
+                        spacing: Theme.scaled(7)
 
                         Text {
-                            text: modelData === "Services" ? "󰒍" : (modelData === "Todo" ? "󰄲" : (modelData === "Roadmap" ? "󰙅" : "󱎫"))
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: modelData === "Services" ? "󰒍" : (modelData === "Todo" ? "󰄲" : (modelData === "Roadmap" ? "󰙅" : (modelData === "Mail" ? "󰇮" : "󱎫")))
                             font.family: Theme.iconFont
-                            font.pixelSize: Theme.scaled(18)
+                            font.pixelSize: Theme.scaled(14)
                             color: root.activeTool === modelData ? Colors.on_primary : (toolTabMouse.containsMouse ? Theme.text : Theme.subtext0)
                         }
 
                         Text { 
                             id: toolTabText
-                            text: modelData === "Services" ? "Services" : (modelData === "Todo" ? "Tasks" : modelData)
-                            font.pixelSize: Theme.scaled(10.5)
-                            font.weight: Font.Black
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: modelData === "Services" ? "Services" : (modelData === "Todo" ? "Tasks" : (modelData === "Mail" ? "Mail" : modelData))
+                            font.pixelSize: Theme.scaled(11)
+                            font.weight: Font.Bold
                             color: root.activeTool === modelData ? Colors.on_primary : (toolTabMouse.containsMouse ? Theme.text : Theme.subtext0) 
                         }
                     }
@@ -69,11 +73,12 @@ Item {
         StackLayout {
             id: toolStack
             Layout.fillWidth: true; Layout.fillHeight: true
-            currentIndex: ["Todo", "Roadmap", "Timer", "Services"].indexOf(root.activeTool)
+            currentIndex: ["Todo", "Roadmap", "Timer", "Mail", "Services"].indexOf(root.activeTool)
 
             TodoContent { id: todoContent; Layout.fillWidth: true; Layout.fillHeight: true }
             RoadmapContent { Layout.fillWidth: true; Layout.fillHeight: true }
             TimerContent { Layout.fillWidth: true; Layout.fillHeight: true }
+            MailContent { Layout.fillWidth: true; Layout.fillHeight: true }
             ServicesContent { id: servicesContent; Layout.fillWidth: true; Layout.fillHeight: true }
         }
 

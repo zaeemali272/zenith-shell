@@ -9,7 +9,7 @@ Item {
     id: service
 
     property bool qsVisible: false
-    property string activeTab: "network"
+    property string activeTab: "main"
     property rect lastRect: Qt.rect(0, 0, 0, 0)
 
     onQsVisibleChanged: Variables.quickSettingsOpen = qsVisible
@@ -20,6 +20,8 @@ Item {
 
         if (tab && tab !== "") {
             activeTab = tab;
+        } else {
+            activeTab = "main";
         }
 
         if (rect && rect.width > 0) {
@@ -30,12 +32,22 @@ Item {
     }
 
     function toggle(tab, rect) {
-        let targetTab = (tab && tab !== "") ? tab : "network";
-        if (qsVisible && activeTab === targetTab) {
-            close();
+        let targetTab = (tab && tab !== "") ? tab : "main";
+        if (qsVisible) {
+            if (activeTab === targetTab) {
+                close();
+            } else if (targetTab === "main") {
+                activeTab = "main";
+            } else {
+                open(targetTab, rect);
+            }
         } else {
             open(targetTab, rect);
         }
+    }
+
+    function goBack() {
+        activeTab = "main";
     }
 
     // The menu binds MenuWindow.shown to this flag and owns its own

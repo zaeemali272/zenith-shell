@@ -55,8 +55,8 @@ RowLayout {
             Text {
                 text: ProductivityService.isBeeping ? "󰂚" : "󰔛"
                 font.family: Theme.iconFont
-                font.pixelSize: Theme.scaled(13)
-                color: (ProductivityService.running || ProductivityService.isBeeping) ? Colors.on_primary : Theme.text
+                font.pixelSize: Theme.iconSize
+                color: (ProductivityService.running || ProductivityService.isBeeping) ? Colors.on_primary : Theme.barIconColor
                 Layout.alignment: Qt.AlignVCenter
             }
 
@@ -68,8 +68,9 @@ RowLayout {
                     let s = ProductivityService.remaining % 60;
                     return m + ":" + s.toString().padStart(2, '0');
                 }
-                font.weight: Font.Black
-                font.pixelSize: Theme.scaled(11)
+                font.weight: Font.Bold
+                font.family: Theme.fontFamily
+                font.pixelSize: Theme.fontSize
                 color: (ProductivityService.running || ProductivityService.isBeeping) ? Colors.on_primary : Theme.text
                 Layout.alignment: Qt.AlignVCenter
             }
@@ -177,13 +178,14 @@ RowLayout {
                             let title = MediaPlayerService.formatMediaTitle(String(p.trackTitle || p.identity || "Unknown"), p.identity);
                             let artist = String(p.trackArtist || "");
                             let full = (artist && artist !== "" && artist !== "undefined") ? title + " • " + artist : title;
-                            let limit = Theme.isSmallScreen ? 18 : 34;
+                            let limit = Theme.isSmallScreen ? 18 : (MediaSettings.truncateTrackTitle ? MediaSettings.maxTrackTitleLength : 120);
                             return MediaPlayerService.formatMediaMetadata(full, limit, 5);
                         }
                         color: mprisMouse.containsMouse 
-                            ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.65) 
-                            : Theme.accentColor
+                            ? Qt.rgba(Theme.barIconColor.r, Theme.barIconColor.g, Theme.barIconColor.b, 0.65) 
+                            : Theme.barIconColor
                         font.pixelSize: Theme.fontSize
+                        font.family: Theme.fontFamily
                         font.weight: Font.DemiBold
                         elide: Text.ElideRight
                         Layout.alignment: Qt.AlignVCenter
@@ -198,11 +200,11 @@ RowLayout {
 
                     Text {
                         font.family: Theme.iconFont
-                        font.pixelSize: Theme.scaled(15)
+                        font.pixelSize: Theme.iconSize
                         text: WeatherService.getIcon(WeatherService.weatherCode)
                         color: mprisMouse.containsMouse 
-                            ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.65) 
-                            : Theme.accentColor
+                            ? Qt.rgba(Theme.barIconColor.r, Theme.barIconColor.g, Theme.barIconColor.b, 0.65) 
+                            : Theme.barIconColor
                         Layout.alignment: Qt.AlignVCenter
                         Behavior on color { ColorAnimation { duration: Theme.animFast } }
                     }
@@ -211,6 +213,7 @@ RowLayout {
                         text: WeatherService.tempC + "°C"
                         color: mprisMouse.containsMouse ? Theme.subtext1 : Theme.text
                         font.pixelSize: Theme.fontSize
+                        font.family: Theme.fontFamily
                         font.weight: Font.Bold
                         Layout.alignment: Qt.AlignVCenter
                         Behavior on color { ColorAnimation { duration: Theme.animFast } }
@@ -220,6 +223,7 @@ RowLayout {
                         text: WeatherService.weatherDesc
                         color: mprisMouse.containsMouse ? Theme.subtext2 : Theme.subtext0
                         font.pixelSize: Theme.scaled(11)
+                        font.family: Theme.fontFamily
                         visible: text !== "" && !Theme.isSmallScreen
                         Layout.alignment: Qt.AlignVCenter
                         Behavior on color { ColorAnimation { duration: Theme.animFast } }
@@ -250,45 +254,34 @@ RowLayout {
                 Layout.alignment: Qt.AlignVCenter
 
                 Text {
-                    font.family: Theme.iconFont
-                    font.pixelSize: Theme.scaled(13)
-                    text: "󰥔"
-                    color: clockMouse.containsMouse ? Theme.subtext2 : Theme.subtext0
-                    Layout.alignment: Qt.AlignVCenter
-                    Behavior on color { ColorAnimation { duration: Theme.animFast } }
-                }
-
-                Text {
                     visible: ClockSettings.showDate
                     color: clockMouse.containsMouse ? Theme.subtext0 : Theme.fontColor
                     font.pixelSize: Theme.fontSize
-                    font.weight: Font.Normal
+                    font.family: Theme.fontFamily
+                    font.weight: Font.Medium
                     Layout.alignment: Qt.AlignVCenter
                     text: Qt.formatDateTime(systemClock.date, ClockSettings.dateFormat)
                     Behavior on color { ColorAnimation { duration: Theme.animFast } }
                 }
 
-                // Elegant Vertical Glass Separator
-                Rectangle {
-                    visible: ClockSettings.showDate && ClockSettings.showClock
-                    width: 1
-                    implicitWidth: 1
-                    height: Theme.scaled(14)
+                Text {
+                    visible: ClockSettings.showClock
+                    font.family: Theme.iconFont
+                    font.pixelSize: Theme.iconSize
+                    text: "󰥔"
+                    color: clockMouse.containsMouse 
+                        ? Qt.rgba(Theme.barIconColor.r, Theme.barIconColor.g, Theme.barIconColor.b, 0.65) 
+                        : Theme.barIconColor
                     Layout.alignment: Qt.AlignVCenter
-                    Layout.leftMargin: Theme.scaled(2)
-                    Layout.rightMargin: Theme.scaled(2)
-                    gradient: Gradient {
-                        GradientStop { position: 0.0; color: Qt.rgba(255, 255, 255, 0.0) }
-                        GradientStop { position: 0.5; color: Qt.rgba(255, 255, 255, 0.35) }
-                        GradientStop { position: 1.0; color: Qt.rgba(255, 255, 255, 0.0) }
-                    }
+                    Behavior on color { ColorAnimation { duration: Theme.animFast } }
                 }
 
                 Text {
                     visible: ClockSettings.showClock
                     color: clockMouse.containsMouse ? Theme.subtext0 : Theme.fontColor
                     font.pixelSize: Theme.fontSize
-                    font.weight: Font.Normal
+                    font.family: Theme.fontFamily
+                    font.weight: Font.DemiBold
                     Layout.alignment: Qt.AlignVCenter
                     text: {
                         let timeFmt = ClockSettings.use24Hour ? ClockSettings.timeFormat24h : ClockSettings.timeFormat12h;
@@ -327,7 +320,7 @@ RowLayout {
                         text: "󰀻"
                         font.family: Theme.iconFont
                         font.pixelSize: Theme.scaled(13)
-                        color: DynamicIslandService.activeMode === "launcher" ? Colors.on_primary : Theme.text
+                        color: DynamicIslandService.activeMode === "launcher" ? Colors.on_primary : Theme.barIconColor
                     }
 
                     MouseArea {
@@ -354,7 +347,7 @@ RowLayout {
                         text: "󰅍"
                         font.family: Theme.iconFont
                         font.pixelSize: Theme.scaled(13)
-                        color: DynamicIslandService.activeMode === "clipboard" ? Colors.on_primary : Theme.text
+                        color: DynamicIslandService.activeMode === "clipboard" ? Colors.on_primary : Theme.barIconColor
                     }
 
                     MouseArea {
@@ -381,7 +374,7 @@ RowLayout {
                         text: "󰞅"
                         font.family: Theme.iconFont
                         font.pixelSize: Theme.scaled(13)
-                        color: DynamicIslandService.activeMode === "emoji" ? Colors.on_primary : Theme.text
+                        color: DynamicIslandService.activeMode === "emoji" ? Colors.on_primary : Theme.barIconColor
                     }
 
                     MouseArea {
@@ -607,7 +600,7 @@ RowLayout {
                 text: "󰅖"
                 font.family: Theme.iconFont
                 font.pixelSize: Theme.scaled(13)
-                color: closeMouse.containsMouse ? Theme.powerRed : Theme.subtext0
+                color: closeMouse.containsMouse ? Theme.powerRed : Theme.barIconColor
                 Layout.alignment: Qt.AlignVCenter
 
                 MouseArea {
@@ -871,7 +864,7 @@ RowLayout {
                         anchors.horizontalCenter: parent.horizontalCenter
                         width: root.lockedMediaWidth > 0 ? root.lockedMediaWidth : Math.max(centerPill.width, Theme.scaled(480))
                         height: Theme.scaled(120)
-                        color: Theme.glassBackground
+                        color: Theme.tooltipBackground
                         border.color: root.mediaPopupHovered 
                             ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.50) 
                             : Theme.glassBorder
@@ -982,7 +975,7 @@ RowLayout {
                         anchors.horizontalCenter: parent.horizontalCenter
                         width: root.lockedCalendarWidth > 0 ? root.lockedCalendarWidth : Theme.scaled(340)
                         height: Theme.scaled(340)
-                        color: Theme.glassBackground
+                        color: Theme.tooltipBackground
                         border.color: root.calendarPopupHovered 
                             ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.50) 
                             : Theme.glassBorder

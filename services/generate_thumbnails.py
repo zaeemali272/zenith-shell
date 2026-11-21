@@ -32,22 +32,20 @@ ANIMATION_DIR = get_anim_dir()
 WALL_THUMB_DIR = os.path.expanduser("~/.cache/wallpaper_thumbs")
 ANIM_THUMB_DIR = os.path.expanduser("~/.cache/animation_thumbs")
 
-# Thumbnail target dimensions
+# Thumbnail target dimensions matching QML delegate aspect ratio (width * 0.6 => 5:3)
 THUMB_WIDTH = 320
-THUMB_HEIGHT = 180
-
-# Updated corner radius to match your QML UI (scale-adjusted)
-CORNER_RADIUS = 32
+THUMB_HEIGHT = 192
 
 # Ensure cache dirs exist
 os.makedirs(WALL_THUMB_DIR, exist_ok=True)
 os.makedirs(ANIM_THUMB_DIR, exist_ok=True)
 
 def process_image(img_path, thumb_path):
-    """Crops, resizes, and applies smooth anti-aliased rounded corners to images."""
+    """Crops and resizes image cleanly to thumbnail dimensions (full bleed, no destructive alpha cutouts)."""
     try:
         with Image.open(img_path) as im:
-            im = im.convert("RGBA")
+            if im.mode not in ("RGB", "RGBA"):
+                im = im.convert("RGBA" if "transparency" in im.info else "RGB")
             w, h = im.size
             target_aspect = THUMB_WIDTH / THUMB_HEIGHT
             src_aspect = w / h
@@ -62,29 +60,6 @@ def process_image(img_path, thumb_path):
                 im = im.crop((0, top, w, top + new_h))
 
             im = im.resize((THUMB_WIDTH, THUMB_HEIGHT), Image.LANCZOS)
-
-            # --- ANTI-ALIASED MASK GENERATION ---
-            # 1. Scale up mask by 4x for high-precision vector drawing
-            scale = 4
-            big_w, big_h = THUMB_WIDTH * scale, THUMB_HEIGHT * scale
-            big_radius = CORNER_RADIUS * scale
-
-            mask_big = Image.new("L", (big_w, big_h), 0)
-            draw = ImageDraw.Draw(mask_big)
-
-            # 2. Correct bounding box end coordinates (-1 on right & bottom)
-            draw.rounded_rectangle(
-                [(0, 0), (big_w - 1, big_h - 1)],
-                radius=big_radius,
-                fill=255
-            )
-
-            # 3. Downsample back to thumb size for smooth alpha edges
-            mask = mask_big.resize((THUMB_WIDTH, THUMB_HEIGHT), Image.BILINEAR)
-
-            # Apply the smooth mask as alpha channel
-            im.putalpha(mask)
-
             im.save(thumb_path, format="PNG")
             print(f"✓ Image Thumb: {os.path.basename(thumb_path)}")
             sys.stdout.flush()
@@ -102,7 +77,8 @@ def process_video(vid_path, thumb_path):
         ], check=True, capture_output=True)
         
         process_image(temp_frame, thumb_path)
-        os.remove(temp_frame)
+        if os.path.exists(temp_frame):
+            os.remove(temp_frame)
         print(f"✓ Video Thumb: {os.path.basename(thumb_path)}")
         sys.stdout.flush()
     except subprocess.CalledProcessError as e:
@@ -113,6 +89,8 @@ def process_video(vid_path, thumb_path):
         sys.stdout.flush()
 
 def main():
+    force = "--force" in sys.argv
+
     # Process Wallpapers
     if os.path.exists(WALLPAPER_DIR):
         for file in os.listdir(WALLPAPER_DIR):
@@ -120,7 +98,7 @@ def main():
                 src = os.path.join(WALLPAPER_DIR, file)
                 name_without_ext = os.path.splitext(file)[0]
                 dst = os.path.join(WALL_THUMB_DIR, name_without_ext + ".png")
-                if not os.path.exists(dst):
+                if force or not os.path.exists(dst) or os.path.getmtime(src) > os.path.getmtime(dst):
                     process_image(src, dst)
 
     # Process Animations
@@ -130,7 +108,7 @@ def main():
                 src = os.path.join(ANIMATION_DIR, file)
                 name_without_ext = os.path.splitext(file)[0]
                 dst = os.path.join(ANIM_THUMB_DIR, name_without_ext + ".png")
-                if not os.path.exists(dst):
+                if force or not os.path.exists(dst) or os.path.getmtime(src) > os.path.getmtime(dst):
                     process_video(src, dst)
 
 if __name__ == "__main__":

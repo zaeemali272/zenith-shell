@@ -1,45 +1,135 @@
-// Drop-in wheel scrolling for any Flickable, ListView, GridView or ScrollView.
+// Drop-in smooth, accelerated wheel scrolling for Flickable, ListView, GridView or ScrollView.
 //
-// Qt's built-in wheel step on a Flickable is a few pixels per notch, which is
-// what makes long menus feel like they barely move. This handler takes the
-// wheel events and scrolls by a normal desktop step, clamped to the content.
+// Replaces Qt's sluggish discrete wheel steps with high-speed, physics-smoothed
+// cubic interpolation, dynamic multi-notch momentum, and Wayland precision touchpad support.
 //
-// Usage: put `FastWheel {}` inside the scrollable.
+// Usage: put `FastWheel {}` inside any scrollable container.
 import QtQuick
 
-WheelHandler {
+Item {
     id: fastWheel
+    visible: false
 
-    // Deliberately `var`, not a typed Flickable, and no instanceof test: an
-    // earlier version used `parent instanceof Flickable`, which left `view`
-    // null while the handler still consumed the wheel event -- so scrolling
-    // stopped entirely. Anything that quacks like a Flickable is driven; if it
-    // does not, the handler disables itself and Qt's own scrolling is left
-    // alone rather than being swallowed.
     property var view: parent
-    property real pixelsPerNotch: 120
+
+    // Base scroll distance per standard 120-unit wheel notch
+    property real baseStep: 180
+
+    // Acceleration multiplier when user spins rapidly
+    property real maxMultiplier: 3.0
 
     readonly property bool usable: view !== null
                                    && view !== undefined
                                    && view.contentY !== undefined
                                    && view.contentHeight !== undefined
 
-    enabled: usable
-    target: null
+    property real targetY: usable ? view.contentY : 0
+    property real targetX: usable ? view.contentX : 0
+    property real lastWheelTime: 0
+    property real speedMultiplier: 1.0
 
-    onWheel: (event) => {
-        if (!usable) return;
+    NumberAnimation {
+        id: animY
+        target: fastWheel.view
+        property: "contentY"
+        duration: 170
+        easing.type: Easing.OutCubic
+    }
 
-        var notchesY = event.angleDelta.y / 120.0;
-        var notchesX = event.angleDelta.x / 120.0;
+    NumberAnimation {
+        id: animX
+        target: fastWheel.view
+        property: "contentX"
+        duration: 170
+        easing.type: Easing.OutCubic
+    }
 
-        if (notchesY !== 0 && view.contentHeight > view.height) {
-            var maxY = view.contentHeight - view.height;
-            view.contentY = Math.max(0, Math.min(maxY, view.contentY - notchesY * pixelsPerNotch));
+    // Keep internal target synchronized when content moves from other sources
+    Connections {
+        target: fastWheel.usable ? fastWheel.view : null
+        function onContentYChanged() {
+            if (!animY.running) {
+                fastWheel.targetY = fastWheel.view.contentY;
+            }
         }
-        if (notchesX !== 0 && view.contentWidth > view.width) {
-            var maxX = view.contentWidth - view.width;
-            view.contentX = Math.max(0, Math.min(maxX, view.contentX - notchesX * pixelsPerNotch));
+        function onContentXChanged() {
+            if (!animX.running) {
+                fastWheel.targetX = fastWheel.view.contentX;
+            }
+        }
+        function onMovementStarted() {
+            animY.stop();
+            animX.stop();
+        }
+    }
+
+    WheelHandler {
+        id: wheelHandler
+        target: null
+        enabled: fastWheel.usable
+
+        onWheel: (event) => {
+            if (!fastWheel.usable) return;
+
+            // If user drags with touch or mouse, let native gesture take over
+            if (fastWheel.view.dragging || fastWheel.view.flicking) {
+                animY.stop();
+                animX.stop();
+                return;
+            }
+
+            var now = Date.now();
+            var dt = now - fastWheel.lastWheelTime;
+            fastWheel.lastWheelTime = now;
+
+            // Velocity boost for rapid consecutive wheel rotations
+            if (dt < 100) {
+                fastWheel.speedMultiplier = Math.min(fastWheel.maxMultiplier, fastWheel.speedMultiplier + 0.4);
+            } else if (dt > 280) {
+                fastWheel.speedMultiplier = 1.0;
+            }
+
+            var dy = 0;
+            var dx = 0;
+            var isTouchpad = false;
+
+            // Wayland precision touchpad detection
+            if (event.pixelDelta && (event.pixelDelta.y !== 0 || event.pixelDelta.x !== 0)) {
+                isTouchpad = true;
+                dy = event.pixelDelta.y * 1.6;
+                dx = event.pixelDelta.x * 1.6;
+            } else {
+                var notchesY = event.angleDelta.y / 120.0;
+                var notchesX = event.angleDelta.x / 120.0;
+                dy = notchesY * fastWheel.baseStep * fastWheel.speedMultiplier;
+                dx = notchesX * fastWheel.baseStep * fastWheel.speedMultiplier;
+            }
+
+            // Vertical scroll
+            if (dy !== 0 && fastWheel.view.contentHeight > fastWheel.view.height) {
+                var maxY = Math.max(0, fastWheel.view.contentHeight - fastWheel.view.height);
+                var startY = animY.running ? fastWheel.targetY : fastWheel.view.contentY;
+                fastWheel.targetY = Math.max(0, Math.min(maxY, startY - dy));
+
+                animY.stop();
+                animY.from = fastWheel.view.contentY;
+                animY.to = fastWheel.targetY;
+                animY.duration = isTouchpad ? 70 : 170;
+                animY.start();
+            }
+
+            // Horizontal scroll
+            if (dx !== 0 && fastWheel.view.contentWidth > fastWheel.view.width) {
+                var maxX = Math.max(0, fastWheel.view.contentWidth - fastWheel.view.width);
+                var startX = animX.running ? fastWheel.targetX : fastWheel.view.contentX;
+                fastWheel.targetX = Math.max(0, Math.min(maxX, startX - dx));
+
+                animX.stop();
+                animX.from = fastWheel.view.contentX;
+                animX.to = fastWheel.targetX;
+                animX.duration = isTouchpad ? 70 : 170;
+                animX.start();
+            }
         }
     }
 }

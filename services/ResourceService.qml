@@ -10,6 +10,8 @@ Item {
 
     property int cpu: 0
     property int mem: 0
+    property double memUsedGb: 0.0
+    property double memTotalGb: 0.0
     property int temp: 0
     property double load: 0.0
     property int loadPerc: 0
@@ -38,6 +40,8 @@ Item {
                     const data = JSON.parse(line);
                     service.cpu = data.cpu ?? 0;
                     service.mem = data.mem ?? 0;
+                    service.memUsedGb = data.mem_used_gb ?? 0.0;
+                    service.memTotalGb = data.mem_total_gb ?? 0.0;
                     service.temp = data.temp ?? 0;
                     service.load = data.load ?? 0.0;
                     service.loadPerc = data.load_perc ?? 0;

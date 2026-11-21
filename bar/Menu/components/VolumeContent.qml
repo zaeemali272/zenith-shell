@@ -9,8 +9,9 @@ import Quickshell.Io
 
 ColumnLayout {
     id: root
-    spacing: Theme.scaled(20)
+    spacing: Theme.scaled(16)
     Layout.fillWidth: true
+    implicitHeight: mainControlsGrid.implicitHeight + (appsCol.visible ? (appsCol.implicitHeight + root.spacing) : 0)
 
     opacity: 0
     scale: 0.98
@@ -25,22 +26,16 @@ ColumnLayout {
         NumberAnimation { target: root; property: "scale"; to: 1; duration: Theme.animNormal; easing.type: Theme.elasticEasing }
     }
 
-    // --- Header ---
-    RowLayout {
-        Layout.fillWidth: true
-        ColumnLayout {
-            spacing: Theme.scaled(2); Layout.fillWidth: true
-            Text { text: "AUDIO CONTROL"; color: Theme.accentColor; font.pixelSize: Theme.scaled(14); font.letterSpacing: 2; font.weight: Font.Black }
-            Text { text: "OUTPUT & INPUT DEVICES"; color: Theme.subtext0; font.pixelSize: Theme.scaled(10); font.weight: Font.Bold; font.letterSpacing: 1 }
-        }
-    }
-
     // Main Controls Row (Output & Input Cards)
     GridLayout {
+        id: mainControlsGrid
         columns: (Theme.isSmallScreen && Theme.isPortrait) ? 1 : 2
         Layout.fillWidth: true
-        columnSpacing: Theme.scaled(15)
-        rowSpacing: Theme.scaled(15)
+        columnSpacing: Theme.scaled(14)
+        rowSpacing: Theme.scaled(14)
+        implicitHeight: ((Theme.isSmallScreen && Theme.isPortrait)
+            ? (outputCard.targetHeight + inputCard.targetHeight + rowSpacing)
+            : Math.max(outputCard.targetHeight, inputCard.targetHeight))
 
         // Output Speaker Card
         Rectangle {
@@ -67,7 +62,7 @@ ColumnLayout {
                 spacing: Theme.scaled(12)
 
                 VolumeSlider {
-                    label: "OUTPUT VOLUME"
+                    label: "Output"
                     icon: VolumeService.muted ? "󰝟" : (VolumeService.btActive ? "󰓃" : "󰕾")
                     value: VolumeService.outputVolume
                     sliderColor: Theme.accentColor
@@ -105,7 +100,7 @@ ColumnLayout {
                                     for (let s of VolumeService.sinks) {
                                         if (s.isDefault) return s.name;
                                     }
-                                    return VolumeService.sinks.length > 0 ? VolumeService.sinks[0].name : "Select Output Device";
+                                    return VolumeService.sinks.length > 0 ? VolumeService.sinks[0].name : "Select Output";
                                 }
                                 color: Theme.text
                                 font.pixelSize: Theme.scaled(11)
@@ -154,12 +149,25 @@ ColumnLayout {
 
                 // Dropdown Sinks List
                 ListView {
+                    id: sinksList
+                    FastWheel {}
                     visible: outputCard.dropdownOpen
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     clip: true
                     model: VolumeService.sinks
                     spacing: Theme.scaled(4)
+
+                    ScrollBar.vertical: ScrollBar {
+                        parent: sinksList
+                        anchors.top: sinksList.top
+                        anchors.bottom: sinksList.bottom
+                        anchors.right: sinksList.right
+                        anchors.rightMargin: 1
+                        policy: ScrollBar.AsNeeded
+                        width: 3
+                        contentItem: Rectangle { radius: 999; color: Theme.accentColor; opacity: 0.6 }
+                    }
 
                     delegate: Rectangle {
                         width: ListView.view.width
@@ -228,7 +236,7 @@ ColumnLayout {
                 spacing: Theme.scaled(12)
 
                 VolumeSlider {
-                    label: "INPUT VOLUME"
+                    label: "Input"
                     icon: VolumeService.micMuted ? "󰍭" : "󰍬"
                     value: VolumeService.micVolume
                     sliderColor: Theme.accentColor
@@ -266,7 +274,7 @@ ColumnLayout {
                                     for (let s of VolumeService.sources) {
                                         if (s.isDefault) return s.name;
                                     }
-                                    return VolumeService.sources.length > 0 ? VolumeService.sources[0].name : "Select Input Device";
+                                    return VolumeService.sources.length > 0 ? VolumeService.sources[0].name : "Select Input";
                                 }
                                 color: Theme.text
                                 font.pixelSize: Theme.scaled(11)
@@ -315,12 +323,25 @@ ColumnLayout {
 
                 // Dropdown Sources List
                 ListView {
+                    id: sourcesList
+                    FastWheel {}
                     visible: inputCard.dropdownOpen
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     clip: true
                     model: VolumeService.sources
                     spacing: Theme.scaled(4)
+
+                    ScrollBar.vertical: ScrollBar {
+                        parent: sourcesList
+                        anchors.top: sourcesList.top
+                        anchors.bottom: sourcesList.bottom
+                        anchors.right: sourcesList.right
+                        anchors.rightMargin: 1
+                        policy: ScrollBar.AsNeeded
+                        width: 3
+                        contentItem: Rectangle { radius: 999; color: Theme.accentColor; opacity: 0.6 }
+                    }
 
                     delegate: Rectangle {
                         width: ListView.view.width
@@ -367,16 +388,16 @@ ColumnLayout {
 
     // Application Streams Volume Control
     ColumnLayout {
+        id: appsCol
         Layout.fillWidth: true
         spacing: Theme.scaled(12)
         visible: VolumeService.appsModel.count > 0
 
         Text { 
-            text: "APPLICATION STREAMS"
+            text: "Apps"
             color: Theme.accentColor
-            font.pixelSize: Theme.scaled(11)
-            font.weight: Font.Black
-            font.letterSpacing: 2
+            font.pixelSize: Theme.scaled(12)
+            font.weight: Font.Bold
         }
 
         GridLayout {
@@ -405,7 +426,7 @@ ColumnLayout {
                         anchors.margins: Theme.scaled(12)
 
                         VolumeSlider {
-                            label: (name || "Unknown Stream").toUpperCase()
+                            label: name || "App"
                             icon: "󰓃"
                             value: volume
                             sliderColor: Theme.powerGreen

@@ -18,10 +18,11 @@ MenuWindow {
     cardOrigin: Item.TopRight
 
     readonly property var allTabs: [
-        { id: "network", icon: "󰤨", title: "WI-FI" },
+        { id: "main", icon: "󰕮", title: "HOME" },
+        { id: "network", icon: "󰤨", title: "NETWORK" },
         { id: "bluetooth", icon: "󰂯", title: "BT" },
-        { id: "volume", icon: "󰕾", title: "AUDIO" },
-        { id: "powerprofile", icon: "󰍛", title: "POWER" },
+        { id: "volume", icon: "󰕾", title: "SOUND" },
+        { id: "powerprofile", icon: "󰓅", title: "POWER" },
         { id: "battery", icon: "󰁹", title: "BATTERY" },
         { id: "power", icon: "󰐥", title: "SESSION" }
     ]
@@ -32,14 +33,18 @@ MenuWindow {
         if (t.id === "network")   return HardwareService.hasNetworking;
         return true;
     })
-    // Typing a WiFi password flips keyboardFocus, which reconfigures the
-    // surface and drops the grab; without this the panel vanished the
-    // moment you clicked a network to connect to.
-    dismissInhibited: typeof wifiContent !== "undefined" && wifiContent.isInputActive
+
+    function getSubmenuTitle(id) {
+        if (id === "network") return "NETWORK";
+        if (id === "bluetooth") return "BLUETOOTH";
+        if (id === "volume") return "SOUND";
+        if (id === "powerprofile") return "POWER PROFILE";
+        if (id === "battery") return "BATTERY & CHARGING";
+        if (id === "power") return "SESSION";
+        return "";
+    }
+
     onDismissed: QuickSettingsService.close()
-
-
-    WlrLayershell.keyboardFocus: (typeof wifiContent !== "undefined" && wifiContent.isInputActive) ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.OnDemand
 
     onShownChanged: {
         if (shown) Qt.callLater(() => mainContent.forceActiveFocus());
@@ -53,14 +58,64 @@ MenuWindow {
         anchors.top: parent.top
         anchors.right: parent.right
         anchors.topMargin: Theme.barMarginTop + Theme.scaled(4)
-        anchors.rightMargin: Theme.isSmallScreen ? Theme.scaled(8) : Theme.scaled(14)
+        anchors.rightMargin: Theme.barMarginRight + (Theme.isSmallScreen ? Theme.scaled(4) : Theme.scaled(8))
 
-        // Production-ready responsive dimensions
+        // Production-ready dynamic & adaptive dimensions
+        readonly property real maxMenuHeight: Math.min(
+            Theme.scaled(580),
+            (screen ? screen.height : Theme.screenHeight) - Theme.barHeight - Theme.barMarginTop - Theme.scaled(24)
+        )
+        readonly property real minMenuHeight: Theme.scaled(240)
+
+        readonly property Item activeTabItem: (contentStack && contentStack.children && contentStack.currentIndex >= 0 && contentStack.currentIndex < contentStack.children.length)
+            ? contentStack.children[contentStack.currentIndex]
+            : null
+
+        readonly property real activeItemHeight: {
+            if (!activeTabItem) return Theme.scaled(480);
+            let h = activeTabItem.implicitHeight;
+            return (h && h > 0) ? h : Theme.scaled(480);
+        }
+
+        readonly property real subHeaderHeight: (QuickSettingsService.activeTab !== "main")
+            ? (subHeader.height + mainColLayout.spacing)
+            : 0
+
+        readonly property real targetHeight: {
+            let total = activeItemHeight + subHeaderHeight + Theme.scaled(32);
+            return Math.max(minMenuHeight, Math.min(maxMenuHeight, Math.round(total)));
+        }
+
         width: Math.min(Theme.scaled(560), (screen ? screen.width : Theme.screenWidth) - Theme.scaled(20))
-        height: Math.min(Theme.scaled(500), (screen ? screen.height : Theme.screenHeight) - Theme.barHeight - Theme.scaled(20))
+        height: targetHeight
+
+        Behavior on height {
+            NumberAnimation {
+                duration: Theme.animNormal
+                easing.type: Easing.OutCubic
+            }
+        }
 
         focus: true
         Keys.onPressed: (event) => {
+            if (event.key === Qt.Key_Escape) {
+                if (QuickSettingsService.activeTab !== "main") {
+                    QuickSettingsService.goBack();
+                    event.accepted = true;
+                    return;
+                } else {
+                    QuickSettingsService.close();
+                    event.accepted = true;
+                    return;
+                }
+            }
+            if (event.key === Qt.Key_Back || event.key === Qt.Key_Backspace) {
+                if (QuickSettingsService.activeTab !== "main" && !(typeof wifiContent !== "undefined" && wifiContent.isInputActive)) {
+                    QuickSettingsService.goBack();
+                    event.accepted = true;
+                    return;
+                }
+            }
             if (QuickSettingsService.activeTab === "power") {
                 powerContent.handleKeys(event);
                 if (event.accepted) return;
@@ -75,13 +130,15 @@ MenuWindow {
                 if (event.accepted) return;
             }
             if (event.key === Qt.Key_Left || event.key === Qt.Key_Right) {
-                let tabs = root.availableTabs;
-                let idx = tabs.findIndex(t => t.id === QuickSettingsService.activeTab);
-                if (idx !== -1) {
-                    let nextIdx = (event.key === Qt.Key_Right) ? (idx + 1) % tabs.length : (idx - 1 + tabs.length) % tabs.length;
-                    QuickSettingsService.activeTab = tabs[nextIdx].id;
-                    event.accepted = true;
-                    return;
+                if (QuickSettingsService.activeTab !== "main") {
+                    let tabs = root.availableTabs.filter(t => t.id !== "main");
+                    let idx = tabs.findIndex(t => t.id === QuickSettingsService.activeTab);
+                    if (idx !== -1) {
+                        let nextIdx = (event.key === Qt.Key_Right) ? (idx + 1) % tabs.length : (idx - 1 + tabs.length) % tabs.length;
+                        QuickSettingsService.activeTab = tabs[nextIdx].id;
+                        event.accepted = true;
+                        return;
+                    }
                 }
             }
         }
@@ -90,73 +147,113 @@ MenuWindow {
         radius: Theme.cardRadius
         border.color: Theme.glassBorder
         border.width: 1
-        clip: true
+        antialiasing: true
 
         ColumnLayout {
+            id: mainColLayout
             anchors.fill: parent
             anchors.margins: Theme.scaled(16)
-            spacing: Theme.scaled(14)
+            spacing: Theme.scaled(12)
 
-            // --- MATERIAL 3 SEGMENTED TAB BAR (Transparent on Base Canvas) ---
+            // --- SUB-MENU NAVIGATION HEADER (Shown only when in a sub-menu) ---
             Rectangle {
+                id: subHeader
+                visible: QuickSettingsService.activeTab !== "main"
                 Layout.fillWidth: true
-                height: Theme.scaled(44)
+                height: Theme.scaled(38)
                 color: "transparent"
-                radius: 999
-                border.color: Theme.glassBorder
-                border.width: 1
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.margins: Theme.scaled(4)
-                    spacing: Theme.scaled(4)
-                    
-                    Repeater {
-                        // Only the tabs this machine can actually use. A
-                        // Bluetooth tab on a desktop with no adapter, or a
-                        // battery tab in a VM, is a dead button.
-                        model: root.availableTabs
+                    spacing: Theme.scaled(8)
 
-                        delegate: Rectangle {
-                            id: tabRect
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            radius: 999
-                            color: QuickSettingsService.activeTab === modelData.id ? Theme.accentColor : (tabMouse.containsMouse ? Theme.cardBackgroundHover : "transparent")
-                            border.width: 0
-                            scale: tabMouse.pressed ? 0.95 : 1.0
-                            
-                            Behavior on color { ColorAnimation { duration: Theme.animInstant } }
-                            Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
+                    // ‹ Back Button
+                    Rectangle {
+                        height: Theme.scaled(32)
+                        implicitWidth: backRow.implicitWidth + Theme.scaled(16)
+                        radius: Theme.scaled(16)
+                        color: backMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground
+                        border.color: Theme.glassBorder
+                        border.width: 1
+                        antialiasing: true
+                        scale: backMouse.pressed ? 0.95 : 1.0
+                        Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
 
-                            RowLayout {
-                                anchors.centerIn: parent
-                                spacing: Theme.scaled(5)
-                                Text {
-                                    text: modelData.icon
-                                    font.family: Theme.iconFont
-                                    font.pixelSize: Theme.scaled(20)
-                                    color: QuickSettingsService.activeTab === modelData.id ? Colors.on_primary : (tabMouse.containsMouse ? Theme.subtext0 : "#ffffff")
-                                    Layout.alignment: Qt.AlignVCenter
-                                    Behavior on color { ColorAnimation { duration: Theme.animFast } }
-                                }
-                                Text {
-                                    text: modelData.title
-                                    font.pixelSize: Theme.scaled(9)
-                                    font.weight: Font.Bold
-                                    font.letterSpacing: 0.5
-                                    visible: QuickSettingsService.activeTab === modelData.id || !Theme.isSmallScreen
-                                    color: QuickSettingsService.activeTab === modelData.id ? Colors.on_primary : (tabMouse.containsMouse ? Theme.subtext0 : "#ffffff")
-                                    Layout.alignment: Qt.AlignVCenter
-                                    Behavior on color { ColorAnimation { duration: Theme.animFast } }
-                                }
+                        RowLayout {
+                            id: backRow
+                            anchors.centerIn: parent
+                            spacing: Theme.scaled(6)
+
+                            Text {
+                                text: "‹"
+                                font.pixelSize: Theme.scaled(18)
+                                font.weight: Font.Black
+                                color: Theme.accentColor
                             }
 
-                            MouseArea {
-                                id: tabMouse
-                                anchors.fill: parent; hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: QuickSettingsService.activeTab = modelData.id
+                            Text {
+                                text: "Back"
+                                font.pixelSize: Theme.scaled(11)
+                                font.weight: Font.Bold
+                                color: Theme.text
+                            }
+                        }
+
+                        MouseArea {
+                            id: backMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: QuickSettingsService.goBack()
+                        }
+                    }
+
+                    // Submenu Title
+                    Text {
+                        text: root.getSubmenuTitle(QuickSettingsService.activeTab)
+                        font.pixelSize: Theme.scaled(12)
+                        font.weight: Font.Black
+                        font.letterSpacing: 1.5
+                        color: Theme.text
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.leftMargin: Theme.scaled(4)
+                    }
+
+                    Item { Layout.fillWidth: true }
+
+                    // Mini Submenu Switcher Icons
+                    RowLayout {
+                        spacing: Theme.scaled(4)
+
+                        Repeater {
+                            model: root.availableTabs.filter(t => t.id !== "main")
+
+                            delegate: Rectangle {
+                                width: Theme.scaled(30)
+                                height: Theme.scaled(30)
+                                radius: Theme.scaled(15)
+                                color: QuickSettingsService.activeTab === modelData.id
+                                       ? Theme.accentColor
+                                       : (miniTabMouse.containsMouse ? Theme.cardBackgroundHover : "transparent")
+                                border.width: 0
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: modelData.icon
+                                    font.family: Theme.iconFont
+                                    font.pixelSize: Theme.scaled(14)
+                                    color: QuickSettingsService.activeTab === modelData.id
+                                           ? Colors.on_primary
+                                           : (miniTabMouse.containsMouse ? Theme.text : Theme.subtext0)
+                                }
+
+                                MouseArea {
+                                    id: miniTabMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: QuickSettingsService.activeTab = modelData.id
+                                }
                             }
                         }
                     }
@@ -166,6 +263,7 @@ MenuWindow {
             // --- CONTENT AREA ---
             ScrollView {
                 id: scrollArea
+                FastWheel {}
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 clip: true
@@ -184,39 +282,43 @@ MenuWindow {
 
                 ParallelAnimation {
                     id: transitionAnim
-                    NumberAnimation { target: contentStack; property: "opacity"; from: 0; to: 1; duration: Theme.animFast; easing.type: Easing.OutCubic }
-                    NumberAnimation { target: contentTranslate; property: "y"; from: 8; to: 0; duration: Theme.animFast; easing.type: Easing.OutCubic }
+                    NumberAnimation { target: contentStack; property: "opacity"; from: 0.2; to: 1; duration: Theme.animNormal; easing.type: Easing.OutCubic }
+                    NumberAnimation {
+                        id: slideAnim
+                        target: contentTranslate
+                        property: "x"
+                        from: 24
+                        to: 0
+                        duration: Theme.animNormal
+                        easing.type: Easing.OutCubic
+                    }
                 }
 
                 StackLayout {
                     id: contentStack
                     width: scrollArea.availableWidth
                     transform: Translate { id: contentTranslate }
-                    // Own implicitHeight, not a walk over children. See the
-                    // segfault note: the previous binding read
-                    // children[currentIndex].implicitHeight, which re-enters
-                    // Qt's layout engine from inside its own rearrange.
-                    height: Math.max(implicitHeight, Theme.scaled(420))
-                    // Indexed against allTabs, because the pages below are all
-                    // still here in their original order -- only the tab strip
-                    // is filtered. Indexing the filtered list would show the
-                    // wrong page as soon as one was hidden.
-                    //
-                    // A tab that has been filtered out can still be the active
-                    // one (a saved state, or a keybind), so fall back to the
-                    // first tab this machine actually has.
+                    height: mainContent.activeItemHeight
                     currentIndex: {
                         var all = root.allTabs.map(function (t) { return t.id; });
-                        var avail = root.availableTabs.map(function (t) { return t.id; });
-                        var active = QuickSettingsService.activeTab;
-                        if (avail.indexOf(active) < 0 && avail.length > 0)
-                            active = avail[0];
+                        var active = QuickSettingsService.activeTab || "main";
                         var i = all.indexOf(active);
                         return i >= 0 ? i : 0;
                     }
 
-                    onCurrentIndexChanged: transitionAnim.restart()
+                    onCurrentIndexChanged: {
+                        if (currentIndex === 0) {
+                            slideAnim.from = -24;
+                        } else {
+                            slideAnim.from = 24;
+                        }
+                        transitionAnim.restart();
+                        if (scrollArea.ScrollBar && scrollArea.ScrollBar.vertical) {
+                            scrollArea.ScrollBar.vertical.position = 0;
+                        }
+                    }
 
+                    MainQuickSettings { id: mainQuickSettings }
                     WifiContent { id: wifiContent }
                     BluetoothContent { }
                     VolumeContent { }

@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls 2.15
 import QtQuick.Layouts
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Services.Mpris
 import "../../../services"
@@ -12,6 +13,7 @@ Rectangle {
     radius: Theme.bubbleRadiusMedium
     border.color: Theme.glassBorder
     border.width: 1
+    antialiasing: true
     Layout.fillWidth: true
     implicitHeight: Theme.scaled(110)
 
@@ -43,20 +45,65 @@ Rectangle {
         spacing: Theme.scaled(15)
 
         Rectangle {
-            width: Theme.isSmallScreen ? Theme.scaled(60) : Theme.scaled(80)
+            id: artBox
+            width: Theme.isSmallScreen ? Theme.scaled(76) : Theme.scaled(90)
             height: width
-            radius: Theme.bubbleRadiusSmall; color: "transparent"; border.color: Theme.glassBorder; border.width: 1; clip: true
+            radius: Theme.scaled(14)
+            color: Qt.rgba(255, 255, 255, 0.04)
+            antialiasing: true
             Layout.alignment: Qt.AlignVCenter
+
+            // 1. Raw artwork image (hidden: MultiEffect renders it masked)
             Image {
+                id: artImage
                 anchors.fill: parent
                 source: player ? String(player.trackArtUrl || "") : ""
                 fillMode: Image.PreserveAspectCrop
-                opacity: (player && player.trackArtUrl && status === Image.Ready) ? 1 : 0
-                Behavior on opacity { NumberAnimation { duration: 250 } }
+                asynchronous: true
+                visible: false
             }
+
+            // 2. Rounded mask (hidden: MultiEffect reads its alpha texture)
+            Rectangle {
+                id: artMask
+                anchors.fill: parent
+                radius: artBox.radius
+                color: "white"
+                layer.enabled: true
+                antialiasing: true
+                visible: false
+            }
+
+            // 3. MultiEffect renders the true rounded masked artwork
+            MultiEffect {
+                anchors.fill: parent
+                source: artImage
+                maskEnabled: true
+                maskSource: artMask
+                maskThresholdMin: 0.5
+                maskSpreadAtMin: 1.0
+                opacity: (player && player.trackArtUrl && artImage.status === Image.Ready) ? 1 : 0
+                Behavior on opacity { NumberAnimation { duration: 250 } }
+                visible: opacity > 0
+            }
+
             Text { 
-                anchors.centerIn: parent; text: "󰎆"; color: Theme.subtext0; font.pixelSize: Theme.isSmallScreen ? Theme.scaled(20) : Theme.scaled(28)
-                visible: !player || !player.trackArtUrl 
+                anchors.centerIn: parent
+                text: "󰎆"
+                font.family: Theme.iconFont
+                color: Theme.subtext0
+                font.pixelSize: Theme.isSmallScreen ? Theme.scaled(26) : Theme.scaled(34)
+                visible: !player || !player.trackArtUrl || artImage.status !== Image.Ready
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                radius: artBox.radius
+                color: "transparent"
+                border.color: Theme.glassBorder
+                border.width: 1
+                antialiasing: true
+                z: 2
             }
         }
 
@@ -81,12 +128,14 @@ Rectangle {
                     background: Rectangle {
                         x: posSlider.leftPadding + Theme.scaled(6); y: posSlider.topPadding + (posSlider.availableHeight - height) / 2
                         height: Theme.scaled(4); width: posSlider.availableWidth - Theme.scaled(12); radius: Theme.scaled(2); color: Qt.rgba(255, 255, 255, 0.08); border.color: Theme.glassBorder; border.width: 1
-                        Rectangle { width: posSlider.visualPosition * parent.width; height: Theme.scaled(4); color: Theme.accentColor; radius: Theme.scaled(2) }
+                        antialiasing: true
+                        Rectangle { width: posSlider.visualPosition * parent.width; height: Theme.scaled(4); color: Theme.accentColor; radius: Theme.scaled(2); antialiasing: true }
                     }
                     handle: Rectangle {
                         x: posSlider.leftPadding + posSlider.visualPosition * (posSlider.availableWidth - width)
                         y: posSlider.topPadding + (posSlider.availableHeight - height) / 2
                         width: Theme.scaled(10); height: Theme.scaled(10); radius: Theme.scaled(5); color: Theme.accentColor
+                        antialiasing: true
                         visible: posSlider.hovered || posSlider.pressed
                     }
                 }
@@ -122,6 +171,7 @@ Rectangle {
                         }
                         contentItem: Text { 
                             text: "󰒮"
+                            font.family: Theme.iconFont
                             color: prevBtn.hovered ? Theme.subtext1 : Theme.text
                             font.pixelSize: Theme.scaled(20)
                             horizontalAlignment: Text.AlignHCenter
@@ -155,6 +205,7 @@ Rectangle {
                         }
                         contentItem: Text { 
                             text: mprisPlayer.isActuallyPlaying ? "󰏤" : "󰐊"
+                            font.family: Theme.iconFont
                             color: (playBtn.hovered || playBtn.pressed) ? Colors.on_primary : Theme.accentColor
                             opacity: playBtn.hovered ? 0.80 : 1.0
                             font.pixelSize: Theme.scaled(22)
@@ -184,6 +235,7 @@ Rectangle {
                         }
                         contentItem: Text { 
                             text: "󰒭"
+                            font.family: Theme.iconFont
                             color: nextBtn.hovered ? Theme.subtext1 : Theme.text
                             font.pixelSize: Theme.scaled(20)
                             horizontalAlignment: Text.AlignHCenter

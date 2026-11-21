@@ -21,13 +21,14 @@ Item {
 
     function getIcon(code) {
         const c = parseInt(code);
-        if (c === 113) return ""; 
-        if (c === 116) return ""; 
-        if (c === 119 || c === 122) return "";
-        if ([143, 248, 260].includes(c)) return ""; 
-        if ([176, 263, 266, 293, 296, 302, 308].includes(c)) return "";
-        if ([200, 386, 389].includes(c)) return ""; 
-        return "";
+        if (c === 113) return "󰖙"; 
+        if (c === 116) return "󰖕"; 
+        if (c === 119 || c === 122) return "󰖐";
+        if ([143, 248, 260].includes(c)) return "󰖑"; 
+        if ([176, 263, 266, 293, 296, 302, 308].includes(c)) return "󰖖";
+        if ([200, 386, 389].includes(c)) return "󰖓"; 
+        if ([227, 230, 323, 326, 329, 332, 335, 338].includes(c)) return "󰖘";
+        return "󰖐";
     }
 
     function refresh() {

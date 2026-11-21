@@ -1,5 +1,6 @@
 BatteryContent BatteryContent.qml
 BluetoothContent BluetoothContent.qml
+MainQuickSettings MainQuickSettings.qml
 CalendarWidget CalendarWidget.qml
 DismissOverlay DismissOverlay.qml
 MprisPlayer MprisPlayer.qml
@@ -24,6 +25,7 @@ RoadmapDetail RoadmapDetail.qml
 ThemeContent ThemeContent.qml
 QuickActionsContent QuickActionsContent.qml
 ServicesContent ServicesContent.qml
+SettingsContent SettingsContent.qml
 
 
 

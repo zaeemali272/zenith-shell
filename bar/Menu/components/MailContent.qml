@@ -864,19 +864,112 @@ ColumnLayout {
             }
         }
 
-        Text {
+        // --- Skeleton Mail Items while loading ---
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: Theme.scaled(8)
+            spacing: Theme.scaled(4)
+            visible: root.loading && mailModel.count === 0 && root.openUid === ""
+
+            Repeater {
+                model: 5
+                delegate: Rectangle {
+                    Layout.fillWidth: true
+                    height: Theme.scaled(46)
+                    radius: Theme.scaled(8)
+                    color: Theme.cardBackground
+                    border.color: Theme.glassBorder
+                    border.width: 1
+                    clip: true
+
+                    SequentialAnimation on opacity {
+                        loops: Animation.Infinite
+                        NumberAnimation { from: 0.35; to: 0.75; duration: 800 + index * 100; easing.type: Easing.InOutSine }
+                        NumberAnimation { from: 0.75; to: 0.35; duration: 800 + index * 100; easing.type: Easing.InOutSine }
+                    }
+
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: Theme.scaled(14)
+                        anchors.rightMargin: Theme.scaled(14)
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: Theme.scaled(6)
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Theme.scaled(6)
+
+                            Rectangle {
+                                width: Theme.scaled(110 + (index * 20) % 50)
+                                height: Theme.scaled(11)
+                                radius: Theme.scaled(3)
+                                color: Qt.rgba(255, 255, 255, 0.12)
+                            }
+
+                            Item { Layout.fillWidth: true }
+
+                            Rectangle {
+                                width: Theme.scaled(36)
+                                height: Theme.scaled(8)
+                                radius: Theme.scaled(2)
+                                color: Qt.rgba(255, 255, 255, 0.08)
+                            }
+                        }
+
+                        Rectangle {
+                            width: Theme.scaled(200 + (index * 30) % 80)
+                            height: Theme.scaled(9)
+                            radius: Theme.scaled(3)
+                            color: Qt.rgba(255, 255, 255, 0.06)
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- Empty State & Helper Text ---
+        Rectangle {
             anchors.centerIn: parent
             width: parent.width - Theme.scaled(40)
-            horizontalAlignment: Text.AlignHCenter
-            wrapMode: Text.WordWrap
-            color: Theme.subtext0
-            font.pixelSize: Theme.scaled(11)
-            visible: mailModel.count === 0 && root.openUid === ""
-            text: root.needsConfig      ? "No account connected yet"
-                : root.errorText !== ""  ? root.errorText
-                : MailService.lastError !== "" ? MailService.lastError
-                : root.loading           ? "Loading mail..."
-                                         : "Inbox is empty"
+            height: Theme.scaled(140)
+            color: "transparent"
+            visible: mailModel.count === 0 && !root.loading && root.openUid === ""
+
+            ColumnLayout {
+                anchors.centerIn: parent
+                spacing: Theme.scaled(8)
+
+                Text {
+                    text: root.needsConfig ? "󰇮" : (root.errorText !== "" || MailService.lastError !== "" ? "󰅚" : "󰄬")
+                    font.family: Theme.iconFont
+                    font.pixelSize: Theme.scaled(32)
+                    color: root.needsConfig ? Theme.subtext0 : (root.errorText !== "" || MailService.lastError !== "" ? Theme.powerRed : Theme.powerGreen)
+                    Layout.alignment: Qt.AlignHCenter
+                }
+
+                Text {
+                    text: root.needsConfig ? "NO ACCOUNT CONFIGURED"
+                        : (root.errorText !== "" ? "MAIL SYNC ERROR"
+                        : (MailService.lastError !== "" ? "CONNECTION FAILED" : "INBOX IS EMPTY"))
+                    color: Theme.text
+                    font.pixelSize: Theme.scaled(12)
+                    font.weight: Font.Bold
+                    Layout.alignment: Qt.AlignHCenter
+                }
+
+                Text {
+                    text: root.needsConfig
+                        ? "Configure your IMAP credentials in ~/.config/zenith/mail.json to sync mail."
+                        : (root.errorText !== "" ? root.errorText
+                        : (MailService.lastError !== "" ? MailService.lastError : "You're all caught up with your messages."))
+                    color: Theme.subtext0
+                    font.pixelSize: Theme.scaled(10)
+                    horizontalAlignment: Text.AlignHCenter
+                    wrapMode: Text.WordWrap
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.preferredWidth: parent.width
+                }
+            }
         }
     }
 }

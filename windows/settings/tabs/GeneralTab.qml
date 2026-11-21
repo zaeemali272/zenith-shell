@@ -25,34 +25,32 @@ ColumnLayout {
     }
     
     SettingRow {
-        label: "Enable Media"
+        label: "Enable Media/Weather"
+        description: "Display currently playing media tracks and live weather updates in the bar center"
         MaterialSwitch {
             checked: WidgetSettings.enableMedia
             onClicked: WidgetSettings.enableMedia = checked
+            onToggled: WidgetSettings.enableMedia = checked
         }
     }
     
     SettingRow {
         label: "Enable Battery"
+        description: "Show battery percentage, remaining time, and charge status in the status bar"
         MaterialSwitch {
             checked: WidgetSettings.enableBattery
             onClicked: WidgetSettings.enableBattery = checked
+            onToggled: WidgetSettings.enableBattery = checked
         }
     }
     
     SettingRow {
         label: "Enable Resources"
+        description: "Monitor live CPU load, RAM allocation, and network transfer speeds"
         MaterialSwitch {
             checked: WidgetSettings.enableResources
             onClicked: WidgetSettings.enableResources = checked
-        }
-    }
-    
-    SettingRow {
-        label: "Enable Power Profiles"
-        MaterialSwitch {
-            checked: WidgetSettings.enablePowerProfiles
-            onClicked: WidgetSettings.enablePowerProfiles = checked
+            onToggled: WidgetSettings.enableResources = checked
         }
     }
 

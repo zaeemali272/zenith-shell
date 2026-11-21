@@ -24,29 +24,42 @@ Rectangle {
     signal toggleDone()
     signal openLink(string url)
 
-    color: Theme.cardBackground
+    color: Colors.surface_container_high
     radius: Theme.bubbleRadiusMedium
-    border.color: Theme.glassBorder
+    border.color: Colors.outline_variant
     border.width: 1
+
+    // Absorb mouse events to prevent clicking through to graph nodes underneath
+    MouseArea {
+        anchors.fill: parent
+        onClicked: {}
+    }
+
+    Keys.onEscapePressed: detail.closed()
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: Theme.scaled(14)
-        spacing: Theme.scaled(10)
+        anchors.margins: Theme.scaled(16)
+        spacing: Theme.scaled(12)
 
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.scaled(8)
 
             Rectangle {
-                width: Theme.scaled(46); height: Theme.scaled(24)
+                width: backLabel.implicitWidth + Theme.scaled(20)
+                height: Theme.scaled(26)
                 radius: Theme.scaled(8)
-                color: backM.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground
-                border.width: 0
+                color: backM.containsMouse ? Theme.cardBackgroundHover : Qt.rgba(255, 255, 255, 0.08)
+                border.color: Theme.cardBorder
+                border.width: 1
                 Text {
-                    anchors.centerIn: parent; text: "back"
-                    color: Theme.subtext1
-                    font.pixelSize: Theme.scaled(9); font.weight: Font.Bold
+                    id: backLabel
+                    anchors.centerIn: parent
+                    text: "← Back"
+                    color: Theme.text
+                    font.pixelSize: Theme.scaled(10)
+                    font.weight: Font.Bold
                 }
                 MouseArea {
                     id: backM; anchors.fill: parent; hoverEnabled: true
@@ -56,19 +69,32 @@ Rectangle {
             }
             Item { Layout.fillWidth: true }
             Rectangle {
-                width: doneLabel.implicitWidth + Theme.scaled(22)
-                height: Theme.scaled(24)
+                width: doneLabel.implicitWidth + Theme.scaled(24)
+                height: Theme.scaled(26)
                 radius: Theme.scaled(8)
                 color: detail.isDone ? Theme.accentColor
-                     : (doneM.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground)
-                border.width: 0
+                     : (doneM.containsMouse ? Theme.cardBackgroundHover : Qt.rgba(255, 255, 255, 0.08))
+                border.color: detail.isDone ? Theme.accentColor : Theme.cardBorder
+                border.width: 1
                 Behavior on color { ColorAnimation { duration: Theme.animInstant } }
-                Text {
-                    id: doneLabel
+                RowLayout {
                     anchors.centerIn: parent
-                    text: detail.isDone ? "done" : "mark done"
-                    color: detail.isDone ? Theme.base : Theme.subtext1
-                    font.pixelSize: Theme.scaled(9); font.weight: Font.Black
+                    spacing: Theme.scaled(4)
+                    Text {
+                        visible: detail.isDone
+                        text: "󰄬"
+                        font.family: Theme.iconFont
+                        color: Colors.on_primary
+                        font.pixelSize: Theme.scaled(11)
+                        font.bold: true
+                    }
+                    Text {
+                        id: doneLabel
+                        text: detail.isDone ? "Done" : "Mark done"
+                        color: detail.isDone ? Colors.on_primary : Theme.text
+                        font.pixelSize: Theme.scaled(10)
+                        font.weight: Font.Bold
+                    }
                 }
                 MouseArea {
                     id: doneM; anchors.fill: parent; hoverEnabled: true
@@ -101,21 +127,40 @@ Rectangle {
                 width: parent.width
                 spacing: Theme.scaled(10)
 
+                // Body Skeleton while loading
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: Theme.scaled(8)
+                    visible: detail.loading
+
+                    SequentialAnimation on opacity {
+                        loops: Animation.Infinite
+                        NumberAnimation { from: 0.35; to: 0.75; duration: 800; easing.type: Easing.InOutSine }
+                        NumberAnimation { from: 0.75; to: 0.35; duration: 800; easing.type: Easing.InOutSine }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: Theme.scaled(12); radius: 3; color: Qt.rgba(255, 255, 255, 0.12) }
+                    Rectangle { Layout.fillWidth: true; height: Theme.scaled(12); radius: 3; color: Qt.rgba(255, 255, 255, 0.10) }
+                    Rectangle { width: parent.width * 0.75; height: Theme.scaled(12); radius: 3; color: Qt.rgba(255, 255, 255, 0.08) }
+                    Rectangle { width: parent.width * 0.5; height: Theme.scaled(12); radius: 3; color: Qt.rgba(255, 255, 255, 0.06) }
+                }
+
                 Text {
                     Layout.fillWidth: true
-                    text: detail.loading ? "Loading..." : detail.body
+                    visible: !detail.loading
+                    text: detail.body
                     color: Theme.subtext1
-                    font.pixelSize: Theme.scaled(11)
+                    font.pixelSize: Theme.scaled(12)
                     wrapMode: Text.WordWrap
-                    lineHeight: 1.25
+                    lineHeight: 1.3
                 }
 
                 Text {
                     Layout.fillWidth: true
                     visible: detail.resources.length > 0
                     text: "RESOURCES"
-                    color: Theme.subtext0
-                    font.pixelSize: Theme.scaled(9)
+                    color: Theme.accentColor
+                    font.pixelSize: Theme.scaled(10)
                     font.weight: Font.Black
                     font.letterSpacing: 1
                 }
@@ -127,8 +172,9 @@ Rectangle {
                         Layout.fillWidth: true
                         implicitHeight: resRow.implicitHeight + Theme.scaled(14)
                         radius: Theme.scaled(8)
-                        color: resM.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground
-                        border.color: Theme.cardBorder; border.width: 1
+                        color: resM.containsMouse ? Theme.cardBackgroundHover : Qt.rgba(255, 255, 255, 0.05)
+                        border.color: Theme.cardBorder
+                        border.width: 1
 
                         RowLayout {
                             id: resRow
@@ -142,7 +188,7 @@ Rectangle {
                             Rectangle {
                                 Layout.alignment: Qt.AlignVCenter
                                 width: kindLabel.implicitWidth + Theme.scaled(12)
-                                height: Theme.scaled(16)
+                                height: Theme.scaled(18)
                                 radius: Theme.scaled(4)
                                 color: Qt.rgba(Theme.accentColor.r, Theme.accentColor.g,
                                                Theme.accentColor.b, 0.18)
@@ -151,7 +197,7 @@ Rectangle {
                                     anchors.centerIn: parent
                                     text: modelData.kind
                                     color: Theme.accentColor
-                                    font.pixelSize: Theme.scaled(8)
+                                    font.pixelSize: Theme.scaled(8.5)
                                     font.weight: Font.Black
                                 }
                             }
@@ -159,7 +205,7 @@ Rectangle {
                                 Layout.fillWidth: true
                                 text: modelData.label
                                 color: Theme.text
-                                font.pixelSize: Theme.scaled(10)
+                                font.pixelSize: Theme.scaled(11)
                                 wrapMode: Text.WordWrap
                             }
                         }

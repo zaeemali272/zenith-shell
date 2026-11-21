@@ -34,9 +34,13 @@ ColumnLayout {
         ColumnLayout {
             spacing: 0; Layout.fillWidth: true
             Text { 
-                text: root.label.toUpperCase()
-                color: Theme.blue; font.weight: Font.Black
-                font.pixelSize: Theme.scaled(11); font.letterSpacing: 1.5 
+                text: root.label
+                color: root.sliderColor
+                font.weight: Font.Bold
+                font.pixelSize: Theme.scaled(12)
+                font.letterSpacing: 0.5
+                elide: Text.ElideRight
+                Layout.fillWidth: true
             }
             Text { 
                 text: root.value + "%"

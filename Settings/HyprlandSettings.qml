@@ -16,18 +16,34 @@ Item {
     property int barMargins: 10
     
     // Logic to apply changes in real-time
-    onGapsInChanged: apply("general:gaps_in", gapsIn)
-    onGapsOutChanged: apply("general:gaps_out", gapsOut)
-    onGapsWorkspacesChanged: apply("general:gaps_workspaces", gapsWorkspaces)
-    onBorderSizeChanged: apply("general:border_size", borderSize)
-    onRoundingChanged: apply("decoration:rounding", rounding)
-    onShadowRangeChanged: apply("decoration:shadow:range", shadowRange)
-    onBlurVibrancyChanged: apply("decoration:blur:vibrancy", blurVibrancy)
-    
-    function apply(key, value) {
-        exec.command = ["hyprctl", "keyword", key, value.toString()];
-        exec.running = true;
+    onGapsInChanged: applyLua("general.gaps_in", gapsIn)
+    onGapsOutChanged: applyLua("general.gaps_out", gapsOut)
+    onGapsWorkspacesChanged: applyLua("general.gaps_workspaces", gapsWorkspaces)
+    onBorderSizeChanged: applyLua("general.border_size", borderSize)
+    onRoundingChanged: applyLua("decoration.rounding", rounding)
+    onShadowRangeChanged: applyLua("decoration.shadow.range", shadowRange)
+    onBlurVibrancyChanged: applyLua("decoration.blur.vibrancy", blurVibrancy)
+    onBarMarginsChanged: {
+        BarSettings.marginTop = barMargins;
+        BarSettings.marginLeft = barMargins;
+        BarSettings.marginRight = barMargins;
     }
     
-    Process { id: exec }
+    function applyLua(path, value) {
+        let parts = path.split(".");
+        let luaStr = "";
+        if (parts.length === 2) {
+            luaStr = "hl.config({ " + parts[0] + " = { " + parts[1] + " = " + value + " } })";
+        } else if (parts.length === 3) {
+            luaStr = "hl.config({ " + parts[0] + " = { " + parts[1] + " = { " + parts[2] + " = " + value + " } } })";
+        }
+        
+        let keywordKey = path.replace(".", ":");
+        let cmd = "hyprctl eval '" + luaStr + "' >/dev/null 2>&1 || hyprctl keyword " + keywordKey + " " + value + " >/dev/null 2>&1";
+        execProc.command = ["sh", "-c", cmd];
+        execProc.running = false;
+        execProc.running = true;
+    }
+    
+    Process { id: execProc }
 }

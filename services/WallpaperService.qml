@@ -11,7 +11,7 @@ Item {
     readonly property string home: PathSettings.home
     readonly property string wallpaperDir: "file://" + home + "/Pictures/Wallpapers"
     readonly property string animationDir: "file://" + home + "/Videos/Animated"
-    readonly property string scriptPath: PathSettings.scriptsDir + "/generate_thumbnails.py"
+    readonly property string scriptPath: PathSettings.shellDir + "/services/generate_thumbnails.py"
 
     function generate() {
         if (!thumbGen.running) {

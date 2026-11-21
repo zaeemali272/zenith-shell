@@ -7,13 +7,21 @@ import Quickshell
 
 ColumnLayout {
     id: root
-    spacing: Theme.scaled(25)
+    spacing: Theme.scaled(14)
     Layout.fillWidth: true
+    implicitHeight: mainCard.implicitHeight + infoGrid.implicitHeight + bottomGrid.implicitHeight + (root.spacing * 2)
 
     opacity: 0
     scale: 0.98
     Component.onCompleted: {
         entryAnim.start();
+        BatteryService.update();
+    }
+    Timer {
+        interval: 2000
+        running: root.visible
+        repeat: true
+        onTriggered: BatteryService.update()
     }
     ParallelAnimation {
         id: entryAnim
@@ -25,19 +33,13 @@ ColumnLayout {
     readonly property real displayVoltage: BatteryService.voltage > 1000 ? BatteryService.voltage / 1000000 : BatteryService.voltage
     readonly property real displayWatts: BatteryService.energyRate > 1000 ? BatteryService.energyRate / 1000000 : BatteryService.energyRate
 
-    Text {
-        text: "BATTERY"
-        color: Theme.blue
-        font.pixelSize: 10
-        font.weight: Font.Black
-        font.letterSpacing: 2
-        Layout.leftMargin: Theme.scaled(5)
-    }
-
     // Main Card
     Rectangle {
+        id: mainCard
         Layout.fillWidth: true
-        height: Theme.scaled(140)
+        height: Theme.scaled(130)
+        implicitHeight: Theme.scaled(130)
+        Layout.preferredHeight: Theme.scaled(130)
         color: Theme.cardBackground
         radius: Theme.bubbleRadiusMedium
         border.color: Theme.glassBorder
@@ -45,41 +47,43 @@ ColumnLayout {
 
         RowLayout {
             anchors.fill: parent
-            anchors.margins: Theme.scaled(20)
-            spacing: Theme.scaled(25)
+            anchors.margins: Theme.scaled(18)
+            spacing: Theme.scaled(20)
 
             Rectangle {
-                width: Theme.scaled(80); height: Theme.scaled(80); radius: 40
+                width: Theme.scaled(72); height: Theme.scaled(72); radius: Theme.scaled(36)
                 color: "transparent"
                 border.width: 0
+                antialiasing: true
                 Text {
                     anchors.centerIn: parent
-                    text: BatteryService.acOnline ? "󱐋" : "󰁹"
+                    text: BatteryService.acOnline ? (BatteryService.status === "charging" ? "" : "󰚥") : "󰁹"
                     font.family: Theme.iconFont
-                    font.pixelSize: Theme.scaled(38)
-                    color: BatteryService.acOnline ? Theme.powerGreen : Theme.accentColor
+                    font.pixelSize: Theme.scaled(36)
+                    color: (BatteryService.acOnline && BatteryService.status !== "charging") ? "#ffffff" : Theme.accentColor
                 }
             }
 
             ColumnLayout {
-                spacing: 5; Layout.fillWidth: true
+                spacing: Theme.scaled(4); Layout.fillWidth: true
                 RowLayout {
-                    spacing: 15
-                    Text { text: BatteryService.percentage + "%"; font.pixelSize: Theme.scaled(38); font.weight: Font.Black; color: Theme.text }
+                    spacing: Theme.scaled(12)
+                    Text { text: BatteryService.percentage + "%"; font.pixelSize: Theme.scaled(34); font.weight: Font.Black; color: Theme.text }
                     Rectangle {
-                        height: 22; width: pillText.implicitWidth + 30; radius: 11
-                        color: BatteryService.acOnline ? Theme.powerGreen : Theme.menuDarkHover
+                        height: Theme.scaled(22); width: pillText.implicitWidth + Theme.scaled(20); radius: Theme.scaled(11)
+                        color: BatteryService.acOnline ? Theme.accentColor : Theme.menuDarkHover
                         border.width: 0
-                        Text { id: pillText; anchors.centerIn: parent; text: BatteryService.acOnline ? "PLUGGED" : "DISCHARGING"; color: BatteryService.acOnline ? Colors.background : Theme.text; font.weight: Font.Black; font.pixelSize: 9 }
+                        antialiasing: true
+                        Text { id: pillText; anchors.centerIn: parent; text: BatteryService.acOnline ? (BatteryService.status === "charging" ? "CHARGING" : "PLUGGED") : "DISCHARGING"; color: BatteryService.acOnline ? Colors.on_primary : Theme.text; font.weight: Font.Black; font.pixelSize: Theme.scaled(9) }
                     }
                 }
-                Text { text: (root.isLimitActive ? "Conservative" : BatteryService.status).toUpperCase(); font.pixelSize: 10; font.weight: Font.Black; color: Theme.subtext0 }
+                Text { text: (root.isLimitActive ? "Conservative" : BatteryService.status).toUpperCase(); font.pixelSize: Theme.scaled(10); font.weight: Font.Black; color: Theme.subtext0 }
                 
                 Rectangle {
-                    Layout.fillWidth: true; Layout.topMargin: 10; height: 8; radius: 4; color: Qt.rgba(1,1,1,0.08)
+                    Layout.fillWidth: true; Layout.topMargin: Theme.scaled(6); height: Theme.scaled(6); radius: Theme.scaled(3); color: Qt.rgba(1,1,1,0.08)
                     Rectangle {
-                        width: parent.width * (BatteryService.percentage / 100); height: parent.height; radius: 4
-                        color: BatteryService.acOnline ? Theme.powerGreen : (BatteryService.percentage <= 20 ? Theme.red : Theme.accentColor)
+                        width: parent.width * (BatteryService.percentage / 100); height: parent.height; radius: Theme.scaled(3)
+                        color: BatteryService.acOnline ? Theme.accentColor : (BatteryService.percentage <= 20 ? Theme.red : Theme.accentColor)
                         Behavior on width { NumberAnimation { duration: 1000; easing.type: Easing.OutCubic } }
                     }
                 }
@@ -89,26 +93,40 @@ ColumnLayout {
 
     // Info Grid
     RowLayout {
-        Layout.fillWidth: true; spacing: 15
+        id: infoGrid
+        Layout.fillWidth: true
+        spacing: Theme.scaled(12)
+        implicitHeight: Theme.scaled(80)
+        Layout.preferredHeight: Theme.scaled(80)
         StatCard { label: "CYCLES"; value: BatteryService.cycleCount; icon: "󱂇"; accent: Theme.mauve }
         StatCard { label: "REMAINING"; value: root.isLimitActive ? "N/A" : (BatteryService.timeRemaining || "..."); icon: "󰥔"; accent: Theme.accentColor }
     }
 
     component StatCard: Rectangle {
         property string label; property var value; property string icon; property color accent
-        Layout.fillWidth: true; height: 90; color: Theme.cardBackground; radius: Theme.bubbleRadiusMedium; border.color: Theme.glassBorder; border.width: 1
+        Layout.fillWidth: true
+        height: Theme.scaled(80)
+        implicitHeight: Theme.scaled(80)
+        Layout.preferredHeight: Theme.scaled(80)
+        color: Theme.cardBackground
+        radius: Theme.bubbleRadiusMedium
+        border.color: Theme.glassBorder
+        border.width: 1
         ColumnLayout {
-            anchors.centerIn: parent; spacing: 5
-            Text { text: icon; font.family: Theme.iconFont; font.pixelSize: 28; color: accent; Layout.alignment: Qt.AlignHCenter }
-            Text { text: value; color: Theme.text; font.weight: Font.Black; font.pixelSize: 14; Layout.alignment: Qt.AlignHCenter }
-            Text { text: label; color: Theme.subtext0; font.pixelSize: 8; font.weight: Font.Black; Layout.alignment: Qt.AlignHCenter }
+            anchors.centerIn: parent; spacing: Theme.scaled(4)
+            Text { text: icon; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(24); color: accent; Layout.alignment: Qt.AlignHCenter }
+            Text { text: value; color: Theme.text; font.weight: Font.Black; font.pixelSize: Theme.scaled(13); Layout.alignment: Qt.AlignHCenter }
+            Text { text: label; color: Theme.subtext0; font.pixelSize: Theme.scaled(8); font.weight: Font.Black; Layout.alignment: Qt.AlignHCenter }
         }
     }
 
     // Bottom Detailed Grid
     Rectangle {
+        id: bottomGrid
         Layout.fillWidth: true
-        Layout.preferredHeight: Theme.scaled(60) 
+        height: Theme.scaled(56)
+        implicitHeight: Theme.scaled(56)
+        Layout.preferredHeight: Theme.scaled(56) 
         color: Theme.cardBackground
         radius: Theme.bubbleRadiusMedium
         border.color: Theme.glassBorder
@@ -164,5 +182,16 @@ ColumnLayout {
                 }
             }
         }
+    }
+
+    // Helper text
+    Text {
+        Layout.fillWidth: true
+        text: "Battery telemetry monitored via upower and kernel sysfs. Toggle conservation mode to limit charging for battery longevity."
+        color: Theme.subtext0
+        font.pixelSize: Theme.scaled(10)
+        horizontalAlignment: Text.AlignHCenter
+        wrapMode: Text.WordWrap
+        Layout.alignment: Qt.AlignHCenter
     }
 }

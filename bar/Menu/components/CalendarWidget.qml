@@ -82,11 +82,22 @@ Rectangle {
                     font.pixelSize: Theme.scaled(17)
                     font.weight: Font.Bold
                 }
-                Label {
-                    text: "📍 " + root.countryName + " (" + root.countryCode + ")"
-                    color: Theme.accentColor
-                    font.pixelSize: Theme.scaled(10)
-                    font.weight: Font.DemiBold
+                RowLayout {
+                    spacing: Theme.scaled(4)
+                    Text {
+                        text: "󰍎"
+                        font.family: Theme.iconFont
+                        color: Theme.accentColor
+                        font.pixelSize: Theme.scaled(10)
+                        Layout.alignment: Qt.AlignVCenter
+                    }
+                    Label {
+                        text: root.countryName + " (" + root.countryCode + ")"
+                        color: Theme.accentColor
+                        font.pixelSize: Theme.scaled(10)
+                        font.weight: Font.DemiBold
+                        Layout.alignment: Qt.AlignVCenter
+                    }
                 }
             }
 
@@ -143,6 +154,7 @@ Rectangle {
                     }
                     contentItem: Text { 
                         text: "󰁍"
+                        font.family: Theme.iconFont
                         color: calPrevBtn.hovered ? Theme.subtext1 : Theme.subtext0
                         font.pixelSize: Theme.scaled(20)
                         horizontalAlignment: Text.AlignHCenter
@@ -168,6 +180,7 @@ Rectangle {
                     }
                     contentItem: Text { 
                         text: "󰁔"
+                        font.family: Theme.iconFont
                         color: calNextBtn.hovered ? Theme.subtext1 : Theme.subtext0
                         font.pixelSize: Theme.scaled(20)
                         horizontalAlignment: Text.AlignHCenter
@@ -190,8 +203,20 @@ Rectangle {
                 color: "transparent"
 
                 ScrollView {
+                    id: eventsScrollView
                     anchors.fill: parent
                     clip: true
+
+                    ScrollBar.vertical: ScrollBar {
+                        parent: eventsScrollView
+                        anchors.top: eventsScrollView.top
+                        anchors.bottom: eventsScrollView.bottom
+                        anchors.right: eventsScrollView.right
+                        anchors.rightMargin: 1
+                        policy: ScrollBar.AsNeeded
+                        width: 3
+                        contentItem: Rectangle { radius: 999; color: Theme.accentColor; opacity: 0.6 }
+                    }
 
                     ListView {
                         FastWheel {}

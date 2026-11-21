@@ -105,6 +105,7 @@ Surfaces (each toggles):
   dashboard:<tab>             Dashboard on a tab: pomodoro, roadmap, mail, wallpaper
   wallpaper                   Wallpaper tab
   pomodoro | roadmap | mail   Focus / roadmap / mail tabs
+  quicksettings | qs          Unified quick settings
   wifi | network              Wi-Fi quick settings
   bluetooth | bt              Bluetooth quick settings
   volume | audio              Audio quick settings

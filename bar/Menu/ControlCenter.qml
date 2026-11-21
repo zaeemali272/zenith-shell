@@ -38,14 +38,24 @@ MenuWindow {
         anchors.topMargin: Theme.barMarginTop + Theme.scaled(4)
 
         // Masterwork Adaptive Sizing
+        readonly property real maxScreenHeight: (screen ? screen.height : Theme.screenHeight) - Theme.barHeight - Theme.barMarginTop - Theme.scaled(24)
+        readonly property real targetHeight: Math.min(Theme.scaled(680), maxScreenHeight)
+
         width: Math.min(Theme.scaled(840), (screen ? screen.width : Theme.screenWidth) - Theme.scaled(24))
-        height: Math.min(Theme.scaled(680), (screen ? screen.height : Theme.screenHeight) - Theme.barHeight - Theme.scaled(20))
+        height: targetHeight
+
+        Behavior on height {
+            NumberAnimation {
+                duration: Theme.animNormal
+                easing.type: Easing.OutCubic
+            }
+        }
 
         color: Theme.glassBackground
         radius: Theme.cardRadius
         border.color: Theme.glassBorder
         border.width: 1
-        clip: true
+        antialiasing: true
 
         focus: true
         Keys.onPressed: (event) => {
@@ -59,7 +69,7 @@ MenuWindow {
                 if (event.accepted) return;
             }
             if (event.key === Qt.Key_Left || event.key === Qt.Key_Right) {
-                let tabs = ["Default", "Pomodoro", "Mail", "Wallpaper"];
+                let tabs = ["Default", "Pomodoro", "Wallpaper", "Settings"];
                 let idx = tabs.indexOf(CenterState.activeTab);
                 if (idx !== -1) {
                     let nextIdx = (event.key === Qt.Key_Right) ? (idx + 1) % tabs.length : (idx - 1 + tabs.length) % tabs.length;
@@ -104,6 +114,7 @@ MenuWindow {
                     color: "transparent"
                     border.color: Theme.glassBorder
                     border.width: 1
+                    antialiasing: true
 
                     RowLayout {
                         id: tabRow
@@ -111,13 +122,14 @@ MenuWindow {
                         spacing: Theme.scaled(4)
 
                         Repeater {
-                            model: ["Default", "Pomodoro", "Mail", "Wallpaper"]
+                            model: ["Default", "Pomodoro", "Wallpaper", "Settings"]
                             delegate: Rectangle {
                                 id: tabRect
                                 width: Math.max(Theme.scaled(82), tabText.implicitWidth + Theme.scaled(18))
                                 height: Theme.scaled(30)
                                 radius: 999
                                 color: CenterState.activeTab === modelData ? Theme.accentColor : (tabMouse.containsMouse ? Theme.menuBackground2Hover : "transparent")
+                                antialiasing: true
                                 scale: tabMouse.pressed ? 0.95 : 1.0
                                 
                                 Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
@@ -148,8 +160,90 @@ MenuWindow {
                 
                 // --- TOP RIGHT POWER USER TOOLS ICON CLUSTER ---
                 RowLayout {
+                    id: toolsCluster
                     spacing: Theme.scaled(6)
                     Layout.alignment: Qt.AlignVCenter
+
+                    property bool toolsExpanded: false
+                    property bool pinnedOpen: false
+
+                    HoverHandler {
+                        id: clusterHover
+                        onHoveredChanged: {
+                            if (hovered) {
+                                toolsUnhoverTimer.stop();
+                                toolsCluster.toolsExpanded = true;
+                            } else if (!toolsCluster.pinnedOpen) {
+                                toolsUnhoverTimer.restart();
+                            }
+                        }
+                    }
+
+                    Timer {
+                        id: toolsUnhoverTimer
+                        interval: 400
+                        onTriggered: {
+                            if (!clusterHover.hovered && !toolsCluster.pinnedOpen) {
+                                toolsCluster.toolsExpanded = false;
+                            }
+                        }
+                    }
+
+                    // Dropleft arrow button
+                    Rectangle {
+                        id: toolsToggleBtn
+                        width: Theme.scaled(32)
+                        height: Theme.scaled(32)
+                        radius: 999
+                        color: toolsCluster.toolsExpanded ? Theme.accentColor : (toggleMouse.containsMouse ? Theme.cardBackgroundHover : "transparent")
+                        border.color: Theme.glassBorder
+                        border.width: 1
+                        antialiasing: true
+                        scale: toggleMouse.pressed ? 0.94 : 1.0
+
+                        Behavior on color { ColorAnimation { duration: Theme.animInstant } }
+                        Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: toolsCluster.toolsExpanded ? "󰅂" : "󰅁"
+                            font.family: Theme.iconFont
+                            font.pixelSize: Theme.scaled(16)
+                            color: toolsCluster.toolsExpanded ? Colors.on_primary : (toggleMouse.containsMouse ? Theme.accentColor : Theme.subtext0)
+                            Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                        }
+
+                        MouseArea {
+                            id: toggleMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                toolsCluster.pinnedOpen = !toolsCluster.pinnedOpen;
+                                toolsCluster.toolsExpanded = toolsCluster.pinnedOpen || clusterHover.hovered;
+                            }
+                        }
+
+                        ToolTip {
+                            visible: toggleMouse.containsMouse && !toolsCluster.toolsExpanded
+                            delay: 350; timeout: 2500
+                            y: parent.height + Theme.scaled(6)
+                            contentItem: Text { text: "Quick Tools"; color: "#ffffff"; font.pixelSize: Theme.scaled(10.5); font.weight: Font.DemiBold }
+                            background: Rectangle { color: Theme.tooltipBackground; border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7); antialiasing: true }
+                        }
+                    }
+
+                    // Tools row shown to the right of the dropleft arrow
+                    RowLayout {
+                        id: toolsRow
+                        spacing: Theme.scaled(6)
+                        visible: opacity > 0
+                        opacity: toolsCluster.toolsExpanded ? 1.0 : 0.0
+                        scale: toolsCluster.toolsExpanded ? 1.0 : 0.85
+                        transformOrigin: Item.Left
+
+                        Behavior on opacity { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
+                        Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
 
                     // 1. Media Player Auto-Focus
                     Rectangle {
@@ -158,6 +252,7 @@ MenuWindow {
                         radius: 999
                         color: MediaPlayerService.mediaFocus ? Theme.accentColor : (focusMouse.containsMouse ? Theme.menuDarkHover : "transparent")
                         border.width: 0
+                        antialiasing: true
                         scale: focusMouse.pressed ? 0.94 : 1.0
                         
                         Behavior on color { ColorAnimation { duration: Theme.animInstant } }
@@ -183,7 +278,7 @@ MenuWindow {
                             delay: 350; timeout: 3000
                             y: parent.height + Theme.scaled(6)
                             contentItem: Text { text: "Media Auto-Focus: " + (MediaPlayerService.mediaFocus ? "ON" : "OFF"); color: "#ffffff"; font.pixelSize: Theme.scaled(10.5); font.weight: Font.DemiBold }
-                            background: Rectangle { color: Theme.cardBackground; border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7) }
+                            background: Rectangle { color: Theme.tooltipBackground; border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7); antialiasing: true }
                         }
                     }
 
@@ -194,6 +289,7 @@ MenuWindow {
                         radius: 999
                         color: CaffeineService.active ? Theme.accentColor : (caffeineMouse.containsMouse ? Theme.cardBackgroundHover : "transparent")
                         border.width: 0
+                        antialiasing: true
                         scale: caffeineMouse.pressed ? 0.94 : 1.0
                         
                         Behavior on color { ColorAnimation { duration: Theme.animInstant } }
@@ -219,7 +315,7 @@ MenuWindow {
                             delay: 350; timeout: 3000
                             y: parent.height + Theme.scaled(6)
                             contentItem: Text { text: "Caffeine (Prevent Sleep): " + (CaffeineService.active ? "ACTIVE" : "OFF"); color: "#ffffff"; font.pixelSize: Theme.scaled(10.5); font.weight: Font.DemiBold }
-                            background: Rectangle { color: Theme.cardBackground; border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7) }
+                            background: Rectangle { color: Theme.tooltipBackground; border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7); antialiasing: true }
                         }
                     }
 
@@ -230,6 +326,7 @@ MenuWindow {
                         radius: 999
                         color: PowerToolsService.nightLight ? Qt.rgba(250/255, 179/255, 135/255, 0.3) : (nlMouse.containsMouse ? Theme.cardBackgroundHover : "transparent")
                         border.width: 0
+                        antialiasing: true
                         scale: nlMouse.pressed ? 0.94 : 1.0
                         
                         Behavior on color { ColorAnimation { duration: Theme.animInstant } }
@@ -255,7 +352,7 @@ MenuWindow {
                             delay: 350; timeout: 3000
                             y: parent.height + Theme.scaled(6)
                             contentItem: Text { text: "Night Light: " + (PowerToolsService.nightLight ? "WARM (3800K)" : "OFF"); color: "#ffffff"; font.pixelSize: Theme.scaled(10.5); font.weight: Font.DemiBold }
-                            background: Rectangle { color: Theme.cardBackground; border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7) }
+                            background: Rectangle { color: Theme.tooltipBackground; border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7); antialiasing: true }
                         }
                     }
 
@@ -266,6 +363,7 @@ MenuWindow {
                         radius: 999
                         color: PowerToolsService.dnd ? Qt.rgba(203/255, 166/255, 247/255, 0.3) : (dndMouse.containsMouse ? Theme.cardBackgroundHover : "transparent")
                         border.width: 0
+                        antialiasing: true
                         scale: dndMouse.pressed ? 0.94 : 1.0
                         
                         Behavior on color { ColorAnimation { duration: Theme.animInstant } }
@@ -291,7 +389,7 @@ MenuWindow {
                             delay: 350; timeout: 3000
                             y: parent.height + Theme.scaled(6)
                             contentItem: Text { text: "Do Not Disturb: " + (PowerToolsService.dnd ? "SILENCED" : "NORMAL"); color: "#ffffff"; font.pixelSize: Theme.scaled(10.5); font.weight: Font.DemiBold }
-                            background: Rectangle { color: Theme.cardBackground; border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7) }
+                            background: Rectangle { color: Theme.tooltipBackground; border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7); antialiasing: true }
                         }
                     }
 
@@ -302,6 +400,7 @@ MenuWindow {
                         radius: 999
                         color: snipMouse.containsMouse ? Theme.cardBackgroundHover : "transparent"
                         border.width: 0
+                        antialiasing: true
                         scale: snipMouse.pressed ? 0.94 : 1.0
                         
                         Behavior on color { ColorAnimation { duration: Theme.animInstant } }
@@ -327,7 +426,7 @@ MenuWindow {
                             delay: 350; timeout: 3000
                             y: parent.height + Theme.scaled(6)
                             contentItem: Text { text: "Region Screenshot (grim + slurp)"; color: "#ffffff"; font.pixelSize: Theme.scaled(10.5); font.weight: Font.DemiBold }
-                            background: Rectangle { color: Theme.cardBackground; border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7) }
+                            background: Rectangle { color: Theme.tooltipBackground; border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7); antialiasing: true }
                         }
                     }
 
@@ -338,6 +437,7 @@ MenuWindow {
                         radius: 999
                         color: pickMouse.containsMouse ? Theme.cardBackgroundHover : "transparent"
                         border.width: 0
+                        antialiasing: true
                         scale: pickMouse.pressed ? 0.94 : 1.0
                         
                         Behavior on color { ColorAnimation { duration: Theme.animInstant } }
@@ -363,11 +463,12 @@ MenuWindow {
                             delay: 350; timeout: 3000
                             y: parent.height + Theme.scaled(6)
                             contentItem: Text { text: "Color Picker (hyprpicker to clipboard)"; color: "#ffffff"; font.pixelSize: Theme.scaled(10.5); font.weight: Font.DemiBold }
-                            background: Rectangle { color: Theme.cardBackground; border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7) }
+                            background: Rectangle { color: Theme.tooltipBackground; border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7); antialiasing: true }
                         }
                     }
                 }
             }
+        }
 
             ParallelAnimation {
                 id: fadeAnim
@@ -380,7 +481,7 @@ MenuWindow {
                 id: contentStack
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                currentIndex: ["Default", "Pomodoro", "Mail", "Wallpaper"].indexOf(CenterState.activeTab)
+                currentIndex: ["Default", "Pomodoro", "Wallpaper", "Settings"].indexOf(CenterState.activeTab)
                 transform: Translate { id: contentTranslate }
                 onCurrentIndexChanged: fadeAnim.restart()
 
@@ -472,13 +573,11 @@ MenuWindow {
                                         onClicked: NotificationService.clearAll()
                                     }
                                 }
-                                ScrollView {
-                                    Layout.fillWidth: true; Layout.fillHeight: true; clip: true
-                                    NotificationList {
-                                        id: notificationList
-                                        visible: NotificationSettings.enableNotifications
-                                        Layout.fillWidth: true; height: parent.height 
-                                    }
+                                NotificationList {
+                                    id: notificationList
+                                    visible: NotificationSettings.enableNotifications
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true 
                                 }
                             }
                         }
@@ -516,19 +615,20 @@ MenuWindow {
                     }
                 }
 
-                // Pomodoro Tab
+                // Pomodoro Tab (Focus: Tasks, Roadmap, Timer, Mail, Services)
                 PomodoroContent {
-                    Layout.fillWidth: true; Layout.fillHeight: true
-                }
-
-                // Mail Tab
-                MailContent {
                     Layout.fillWidth: true; Layout.fillHeight: true
                 }
 
                 // Wallpaper Tab
                 WallpaperContent {
                     id: wallpaperContent
+                    Layout.fillWidth: true; Layout.fillHeight: true
+                }
+
+                // Settings Tab
+                SettingsContent {
+                    id: settingsContent
                     Layout.fillWidth: true; Layout.fillHeight: true
                 }
             }
@@ -554,6 +654,8 @@ MenuWindow {
         // timer; "Focus" covers both.
         if (tabId === "Default") return "Overview";
         if (tabId === "Pomodoro") return "Focus";
+        if (tabId === "Wallpaper") return "Wallpaper";
+        if (tabId === "Settings") return "Settings";
         return tabId;
     }
 

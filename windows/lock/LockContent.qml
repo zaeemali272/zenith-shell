@@ -55,12 +55,21 @@ RowLayout {
                     spacing: Theme.scaled(6)
 
                     Text {
-                        text: "📍 " + weatherCard.area
+                        text: "󰍎"
+                        font.family: Theme.iconFont
+                        color: Theme.accentColor
+                        font.pixelSize: Theme.scaled(12)
+                        Layout.alignment: Qt.AlignVCenter
+                    }
+
+                    Text {
+                        text: weatherCard.area
                         color: Theme.accentColor
                         font.pixelSize: Theme.scaled(11)
                         font.weight: Font.DemiBold
                         elide: Text.ElideRight
                         Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
                     }
 
                     Text {
@@ -887,12 +896,25 @@ RowLayout {
                                 font.weight: Font.Bold
                             }
                             Item { Layout.fillWidth: true }
-                            Text {
-                                text: batteryCard.batState === "charging" ? "⚡ CHARGING" : (batteryCard.acOnline ? "AC CONNECTED" : "BATTERY")
-                                color: batteryCard.batState === "charging" ? Theme.powerGreen : Theme.subtext0
-                                font.pixelSize: Theme.scaled(10)
-                                font.weight: Font.Black
-                                font.letterSpacing: 1
+                            RowLayout {
+                                spacing: Theme.scaled(4)
+                                Layout.alignment: Qt.AlignVCenter
+                                Text {
+                                    visible: batteryCard.acOnline
+                                    text: batteryCard.batState === "charging" ? "" : "󰚥"
+                                    font.family: Theme.iconFont
+                                    font.pixelSize: Theme.scaled(11)
+                                    color: Theme.accentColor
+                                    Layout.alignment: Qt.AlignVCenter
+                                }
+                                Text {
+                                    text: batteryCard.batState === "charging" ? "CHARGING" : (batteryCard.acOnline ? "AC CONNECTED" : "BATTERY")
+                                    color: batteryCard.batState === "charging" ? Theme.accentColor : Theme.subtext0
+                                    font.pixelSize: Theme.scaled(10)
+                                    font.weight: Font.Black
+                                    font.letterSpacing: 1
+                                    Layout.alignment: Qt.AlignVCenter
+                                }
                             }
                         }
                         Text {

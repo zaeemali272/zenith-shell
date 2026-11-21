@@ -76,10 +76,10 @@ Item {
             spacing: Theme.scaled(6)
 
             Text {
-                text: airplaneMode ? "󰀞" : (!online ? "󰤮" : (showUpload ? Theme.netUpIcon : Theme.netDownIcon))
+                text: airplaneMode ? "󰀞" : (!online ? "󰤮" : (root.wiredOnly ? "󰈀" : Theme.netIcon))
                 font.family: Theme.iconFont
                 font.pixelSize: Theme.iconSize
-                color: airplaneMode ? Theme.powerRed : (!wifiConnected ? Theme.powerRed : (netMouse.containsMouse ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.65) : Theme.accentColor))
+                color: airplaneMode ? Theme.powerRed : (!wifiConnected ? Theme.powerRed : (netMouse.containsMouse ? Qt.rgba(Theme.barIconColor.r, Theme.barIconColor.g, Theme.barIconColor.b, 0.65) : Theme.barIconColor))
                 Layout.alignment: Qt.AlignVCenter
                 Behavior on color { ColorAnimation { duration: Theme.animFast } }
             }

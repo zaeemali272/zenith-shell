@@ -26,28 +26,38 @@ ColumnLayout {
     
     SettingRow {
         label: "Height"
+        description: "Vertical thickness in pixels of the status bar and floating pill containers"
         NumberInput {
             from: 20; to: 100; step: 2
             value: BarSettings.height
-            onValueModified: BarSettings.height = value
+            onValueModified: {
+                BarSettings.height = value;
+                PillSettings.height = value;
+            }
         }
     }
     
     SettingRow {
         label: "Radius"
+        description: "Corner curvature radius for the bar surface and capsule pill islands"
         NumberInput {
             from: 0; to: 50; step: 2
             value: BarSettings.radius
-            onValueModified: BarSettings.radius = value
+            onValueModified: {
+                BarSettings.radius = value;
+                PillSettings.radius = value;
+            }
         }
     }
 
     SettingRow {
         label: "Opacity"
+        description: "Overall translucency and glassmorphism alpha channel of the status bar"
         MaterialSlider {
-            from: 0; to: 1; stepSize: 0.05
+            from: 0.1; to: 1.0; stepSize: 0.05
             value: BarSettings.opacity
             onMoved: BarSettings.opacity = value
+            onValueChanged: if (pressed) BarSettings.opacity = value
         }
     }
 
@@ -55,6 +65,7 @@ ColumnLayout {
 
     SettingRow {
         label: "Entry Animation"
+        description: "Play smooth slide-in easing animation when the status bar first loads"
         MaterialSwitch {
             checked: BarSettings.entryAnimation
             onClicked: BarSettings.entryAnimation = checked
@@ -63,6 +74,7 @@ ColumnLayout {
     
     SettingRow {
         label: "Duration (ms)"
+        description: "Milliseconds for status bar enter, exit, and hide transitions"
         NumberInput {
             from: 100; to: 3000; step: 100
             value: BarSettings.animationDuration

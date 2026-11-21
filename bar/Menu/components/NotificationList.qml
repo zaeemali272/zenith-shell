@@ -14,6 +14,12 @@ Flickable {
     clip: true
     boundsBehavior: Flickable.StopAtBounds
 
+    ScrollBar.vertical: ScrollBar {
+        policy: ScrollBar.AsNeeded
+        width: 3
+        contentItem: Rectangle { radius: 999; color: Theme.accentColor; opacity: 0.6 }
+    }
+
     ColumnLayout {
         id: mainLayout
         width: parent.width
@@ -48,14 +54,22 @@ Flickable {
             
             Text {
                 text: "󰂚"
+                font.family: Theme.iconFont
                 font.pixelSize: Theme.scaled(80)
                 color: Theme.surface1
                 Layout.alignment: Qt.AlignCenter
             }
             Text {
                 text: "All caught up"
-                color: Theme.surface2
+                color: Theme.text
                 font.pixelSize: Theme.scaled(13)
+                font.weight: Font.Bold
+                Layout.alignment: Qt.AlignCenter
+            }
+            Text {
+                text: "No pending desktop notifications"
+                color: Theme.subtext0
+                font.pixelSize: Theme.scaled(10)
                 Layout.alignment: Qt.AlignCenter
             }
         }

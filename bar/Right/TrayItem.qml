@@ -103,6 +103,12 @@ MouseArea {
                 }
 
                 if (iconName) {
+                    if (iconName.endsWith("-symbolic")) {
+                        return "image://icon/" + iconName;
+                    }
+                    if (Quickshell.hasThemeIcon(iconName + "-symbolic")) {
+                        return "image://icon/" + iconName + "-symbolic";
+                    }
                     return "image://icon/" + iconName;
                 }
 
@@ -113,13 +119,17 @@ MouseArea {
                 if (status === Image.Error) {
                     let iconName = String(root.item && root.item.icon ? root.item.icon : "");
                     if (iconName && !iconName.includes("://") && !iconName.startsWith("/")) {
-                        let quickshellSource = Quickshell.iconPath(iconName);
+                        if (!iconName.endsWith("-symbolic") && Quickshell.hasThemeIcon(iconName + "-symbolic")) {
+                            source = "image://icon/" + iconName + "-symbolic";
+                            return;
+                        }
+                        let quickshellSource = Quickshell.iconPath(iconName + "-symbolic") || Quickshell.iconPath(iconName);
                         if (quickshellSource && source.toString() !== quickshellSource) {
                             source = quickshellSource;
                             return;
                         }
                     }
-                    let genericApp = Quickshell.iconPath("application-x-executable");
+                    let genericApp = Quickshell.iconPath("application-x-executable-symbolic") || Quickshell.iconPath("application-x-executable");
                     if (genericApp && source.toString() !== genericApp) {
                         source = genericApp;
                     }
@@ -179,7 +189,7 @@ MouseArea {
             Rectangle {
                 id: tooltipRect
                 y: Theme.scaled(6)
-                color: Theme.glassBackground
+                color: Theme.tooltipBackground
                 border.color: Theme.glassBorder
                 border.width: 1
                 radius: Theme.scaled(8)

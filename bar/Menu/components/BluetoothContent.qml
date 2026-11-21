@@ -6,21 +6,62 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts
 import Quickshell
 
-ColumnLayout {
+Item {
     id: root
-    spacing: Theme.scaled(20)
     Layout.fillWidth: true
-    implicitHeight: BluetoothService.serviceActive ? (mainCol.implicitHeight + (emptyState.visible ? emptyState.implicitHeight : 0)) : 250
+    Layout.fillHeight: true
+    implicitHeight: BluetoothService.serviceActive ? (mainCol.implicitHeight + (emptyState.visible ? emptyState.implicitHeight : 0)) : (serviceErrorView.visible ? serviceErrorView.implicitHeight : 250)
 
     property bool showUnnamed: false
+    property string selectedAddress: ""
+    onSelectedAddressChanged: {
+        BluetoothService.isInteracting = (selectedAddress !== "");
+        if (selectedAddress !== "") {
+            BluetoothService.stopScan();
+        }
+    }
 
     readonly property bool isShowing: root.visible && QuickSettingsService.qsVisible
     onIsShowingChanged: {
-        if (isShowing) BluetoothService.refresh(true);
+        if (isShowing) {
+            BluetoothService.refresh(true);
+            if (BluetoothService.powered) {
+                BluetoothService.startScan();
+            }
+        } else {
+            root.selectedAddress = "";
+            BluetoothService.isInteracting = false;
+            BluetoothService.stopScan();
+        }
+    }
+
+    Connections {
+        target: QuickSettingsService
+        function onQsVisibleChanged() {
+            if (!QuickSettingsService.qsVisible) {
+                root.selectedAddress = "";
+                BluetoothService.isInteracting = false;
+                BluetoothService.stopScan();
+            }
+        }
+        function onActiveTabChanged() {
+            root.selectedAddress = "";
+            BluetoothService.isInteracting = false;
+            if (QuickSettingsService.activeTab !== "bluetooth") {
+                BluetoothService.stopScan();
+            }
+        }
+    }
+
+    // Outer click background catcher to de-expand
+    MouseArea {
+        anchors.fill: parent
+        z: -1
+        onClicked: root.selectedAddress = ""
     }
 
     Timer {
-        running: root.isShowing
+        running: root.isShowing && root.selectedAddress === "" && !BluetoothService.isInteracting
         interval: 3000
         repeat: true
         onTriggered: BluetoothService.refresh(true)
@@ -45,171 +86,253 @@ ColumnLayout {
 
     ColumnLayout {
         id: mainCol
-        Layout.fillWidth: true
-        spacing: Theme.scaled(20)
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        spacing: Theme.scaled(14)
         visible: BluetoothService.serviceActive
 
-        // --- Header ---
-        ColumnLayout {
-            Layout.fillWidth: true; spacing: Theme.scaled(15)
-            visible: BluetoothService.serviceActive
+        // --- Minimal Header Row (Buttons at start, device count on right) ---
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: Theme.scaled(8)
 
-            RowLayout {
-                Layout.fillWidth: true; spacing: Theme.scaled(15)
-                ColumnLayout {
-                    spacing: Theme.scaled(2); Layout.fillWidth: true
-                    Text { text: "BLUETOOTH"; color: Theme.blue; font.pixelSize: Theme.scaled(14); font.letterSpacing: 2; font.weight: Font.Black; opacity: 0.8 }
-                    Text { 
-                        text: BluetoothService.powered ? BluetoothService.state.toUpperCase() : "DISABLED"
-                        color: Theme.subtext1; font.pixelSize: Theme.scaled(10); font.weight: Font.Bold; font.letterSpacing: 1
-                    }
-                }
+            // Refresh Button (Triggers full status update + discovery scan for devices in range)
+            Rectangle {
+                id: refreshBtn
+                readonly property bool spinning: BluetoothService.userBusy || BluetoothService.scanning
 
-                // Refresh Button
-                //
-                // Spins for userBusy, not busy: background status probes fire
-                // constantly (every monitor event, plus three follow-up polls
-                // after each action) and driving the spinner from them made
-                // the button strobe. See BluetoothService.userBusy.
-                Rectangle {
-                    id: refreshBtn
-                    readonly property bool spinning: BluetoothService.userBusy
-
-                    width: Theme.scaled(44); height: Theme.scaled(44); radius: Theme.scaled(22)
-                    color: (refreshMouse.containsMouse ? Qt.rgba(1,1,1,0.05) : "transparent")
-                    border.color: spinning ? Theme.powerYellow : Theme.glassBorder
-                    clip: true
-                    visible: BluetoothService.powered
-
-                    Behavior on color { ColorAnimation { duration: 200 } }
-                    Behavior on border.color { ColorAnimation { duration: 200 } }
-
-                    Text {
-                        id: refreshIcon
-                        anchors.centerIn: parent; text: "󰑐"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(18)
-                        color: refreshBtn.spinning ? Theme.powerYellow : Theme.powerGreen
-                        Behavior on color { ColorAnimation { duration: 200 } }
-                    }
-
-                    RotationAnimation {
-                        target: refreshIcon
-                        running: refreshBtn.spinning
-                        from: 0; to: 360; duration: 1000; loops: Animation.Infinite
-                        // Stopping mid-spin used to leave the glyph frozen at
-                        // whatever angle it reached, so the next spin snapped
-                        // back to 0. Park it upright when idle.
-                        onRunningChanged: if (!running) refreshIcon.rotation = 0
-                    }
-
-                    MouseArea {
-                        id: refreshMouse; anchors.fill: parent; hoverEnabled: true
-                        onClicked: BluetoothService.refresh(true, true)
-                    }
-                }
-
-                // Scan Button
-                Rectangle {
-                    width: Theme.scaled(44); height: Theme.scaled(44); radius: Theme.scaled(22)
-                    color: scanMouse.containsMouse ? Theme.menuDarkHover : "transparent"
-                    border.width: 0
-                    clip: true
-                    visible: BluetoothService.powered
-                    Behavior on color { ColorAnimation { duration: 200 } }
-                    Text {
-                        id: scanIcon; anchors.centerIn: parent; text: "󰂰"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(22)
-                        color: BluetoothService.scanning ? Theme.powerYellow : Theme.text
-                    }
-                    MouseArea { id: scanMouse; anchors.fill: parent; hoverEnabled: true; onClicked: BluetoothService.toggleScan() }
-                }
-
-                // Power Button
-                Rectangle {
-                    width: Theme.scaled(44); height: Theme.scaled(44); radius: Theme.scaled(22)
-                    color: powerMouse.containsMouse ? Theme.menuDarkHover : "transparent"
-                    border.width: 0
-                    clip: true
-                    Behavior on color { ColorAnimation { duration: 200 } }
-                    Text {
-                        anchors.centerIn: parent; text: BluetoothService.powered ? "󰂯" : "󰂲"
-                        font.family: Theme.iconFont; font.pixelSize: Theme.scaled(24); color: BluetoothService.powered ? Theme.accentColor : Theme.powerRed
-                    }
-                    MouseArea { id: powerMouse; anchors.fill: parent; hoverEnabled: true; onClicked: BluetoothService.togglePower() }
-                }
-            }
-
-            // --- Settings Toggles ---
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: Theme.scaled(10)
+                width: Theme.scaled(38)
+                height: Theme.scaled(38)
+                radius: Theme.bubbleRadiusPill
+                color: refreshMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground
+                border.color: spinning ? Theme.powerYellow : Theme.glassBorder
+                border.width: 1
+                clip: true
                 visible: BluetoothService.powered
 
-                // Show Unnamed Toggle
-                Rectangle {
-                    Layout.fillWidth: true; height: Theme.scaled(40); radius: Theme.scaled(12); color: unnamedMouse.containsMouse ? Theme.menuDarkHover : "transparent"; border.color: root.showUnnamed ? Theme.accentColor : Theme.glassBorder; border.width: 1; clip: true
-                    RowLayout {
-                        anchors.centerIn: parent; spacing: 8
-                        Text { text: root.showUnnamed ? "󰈈" : "󰈉"; font.family: Theme.iconFont; color: root.showUnnamed ? Theme.accentColor : Theme.text; font.pixelSize: Theme.scaled(18) }
-                        Text { text: "SHOW UNNAMED"; color: Theme.text; font.pixelSize: Theme.scaled(8); font.weight: Font.Black; font.letterSpacing: 1 }
-                    }
-                    MouseArea { id: unnamedMouse; anchors.fill: parent; hoverEnabled: true; onClicked: root.showUnnamed = !root.showUnnamed }
+                Behavior on color { ColorAnimation { duration: 200 } }
+                Behavior on border.color { ColorAnimation { duration: 200 } }
+
+                Text {
+                    id: refreshIcon
+                    anchors.centerIn: parent
+                    text: "󰑐"
+                    font.family: Theme.iconFont
+                    font.pixelSize: Theme.scaled(18)
+                    color: refreshBtn.spinning ? Theme.powerYellow : Theme.powerGreen
+                    Behavior on color { ColorAnimation { duration: 200 } }
                 }
 
-                // Startup Status Toggle
-                Rectangle {
-                    Layout.fillWidth: true; height: Theme.scaled(40); radius: Theme.scaled(12); 
-                    color: startupMouse.containsMouse ? Theme.menuDarkHover : "transparent"; 
-                    border.color: BluetoothService.isServiceEnabled ? Theme.powerGreen : Theme.powerRed; border.width: 1; clip: true
-                    RowLayout {
-                        anchors.centerIn: parent; spacing: 8
-                        Text { 
-                            text: BluetoothService.isServiceEnabled ? "󰄬" : "󰅖"; 
-                            font.family: Theme.iconFont; 
-                            color: BluetoothService.isServiceEnabled ? Theme.powerGreen : Theme.powerRed; 
-                            font.pixelSize: Theme.scaled(18) 
+                RotationAnimation {
+                    target: refreshIcon
+                    running: refreshBtn.spinning
+                    from: 0; to: 360
+                    duration: 1000
+                    loops: Animation.Infinite
+                    onRunningChanged: if (!running) refreshIcon.rotation = 0
+                }
+
+                MouseArea {
+                    id: refreshMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        root.selectedAddress = "";
+                        BluetoothService.isInteracting = false;
+                        BluetoothService.refresh(true, true);
+                        if (BluetoothService.powered) {
+                            BluetoothService.startScan();
                         }
-                        Text { 
-                            text: "START AT BOOT"; 
-                            color: Theme.text; font.pixelSize: Theme.scaled(8); font.weight: Font.Black; font.letterSpacing: 1 
-                        }
-                    }
-                    MouseArea { 
-                        id: startupMouse; anchors.fill: parent; hoverEnabled: true; 
-                        onClicked: BluetoothService.toggleStartup() 
                     }
                 }
             }
 
-            // Current Connection Status Bar
+            // Power Toggle Button
             Rectangle {
-                Layout.fillWidth: true; height: Theme.scaled(60); color: Theme.cardBackground; radius: Theme.bubbleRadiusMedium; 
-                visible: BluetoothService.powered && BluetoothService.connectedName !== ""
-                border.color: Theme.glassBorder; border.width: 1
-                RowLayout {
-                    anchors.fill: parent; anchors.margins: Theme.scaled(12); spacing: Theme.scaled(15)
-                    Rectangle { 
-                        width: Theme.scaled(36); height: Theme.scaled(36); radius: Theme.bubbleRadiusSmall; color: "transparent"; border.width: 0
-                        Text { anchors.centerIn: parent; text: getDeviceIcon(BluetoothService.connectedIcon); font.family: Theme.iconFont; font.pixelSize: Theme.scaled(22); color: Theme.accentColor }
+                width: Theme.scaled(38)
+                height: Theme.scaled(38)
+                radius: Theme.bubbleRadiusPill
+                color: BluetoothService.powered
+                       ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.18)
+                       : (powerMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground)
+                border.color: BluetoothService.powered ? Theme.accentColor : Theme.glassBorder
+                border.width: 1
+                clip: true
+                Behavior on color { ColorAnimation { duration: 200 } }
+
+                Text {
+                    anchors.centerIn: parent
+                    text: BluetoothService.powered ? "󰂯" : "󰂲"
+                    font.family: Theme.iconFont
+                    font.pixelSize: Theme.scaled(18)
+                    color: BluetoothService.powered ? Theme.accentColor : Theme.powerRed
+                }
+
+                MouseArea {
+                    id: powerMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: BluetoothService.togglePower()
+                }
+            }
+
+            Item { Layout.fillWidth: true }
+
+            // Device Count on Right
+            RowLayout {
+                spacing: Theme.scaled(6)
+                Layout.alignment: Qt.AlignVCenter
+
+                Text {
+                    text: "󰑐"
+                    font.family: Theme.iconFont
+                    font.pixelSize: Theme.scaled(12)
+                    color: Theme.accentColor
+                    visible: BluetoothService.scanning || BluetoothService.isPerformingAction
+                    RotationAnimator on rotation {
+                        from: 0; to: 360; duration: 900; loops: Animation.Infinite
+                        running: BluetoothService.scanning || BluetoothService.isPerformingAction
                     }
-                    ColumnLayout { spacing: 0; Layout.fillWidth: true
-                        Text { text: BluetoothService.connectedName; color: Theme.text; font.weight: Font.Bold; font.pixelSize: Theme.scaled(13); elide: Text.ElideRight }
-                        Text { 
-                            text: BluetoothService.connectedAddress; color: Theme.subtext0; font.pixelSize: Theme.scaled(9); font.weight: Font.Bold 
-                        }
+                }
+
+                Text {
+                    text: !BluetoothService.powered ? "Bluetooth Off"
+                        : (BluetoothService.isPerformingAction ? "Connecting..."
+                        : (BluetoothService.scanning ? "Scanning..."
+                        : (deviceList.displayDevices.length + (deviceList.displayDevices.length === 1 ? " Device" : " Devices"))))
+                    color: (BluetoothService.scanning || BluetoothService.isPerformingAction) ? Theme.accentColor : Theme.subtext0
+                    font.pixelSize: Theme.scaled(11)
+                    font.weight: Font.Bold
+                }
+            }
+        }
+
+        // --- Connector / Active Connecting Banner ---
+        Rectangle {
+            Layout.fillWidth: true
+            height: Theme.scaled(44)
+            radius: Theme.bubbleRadiusMedium
+            color: Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.15)
+            border.color: Theme.accentColor
+            border.width: 1
+            visible: BluetoothService.isPerformingAction
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: Theme.scaled(14)
+                anchors.rightMargin: Theme.scaled(14)
+                spacing: Theme.scaled(10)
+
+                Text {
+                    text: "󰂱"
+                    font.family: Theme.iconFont
+                    font.pixelSize: Theme.scaled(18)
+                    color: Theme.accentColor
+
+                    SequentialAnimation on opacity {
+                        loops: Animation.Infinite
+                        running: BluetoothService.isPerformingAction
+                        NumberAnimation { from: 0.3; to: 1.0; duration: 600; easing.type: Easing.InOutQuad }
+                        NumberAnimation { from: 1.0; to: 0.3; duration: 600; easing.type: Easing.InOutQuad }
                     }
-                    
-                    // Disconnect Button
-                    ColumnLayout { spacing: 0; Layout.alignment: Qt.AlignRight; visible: BluetoothService.connectedBattery !== -1
-                        Text { text: BluetoothService.connectedBattery + "%"; color: Theme.powerGreen; font.pixelSize: Theme.scaled(10); font.weight: Font.Black; horizontalAlignment: Text.AlignRight }
-                        Text { text: "BATTERY"; color: Theme.subtext0; font.pixelSize: Theme.scaled(8); font.weight: Font.Black; horizontalAlignment: Text.AlignRight }
-                    }
-                    
-                    Rectangle {
-                        width: Theme.scaled(32); height: Theme.scaled(32); radius: Theme.bubbleRadiusSmall; color: Qt.rgba(1,0,0,0.1); border.width: 0
-                        visible: BluetoothService.connectedAddress !== ""
-                        Text { anchors.centerIn: parent; text: "󰤄"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(18); color: Theme.powerRed }
-                        MouseArea { anchors.fill: parent; onClicked: BluetoothService.action("disconnect", BluetoothService.connectedAddress) }
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: Theme.scaled(2)
+
+                    Text {
+                        text: "Connecting to Bluetooth Device..."
+                        color: Theme.text
+                        font.pixelSize: Theme.scaled(12)
+                        font.weight: Font.Bold
                     }
 
+                    Text {
+                        text: "Pairing and configuring audio/input profiles..."
+                        color: Theme.subtext0
+                        font.pixelSize: Theme.scaled(10)
+                    }
+                }
+
+                Text {
+                    text: "󰑐"
+                    font.family: Theme.iconFont
+                    font.pixelSize: Theme.scaled(14)
+                    color: Theme.accentColor
+                    RotationAnimator on rotation {
+                        from: 0; to: 360; duration: 900; loops: Animation.Infinite
+                        running: BluetoothService.isPerformingAction
+                    }
+                }
+            }
+        }
+
+        // --- Skeleton Bluetooth Items while scanning ---
+        ColumnLayout {
+            Layout.fillWidth: true
+            spacing: Theme.scaled(10)
+            visible: BluetoothService.powered && BluetoothService.serviceActive && BluetoothService.scanning && deviceList.displayDevices.length === 0
+
+            Repeater {
+                model: 3
+                delegate: Rectangle {
+                    Layout.fillWidth: true
+                    height: Theme.scaled(62)
+                    radius: Theme.bubbleRadiusMedium
+                    color: Theme.cardBackground
+                    border.color: Theme.glassBorder
+                    border.width: 1
+                    clip: true
+
+                    SequentialAnimation on opacity {
+                        loops: Animation.Infinite
+                        NumberAnimation { from: 0.35; to: 0.75; duration: 800 + index * 120; easing.type: Easing.InOutSine }
+                        NumberAnimation { from: 0.75; to: 0.35; duration: 800 + index * 120; easing.type: Easing.InOutSine }
+                    }
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: Theme.scaled(14)
+                        anchors.rightMargin: Theme.scaled(14)
+                        spacing: Theme.scaled(12)
+
+                        Rectangle {
+                            width: Theme.scaled(32)
+                            height: Theme.scaled(32)
+                            radius: width / 2
+                            color: Qt.rgba(255, 255, 255, 0.08)
+                        }
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: Theme.scaled(6)
+
+                            Rectangle {
+                                width: Theme.scaled(120 + (index * 30) % 50)
+                                height: Theme.scaled(12)
+                                radius: Theme.scaled(4)
+                                color: Qt.rgba(255, 255, 255, 0.12)
+                            }
+
+                            Rectangle {
+                                width: Theme.scaled(70 + (index * 20) % 40)
+                                height: Theme.scaled(8)
+                                radius: Theme.scaled(3)
+                                color: Qt.rgba(255, 255, 255, 0.06)
+                            }
+                        }
+
+                        Rectangle {
+                            width: Theme.scaled(48)
+                            height: Theme.scaled(24)
+                            radius: Theme.scaled(6)
+                            color: Qt.rgba(255, 255, 255, 0.08)
+                        }
+                    }
                 }
             }
         }
@@ -220,8 +343,9 @@ ColumnLayout {
             id: deviceList
             Layout.fillWidth: true
             
-            property var displayDevices: BluetoothService.devices.filter(d => d.hasName || root.showUnnamed || d.connected)
+            property var displayDevices: BluetoothService.devices.filter(d => Boolean(d.hasName || d.connected || d.isKnown || d.paired || d.trusted))
             
+            implicitHeight: contentHeight
             Layout.preferredHeight: contentHeight
             visible: BluetoothService.powered && BluetoothService.serviceActive && displayDevices.length > 0
             model: displayDevices
@@ -231,80 +355,291 @@ ColumnLayout {
 
             delegate: Rectangle {
                 id: delegateRoot
-                width: deviceList.width; height: Theme.scaled(72)
-                color: modelData.connected ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.20) : (delegateMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground)
-                radius: Theme.bubbleRadiusMedium; border.color: modelData.connected ? Theme.accentColor : Theme.glassBorder
+                width: deviceList.width
+
+                readonly property bool isConnected: Boolean(modelData.connected)
+                readonly property bool isKnown: Boolean(modelData.isKnown || modelData.paired || modelData.trusted)
+                readonly property bool isExpanded: root.selectedAddress === modelData.address
+
+                height: isExpanded ? Theme.scaled(112) : Theme.scaled(62)
+                Behavior on height { NumberAnimation { duration: Theme.animNormal; easing.type: Theme.animEasing } }
+
+                color: isConnected
+                       ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.18)
+                       : ((headerMouse.containsMouse || isExpanded) ? Theme.cardBackgroundHover : Theme.cardBackground)
+                radius: Theme.bubbleRadiusMedium
+                border.color: isConnected ? Theme.powerGreen : (isExpanded ? Theme.accentColor : Theme.glassBorder)
                 border.width: 1
-                scale: delegateMouse.pressed ? 0.97 : 1.0
-                
+                clip: true
+
                 Behavior on color { ColorAnimation { duration: 150 } }
                 Behavior on border.color { ColorAnimation { duration: 150 } }
-                Behavior on scale { NumberAnimation { duration: 100 } }
 
                 MouseArea {
-                    id: delegateMouse
-                    anchors.fill: parent
+                    id: headerMouse
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: Theme.scaled(62)
                     hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        if (modelData.connected) BluetoothService.action("disconnect", modelData.address);
-                        else BluetoothService.action("connect", modelData.address);
+                        root.selectedAddress = isExpanded ? "" : modelData.address;
                     }
                 }
 
-                RowLayout {
-                    anchors.fill: parent; anchors.margins: Theme.scaled(12); spacing: Theme.scaled(15)
-                    
-                    Rectangle {
-                        width: Theme.scaled(44); height: Theme.scaled(44); radius: Theme.bubbleRadiusSmall; color: "transparent"; border.width: 0
-                        Text { anchors.centerIn: parent; text: getDeviceIcon(modelData.icon); font.family: Theme.iconFont; font.pixelSize: Theme.scaled(26); color: modelData.connected ? Theme.accentColor : Theme.text }
-                    }
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: Theme.scaled(12)
+                    spacing: Theme.scaled(10)
 
-                    ColumnLayout {
-                        Layout.fillWidth: true; spacing: 0
-                        Text { text: modelData.name; color: Theme.text; font.weight: Font.Bold; font.pixelSize: Theme.scaled(14); elide: Text.ElideRight }
-                        Text { 
-                            text: modelData.connected ? "CONNECTED" : (modelData.paired ? "PAIRED" : "READY")
-                            color: modelData.connected ? Theme.accentColor : Theme.subtext0; font.pixelSize: Theme.scaled(9); font.weight: Font.Black 
+                    // Row 1: Header (Icon + Name / Status + Arrow stuck to the far right)
+                    RowLayout {
+                        width: parent.width
+                        Layout.fillWidth: true
+                        Layout.preferredWidth: parent.width
+                        spacing: Theme.scaled(12)
+
+                        // Device Icon
+                        Rectangle {
+                            width: Theme.scaled(38)
+                            height: Theme.scaled(38)
+                            radius: Theme.bubbleRadiusSmall
+                            color: "transparent"
+                            border.width: 0
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: getDeviceIcon(modelData.icon)
+                                font.family: Theme.iconFont
+                                font.pixelSize: Theme.scaled(22)
+                                color: isConnected ? Theme.powerGreen : Theme.text
+                            }
+                        }
+
+                        // Device Info Column
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: Theme.scaled(1)
+
+                            Text {
+                                text: modelData.name || modelData.address
+                                color: Theme.text
+                                font.weight: Font.Bold
+                                font.pixelSize: Theme.scaled(13)
+                                elide: Text.ElideRight
+                                Layout.fillWidth: true
+                            }
+
+                            RowLayout {
+                                spacing: Theme.scaled(6)
+                                Layout.fillWidth: true
+
+                                Text { 
+                                    text: isConnected ? "Connected" : (isKnown ? "Saved" : "Available")
+                                    color: isConnected ? Theme.powerGreen : Theme.subtext0
+                                    font.pixelSize: Theme.scaled(9)
+                                    font.weight: Font.Bold
+                                }
+
+                                Text {
+                                    visible: isConnected && modelData.battery !== undefined && modelData.battery !== -1
+                                    text: "•  " + modelData.battery + "%"
+                                    color: Theme.powerGreen
+                                    font.pixelSize: Theme.scaled(9)
+                                    font.weight: Font.Bold
+                                }
+                            }
+                        }
+
+                        // Sticky-to-the-right Arrow Button
+                        Rectangle {
+                            width: Theme.scaled(34)
+                            height: Theme.scaled(34)
+                            radius: Theme.bubbleRadiusSmall
+                            color: arrowMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.05)
+                            border.width: 0
+                            Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "󰅂"
+                                font.family: Theme.iconFont
+                                font.pixelSize: Theme.scaled(15)
+                                color: isConnected ? Theme.powerGreen : Theme.text
+                                rotation: isExpanded ? 90 : 0
+                                Behavior on rotation { NumberAnimation { duration: Theme.animFast } }
+                            }
+
+                            MouseArea {
+                                id: arrowMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    root.selectedAddress = isExpanded ? "" : modelData.address;
+                                }
+                            }
                         }
                     }
 
-                    // --- Action Buttons & Battery (Right Aligned) ---
+                    // Row 2: Action Buttons (Sticky to the right)
                     RowLayout {
-                        Layout.alignment: Qt.AlignRight
+                        width: parent.width
+                        Layout.fillWidth: true
+                        Layout.preferredWidth: parent.width
+                        visible: isExpanded
                         spacing: Theme.scaled(8)
 
-                        // Pair / Unpair / Disconnect toggle.
-                        //
-                        // The button reflects the device's *pairing* state, so
-                        // pressing it always undoes what it last did:
-                        //   not paired  -> pair
-                        //   paired      -> unpair (forget)
-                        //   connected   -> disconnect
-                        //
-                        // Connecting to an already-paired device is the row
-                        // click, so making this button unpair does not strand
-                        // saved devices.
+                        Item { Layout.fillWidth: true }
+
+                        // Forget / Unpair button (Shown on known/saved devices)
                         Rectangle {
-                            width: Theme.scaled(40); height: Theme.scaled(40); radius: Theme.scaled(12);
-                            color: (modelData.connected || modelData.paired) ? Theme.powerRed : Theme.blue
-                            Behavior on color { ColorAnimation { duration: 200 } }
-                            Text {
+                            visible: isKnown
+                            height: Theme.scaled(34)
+                            implicitWidth: devForgetRow.implicitWidth + Theme.scaled(20)
+                            radius: Theme.bubbleRadiusSmall
+                            color: devForgetMouse.containsMouse ? Qt.rgba(Theme.red.r, Theme.red.g, Theme.red.b, 0.3) : Qt.rgba(Theme.red.r, Theme.red.g, Theme.red.b, 0.15)
+                            border.color: Theme.red
+                            border.width: 1
+
+                            RowLayout {
+                                id: devForgetRow
                                 anchors.centerIn: parent
-                                text: modelData.connected ? "󰂯" : (modelData.paired ? "󰂲" : "󰂴")
-                                font.family: Theme.iconFont; color: Colors.background; font.pixelSize: Theme.scaled(20)
+                                spacing: Theme.scaled(6)
+
+                                Text {
+                                    text: "󰆴"
+                                    font.family: Theme.iconFont
+                                    font.pixelSize: Theme.scaled(14)
+                                    color: Theme.powerRed
+                                }
+
+                                Text {
+                                    text: "FORGET"
+                                    font.pixelSize: Theme.scaled(9)
+                                    font.weight: Font.Black
+                                    color: Theme.powerRed
+                                }
                             }
+
                             MouseArea {
-                                id: actionMouse
-                                anchors.fill: parent;
+                                id: devForgetMouse
+                                anchors.fill: parent
                                 hoverEnabled: true
-                                onClicked: {
-                                    if (modelData.connected) {
-                                        BluetoothService.action("disconnect", modelData.address);
-                                    } else if (modelData.paired) {
-                                        BluetoothService.action("remove", modelData.address);
-                                    } else {
-                                        BluetoothService.action("pair", modelData.address);
-                                    }
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: (mouse) => {
+                                    BluetoothService.action("remove", modelData.address);
+                                    root.selectedAddress = "";
+                                    mouse.accepted = true;
+                                }
+                            }
+                        }
+
+                        // Connect button (Shown on known but NOT connected devices)
+                        Rectangle {
+                            visible: isKnown && !isConnected
+                            height: Theme.scaled(34)
+                            implicitWidth: devConnRow.implicitWidth + Theme.scaled(24)
+                            radius: Theme.bubbleRadiusSmall
+                            color: devConnMouse.containsMouse ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.85) : Theme.accentColor
+
+                            RowLayout {
+                                id: devConnRow
+                                anchors.centerIn: parent
+                                spacing: Theme.scaled(6)
+
+                                Text {
+                                    text: "CONNECT"
+                                    font.pixelSize: Theme.scaled(9)
+                                    font.weight: Font.Black
+                                    color: Colors.on_primary
+                                }
+                            }
+
+                            MouseArea {
+                                id: devConnMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: (mouse) => {
+                                    BluetoothService.action("connect", modelData.address);
+                                    mouse.accepted = true;
+                                }
+                            }
+                        }
+
+                        // Disconnect button (Shown on connected devices)
+                        Rectangle {
+                            visible: isConnected
+                            height: Theme.scaled(34)
+                            implicitWidth: devDisconnRow.implicitWidth + Theme.scaled(24)
+                            radius: Theme.bubbleRadiusSmall
+                            color: devDisconnMouse.containsMouse ? Qt.rgba(Theme.red.r, Theme.red.g, Theme.red.b, 0.25) : Qt.rgba(Theme.red.r, Theme.red.g, Theme.red.b, 0.15)
+                            border.color: Theme.red
+                            border.width: 1
+
+                            RowLayout {
+                                id: devDisconnRow
+                                anchors.centerIn: parent
+                                spacing: Theme.scaled(6)
+
+                                Text {
+                                    text: "󰅖"
+                                    font.family: Theme.iconFont
+                                    font.pixelSize: Theme.scaled(12)
+                                    color: Theme.powerRed
+                                }
+
+                                Text {
+                                    text: "DISCONNECT"
+                                    font.pixelSize: Theme.scaled(9)
+                                    font.weight: Font.Black
+                                    color: Theme.powerRed
+                                }
+                            }
+
+                            MouseArea {
+                                id: devDisconnMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: (mouse) => {
+                                    BluetoothService.action("disconnect", modelData.address);
+                                    mouse.accepted = true;
+                                }
+                            }
+                        }
+
+                        // Pair button (Shown on unknown / newly discovered devices)
+                        Rectangle {
+                            visible: !isKnown && !isConnected
+                            height: Theme.scaled(34)
+                            implicitWidth: devPairRow.implicitWidth + Theme.scaled(24)
+                            radius: Theme.bubbleRadiusSmall
+                            color: devPairMouse.containsMouse ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.85) : Theme.accentColor
+
+                            RowLayout {
+                                id: devPairRow
+                                anchors.centerIn: parent
+                                spacing: Theme.scaled(6)
+
+                                Text {
+                                    text: "PAIR"
+                                    font.pixelSize: Theme.scaled(9)
+                                    font.weight: Font.Black
+                                    color: Colors.on_primary
+                                }
+                            }
+
+                            MouseArea {
+                                id: devPairMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: (mouse) => {
+                                    BluetoothService.action("pair", modelData.address);
+                                    mouse.accepted = true;
                                 }
                             }
                         }
@@ -312,13 +647,53 @@ ColumnLayout {
                 }
             }
         }
+
+        // --- Empty State Message ---
+        Rectangle {
+            id: emptyState
+            Layout.fillWidth: true
+            height: Theme.scaled(120)
+            color: "transparent"
+            visible: BluetoothService.powered && BluetoothService.serviceActive && !BluetoothService.scanning && deviceList.displayDevices.length === 0
+            ColumnLayout {
+                anchors.centerIn: parent
+                spacing: Theme.scaled(8)
+                Text { text: "󰂲"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(32); color: Theme.surface2; Layout.alignment: Qt.AlignHCenter }
+                Text { text: "NO DEVICES FOUND"; color: Theme.surface2; font.pixelSize: Theme.scaled(10); font.weight: Font.Black; font.letterSpacing: 1; Layout.alignment: Qt.AlignHCenter }
+                Text {
+                    text: "Turn on your peripheral and set it to pairing mode, then click Scan above."
+                    color: Theme.subtext0
+                    font.pixelSize: Theme.scaled(10)
+                    horizontalAlignment: Text.AlignHCenter
+                    Layout.alignment: Qt.AlignHCenter
+                }
+            }
+        }
+
+        // Bottom spacer to hug top and capture outer clicks
+        Item {
+            Layout.fillHeight: true
+            Layout.fillWidth: true
+            MouseArea {
+                anchors.fill: parent
+                onClicked: root.selectedAddress = ""
+            }
+        }
     }
 
     // --- Service Error View ---
     Rectangle {
-        Layout.fillWidth: true; height: Theme.scaled(250); color: Qt.rgba(0.1, 0.05, 0.05, 0.3); radius: Theme.scaled(20); 
+        id: serviceErrorView
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: Theme.scaled(250)
+        implicitHeight: Theme.scaled(250)
+        color: Qt.rgba(0.1, 0.05, 0.05, 0.3)
+        radius: Theme.scaled(20)
         visible: !BluetoothService.serviceActive
-        border.color: Theme.powerRed; border.width: 1
+        border.color: Theme.powerRed
+        border.width: 1
         ColumnLayout {
             anchors.centerIn: parent; spacing: Theme.scaled(20); width: parent.width * 0.8
             Text { text: "󰂲"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(48); color: Theme.powerRed; Layout.alignment: Qt.AlignHCenter }
@@ -332,18 +707,6 @@ ColumnLayout {
                 Text { anchors.centerIn: parent; text: "RESTART SERVICE"; color: (restartMouse.containsMouse ? Colors.background : Theme.powerRed); font.weight: Font.Black; font.pixelSize: Theme.scaled(11); font.letterSpacing: 1 }
                 MouseArea { id: restartMouse; anchors.fill: parent; hoverEnabled: true; onClicked: BluetoothService.restartService() }
             }
-        }
-    }
-
-    // --- Empty State Message ---
-    Rectangle {
-        id: emptyState
-        Layout.fillWidth: true; height: Theme.scaled(100); color: "transparent"
-        visible: BluetoothService.powered && BluetoothService.serviceActive && deviceList.displayDevices.length === 0
-        ColumnLayout {
-            anchors.centerIn: parent; spacing: 10
-            Text { text: "󰂲"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(32); color: Theme.surface2; Layout.alignment: Qt.AlignHCenter }
-            Text { text: "NO DEVICES FOUND"; color: Theme.surface2; font.pixelSize: Theme.scaled(10); font.weight: Font.Black; font.letterSpacing: 1; Layout.alignment: Qt.AlignHCenter }
         }
     }
 }

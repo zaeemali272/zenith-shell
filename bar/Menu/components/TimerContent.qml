@@ -227,6 +227,15 @@ Item {
             }
         }
 
+        Text {
+            Layout.fillWidth: true
+            text: "Pomodoro focus timer with auditory chime and status bar integration"
+            color: Theme.subtext0
+            font.pixelSize: Theme.scaled(10)
+            horizontalAlignment: Text.AlignHCenter
+            Layout.alignment: Qt.AlignHCenter
+        }
+
         Item { Layout.fillHeight: true }
     }
 

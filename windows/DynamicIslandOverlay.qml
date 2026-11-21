@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Wayland
 import Quickshell.Io
 import "components"
+import "../bar/Menu/components"
 import "../" as Shell
 import "../services"
 
@@ -159,16 +160,29 @@ PanelWindow {
                 color: Shell.Theme.glassBackground
                 border.color: Shell.Theme.glassBorder
                 border.width: 1
+                antialiasing: true
 
                 ListView {
                     id: appListView
+                    FastWheel {}
                     anchors.fill: parent
                     anchors.margins: 6
                     clip: true
                     model: DynamicIslandService.displayedApps
                     spacing: 4
-                    interactive: false
+                    boundsBehavior: Flickable.StopAtBounds
                     currentIndex: DynamicIslandService.selectedIndex
+
+                    ScrollBar.vertical: ScrollBar {
+                        parent: appListView
+                        anchors.top: appListView.top
+                        anchors.bottom: appListView.bottom
+                        anchors.right: appListView.right
+                        anchors.rightMargin: 1
+                        policy: ScrollBar.AsNeeded
+                        width: 3
+                        contentItem: Rectangle { radius: 999; color: Shell.Theme.accentColor; opacity: 0.6 }
+                    }
 
                     visible: DynamicIslandService.displayedApps.length > 0
 
@@ -295,15 +309,29 @@ PanelWindow {
                 color: Shell.Theme.glassBackground
                 border.color: Shell.Theme.glassBorder
                 border.width: 1
+                antialiasing: true
 
                 ListView {
                     id: clipListView
+                    FastWheel {}
                     anchors.fill: parent
                     anchors.margins: 6
                     clip: true
                     model: DynamicIslandService.displayedClips
                     spacing: 4
+                    boundsBehavior: Flickable.StopAtBounds
                     currentIndex: DynamicIslandService.selectedIndex
+
+                    ScrollBar.vertical: ScrollBar {
+                        parent: clipListView
+                        anchors.top: clipListView.top
+                        anchors.bottom: clipListView.bottom
+                        anchors.right: clipListView.right
+                        anchors.rightMargin: 1
+                        policy: ScrollBar.AsNeeded
+                        width: 3
+                        contentItem: Rectangle { radius: 999; color: Shell.Theme.accentColor; opacity: 0.6 }
+                    }
 
                     visible: DynamicIslandService.displayedClips.length > 0
 
@@ -460,6 +488,7 @@ PanelWindow {
                 color: Shell.Theme.glassBackground
                 border.color: Shell.Theme.glassBorder
                 border.width: 1
+                antialiasing: true
 
                 Column {
                     id: emojiColumn
@@ -527,6 +556,7 @@ PanelWindow {
 
                         GridView {
                             id: emojiGrid
+                            FastWheel {}
                             anchors.fill: parent
                             cellWidth: 48
                             cellHeight: 48

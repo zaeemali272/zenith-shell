@@ -5,6 +5,7 @@ import "../../services"
 import "../../Settings"
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
@@ -18,14 +19,6 @@ Item {
     Layout.alignment: Qt.AlignVCenter
     implicitWidth: outerContainer.implicitWidth
 
-    // Helper functions matching original widgets
-    function volumeIcon(v, m) {
-        if (m) return Theme.volMute;
-        if (v >= 70) return Theme.volHigh;
-        if (v >= 30) return Theme.volMid;
-        return Theme.volLow;
-    }
-
     readonly property int batPercent: Math.max(0, Math.min(100, BatteryService.percentage))
     readonly property string batState: BatteryService.status
     readonly property bool acOnline: BatteryService.acOnline
@@ -34,20 +27,19 @@ Item {
 
     function batteryIcon(p, state, ac) {
         const isLimitActive = (state === "not charging" || state === "full" || state === "idle") && ac;
-        if (isLimitActive) return "";
-        if (state === "charging") return "󰂄";
-        if (p >= 90) return "󰁹";
-        if (p >= 75) return "󰂁";
-        if (p >= 60) return "󰁿";
-        if (p >= 40) return "󰁽";
-        if (p >= 20) return "󰁻";
-        return "󰂎";
+        if (isLimitActive) return "󰚥";
+        if (state === "charging") return "";
+        if (p >= 90) return "";
+        if (p >= 65) return "";
+        if (p >= 40) return "";
+        if (p >= 15) return "";
+        return "";
     }
 
     function batteryColor(p, state, ac) {
-        if (state === "charging") return Theme.powerGreen;
+        if (state === "charging") return Theme.barIconColor;
         if (p <= 15) return Theme.red;
-        return Theme.fontColor;
+        return Theme.barIconColor;
     }
 
     // Outer Glass Container (No line spacers, clean rounded pills layout)
@@ -55,13 +47,13 @@ Item {
         id: outerContainer
         height: Theme.pillHeight
         implicitHeight: Theme.pillHeight
-        width: clusterRow.implicitWidth + Theme.scaled(8) + Theme.scaled(14)
+        width: clusterRow.implicitWidth + Theme.scaled(18)
         implicitWidth: width
         radius: height / 2
         color: Theme.pillColor
         border.color: Theme.glassBorder
         border.width: 1
-        clip: true
+        antialiasing: true
 
         Behavior on width {
             NumberAnimation {
@@ -70,11 +62,17 @@ Item {
             }
         }
 
+        MouseArea {
+            anchors.fill: parent
+            z: -1
+            cursorShape: Qt.PointingHandCursor
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            onClicked: QuickSettingsService.toggle("main")
+        }
+
         RowLayout {
             id: clusterRow
-            anchors.left: parent.left
-            anchors.leftMargin: Theme.scaled(8)
-            anchors.verticalCenter: parent.verticalCenter
+            anchors.centerIn: parent
             spacing: Theme.scaled(4)
 
             // ================= MICROPHONE SUB-WIDGET =================
@@ -97,12 +95,12 @@ Item {
                     spacing: Theme.scaled(4)
 
                     Text {
-                        text: VolumeService.micMuted ? "\uf131" : "\uf130"
+                        text: VolumeService.micMuted ? "󰍭" : "󰍬"
                         font.family: Theme.iconFont
-                        font.pixelSize: Theme.scaled(Theme.iconSize + 1)
+                        font.pixelSize: Theme.iconSize
                         color: micMouse.containsMouse
-                            ? (VolumeService.micMuted ? Qt.rgba(Theme.red.r, Theme.red.g, Theme.red.b, 0.65) : Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.65))
-                            : (VolumeService.micMuted ? Theme.red : Theme.accentColor)
+                            ? (VolumeService.micMuted ? Qt.rgba(Theme.red.r, Theme.red.g, Theme.red.b, 0.65) : Qt.rgba(Theme.barIconColor.r, Theme.barIconColor.g, Theme.barIconColor.b, 0.65))
+                            : (VolumeService.micMuted ? Theme.red : Theme.barIconColor)
                         Layout.alignment: Qt.AlignVCenter
                         Behavior on color { ColorAnimation { duration: Theme.animFast } }
                     }
@@ -122,143 +120,65 @@ Item {
                 }
             }
 
-            // ================= VOLUME SUB-WIDGET =================
+            // ================= CAT WIDGET =================
             Item {
-                id: volSubBtn
+                id: catSubBtn
                 height: Theme.scaled(28)
                 implicitHeight: Theme.scaled(28)
-                implicitWidth: volLayout.implicitWidth + Theme.scaled(10)
+                implicitWidth: Theme.scaled(35)
                 Layout.preferredWidth: implicitWidth
                 Layout.preferredHeight: implicitHeight
                 Layout.alignment: Qt.AlignVCenter
 
-                property bool showVolText: false
-
-                Timer {
-                    id: volTextTimer
-                    interval: 3000
-                    onTriggered: volSubBtn.showVolText = false
-                }
-
-                Connections {
-                    target: VolumeService
-                    function onOutputVolumeChanged() {
-                        volSubBtn.showVolText = true;
-                        volTextTimer.restart();
-                    }
-                    function onMutedChanged() {
-                        volSubBtn.showVolText = true;
-                        volTextTimer.restart();
-                    }
-                }
-
-                scale: volMouse.pressed ? 0.94 : 1.0
+                scale: catMouse.pressed ? 0.94 : 1.0
                 Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
 
-                RowLayout {
-                    id: volLayout
+                Image {
+                    id: catSprite
                     anchors.centerIn: parent
-                    spacing: Theme.scaled(4)
+                    source: "../../assets/cat_f" + Math.floor(frameTimer.frameCount % 4) + ".png"
+                    width: Theme.scaled(35)
+                    height: Theme.scaled(26)
+                    fillMode: Image.PreserveAspectFit
+                    opacity: catMouse.containsMouse ? 0.75 : 1.0
+                    Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
 
-                    // Speaker Icon
-                    Text {
-                        text: root.volumeIcon(VolumeService.outputVolume, VolumeService.muted)
-                        font.family: Theme.iconFont
-                        font.pixelSize: Theme.scaled(Theme.iconSize + 1)
-                        color: volMouse.containsMouse
-                            ? Theme.subtext0
-                            : (VolumeService.btActive ? Theme.bluetoothColor : Theme.fontColor)
-                        Layout.alignment: Qt.AlignVCenter
-                        Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                    layer.enabled: true
+                    layer.effect: MultiEffect {
+                        colorization: 1.0
+                        colorizationColor: Theme.catColor
                     }
+                }
 
-                    // Percentage Text (Visible ONLY when volume changes or mouse hovers, hides after 3s)
-                    Text {
-                        visible: volSubBtn.showVolText || volMouse.containsMouse
-                        text: VolumeService.muted ? "Muted" : VolumeService.outputVolume + "%"
-                        font.pixelSize: Theme.fontSize
-                        font.family: "JetBrains Mono"
-                        color: volMouse.containsMouse
-                            ? Theme.subtext0
-                            : (VolumeService.btActive ? Theme.bluetoothColor : Theme.fontColor)
-                        Layout.alignment: Qt.AlignVCenter
-                        Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                Timer {
+                    id: frameTimer
+                    property int frameCount: 0
+                    interval: {
+                        switch (PowerProfileService.currentProfile) {
+                            case "performance": return 80;
+                            case "turbo": return 50;
+                            case "powersave": return 220;
+                            case "balanced": return 150;
+                            default: return 200;
+                        }
                     }
+                    running: !HyprlandService.isFullscreen
+                    repeat: true
+                    onTriggered: frameCount++
                 }
 
                 MouseArea {
-                    id: volMouse
+                    id: catMouse
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     acceptedButtons: Qt.LeftButton | Qt.RightButton
-
                     onClicked: (mouse) => {
-                        if (mouse.button === Qt.RightButton) {
-                            muteExec.running = false;
-                            muteExec.running = true;
-                        } else if (mouse.button === Qt.LeftButton) {
-                            QuickSettingsService.toggle("volume");
+                        if (mouse.button === Qt.LeftButton) {
+                            QuickSettingsService.toggle("main");
+                        } else if (mouse.button === Qt.RightButton) {
+                            QuickSettingsService.toggle("powerprofile");
                         }
-                    }
-
-                    onWheel: (wheel) => {
-                        if (wheel.angleDelta.y > 0) {
-                            volUp.running = false;
-                            volUp.running = true;
-                        } else {
-                            volDown.running = false;
-                            volDown.running = true;
-                        }
-                        VolumeService.update();
-                        volSubBtn.showVolText = true;
-                        volTextTimer.restart();
-                    }
-                }
-            }
-
-            // ================= BLUETOOTH SUB-WIDGET =================
-            Item {
-                id: btSubBtn
-                height: Theme.scaled(28)
-                implicitHeight: Theme.scaled(28)
-                implicitWidth: btLayout.implicitWidth + Theme.scaled(10)
-                Layout.preferredWidth: implicitWidth
-                Layout.preferredHeight: implicitHeight
-                Layout.alignment: Qt.AlignVCenter
-                // Gone entirely on a machine with no adapter, rather than
-                // sitting there permanently off.
-                visible: HardwareService.hasBluetooth && BluetoothService.powered
-
-                scale: btMouse.pressed ? 0.94 : 1.0
-                Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
-
-                RowLayout {
-                    id: btLayout
-                    anchors.centerIn: parent
-                    spacing: Theme.scaled(4)
-
-                    Text {
-                        text: BluetoothService.powered ? Theme.btIcon : "󰂲"
-                        font.family: Theme.iconFont
-                        font.pixelSize: Theme.scaled(Theme.iconSize + 1)
-                        color: btMouse.containsMouse
-                            ? Theme.subtext0
-                            : (BluetoothService.connected ? Theme.bluetoothColor : (BluetoothService.powered ? Theme.fontColor : Theme.inactiveTextColor))
-                        Layout.alignment: Qt.AlignVCenter
-                        Behavior on color { ColorAnimation { duration: Theme.animFast } }
-                    }
-                }
-
-                MouseArea {
-                    id: btMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    acceptedButtons: Qt.LeftButton
-                    onClicked: (mouse) => {
-                        BluetoothService.refresh();
-                        QuickSettingsService.toggle("bluetooth");
                     }
                 }
             }
@@ -268,12 +188,10 @@ Item {
                 id: batSubBtn
                 height: Theme.scaled(28)
                 implicitHeight: Theme.scaled(28)
-                implicitWidth: batLayout.implicitWidth + Theme.scaled(10)
+                implicitWidth: batLayout.implicitWidth + Theme.scaled(8)
                 Layout.preferredWidth: implicitWidth
                 Layout.preferredHeight: implicitHeight
                 Layout.alignment: Qt.AlignVCenter
-                // A desktop or VM has no battery to report, so the readout
-                // is removed rather than showing a meaningless 0%.
                 visible: HardwareService.hasBattery && WidgetSettings.enableBattery
                          && !HyprlandService.isFullscreen
 
@@ -287,11 +205,11 @@ Item {
                     opacity: batMouse.containsMouse ? 0.70 : 1.0
                     Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
 
-                    // Vertical Battery Icon matching other cluster icons
+                    // Horizontal Battery Icon
                     Text {
                         text: root.batteryIcon(root.batPercent, root.batState, root.acOnline)
                         font.family: Theme.iconFont
-                        font.pixelSize: Theme.scaled(Theme.iconSize + 1)
+                        font.pixelSize: Theme.scaled(18)
                         color: root.batteryColor(root.batPercent, root.batState, root.acOnline)
                         Layout.alignment: Qt.AlignVCenter
 
@@ -303,12 +221,12 @@ Item {
                         }
                     }
 
-                    // Percentage Text (Shown ONLY when battery <= 20% or on mouse hover)
+                    // Percentage Text (Shown when battery <= 20%, on mouse hover, or while charging)
                     Text {
-                        visible: root.batPercent <= 20 || batMouse.containsMouse
+                        visible: root.batPercent <= 20 || batMouse.containsMouse || root.batState === "charging"
                         text: (root.batPercent >= 0 ? root.batPercent : 0) + "%"
                         font.pixelSize: Theme.fontSize
-                        font.family: "JetBrains Mono"
+                        font.family: Theme.fontFamily
                         font.weight: Font.Bold
                         color: root.batteryColor(root.batPercent, root.batState, root.acOnline)
                         Layout.alignment: Qt.AlignVCenter
@@ -320,50 +238,12 @@ Item {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    acceptedButtons: Qt.LeftButton
-                    onClicked: {
-                        QuickSettingsService.toggle("battery");
-                    }
-                }
-            }
-
-            // ================= POWER SUB-WIDGET =================
-            Item {
-                id: pwrSubBtn
-                height: Theme.scaled(28)
-                implicitHeight: Theme.scaled(28)
-                implicitWidth: Theme.scaled(24)
-                Layout.preferredWidth: implicitWidth
-                Layout.preferredHeight: implicitHeight
-                Layout.alignment: Qt.AlignVCenter
-
-                scale: pwrMouse.pressed ? 0.94 : 1.0
-                Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
-
-                Text {
-                    anchors.centerIn: parent
-                    text: ""
-                    color: pwrMouse.containsMouse ? Theme.subtext0 : Theme.fontColor
-                    font.family: Theme.iconFont
-                    font.pixelSize: Theme.scaled(Theme.iconSize + 1)
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-
-                    Behavior on color { ColorAnimation { duration: Theme.animFast } }
-                }
-
-                MouseArea {
-                    id: pwrMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+                    acceptedButtons: Qt.LeftButton | Qt.MiddleButton
                     onClicked: (mouse) => {
-                        if (mouse.button === Qt.LeftButton) {
-                            QuickSettingsService.toggle("power");
-                        } else if (mouse.button === Qt.RightButton) {
-                            powerExec.running = false;
-                            powerExec.running = true;
+                        if (mouse.button === Qt.MiddleButton) {
+                            QuickSettingsService.toggle("main");
+                        } else {
+                            QuickSettingsService.toggle("battery");
                         }
                     }
                 }
@@ -371,29 +251,9 @@ Item {
         }
     }
 
-    // Audio & Power Processes
+    // Audio Process
     Process {
         id: micMuteExec
         command: ["wpctl", "set-mute", "@DEFAULT_AUDIO_SOURCE@", "toggle"]
-    }
-
-    Process {
-        id: muteExec
-        command: ["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"]
-    }
-
-    Process {
-        id: volUp
-        command: ["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", "5%+"]
-    }
-
-    Process {
-        id: volDown
-        command: ["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", "5%-"]
-    }
-
-    Process {
-        id: powerExec
-        command: ["wlogout"]
     }
 }

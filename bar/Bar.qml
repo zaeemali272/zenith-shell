@@ -31,6 +31,7 @@ PanelWindow {
     }
 
     implicitHeight: Theme.barHeight
+    height: Theme.barHeight
     implicitWidth: screen ? screen.width : Theme.screenWidth
     color: "transparent"
     visible: !HyprlandService.isFullscreen && !LockService.locked
@@ -42,8 +43,9 @@ PanelWindow {
 
         color: Theme.barColor
         radius: Theme.barRadius || 0
+        antialiasing: true
         clip: true
-        opacity: BarSettings.entryAnimation ? 0 : 1
+        opacity: BarSettings.entryAnimation ? 0 : BarSettings.opacity
         y: BarSettings.entryAnimation ? -height : 0
 
         ParallelAnimation {
@@ -60,7 +62,7 @@ PanelWindow {
             NumberAnimation {
                 target: barVisual
                 property: "opacity"
-                to: 1
+                to: BarSettings.opacity
                 duration: Theme.animFast
                 easing.type: Easing.OutCubic
             }
@@ -146,14 +148,9 @@ PanelWindow {
 
             Tray { menuRef: trayPopup }
             
-            Network {
-                id: wifiWidget
-                visible: WidgetSettings.enableNetwork && HardwareService.hasNetworking
-            }
-            
             Resources { 
                 id: resourcesWidget
-                visible: WidgetSettings.enableResources && !Theme.isSmallScreen
+                visible: (WidgetSettings.enableResources || (WidgetSettings.enableNetwork && HardwareService.hasNetworking)) && !Theme.isSmallScreen
             }
             
             QuickSettingsCluster {

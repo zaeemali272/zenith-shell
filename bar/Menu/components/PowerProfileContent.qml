@@ -6,8 +6,9 @@ import Quickshell
 
 ColumnLayout {
     id: root
-    spacing: Theme.scaled(20)
+    spacing: Theme.scaled(14)
     Layout.fillWidth: true
+    implicitHeight: profileGrid.implicitHeight + (consCard.visible ? (consCard.implicitHeight + root.spacing) : 0)
 
     opacity: 0
     scale: 0.98
@@ -20,55 +21,18 @@ ColumnLayout {
         NumberAnimation { target: root; property: "scale"; to: 1; duration: Theme.animNormal; easing.type: Theme.elasticEasing; easing.overshoot: 1.05 }
     }
 
-    // Header Row
-    RowLayout {
-        Layout.fillWidth: true
-        Layout.leftMargin: Theme.scaled(5)
-        Layout.rightMargin: Theme.scaled(5)
-
-        Text {
-            text: "POWER PROFILES"
-            color: Theme.mauve
-            font.pixelSize: Theme.scaled(10)
-            font.weight: Font.Black
-            font.letterSpacing: 2
-            Layout.alignment: Qt.AlignVCenter
-        }
-
-        Item { Layout.fillWidth: true }
-
-        Rectangle {
-            radius: Theme.scaled(10)
-            color: Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.15)
-            border.width: 1
-            border.color: Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.3)
-            implicitHeight: Theme.scaled(22)
-            implicitWidth: activeLabel.implicitWidth + Theme.scaled(16)
-
-            Text {
-                id: activeLabel
-                anchors.centerIn: parent
-                text: PowerProfileService.currentProfile.toUpperCase()
-                color: Theme.accentColor
-                font.pixelSize: Theme.scaled(9)
-                font.weight: Font.Bold
-            }
-        }
-    }
-
     // 2x2 Grid of Power Profile Cards
     GridLayout {
+        id: profileGrid
         columns: (Theme.isSmallScreen && Theme.isPortrait) ? 1 : 2
         Layout.fillWidth: true
         rowSpacing: Theme.scaled(12)
         columnSpacing: Theme.scaled(12)
+        implicitHeight: (Theme.isSmallScreen && Theme.isPortrait)
+            ? (Theme.scaled(82) * 4 + rowSpacing * 3)
+            : (Theme.scaled(82) * 2 + rowSpacing)
 
         Repeater {
-            // No Theme.* values in here on purpose. Embedding them made the whole
-            // array a binding on the palette, so every recolour rebuilt all four
-            // delegates -- and when that rebuild landed inside a layout pass the
-            // layout engine walked an item it had just destroyed and segfaulted.
-            // Colours are resolved per delegate instead, updating in place.
             model: [
                 { id: "performance", icon: "󰀦", label: "PERFORMANCE", desc: "Max Speed & Power" },
                 { id: "balanced",    icon: "󰏤", label: "BALANCED", desc: "Optimal Performance" },
@@ -86,6 +50,8 @@ ColumnLayout {
 
                 Layout.fillWidth: true
                 height: Theme.scaled(82)
+                implicitHeight: Theme.scaled(82)
+                Layout.preferredHeight: Theme.scaled(82)
                 color: PowerProfileService.currentProfile === modelData.id ? 
                        Qt.rgba(profileCard.accent.r, profileCard.accent.g, profileCard.accent.b, 0.20) : 
                        (m.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground)
@@ -131,8 +97,9 @@ ColumnLayout {
                             spacing: Theme.scaled(6)
                             Text {
                                 text: modelData.label
-                                font.pixelSize: Theme.scaled(11)
-                                font.weight: Font.Black
+                                font.family: Theme.fontFamily
+                                font.pixelSize: Theme.fontSize
+                                font.weight: Font.Bold
                                 color: Theme.text
                             }
 
@@ -145,7 +112,8 @@ ColumnLayout {
 
                         Text {
                             text: modelData.desc
-                            font.pixelSize: Theme.scaled(9)
+                            font.family: Theme.fontFamily
+                            font.pixelSize: Theme.scaled(11)
                             color: Theme.subtext0
                             elide: Text.ElideRight
                         }
@@ -161,6 +129,8 @@ ColumnLayout {
         visible: Boolean(PowerProfileService.conservativeSupported)
         Layout.fillWidth: true
         height: Theme.scaled(82)
+        implicitHeight: Theme.scaled(82)
+        Layout.preferredHeight: Theme.scaled(82)
         radius: Theme.bubbleRadiusMedium
         color: PowerProfileService.conservativeActive ? 
                Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.22) : 
@@ -199,15 +169,12 @@ ColumnLayout {
                     spacing: Theme.scaled(6)
 
                     Text {
-                        // A refused write used to look exactly like a working
-                        // one that changed nothing: the button is pressed, no
-                        // password prompt appears because no polkit agent is
-                        // running, and the card sits unchanged.
                         text: PowerProfileService.conservativeError !== ""
-                              ? "Needs permission"
-                              : (PowerProfileService.conservativeLabel || "Battery Care")
-                        font.pixelSize: Theme.scaled(11)
-                        font.weight: Font.Black
+                              ? "NEEDS PERMISSION"
+                              : String(PowerProfileService.conservativeLabel || "Battery Care").toUpperCase()
+                        font.family: Theme.fontFamily
+                        font.pixelSize: Theme.fontSize
+                        font.weight: Font.Bold
                         color: PowerProfileService.conservativeError !== ""
                                ? Theme.powerRed : Theme.text
                     }
@@ -225,7 +192,8 @@ ColumnLayout {
                             anchors.centerIn: parent
                             text: String(PowerProfileService.conservativeBrand || "Battery Care").toUpperCase()
                             color: Theme.accentColor
-                            font.pixelSize: Theme.scaled(7)
+                            font.family: Theme.fontFamily
+                            font.pixelSize: Theme.scaled(9)
                             font.weight: Font.Bold
                         }
                     }
@@ -235,7 +203,8 @@ ColumnLayout {
                     text: PowerProfileService.conservativeActive ? 
                           "Charge capped to ~60-80% for maximum lifespan" : 
                           "Charges to 100% (Click switch to enable protection)"
-                    font.pixelSize: Theme.scaled(9)
+                    font.family: Theme.fontFamily
+                    font.pixelSize: Theme.scaled(11)
                     color: Theme.subtext0
                     elide: Text.ElideRight
                 }
@@ -269,8 +238,9 @@ ColumnLayout {
                     Text {
                         text: PowerProfileService.conservativeActive ? "ON" : "OFF"
                         color: PowerProfileService.conservativeActive ? Theme.base : Theme.text
-                        font.pixelSize: Theme.scaled(11)
-                        font.weight: Font.Black
+                        font.family: Theme.fontFamily
+                        font.pixelSize: Theme.fontSize
+                        font.weight: Font.Bold
                     }
                 }
 

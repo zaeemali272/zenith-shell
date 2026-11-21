@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
+import QtQuick.Effects
 import Qt.labs.folderlistmodel
 import Quickshell
 import Quickshell.Io
@@ -97,6 +98,7 @@ ColumnLayout {
                 width: Theme.scaled(100); height: Theme.scaled(32); radius: Theme.bubbleRadiusPill
                 color: root.activeSubTab === modelData ? Theme.accentColor : (subTabMouse.containsMouse ? Theme.cardBackgroundHover : "transparent")
                 border.width: 0
+                antialiasing: true
                 scale: subTabMouse.pressed ? 0.95 : 1.0
                 Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
                 Behavior on color { ColorAnimation { duration: Theme.animInstant } }
@@ -136,6 +138,7 @@ ColumnLayout {
         Rectangle {
             width: Theme.scaled(32); height: Theme.scaled(32); radius: Theme.scaled(8)
             color: refreshMouse.containsMouse ? Qt.rgba(1,1,1,0.1) : "transparent"
+            antialiasing: true
             visible: root.activeSubTab !== "Themes" && !thumbGen.running
             Text { anchors.centerIn: parent; text: "󰑐"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(16); color: refreshMouse.containsMouse ? Theme.text : Theme.subtext1 }
             MouseArea { id: refreshMouse; anchors.fill: parent; hoverEnabled: true; onClicked: refreshThumbnails() }
@@ -161,7 +164,16 @@ ColumnLayout {
             contentHeight: wallFlow.height
             visible: root.activeSubTab === "Wallpaper" || root.activeSubTab === "Slideshow"
             clip: true
-            ScrollBar.vertical: ScrollBar { width: 4; policy: ScrollBar.AsNeeded }
+            ScrollBar.vertical: ScrollBar {
+                parent: wallFlickable
+                anchors.top: wallFlickable.top
+                anchors.bottom: wallFlickable.bottom
+                anchors.right: wallFlickable.right
+                anchors.rightMargin: 1
+                width: 4
+                policy: ScrollBar.AsNeeded
+                contentItem: Rectangle { radius: 999; color: Theme.accentColor; opacity: 0.6 }
+            }
 
             Connections {
                 target: root
@@ -188,68 +200,126 @@ ColumnLayout {
                         onCountChanged: if (root.visible) refreshThumbnails();
                     }
                     delegate: Rectangle {
+                        id: wallCard
                         width: (wallFlow.width - Theme.scaled(45)) / 4
                         height: width * 0.6
-                        radius: Theme.bubbleRadiusMedium
+                        radius: Theme.scaled(14)
                         color: Theme.cardBackground
-                        clip: true
+                        antialiasing: true
                         property bool isSelected: root.selectedWalls.indexOf(fileUrl) !== -1
                         property int selectionIndex: root.selectedWalls.indexOf(fileUrl)
                         property bool isFocused: index === root.selectedIndex
-                        border.color: isFocused ? Theme.accentColor : (isSelected ? Theme.accentColor : Theme.glassBorder)
-                        border.width: 1
-                        
+
+                        // 1. Raw thumbnail image (hidden, MultiEffect renders it masked)
+                        Image {
+                            id: thumbImg
+                            anchors.fill: parent
+                            source: (fileName && fileName.lastIndexOf('.') > 0 && root.thumbnailsReady) 
+                                ? ("file://" + Quickshell.env("HOME") + "/.cache/wallpaper_thumbs/" + fileName.substring(0, fileName.lastIndexOf('.')) + ".png") 
+                                : ""
+                            fillMode: Image.PreserveAspectCrop
+                            cache: true
+                            asynchronous: true
+                            visible: false
+                        }
+
+                        // 2. Smooth rounded mask for the image (hidden)
+                        Rectangle {
+                            id: cardMask
+                            anchors.fill: parent
+                            radius: wallCard.radius
+                            color: "white"
+                            layer.enabled: true
+                            antialiasing: true
+                            visible: false
+                        }
+
+                        // 3. MultiEffect renders the true rounded masked thumbnail
+                        MultiEffect {
+                            anchors.fill: parent
+                            source: thumbImg
+                            maskEnabled: true
+                            maskSource: cardMask
+                            maskThresholdMin: 0.5
+                            maskSpreadAtMin: 1.0
+                            opacity: (thumbImg.status === Image.Ready) ? 1.0 : 0.0
+                            Behavior on opacity { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
+                            visible: opacity > 0
+                        }
+
+                        // Loading spinner
+                        Text {
+                            anchors.centerIn: parent
+                            text: "󱑐"
+                            font.family: Theme.iconFont
+                            font.pixelSize: Theme.scaled(20)
+                            color: Theme.blue
+                            visible: !root.thumbnailsReady || thumbImg.status !== Image.Ready
+                            RotationAnimator on rotation { from: 0; to: 360; duration: 1000; loops: Animation.Infinite; running: parent.visible }
+                        }
+
                         // Darken if selected
                         Rectangle {
-                            anchors.fill: parent; color: isSelected ? Qt.rgba(0,0,0,0.4) : "transparent"; radius: Theme.scaled(12)
+                            anchors.fill: parent
+                            color: wallCard.isSelected ? Qt.rgba(0, 0, 0, 0.4) : "transparent"
+                            radius: wallCard.radius
+                            antialiasing: true
+                            visible: wallCard.isSelected
+                        }
+
+                        // Hover overlay
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: wallCard.radius
+                            color: cardMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.08) : "transparent"
+                            antialiasing: true
+                        }
+
+                        // Clean anti-aliased border on top of the image
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: wallCard.radius
+                            color: "transparent"
+                            border.color: (wallCard.isFocused || wallCard.isSelected) ? Theme.accentColor : Theme.glassBorder
+                            border.width: (wallCard.isFocused || wallCard.isSelected) ? 2 : 1
+                            antialiasing: true
+                            z: 2
                         }
 
                         // Selection Number Badge
                         Rectangle {
-                            visible: isSelected
-                            anchors.top: parent.top; anchors.right: parent.right; anchors.margins: Theme.scaled(8)
-                            width: Theme.scaled(24); height: Theme.scaled(24); radius: Theme.scaled(12)
+                            visible: wallCard.isSelected
+                            anchors.top: parent.top
+                            anchors.right: parent.right
+                            anchors.margins: Theme.scaled(8)
+                            width: Theme.scaled(24)
+                            height: Theme.scaled(24)
+                            radius: Theme.scaled(12)
                             color: Theme.accentColor
+                            antialiasing: true
+                            z: 3
                             Text {
-                                anchors.centerIn: parent; text: (selectionIndex + 1).toString()
-                                font.pixelSize: Theme.scaled(12); font.bold: true; color: Theme.base
+                                anchors.centerIn: parent
+                                text: (wallCard.selectionIndex + 1).toString()
+                                font.pixelSize: Theme.scaled(12)
+                                font.bold: true
+                                color: Theme.base
                             }
                         }
-                        
-                        Loader {
-                            id: thumbLoader; anchors.fill: parent
-                            sourceComponent: (fileName && root.thumbnailsReady) ? thumbComponent : undefined
-                            Component {
-                                id: thumbComponent
-                                Image {
-                                    anchors.fill: parent; anchors.margins: 2
-                                    source: (fileName && fileName.lastIndexOf('.') > 0) ? ("file://" + Quickshell.env("HOME") + "/.cache/wallpaper_thumbs/" + fileName.substring(0, fileName.lastIndexOf('.')) + ".png") : ""
-                                    fillMode: Image.PreserveAspectCrop; cache: false; asynchronous: true
-                                    opacity: status === Image.Ready ? 1.0 : 0.0
-                                    Behavior on opacity { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
-                                }
-                            }
-                        }
-                        
-                        Text {
-                            anchors.centerIn: parent; text: "󱑐"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(20); color: Theme.blue
-                            visible: !root.thumbnailsReady || (thumbLoader.item && thumbLoader.item.status !== Image.Ready)
-                            RotationAnimator on rotation { from: 0; to: 360; duration: 1000; loops: Animation.Infinite; running: parent.visible }
-                        }
-                        
+
                         MouseArea {
-                            anchors.fill: parent; hoverEnabled: true
+                            id: cardMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
                             onEntered: root.selectedIndex = index
                             onClicked: { 
                                 let pathString = fileUrl.toString();
                                 if (root.activeSubTab === "Wallpaper") applyWallpaper(pathString); 
                                 else if (root.activeSubTab === "Slideshow") toggleSelection(pathString);
                             }
-                            Rectangle {
-                                anchors.fill: parent; radius: Theme.scaled(12)
-                                color: parent.containsMouse ? Qt.rgba(1,1,1,0.1) : "transparent"
-                            }
-                        }                    }
+                        }
+                    }
                 }
             }
 
@@ -282,12 +352,22 @@ ColumnLayout {
         }
 
         Flickable {
+            FastWheel {}
             id: animFlickable
             anchors.fill: parent
             contentHeight: animFlow.height
             visible: root.activeSubTab === "Animated"
             clip: true
-            ScrollBar.vertical: ScrollBar { width: 4; policy: ScrollBar.AsNeeded }
+            ScrollBar.vertical: ScrollBar {
+                parent: animFlickable
+                anchors.top: animFlickable.top
+                anchors.bottom: animFlickable.bottom
+                anchors.right: animFlickable.right
+                anchors.rightMargin: 1
+                width: 4
+                policy: ScrollBar.AsNeeded
+                contentItem: Rectangle { radius: 999; color: Theme.accentColor; opacity: 0.6 }
+            }
 
             Connections {
                 target: root
@@ -314,31 +394,75 @@ ColumnLayout {
                         onCountChanged: if (root.visible) refreshThumbnails();
                     }
                     delegate: Rectangle {
+                        id: animCard
                         width: (animFlow.width - Theme.scaled(45)) / 4
                         height: width * 0.6
-                        radius: Theme.bubbleRadiusMedium
+                        radius: Theme.scaled(14)
                         color: Theme.cardBackground
-                        clip: true
+                        antialiasing: true
                         property bool isFocused: index === root.selectedIndex
-                        border.color: isFocused ? Theme.accentColor : Theme.glassBorder
-                        border.width: 1
-                        
-                        Loader {
-                            id: animThumbLoader; anchors.fill: parent
-                            sourceComponent: (fileName && root.thumbnailsReady) ? animThumbComponent : undefined
-                            Component {
-                                id: animThumbComponent
-                                Image {
-                                    anchors.fill: parent; anchors.margins: 2
-                                    source: (fileName && fileName.lastIndexOf('.') > 0) ? ("file://" + Quickshell.env("HOME") + "/.cache/animation_thumbs/" + fileName.substring(0, fileName.lastIndexOf('.')) + ".png") : ""
-                                    fillMode: Image.PreserveAspectCrop; cache: false; asynchronous: true
-                                    opacity: status === Image.Ready ? 1.0 : 0.0
-                                    Behavior on opacity { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
-                                }
-                            }
+
+                        // 1. Raw animated video thumbnail image (hidden, MultiEffect renders it masked)
+                        Image {
+                            id: animImg
+                            anchors.fill: parent
+                            source: (fileName && fileName.lastIndexOf('.') > 0 && root.thumbnailsReady)
+                                ? ("file://" + Quickshell.env("HOME") + "/.cache/animation_thumbs/" + fileName.substring(0, fileName.lastIndexOf('.')) + ".png")
+                                : ""
+                            fillMode: Image.PreserveAspectCrop
+                            cache: true
+                            asynchronous: true
+                            visible: false
                         }
+
+                        // 2. Smooth rounded mask for the image (hidden)
+                        Rectangle {
+                            id: animMask
+                            anchors.fill: parent
+                            radius: animCard.radius
+                            color: "white"
+                            layer.enabled: true
+                            antialiasing: true
+                            visible: false
+                        }
+
+                        // 3. MultiEffect renders the true rounded masked thumbnail
+                        MultiEffect {
+                            anchors.fill: parent
+                            source: animImg
+                            maskEnabled: true
+                            maskSource: animMask
+                            maskThresholdMin: 0.5
+                            maskSpreadAtMin: 1.0
+                            opacity: (animImg.status === Image.Ready) ? 1.0 : 0.0
+                            Behavior on opacity { NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic } }
+                            visible: opacity > 0
+                        }
+
+                        // Hover overlay
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: animCard.radius
+                            color: animMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.08) : "transparent"
+                            antialiasing: true
+                        }
+
+                        // Border on top
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: animCard.radius
+                            color: "transparent"
+                            border.color: animCard.isFocused ? Theme.accentColor : Theme.glassBorder
+                            border.width: animCard.isFocused ? 2 : 1
+                            antialiasing: true
+                            z: 2
+                        }
+
                         MouseArea {
-                            anchors.fill: parent; hoverEnabled: true
+                            id: animMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
                             onEntered: root.selectedIndex = index
                             onClicked: applyVideo(fileUrl.toString())
                         }

@@ -12,6 +12,7 @@ ColumnLayout {
     
     SettingRow {
         label: "Gaps In"
+        description: "Pixel separation gap between adjacent tiled Hyprland windows"
         NumberInput {
             from: 0; to: 50; step: 1
             value: HyprlandSettings.gapsIn
@@ -22,6 +23,7 @@ ColumnLayout {
     
     SettingRow {
         label: "Gaps Out"
+        description: "Outer perimeter gap between tiled windows and the screen edges"
         NumberInput {
             from: 0; to: 100; step: 2
             value: HyprlandSettings.gapsOut
@@ -32,6 +34,7 @@ ColumnLayout {
 
     SettingRow {
         label: "Rounding"
+        description: "Window corner rounding radius applied across all Hyprland client surfaces"
         NumberInput {
             from: 0; to: 30; step: 1
             value: HyprlandSettings.rounding
@@ -42,6 +45,7 @@ ColumnLayout {
 
     SettingRow {
         label: "Border Size"
+        description: "Pixel border thickness rendered around active and inactive windows"
         NumberInput {
             from: 0; to: 10; step: 1
             value: HyprlandSettings.borderSize
@@ -52,6 +56,7 @@ ColumnLayout {
 
     SettingRow {
         label: "Shadow Range"
+        description: "Drop shadow blur radius cast behind floating application windows"
         NumberInput {
             from: 0; to: 100; step: 2
             value: HyprlandSettings.shadowRange
@@ -62,6 +67,7 @@ ColumnLayout {
 
     SettingRow {
         label: "Bar Margins"
+        description: "Reserved edge padding for the status bar layer in Hyprland"
         NumberInput {
             from: 0; to: 50; step: 1
             value: HyprlandSettings.barMargins

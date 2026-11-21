@@ -16,6 +16,7 @@ Item {
     property bool serviceActive: true
     property bool isServiceEnabled: false
     property string state: "Idle"
+    property bool isInteracting: false
     
     readonly property bool isPerformingAction: actionExec.running || powerExec.running || scanExec.running || oneShotScan.running || _actionInProgress || startupToggleExec.running
     readonly property bool isRefreshing: statusExec.running
@@ -50,6 +51,7 @@ Item {
     }
     
     property bool _actionInProgress: false
+    property bool _pendingRefresh: false
 
     // Primary connected device info
     property string connectedName: ""
@@ -58,7 +60,11 @@ Item {
     property string connectedIcon: "bluetooth"
 
     function refresh(full, userInitiated) {
-        if (statusExec.running) return;
+        if (statusExec.running) {
+            _pendingRefresh = true;
+            return;
+        }
+        if (isInteracting && !userInitiated) return;
 
         if (userInitiated) {
             _manualRefreshActive = true;
@@ -70,101 +76,156 @@ Item {
         statusExec.command = ["python3", "-c", `
 import subprocess, json, re
 
-def run(cmd):
-    try: return subprocess.check_output(cmd, text=True, timeout=3).strip()
+def run_cmd(cmd):
+    try: return subprocess.check_output(cmd, text=True, timeout=2).strip()
     except: return ''
 
-show = run(['bluetoothctl', 'show'])
-is_powered = 'Powered: yes' in show
-is_scanning = 'Discovering: yes' in show
-
+result = None
 do_full = ${doFull ? "True" : "False"}
 
-all_devs_raw = run(['bluetoothctl', 'devices']) if do_full else ''
-paired_devs_raw = run(['bluetoothctl', 'paired-devices']) if do_full else ''
-connected_devs_raw = run(['bluetoothctl', 'devices', 'Connected'])
-
-paired_addrs = set(l.split()[1] for l in paired_devs_raw.splitlines() if l.startswith('Device ')) if do_full else set()
-connected_addrs = set(l.split()[1] for l in connected_devs_raw.splitlines() if l.startswith('Device '))
-
-devices = []
-if do_full:
-    seen = set()
-    for line in all_devs_raw.splitlines():
-        p = line.split()
-        if len(p) >= 2 and p[0] == 'Device':
-            addr = p[1]
-            if addr in seen: continue
-            seen.add(addr)
-            raw_name = ' '.join(p[2:]) if len(p) > 2 else addr
-            is_addr_fmt = bool(re.match(r'^[0-9A-Fa-f]{2}([:-][0-9A-Fa-f]{2}){5}$', raw_name))
-            has_real_name = len(p) > 2 and not is_addr_fmt
-            devices.append({
-                'address': addr,
-                'name': raw_name,
-                'hasName': has_real_name,
-                'paired': addr in paired_addrs,
-                'connected': addr in connected_addrs,
-                'icon': 'bluetooth',
-                'battery': -1
-            })
-
-conn_name = ''
-conn_addr = ''
-conn_battery = -1
-conn_icon = 'bluetooth'
-
-if connected_addrs:
-    first_conn = list(connected_addrs)[0]
+# 1. Fast path: D-Bus ObjectManager (~3ms)
+try:
+    raw = subprocess.check_output(
+        ['busctl', '--system', 'call', 'org.bluez', '/', 'org.freedesktop.DBus.ObjectManager', 'GetManagedObjects', '--json=short'],
+        text=True, timeout=1.2
+    )
+    obj_data = json.loads(raw)['data'][0]
     
-    for c_addr in connected_addrs:
-        info_raw = run(['bluetoothctl', 'info', c_addr])
-        c_name = ''
-        c_icon = 'bluetooth'
-        c_batt = -1
-        
-        for line in info_raw.splitlines():
-            l = line.strip()
-            if l.startswith('Name: '): c_name = l[6:]
-            elif l.startswith('Icon: '): c_icon = l[6:]
-            elif l.startswith('Battery Percentage:'):
-                try:
-                    # Safely parse strings like "Battery Percentage: 0x0a (10)" or "Battery Percentage: 100"
-                    if '(' in l and ')' in l:
-                        c_batt = int(l.split('(')[1].split(')')[0])
-                    else:
-                        c_batt = int(l.split(':')[-1].strip())
-                except:
-                    pass
-        
-        if c_addr == first_conn:
-            conn_addr = c_addr
-            conn_name = c_name
-            conn_icon = c_icon
-            conn_battery = c_batt
+    is_powered = False
+    is_scanning = False
+    devices = []
+    connected_addrs = set()
+    conn_name = ''
+    conn_addr = ''
+    conn_battery = -1
+    conn_icon = 'bluetooth'
+
+    for path, ifaces in obj_data.items():
+        if 'org.bluez.Adapter1' in ifaces:
+            ad = ifaces['org.bluez.Adapter1']
+            if 'Powered' in ad and ad['Powered'].get('data'):
+                is_powered = True
+            if 'Discovering' in ad and ad['Discovering'].get('data'):
+                is_scanning = True
+
+    for path, ifaces in obj_data.items():
+        if 'org.bluez.Device1' in ifaces:
+            dev = ifaces['org.bluez.Device1']
+            addr = dev.get('Address', {}).get('data', '')
+            name = dev.get('Alias', {}).get('data') or dev.get('Name', {}).get('data', '') or addr
+            paired = bool(dev.get('Paired', {}).get('data', False))
+            trusted = bool(dev.get('Trusted', {}).get('data', False))
+            connected = bool(dev.get('Connected', {}).get('data', False))
+            icon = dev.get('Icon', {}).get('data', 'bluetooth')
+            batt = -1
+            if 'org.bluez.Battery1' in ifaces:
+                batt = ifaces['org.bluez.Battery1'].get('Percentage', {}).get('data', -1)
             
-        for d in devices:
-            if d['address'] == c_addr:
-                d['battery'] = c_batt
-                d['icon'] = c_icon
-                if c_name and (not d['name'] or d['name'] == c_addr):
-                    d['name'] = c_name
+            is_addr_fmt = bool(re.match(r'^[0-9A-Fa-f]{2}([:-][0-9A-Fa-f]{2}){5}$', name))
+            has_real_name = bool(name and not is_addr_fmt)
+            
+            if connected:
+                connected_addrs.add(addr)
+                if not conn_addr:
+                    conn_addr = addr
+                    conn_name = name
+                    conn_battery = batt
+                    conn_icon = icon
 
-service_active = run(['systemctl', 'is-active', 'bluetooth.service']) == 'active'
-is_enabled = run(['systemctl', 'is-enabled', 'bluetooth.service']) == 'enabled'
+            if do_full or connected:
+                devices.append({
+                    'address': addr,
+                    'name': name,
+                    'hasName': has_real_name,
+                    'paired': paired,
+                    'trusted': trusted,
+                    'isKnown': paired or trusted,
+                    'connected': connected,
+                    'icon': icon,
+                    'battery': batt
+                })
 
-print(json.dumps({
-    'powered': is_powered,
-    'scanning': is_scanning,
-    'connected': len(connected_addrs) > 0,
-    'connectedName': conn_name,
-    'connectedAddress': conn_addr,
-    'connectedBattery': conn_battery,
-    'connectedIcon': conn_icon,
-    'serviceActive': service_active,
-    'isServiceEnabled': is_enabled,
-    'devices': devices if do_full else None
-}))
+    result = {
+        'powered': is_powered,
+        'scanning': is_scanning,
+        'connected': len(connected_addrs) > 0,
+        'connectedName': conn_name,
+        'connectedAddress': conn_addr,
+        'connectedBattery': conn_battery,
+        'connectedIcon': conn_icon,
+        'serviceActive': True,
+        'isServiceEnabled': True,
+        'devices': devices if do_full else None
+    }
+except Exception:
+    pass
+
+# 2. Fallback path if busctl is missing or fails
+if result is None:
+    show = run_cmd(['bluetoothctl', 'show'])
+    is_powered = 'Powered: yes' in show
+    is_scanning = 'Discovering: yes' in show
+    all_devs_raw = run_cmd(['bluetoothctl', 'devices']) if do_full else ''
+    paired_devs_raw = (run_cmd(['bluetoothctl', 'devices', 'Paired']) or run_cmd(['bluetoothctl', 'paired-devices'])) if do_full else ''
+    trusted_devs_raw = run_cmd(['bluetoothctl', 'devices', 'Trusted']) if do_full else ''
+    connected_devs_raw = run_cmd(['bluetoothctl', 'devices', 'Connected'])
+
+    paired_addrs = set(l.split()[1] for l in paired_devs_raw.splitlines() if len(l.split()) >= 2 and l.startswith('Device ')) if do_full else set()
+    trusted_addrs = set(l.split()[1] for l in trusted_devs_raw.splitlines() if len(l.split()) >= 2 and l.startswith('Device ')) if do_full else set()
+    connected_addrs = set(l.split()[1] for l in connected_devs_raw.splitlines() if len(l.split()) >= 2 and l.startswith('Device '))
+
+    devices = []
+    if do_full:
+        seen = set()
+        combined_lines = all_devs_raw.splitlines() + paired_devs_raw.splitlines() + trusted_devs_raw.splitlines() + connected_devs_raw.splitlines()
+        for line in combined_lines:
+            p = line.split()
+            if len(p) >= 2 and p[0] == 'Device':
+                addr = p[1]
+                if addr in seen: continue
+                seen.add(addr)
+                raw_name = ' '.join(p[2:]) if len(p) > 2 else addr
+                is_addr_fmt = bool(re.match(r'^[0-9A-Fa-f]{2}([:-][0-9A-Fa-f]{2}){5}$', raw_name))
+                has_real_name = len(p) > 2 and not is_addr_fmt
+                is_p = addr in paired_addrs
+                is_t = addr in trusted_addrs
+                is_c = addr in connected_addrs
+                devices.append({
+                    'address': addr,
+                    'name': raw_name,
+                    'hasName': has_real_name,
+                    'paired': is_p,
+                    'trusted': is_t,
+                    'isKnown': is_p or is_t,
+                    'connected': is_c,
+                    'icon': 'bluetooth',
+                    'battery': -1
+                })
+
+    conn_name = ''
+    conn_addr = ''
+    conn_battery = -1
+    conn_icon = 'bluetooth'
+    if connected_addrs:
+        conn_addr = list(connected_addrs)[0]
+
+    service_active = run_cmd(['systemctl', 'is-active', 'bluetooth.service']) == 'active'
+    is_enabled = run_cmd(['systemctl', 'is-enabled', 'bluetooth.service']) == 'enabled' if do_full else True
+
+    result = {
+        'powered': is_powered,
+        'scanning': is_scanning,
+        'connected': len(connected_addrs) > 0,
+        'connectedName': conn_name,
+        'connectedAddress': conn_addr,
+        'connectedBattery': conn_battery,
+        'connectedIcon': conn_icon,
+        'serviceActive': service_active,
+        'isServiceEnabled': is_enabled,
+        'devices': devices if do_full else None
+    }
+
+print(json.dumps(result))
 `];
         statusExec.running = true;
     }
@@ -193,9 +254,17 @@ print(json.dumps({
                     }
 
                     if (data.devices && Array.isArray(data.devices)) {
-                        updateModel(data.devices);
+                        if (!root.isInteracting) {
+                            updateModel(data.devices);
+                        }
                     }
                 } catch (e) {}
+            }
+        }
+        onExited: {
+            if (root._pendingRefresh) {
+                root._pendingRefresh = false;
+                root.refresh();
             }
         }
     }
@@ -224,7 +293,9 @@ print(json.dumps({
     function updateModel(newDevices) {
         newDevices.sort((a, b) => {
             if (a.connected !== b.connected) return a.connected ? -1 : 1;
-            if (a.paired !== b.paired) return a.paired ? -1 : 1;
+            let aKnown = Boolean(a.isKnown || a.paired || a.trusted);
+            let bKnown = Boolean(b.isKnown || b.paired || b.trusted);
+            if (aKnown !== bKnown) return aKnown ? -1 : 1;
             return a.name.localeCompare(b.name);
         });
         root.devices = newDevices;
@@ -252,7 +323,7 @@ print(json.dumps({
     }
 
     function startScan() {
-        if (!powered || scanning || isPerformingAction) return;
+        if (!powered || scanning || isPerformingAction || isInteracting) return;
         root.state = "Starting Scan";
         root.scanning = true;
         scanExec.command = ["bluetoothctl", "scan", "on"];
@@ -260,9 +331,9 @@ print(json.dumps({
     }
 
     function stopScan() {
-        if (!scanning || isPerformingAction) return;
-        root.state = "Stopping Scan";
         root.scanning = false;
+        root.state = "Idle";
+        scanExec.running = false;
         scanExec.command = ["bluetoothctl", "scan", "off"];
         scanExec.running = true;
     }
@@ -270,6 +341,68 @@ print(json.dumps({
     function action(mode, addr) {
         if (isPerformingAction) return;
         root.state = mode.charAt(0).toUpperCase() + mode.slice(1) + "ing...";
+
+        // Optimistic UI updates - respond in 0ms to user actions!
+        if (mode === "connect") {
+            let updated = [];
+            let devName = "";
+            let devIcon = "bluetooth";
+            let devBatt = -1;
+            for (let i = 0; i < root.devices.length; i++) {
+                let d = Object.assign({}, root.devices[i]);
+                if (d.address === addr) {
+                    d.connected = true;
+                    devName = d.name;
+                    devIcon = d.icon || "bluetooth";
+                    devBatt = d.battery !== undefined ? d.battery : -1;
+                }
+                updated.push(d);
+            }
+            root.connected = true;
+            root.connectedAddress = addr;
+            if (devName) root.connectedName = devName;
+            root.connectedIcon = devIcon;
+            root.connectedBattery = devBatt;
+            updateModel(updated);
+        } else if (mode === "disconnect") {
+            let updated = [];
+            for (let i = 0; i < root.devices.length; i++) {
+                let d = Object.assign({}, root.devices[i]);
+                if (d.address === addr) {
+                    d.connected = false;
+                }
+                updated.push(d);
+            }
+            let anyConnected = false;
+            let nextConnName = "";
+            let nextConnAddr = "";
+            let nextConnIcon = "bluetooth";
+            let nextConnBatt = -1;
+            for (let i = 0; i < updated.length; i++) {
+                if (updated[i].connected) {
+                    anyConnected = true;
+                    nextConnAddr = updated[i].address;
+                    nextConnName = updated[i].name;
+                    nextConnIcon = updated[i].icon || "bluetooth";
+                    nextConnBatt = updated[i].battery !== undefined ? updated[i].battery : -1;
+                    break;
+                }
+            }
+            root.connected = anyConnected;
+            root.connectedAddress = nextConnAddr;
+            root.connectedName = nextConnName;
+            root.connectedIcon = nextConnIcon;
+            root.connectedBattery = nextConnBatt;
+            updateModel(updated);
+        } else if (mode === "remove") {
+            let updated = [];
+            for (let i = 0; i < root.devices.length; i++) {
+                if (root.devices[i].address !== addr) {
+                    updated.push(root.devices[i]);
+                }
+            }
+            updateModel(updated);
+        }
 
         let cmd = "";
         if (mode === "connect") {
@@ -279,7 +412,7 @@ print(json.dumps({
         } else if (mode === "disconnect") {
              cmd = `bluetoothctl disconnect ${addr}`;
         } else if (mode === "remove") {
-             cmd = `bluetoothctl remove ${addr}`;
+             cmd = `bluetoothctl untrust ${addr}; bluetoothctl disconnect ${addr}; bluetoothctl remove ${addr}`;
         }
 
         actionExec.command = ["sh", "-c", cmd];
@@ -290,11 +423,13 @@ print(json.dumps({
     
     Timer {
         id: postActionPoll
-        interval: 1000
+        interval: 350
         repeat: true
         property int count: 0
         onTriggered: {
-            refresh(true);
+            if (!root.isInteracting) {
+                refresh(true);
+            }
             count++;
             if (count >= 3) stop();
         }
@@ -304,15 +439,19 @@ print(json.dumps({
         }
     }
 
-    Process { id: powerExec; onExited: { _actionInProgress = false; root.state = "Idle"; postActionPoll.trigger(); } }
-    Process { id: scanExec; onExited: { root.state = "Idle"; postActionPoll.trigger(); } }
-    Process { id: actionExec; onExited: { root.state = "Idle"; postActionPoll.trigger(); } }
+    Process { id: powerExec; onExited: { _actionInProgress = false; root.state = "Idle"; root.refresh(true); postActionPoll.trigger(); } }
+    Process { id: scanExec; onExited: { root.state = "Idle"; root.refresh(true); postActionPoll.trigger(); } }
+    Process { id: actionExec; onExited: { root.state = "Idle"; root.refresh(true); postActionPoll.trigger(); } }
 
     Timer {
         id: debouncedBtRefresh
-        interval: 150
+        interval: 50
         repeat: false
-        onTriggered: root.refresh(Variables.quickSettingsOpen)
+        onTriggered: {
+            if (!root.isInteracting) {
+                root.refresh(Variables.quickSettingsOpen);
+            }
+        }
     }
 
     // Real-time Event-driven D-Bus Bluetooth Monitor

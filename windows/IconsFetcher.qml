@@ -46,6 +46,50 @@ QtObject {
             rawTokens.push(app.toLowerCase());
         }
 
+        let appLower = app.toLowerCase();
+        let desktopLower = desktop.toLowerCase();
+        let rawLower = raw.toLowerCase();
+        let combo = appLower + " " + desktopLower + " " + rawLower;
+
+        // Sub-words from app and desktop
+        let words = combo.split(/[\s\-_\.]+/);
+        for (let w of words) {
+            if (w.length >= 3) rawTokens.push(w);
+        }
+
+        // Domain-specific smart mapping for Linux desktop notifications
+        if (combo.includes("screenshot") || combo.includes("hyprshot") || combo.includes("snip") || combo.includes("grimblast")) {
+            rawTokens.push("accessories-screenshot", "gnome-screenshot", "camera-photo", "applets-screenshooter", "screenshot-ui-display");
+        } else if (combo.includes("recorder") || combo.includes("screenrec") || combo.includes("screen record") || combo.includes("screencast")) {
+            rawTokens.push("screenrecorder", "screen-recorder", "media-record", "screencast-recorded", "camera-video");
+        } else if (combo.includes("antigravity")) {
+            rawTokens.push("antigravity-ide", "antigravity");
+        } else if (combo.includes("color picker") || combo.includes("hyprpicker") || combo.includes("pipette")) {
+            rawTokens.push("color-picker", "gcolor3", "color-management");
+        } else if (combo.includes("caffeine")) {
+            rawTokens.push("preferences-desktop-screensaver", "caffeine");
+        } else if (combo.includes("terminal") || combo.includes("shell") || combo.includes("bash") || combo.includes("zsh")) {
+            rawTokens.push("utilities-terminal", "terminal", "kitty", "alacritty");
+        } else if (combo.includes("thunar") || combo.includes("file manager")) {
+            rawTokens.push("org.xfce.thunar", "thunar", "system-file-manager");
+        } else if (combo.includes("dnd") || combo.includes("do not disturb")) {
+            rawTokens.push("notifications-disabled", "preferences-desktop-notification-bell");
+        } else if (combo.includes("zen")) {
+            rawTokens.push("zen", "zen-browser", "web-browser");
+        } else if (combo.includes("code") || combo.includes("vscode")) {
+            rawTokens.push("code", "vscode", "visual-studio-code");
+        } else if (combo.includes("telegram")) {
+            rawTokens.push("telegram", "telegram-desktop", "org.telegram.desktop");
+        } else if (combo.includes("discord")) {
+            rawTokens.push("discord", "com.discordapp.Discord");
+        } else if (combo.includes("spotify")) {
+            rawTokens.push("spotify", "spotify-client");
+        } else if (combo.includes("chrome")) {
+            rawTokens.push("google-chrome", "chrome");
+        } else if (combo.includes("firefox")) {
+            rawTokens.push("firefox", "firefox-esr");
+        }
+
         let cleanTokens = [];
         for (let entry of rawTokens) {
             if (!entry || entry === "") continue;
@@ -86,11 +130,12 @@ QtObject {
                 expandedTokens.push("battery");
             }
 
-            expandedTokens.push(token);
             if (token.endsWith("-symbolic")) {
+                expandedTokens.push(token);
                 expandedTokens.push(token.replace(/-symbolic$/i, ""));
             } else {
                 expandedTokens.push(token + "-symbolic");
+                expandedTokens.push(token);
             }
         }
 
@@ -113,8 +158,19 @@ QtObject {
                     iconDirs.push(base + sub);
         }
 
-        let fileTokens = allTokens.slice(0, 3);
+        let pixmapDirs = [
+            "/etc/profiles/per-user/" + (Services.Variables.user || "zaeem") + "/share/pixmaps/",
+            "/run/current-system/sw/share/pixmaps/",
+            "/usr/share/pixmaps/",
+            (Services.Variables.homeDir || "/home/zaeem") + "/.local/share/pixmaps/"
+        ];
+
+        let fileTokens = allTokens.slice(0, 5);
         for (let token of fileTokens) {
+            for (let dir of pixmapDirs) {
+                candidates.push("file://" + dir + token + ".png");
+                candidates.push("file://" + dir + token + ".svg");
+            }
             for (let dir of iconDirs) {
                 candidates.push("file://" + dir + token + ".svg");
                 candidates.push("file://" + dir + token + ".png");
@@ -126,8 +182,13 @@ QtObject {
             candidates.push("image://icon/" + token);
         }
 
-        if (Quickshell.hasThemeIcon("dialog-information")) {
+        if (Quickshell.hasThemeIcon("dialog-information-symbolic")) {
+            candidates.push("image://icon/dialog-information-symbolic");
+        } else if (Quickshell.hasThemeIcon("dialog-information")) {
             candidates.push("image://icon/dialog-information");
+        }
+        if (Quickshell.hasThemeIcon("application-x-executable-symbolic")) {
+            candidates.push("image://icon/application-x-executable-symbolic");
         }
         candidates.push("image://icon/application-x-executable");
 
@@ -137,6 +198,10 @@ QtObject {
     function getValidIcon(appName, desktopEntry, iconName) {
         let raw = (iconName || "").trim();
         if (raw !== "" && !raw.startsWith("/") && !raw.startsWith("file://")) {
+            let sym = raw.endsWith("-symbolic") ? raw : (raw + "-symbolic");
+            if (Quickshell.hasThemeIcon(sym)) {
+                return "image://icon/" + sym;
+            }
             if (Quickshell.hasThemeIcon(raw)) {
                 return "image://icon/" + raw;
             }
@@ -154,6 +219,9 @@ QtObject {
         }
 
         if (candidates.length > 0) return candidates[0];
+        if (Quickshell.hasThemeIcon("application-x-executable-symbolic")) {
+            return "image://icon/application-x-executable-symbolic";
+        }
         return "image://icon/application-x-executable";
     }
 

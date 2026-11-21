@@ -267,6 +267,7 @@ Rectangle {
             spacing: 8
             
             ScrollView {
+                FastWheel {}
                 Layout.fillWidth: true
                 Layout.preferredHeight: 30
                 contentWidth: tabsRow.width
@@ -641,9 +642,21 @@ Rectangle {
         ListView {
             id: taskListView
             Layout.fillWidth: true; Layout.fillHeight: true
+            visible: tasksModel.count > 0
             model: tasksModel; clip: true; spacing: 8
 
             FastWheel {}
+
+            ScrollBar.vertical: ScrollBar {
+                parent: taskListView
+                anchors.top: taskListView.top
+                anchors.bottom: taskListView.bottom
+                anchors.right: taskListView.right
+                anchors.rightMargin: 1
+                policy: ScrollBar.AsNeeded
+                width: 3
+                contentItem: Rectangle { radius: 999; color: Theme.accentColor; opacity: 0.6 }
+            }
             
             displaced: Transition {
                 NumberAnimation { properties: "y"; duration: Theme.animFast; easing.type: Easing.OutCubic }
@@ -671,7 +684,7 @@ Rectangle {
                             
                             // Drag Handle
                             Text {
-                                text: ": :"; font.family: Theme.iconFont; color: Theme.surface2; font.pixelSize: 16
+                                text: "󰍜"; font.family: Theme.iconFont; color: Theme.surface2; font.pixelSize: 16
                                 MouseArea {
                                     id: dragArea
                                     anchors.fill: parent
@@ -709,7 +722,7 @@ Rectangle {
 
                             Rectangle {
                                 width: 22; height: 22; radius: 6; color: model.completed ? Theme.accentColor : Qt.rgba(255, 255, 255, 0.12); border.width: 0
-                                Text { anchors.centerIn: parent; text: model.completed ? "✓" : ""; color: Colors.on_primary; font.pixelSize: 14; font.bold: true }
+                                Text { anchors.centerIn: parent; text: model.completed ? "󰄬" : ""; font.family: Theme.iconFont; color: Colors.on_primary; font.pixelSize: 13; font.bold: true }
                                 MouseArea {
                                     anchors.fill: parent
                                     onClicked: {
@@ -754,6 +767,38 @@ Rectangle {
                             }
                         }
                     }
+                }
+            }
+        }
+
+        // Empty state & helper text
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            visible: tasksModel.count === 0
+            color: "transparent"
+            ColumnLayout {
+                anchors.centerIn: parent
+                spacing: Theme.scaled(8)
+                Text {
+                    text: "󰄬"
+                    font.family: Theme.iconFont
+                    font.pixelSize: Theme.scaled(32)
+                    color: Theme.powerGreen
+                    Layout.alignment: Qt.AlignHCenter
+                }
+                Text {
+                    text: "ALL TASKS COMPLETED"
+                    color: Theme.text
+                    font.pixelSize: Theme.scaled(12)
+                    font.weight: Font.Bold
+                    Layout.alignment: Qt.AlignHCenter
+                }
+                Text {
+                    text: "Type a task above and press Enter to add"
+                    color: Theme.subtext0
+                    font.pixelSize: Theme.scaled(10)
+                    Layout.alignment: Qt.AlignHCenter
                 }
             }
         }

@@ -66,7 +66,56 @@ def default_iface():
                     return cols[0]
     except Exception:
         pass
+    # Fallback to first active non-loopback device
+    try:
+        with open("/proc/net/dev") as f:
+            for line in f:
+                if ":" in line:
+                    dev = line.split(":", 1)[0].strip()
+                    if dev and dev != "lo":
+                        return dev
+    except Exception:
+        pass
     return ""
+
+def read_cpu_temp():
+    # 1. Try hwmon CPU drivers (Intel coretemp, AMD k10temp/zenpower, ARM cpu_thermal)
+    for name_path in glob.glob("/sys/class/hwmon/hwmon*/name"):
+        try:
+            with open(name_path, "r") as f:
+                hwname = f.read().strip().lower()
+            if hwname in ("coretemp", "k10temp", "zenpower", "cpu_thermal"):
+                hwdir = os.path.dirname(name_path)
+                # prefer temp1_input (package id 0 / tctl)
+                pkg = os.path.join(hwdir, "temp1_input")
+                if os.path.exists(pkg):
+                    with open(pkg) as pf:
+                        v = int(pf.read().strip())
+                        val = v // 1000 if v > 1000 else v
+                        if 10 <= val <= 115:
+                            return val
+                for inp in sorted(glob.glob(os.path.join(hwdir, "temp*_input"))):
+                    with open(inp) as pf:
+                        v = int(pf.read().strip())
+                        val = v // 1000 if v > 1000 else v
+                        if 10 <= val <= 115:
+                            return val
+        except Exception:
+            pass
+
+    # 2. Fallback to thermal zones or other hwmon sensors
+    temps = []
+    for p in glob.glob("/sys/class/hwmon/hwmon*/temp*_input") + glob.glob("/sys/class/thermal/thermal_zone*/temp"):
+        try:
+            with open(p, "r") as f:
+                v = int(f.read().strip())
+                if 10000 <= v <= 115000:
+                    temps.append(v // 1000)
+                elif 10 <= v <= 115:
+                    temps.append(v)
+        except Exception:
+            pass
+    return max(temps) if temps else 0
 
 def read_net(iface):
     if not iface:
@@ -84,7 +133,7 @@ def read_net(iface):
         pass
     return 0, 0
 
-INTERVAL = 3.0
+INTERVAL = 1.5
 last_t, last_i = read_cpu()
 iface = default_iface()
 last_rx, last_tx = read_net(iface)
@@ -97,10 +146,6 @@ while True:
         # any more. Without the check these daemons accumulate one per restart
         # and poll forever -- four of them were found running against a shell
         # that had not existed for twelve hours.
-        #
-        # Compared against the parent we started with rather than against pid 1:
-        # an orphan is not necessarily reparented to init, since systemd marks
-        # the user session as a subreaper and adopts it instead.
         if os.getppid() != _startup_ppid:
             break
         time.sleep(INTERVAL)
@@ -123,19 +168,10 @@ while True:
                 elif line.startswith("MemAvailable:"):
                     mem_avail = int(line.split()[1])
         mem_perc = int(round(100.0 * (mem_total - mem_avail) / mem_total)) if mem_total > 0 else 0
+        mem_used_gb = round((mem_total - mem_avail) / 1024 / 1024, 1) if mem_total > 0 else 0.0
+        mem_total_gb = round(mem_total / 1024 / 1024, 1) if mem_total > 0 else 0.0
 
-        temps = []
-        for p in glob.glob("/sys/class/hwmon/hwmon*/temp*_input") + glob.glob("/sys/class/thermal/thermal_zone*/temp"):
-            try:
-                with open(p, "r") as f:
-                    v = int(f.read().strip())
-                    if 10000 <= v <= 115000:
-                        temps.append(v // 1000)
-                    elif 10 <= v <= 115:
-                        temps.append(v)
-            except Exception:
-                pass
-        cpu_temp = max(temps) if temps else 0
+        cpu_temp = read_cpu_temp()
 
         with open("/proc/loadavg", "r") as f:
             load = float(f.read().split()[0])
@@ -164,6 +200,8 @@ while True:
             "net_down": net_down,
             "net_up": net_up,
             "mem": mem_perc,
+            "mem_used_gb": mem_used_gb,
+            "mem_total_gb": mem_total_gb,
             "temp": cpu_temp,
             "load": load,
             "load_perc": load_perc,

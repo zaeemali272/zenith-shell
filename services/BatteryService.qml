@@ -18,6 +18,7 @@ Item {
     property int cycleCount: 0
     property real voltage: 0.0
     property real energyRate: 0.0
+    readonly property real wattage: energyRate > 1000 ? energyRate / 1000000 : energyRate
 
     // Visibility & Notification Flags
     property bool isFullyCharged: (status === "full" || (status === "charging" && percentage >= 100))
@@ -34,10 +35,13 @@ Item {
     property real energyNow: 0.0
     property real health: 0
     property real temp: 0
+    property bool updatePending: false
 
     function update() {
         if (!updateExec.running) {
             updateExec.running = true;
+        } else {
+            updatePending = true;
         }
     }
 
@@ -173,12 +177,6 @@ import glob, json, os
 bat_paths = glob.glob('/sys/class/power_supply/BAT*')
 ac_paths = glob.glob('/sys/class/power_supply/AC*') + glob.glob('/sys/class/power_supply/ADP*') + glob.glob('/sys/class/power_supply/Mains*')
 
-ac_online = False
-if ac_paths and os.path.exists(ac_paths[0] + '/online'):
-    try:
-        with open(ac_paths[0] + '/online') as f: ac_online = f.read().strip() == '1'
-    except: pass
-
 def read_val(path, filenames, default=0):
     for name in filenames:
         p = os.path.join(path, name)
@@ -194,11 +192,13 @@ total_design = 0
 total_rate = 0
 total_volt = 0
 total_cycles = 0
+total_cap = 0
+valid_caps = 0
 statuses = []
 
 for b in bat_paths:
     if not os.path.isdir(b): continue
-    cap = int(read_val(b, ['capacity'], 0))
+    cap = int(read_val(b, ['capacity'], -1))
     stat = str(read_val(b, ['status'], 'unknown')).lower()
     cycles = int(read_val(b, ['cycle_count'], 0))
     volt = int(read_val(b, ['voltage_now', 'voltage_avg'], 0))
@@ -207,6 +207,9 @@ for b in bat_paths:
     full = int(read_val(b, ['energy_full', 'charge_full'], 0))
     design = int(read_val(b, ['energy_full_design', 'charge_full_design'], 0))
 
+    if cap >= 0:
+        total_cap += cap
+        valid_caps += 1
     total_now += now
     total_full += full
     total_design += design
@@ -214,6 +217,19 @@ for b in bat_paths:
     total_volt += volt
     total_cycles += cycles
     statuses.append(stat)
+
+ac_online = False
+for ac in ac_paths:
+    if os.path.exists(ac + '/online'):
+        try:
+            with open(ac + '/online') as f:
+                if f.read().strip() == '1':
+                    ac_online = True
+                    break
+        except: pass
+
+if 'charging' in statuses:
+    ac_online = True
 
 temp = 0
 for hw in glob.glob('/sys/class/hwmon/hwmon*/temp1_input'):
@@ -223,6 +239,7 @@ for hw in glob.glob('/sys/class/hwmon/hwmon*/temp1_input'):
 
 print(json.dumps({
     'acOnline': ac_online,
+    'cap': (total_cap // valid_caps) if valid_caps > 0 else -1,
     'now': total_now,
     'full': total_full,
     'design': total_design,
@@ -234,6 +251,12 @@ print(json.dumps({
     'count': len(bat_paths)
 }))
 `]
+        onExited: {
+            if (service.updatePending) {
+                service.updatePending = false;
+                service.update();
+            }
+        }
         stdout: StdioCollector {
             onStreamFinished: {
                 if (!text || text.trim() === "") return;
@@ -248,7 +271,11 @@ print(json.dumps({
                         let totalDesign = data.design || 0;
                         let totalRate = data.rate || 0;
 
-                        service.percentage = totalFull > 0 ? Math.round((totalNow / totalFull) * 100) : 0;
+                        if (data.cap !== undefined && data.cap >= 0) {
+                            service.percentage = data.cap;
+                        } else {
+                            service.percentage = totalFull > 0 ? Math.round((totalNow / totalFull) * 100) : 0;
+                        }
                         
                         let mainStatus = "unknown";
                         if (data.statuses && data.statuses.length > 0) {
@@ -297,6 +324,15 @@ print(json.dumps({
         id: udevDebounceTimer
         interval: 250
         repeat: false
+        onTriggered: service.update()
+    }
+
+    // Periodic heartbeat to guarantee realtime updates even if the kernel doesn't emit udev events
+    Timer {
+        id: pollTimer
+        interval: service.status === "charging" ? 2500 : 5000
+        running: true
+        repeat: true
         onTriggered: service.update()
     }
 

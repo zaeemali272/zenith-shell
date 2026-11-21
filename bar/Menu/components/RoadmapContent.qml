@@ -566,8 +566,8 @@ ColumnLayout {
             font.pixelSize: Theme.scaled(14)
             font.weight: Font.Black
             elide: Text.ElideNone
-            Layout.fillWidth: true
         }
+        Item { Layout.fillWidth: true }
         Text {
             text: root.togglableCount > 0
                   ? root.doneCount + " / " + root.togglableCount + " done"
@@ -576,7 +576,6 @@ ColumnLayout {
             font.pixelSize: Theme.scaled(10)
             font.weight: Font.Bold
         }
-        Item { Layout.fillWidth: true }
     }
 
     Flow {
@@ -876,20 +875,111 @@ ColumnLayout {
             }
         }
 
-        Text {
+        // --- Skeletons & Loader while graph is loading ---
+        ColumnLayout {
             anchors.centerIn: parent
             width: parent.width - Theme.scaled(40)
-            horizontalAlignment: Text.AlignHCenter
-            wrapMode: Text.WordWrap
-            color: Theme.subtext0
-            font.pixelSize: Theme.scaled(11)
-            visible: nodeModel.count === 0
-            text: root.listLoading            ? "Loading roadmaps…"
-                : root.listFailed             ? "Could not reach GitHub. The list is cached once it loads."
-                : filteredModel.count === 0   ? "No roadmap matches “" + root.searchText + "”"
-                : root.graphLoading           ? "Loading " + root.activeTitle + "…"
-                : root.activeSlug === ""      ? "Pick a roadmap above"
-                                              : "No roadmap data published for " + root.activeTitle
+            spacing: Theme.scaled(14)
+            visible: nodeModel.count === 0 && (root.listLoading || root.graphLoading)
+
+            RowLayout {
+                Layout.alignment: Qt.AlignHCenter
+                spacing: Theme.scaled(8)
+
+                Text {
+                    text: "󰑐"
+                    font.family: Theme.iconFont
+                    font.pixelSize: Theme.scaled(18)
+                    color: Theme.accentColor
+                    RotationAnimator on rotation {
+                        from: 0; to: 360; duration: 900; loops: Animation.Infinite
+                        running: root.listLoading || root.graphLoading
+                    }
+                }
+
+                Text {
+                    text: root.listLoading ? "Loading roadmaps..." : ("Loading " + root.activeTitle + "...")
+                    color: Theme.text
+                    font.pixelSize: Theme.scaled(12)
+                    font.weight: Font.Bold
+                }
+            }
+
+            // Pulsing node skeleton placeholders with connector lines
+            RowLayout {
+                Layout.alignment: Qt.AlignHCenter
+                spacing: Theme.scaled(12)
+
+                SequentialAnimation on opacity {
+                    loops: Animation.Infinite
+                    NumberAnimation { from: 0.35; to: 0.8; duration: 800; easing.type: Easing.InOutSine }
+                    NumberAnimation { from: 0.8; to: 0.35; duration: 800; easing.type: Easing.InOutSine }
+                }
+
+                Rectangle {
+                    width: Theme.scaled(80); height: Theme.scaled(36)
+                    radius: Theme.scaled(8); color: Qt.rgba(255, 255, 255, 0.1)
+                }
+
+                Rectangle {
+                    width: Theme.scaled(20); height: Theme.scaled(2)
+                    color: Theme.accentColor
+                }
+
+                Rectangle {
+                    width: Theme.scaled(90); height: Theme.scaled(36)
+                    radius: Theme.scaled(8); color: Qt.rgba(255, 255, 255, 0.12)
+                }
+
+                Rectangle {
+                    width: Theme.scaled(20); height: Theme.scaled(2)
+                    color: Theme.accentColor
+                }
+
+                Rectangle {
+                    width: Theme.scaled(80); height: Theme.scaled(36)
+                    radius: Theme.scaled(8); color: Qt.rgba(255, 255, 255, 0.1)
+                }
+            }
+        }
+
+        // --- Empty State & Helper Text ---
+        ColumnLayout {
+            anchors.centerIn: parent
+            width: parent.width - Theme.scaled(40)
+            spacing: Theme.scaled(8)
+            visible: nodeModel.count === 0 && !root.listLoading && !root.graphLoading
+
+            Text {
+                text: root.listFailed ? "󰅚" : (filteredModel.count === 0 ? "󰍉" : (root.activeSlug === "" ? "󱓞" : "󰋼"))
+                font.family: Theme.iconFont
+                font.pixelSize: Theme.scaled(36)
+                color: root.listFailed ? Theme.powerRed : Theme.subtext0
+                Layout.alignment: Qt.AlignHCenter
+            }
+
+            Text {
+                text: root.listFailed ? "COULD NOT FETCH ROADMAPS"
+                    : (filteredModel.count === 0 ? "NO MATCHING ROADMAPS"
+                    : (root.activeSlug === "" ? "CHOOSE A ROADMAP" : "NO CONTENT PUBLISHED"))
+                color: Theme.text
+                font.pixelSize: Theme.scaled(12)
+                font.weight: Font.Bold
+                Layout.alignment: Qt.AlignHCenter
+            }
+
+            Text {
+                text: root.listFailed ? "Could not reach repository. Previously cached roadmaps will appear offline."
+                    : (filteredModel.count === 0 ? ("No roadmaps match \"" + root.searchText + "\". Try a different query.")
+                    : (root.activeSlug === "" ? "Select any skill or career path from the bar above to explore steps."
+                    : ("No graph milestones are currently published for " + root.activeTitle + ".")))
+                color: Theme.subtext0
+                font.pixelSize: Theme.scaled(10)
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.WordWrap
+                Layout.preferredWidth: parent.width
+                Layout.alignment: Qt.AlignHCenter
+            }
         }
     }
 }

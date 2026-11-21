@@ -26,8 +26,8 @@ PanelWindow {
     }
 
     WlrLayershell.margins {
-        top: osdWindow.isFullscreen ? - bar.height : Theme.scaled(10)
-        right: osdWindow.isFullscreen ? Theme.scaled(5) : Theme.scaled(10)
+        top: Theme.scaled(10)
+        right: Theme.scaled(10)
     }
 
     implicitWidth: Theme.scaled(400)
@@ -44,7 +44,7 @@ PanelWindow {
         radius: Theme.scaled(20)
         border.color: Theme.glassBorder
         border.width: 1
-        clip: true
+        antialiasing: true
         // Fade logic: Stay visible on hover
         opacity: (osdTimer.running || mainMouseArea.containsMouse) ? 1 : 0
 
@@ -59,7 +59,10 @@ PanelWindow {
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: osdWindow.isFullscreen ? Theme.scaled(9) : Theme.scaled(18)
+            anchors.leftMargin: osdWindow.isFullscreen ? Theme.scaled(10) : Theme.scaled(16)
+            anchors.rightMargin: osdWindow.isFullscreen ? Theme.scaled(10) : Theme.scaled(16)
+            anchors.topMargin: osdWindow.isFullscreen ? Theme.scaled(8) : Theme.scaled(14)
+            anchors.bottomMargin: osdWindow.isFullscreen ? Theme.scaled(8) : Theme.scaled(14)
             spacing: osdWindow.isFullscreen ? Theme.scaled(4) : Theme.scaled(8)
             z: 2 // Keep content above mouse area
 
@@ -68,16 +71,16 @@ PanelWindow {
                 spacing: osdWindow.isFullscreen ? Theme.scaled(8) : Theme.scaled(12)
 
                 Rectangle {
-                    width: osdWindow.isFullscreen ? Theme.scaled(16) : Theme.scaled(32); 
-                    height: osdWindow.isFullscreen ? Theme.scaled(16) : Theme.scaled(32); 
+                    width: osdWindow.isFullscreen ? Theme.scaled(20) : Theme.scaled(36); 
+                    height: osdWindow.isFullscreen ? Theme.scaled(20) : Theme.scaled(36); 
                     radius: osdWindow.isFullscreen ? Theme.scaled(4) : Theme.bubbleRadiusSmall; 
                     color: "transparent"
-                    border.color: Theme.glassBorder
-                    border.width: 1
+                    border.width: 0
                     Text {
                         anchors.centerIn: parent
-                        font.pixelSize: osdWindow.isFullscreen ? Theme.scaled(14) : Theme.scaled(18)
-                        color: (osdValue <= 0) ? Theme.powerRed : (osdType === "volume" && osdValue > 1.0 ? Theme.powerYellow : Theme.powerGreen)
+                        font.family: Theme.iconFont
+                        font.pixelSize: osdWindow.isFullscreen ? Theme.scaled(18) : Theme.scaled(24)
+                        color: (osdValue <= 0) ? Theme.powerRed : Theme.accentColor
                         text: {
                             if (osdType === "brightness") {
                                 if (osdValue <= 0.33) return "󰃞"; if (osdValue <= 0.66) return "󰃟"; return "󰃠"
@@ -86,6 +89,9 @@ PanelWindow {
                                 if (osdValue <= 0) return "󰝟"; if (osdValue <= 0.33) return "󰕿"; 
                                 if (osdValue <= 0.66) return "󰖀"; if (osdValue <= 1.0) return "󰕾"; return "󰓃"
                             }
+                            if (osdType === "mic") {
+                                return osdValue <= 0 ? "󰍭" : "󰍬";
+                            }
                             return "󰋽"
                         }
                     }
@@ -93,21 +99,35 @@ PanelWindow {
 
                 Text {
                     text: osdType.toUpperCase()
-                    color: Theme.blue; font.weight: Font.Black; font.pixelSize: Theme.scaled(12); font.letterSpacing: 2
+                    color: Theme.accentColor
+                    font.weight: Font.Black
+                    font.pixelSize: Theme.scaled(12)
+                    font.letterSpacing: 2
                     Layout.fillWidth: true
                 }
 
                 Text {
-                    text: Math.round(osdValue * 100) + "%"
-                    color: Theme.text; font.family: "JetBrains Mono"; font.weight: Font.Bold; font.pixelSize: osdWindow.isFullscreen ? Theme.scaled(11) : Theme.scaled(13)
+                    text: (osdType === "mic" && osdValue <= 0) ? "MUTED" : (Math.round(osdValue * 100) + "%")
+                    color: (osdValue <= 0) ? Theme.powerRed : Theme.text
+                    font.family: "JetBrains Mono"
+                    font.weight: Font.Bold
+                    font.pixelSize: osdWindow.isFullscreen ? Theme.scaled(11) : Theme.scaled(13)
                 }
             }
 
             Slider {
                 id: osdSlider
                 Layout.fillWidth: true
-                from: 0; to: 1
-                value: osdWindow.osdValue
+                from: 0
+                to: 1.0
+                value: {
+                    if (isVolume) {
+                        if (osdWindow.osdValue <= 1.0) return (osdWindow.osdValue / 1.0) * 0.75;
+                        return 0.75 + Math.min(0.25, ((osdWindow.osdValue - 1.0) / 0.5) * 0.25);
+                    } else {
+                        return Math.max(0, Math.min(1.0, osdWindow.osdValue));
+                    }
+                }
                 hoverEnabled: true
 
                 // Reset all paddings for pixel-perfect alignment
@@ -118,33 +138,81 @@ PanelWindow {
                 bottomPadding: 0
 
                 readonly property real handleWidth: osdWindow.isFullscreen ? Theme.scaled(12) : Theme.scaled(14)
-                
+                readonly property bool isVolume: osdWindow.osdType === "volume"
+                readonly property real line100X: isVolume ? (0.75 * (track.width - handleWidth) + handleWidth / 2) : track.width
+                readonly property real currentFillX: Math.max(0, Math.min(track.width, visualPosition * (track.width - handleWidth) + handleWidth / 2))
+
                 // --- Re-enabled functionality ---
                 onMoved: {
                     osdTimer.restart();
-                    osdWindow.osdValue = value;
-                    NotificationService.updateOSDValue(osdWindow.osdType, value);
+                    let calculatedVol = value;
+                    if (isVolume) {
+                        if (value <= 0.75) calculatedVol = (value / 0.75) * 1.0;
+                        else calculatedVol = 1.0 + ((value - 0.75) / 0.25) * 0.5;
+                    }
+                    osdWindow.osdValue = calculatedVol;
+                    NotificationService.updateOSDValue(osdWindow.osdType, calculatedVol);
                 }
 
                 background: Rectangle {
-                    x: osdSlider.leftPadding + osdSlider.handleWidth / 1
-                    y: osdWindow.isFullscreen ? osdSlider.topPadding + (osdSlider.availableHeight - height) / 5 : osdSlider.topPadding + (osdSlider.availableHeight - height) / 2
+                    id: track
+                    x: 0
+                    y: (osdSlider.availableHeight - height) / 2
                     implicitHeight: osdWindow.isFullscreen ? Theme.scaled(8) : Theme.scaled(10)
-                    width: osdSlider.availableWidth - osdSlider.handleWidth
-                    radius: Theme.scaled(3); color: Qt.rgba(255, 255, 255, 0.08); border.color: Theme.glassBorder; border.width: 1
+                    width: osdSlider.availableWidth
+                    radius: height / 2
+                    color: Qt.rgba(255, 255, 255, 0.08)
+                    border.color: Theme.glassBorder
+                    border.width: 1
+                    antialiasing: true
+                    clip: true
+
+                    // 1. Single continuous solid slider fill (with rounded edge at start and end)
                     Rectangle {
-                        width: osdSlider.visualPosition * parent.width
-                        height: osdWindow.isFullscreen ? Theme.scaled(12) : parent.height
-                        color: osdValue > 1.0 ? Theme.powerYellow : Theme.powerGreen
-                        radius: Theme.scaled(30)
+                        id: baseFill
+                        anchors.left: parent.left
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        width: osdSlider.currentFillX
+                        radius: parent.radius
+                        color: (osdValue <= 0) ? Theme.powerRed : Theme.accentColor
+                        antialiasing: true
+                    }
+
+                    // 2. Subtle brightened overlay ONLY on the part after the 100% line
+                    Rectangle {
+                        id: boostOverlay
+                        visible: osdSlider.isVolume && (osdSlider.currentFillX > osdSlider.line100X)
+                        x: osdSlider.line100X
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        width: Math.max(0, osdSlider.currentFillX - osdSlider.line100X)
+                        color: Qt.rgba(255, 255, 255, 0.22)
+                    }
+
+                    // 3. The 100% threshold marker line (placed at 75% of slider)
+                    Rectangle {
+                        id: line100
+                        visible: osdSlider.isVolume
+                        x: Math.round(osdSlider.line100X - width / 2)
+                        width: Theme.scaled(2)
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        color: Qt.rgba(255, 255, 255, 0.55)
+                        z: 4
                     }
                 }
 
                 handle: Rectangle {
-                    x: osdSlider.leftPadding + osdSlider.visualPosition * (osdSlider.availableWidth - width)
-                    y: osdSlider.topPadding + (osdSlider.availableHeight - height) / 2
-                    implicitWidth: osdSlider.handleWidth; implicitHeight: osdWindow.isFullscreen ? Theme.scaled(12) : Theme.scaled(14); radius: width / 2
-                    color: Theme.text; border.color: Theme.glassBorder; border.width: 1
+                    x: osdSlider.visualPosition * (osdSlider.availableWidth - width)
+                    y: (osdSlider.availableHeight - height) / 2
+                    implicitWidth: osdSlider.handleWidth
+                    implicitHeight: osdWindow.isFullscreen ? Theme.scaled(12) : Theme.scaled(14)
+                    radius: width / 2
+                    color: Theme.text
+                    border.color: (osdValue <= 0) ? Theme.powerRed : Theme.accentColor
+                    border.width: 1
+                    antialiasing: true
 
                     scale: osdSlider.pressed ? 1.05 : 1.0
                     Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutBack; easing.overshoot: 1.1 } }
