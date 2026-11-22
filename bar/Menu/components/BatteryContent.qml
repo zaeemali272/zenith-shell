@@ -49,7 +49,7 @@ ColumnLayout {
                 antialiasing: true
                 Text {
                     anchors.centerIn: parent
-                    text: BatteryService.acOnline ? (BatteryService.status === "charging" ? "" : "󰚥") : "󰁹"
+                    text: BatteryService.acOnline ? "󰚥" : "󰁹"
                     font.family: Theme.iconFont
                     font.pixelSize: Theme.scaled(36)
                     color: (BatteryService.acOnline && BatteryService.status !== "charging") ? "#ffffff" : Theme.accentColor

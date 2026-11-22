@@ -436,36 +436,121 @@ with open(out_path, 'w') as f:
     f.write(content)
 KITTY_PY
 
-# Update Starship palette if starship.toml is in place
-if [[ -f "$HOME/.config/starship.toml" ]]; then
-    python3 - "$PALETTE" "$HOME/.config/starship.toml" <<'STARSHIP_PY' 2>/dev/null || true
-import json, re, sys
-pal = json.load(open(sys.argv[1]))
+# Update Starship palette if starship.toml is in place (or can be configured)
+STARSHIP_TARGET="${STARSHIP_CONFIG:-$HOME/.config/starship.toml}"
+STARSHIP_TEMPLATE="$SHELL_DIR/themes/starship.toml"
+
+python3 - "$PALETTE" "$STARSHIP_TARGET" "$CACHE_DIR" "$STARSHIP_TEMPLATE" <<'STARSHIP_PY' || true
+import json, os, re, sys
+
+pal_path = sys.argv[1]
 starship_path = sys.argv[2]
+cache_dir = sys.argv[3] if len(sys.argv) > 3 else ""
+template_path = sys.argv[4] if len(sys.argv) > 4 else ""
+
 try:
-    content = open(starship_path).read()
-    new_palette = f"""[palettes.zenith]
-primary = "{pal.get('primary', '#ffb4a7')}"
-secondary = "{pal.get('secondary', '#e7bdb5')}"
-tertiary = "{pal.get('tertiary', '#ddc48c')}"
-accent = "{pal.get('on_primary_container', '#ffdad4')}"
-subtext = "{pal.get('on_surface_variant', '#d8c2be')}"
-surface = "{pal.get('surface_container', '#271d1c')}"
-background = "{pal.get('background', '#1a1110')}"
-red = "{pal.get('error', '#ffb4ab')}"
-green = "#a6d189"
-yellow = "#fae0a6"
-blue = "#89b4fa"
-purple = "#cba6f7"
+    with open(pal_path, 'r', encoding='utf-8') as f:
+        pal = json.load(f)
+except Exception:
+    sys.exit(0)
+
+# Colors needed by Zenith Starship prompt capsules and symbols:
+# os: bg:primary fg:on_primary
+# git_branch/status/state: bg:secondary fg:on_secondary
+# nix_shell/languages/username/hostname: bg:tertiary fg:on_tertiary
+# directory/time/jobs/duration: bg:surface_high fg:text/subtext/yellow
+# status: bg:red fg:on_red
+# character: primary (success), red (error), tertiary (vimcmd)
+primary = pal.get('primary', '#ffb4a7')
+on_primary = pal.get('on_primary', '#561e15')
+secondary = pal.get('secondary', '#e7bdb5')
+on_secondary = pal.get('on_secondary', '#442a25')
+tertiary = pal.get('tertiary', '#ddc48c')
+on_tertiary = pal.get('on_tertiary', '#3d2e04')
+surface = pal.get('surface_container', pal.get('surface', '#271d1c'))
+surface_high = pal.get('surface_container_high', pal.get('surface_variant', '#3d3230'))
+text = pal.get('on_surface', pal.get('text', '#f1dfdb'))
+subtext = pal.get('on_surface_variant', pal.get('subtext', '#d8c2be'))
+red = pal.get('error', pal.get('red', '#ffb4ab'))
+on_red = pal.get('on_error', pal.get('on_red', '#690005'))
+yellow = pal.get('yellow', '#fae0a6')
+green = pal.get('green', '#a6d189')
+blue = pal.get('blue', '#89b4fa')
+purple = pal.get('purple', '#cba6f7')
+accent = pal.get('on_primary_container', pal.get('accent', '#ffdad4'))
+background = pal.get('background', '#1a1110')
+
+new_palette = f"""[palettes.zenith]
+primary = "{primary}"
+on_primary = "{on_primary}"
+secondary = "{secondary}"
+on_secondary = "{on_secondary}"
+tertiary = "{tertiary}"
+on_tertiary = "{on_tertiary}"
+surface = "{surface}"
+surface_high = "{surface_high}"
+text = "{text}"
+subtext = "{subtext}"
+red = "{red}"
+on_red = "{on_red}"
+yellow = "{yellow}"
+green = "{green}"
+blue = "{blue}"
+purple = "{purple}"
+accent = "{accent}"
+background = "{background}"
 """
+
+content = ""
+# 1. Read existing config (following symlink if needed)
+if os.path.exists(starship_path) or os.path.islink(starship_path):
+    try:
+        with open(starship_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+    except Exception:
+        pass
+
+# 2. If empty, try template or backup
+if not content.strip():
+    for fallback in [template_path, starship_path + ".backup", os.path.expanduser("~/.config/starship.toml.backup")]:
+        if fallback and os.path.isfile(fallback):
+            try:
+                with open(fallback, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                if content.strip():
+                    break
+            except Exception:
+                pass
+
+if content.strip():
     if "[palettes.zenith]" in content:
         content = re.sub(r'\[palettes\.zenith\][^\[]*', new_palette + "\n", content)
-        with open(starship_path, 'w') as f:
-            f.write(content)
-except Exception:
-    pass
+    else:
+        if not re.search(r'^\s*palette\s*=', content, re.MULTILINE):
+            content = 'palette = "zenith"\n\n' + content
+        content = content.rstrip() + "\n\n" + new_palette + "\n"
+
+    def write_atomic(dest_path, data):
+        dest_dir = os.path.dirname(os.path.abspath(dest_path))
+        os.makedirs(dest_dir, exist_ok=True)
+        tmp = os.path.join(dest_dir, f".starship.tmp.{os.getpid()}")
+        with open(tmp, 'w', encoding='utf-8') as f:
+            f.write(data)
+        os.replace(tmp, dest_path)
+
+    try:
+        write_atomic(starship_path, content)
+    except Exception as e:
+        sys.stderr.write(f"Failed to update starship config at {starship_path}: {e}\n")
+
+    # Also update cache copy if cache dir exists
+    if cache_dir and os.path.isdir(cache_dir):
+        try:
+            write_atomic(os.path.join(cache_dir, "starship.toml"), content)
+        except Exception:
+            pass
 STARSHIP_PY
-fi
+log_ok "Starship palette updated"
 
 # Generate GTK 3, GTK 4, Thunar, and Qt (kdeglobals) themes (Orchis Borderless Material Design)
 python3 - "$PALETTE" <<'GTK_QT_PY' || true

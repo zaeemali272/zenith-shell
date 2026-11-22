@@ -54,6 +54,19 @@ Item {
     readonly property bool showNetwork: WidgetSettings.enableNetwork && HardwareService.hasNetworking
     readonly property bool showResources: WidgetSettings.enableResources && isHovered
 
+    // Alert thresholds: auto-show individual resource alongside netspeed when above limit
+    readonly property int cpuAlertThreshold: 80
+    readonly property int memAlertThreshold: 70
+    readonly property int tempAlertThreshold: 95
+
+    readonly property bool cpuAlert: cpu >= cpuAlertThreshold
+    readonly property bool memAlert: mem >= memAlertThreshold
+    readonly property bool tempAlert: temp >= tempAlertThreshold
+
+    readonly property bool showCpu: WidgetSettings.enableResources && (isHovered || cpuAlert)
+    readonly property bool showMem: WidgetSettings.enableResources && (isHovered || memAlert)
+    readonly property bool showTemp: WidgetSettings.enableResources && (isHovered || tempAlert)
+
     // System Resources
     readonly property int cpu: ResourceService.cpu
     readonly property int mem: ResourceService.mem
@@ -79,20 +92,20 @@ Item {
 
     // High load warning color helpers
     function cpuColor(val) {
-        if (val >= 85) return Theme.powerRed;
-        if (val >= 65) return Theme.powerYellow;
+        if (val >= 80) return Theme.powerRed;
+        if (val >= 60) return Theme.powerYellow;
         return Theme.barIconColor;
     }
 
     function memColor(val) {
-        if (val >= 90) return Theme.powerRed;
-        if (val >= 75) return Theme.powerYellow;
+        if (val >= 85) return Theme.powerRed;
+        if (val >= 70) return Theme.powerYellow;
         return Theme.barIconColor;
     }
 
     function tempColor(val) {
-        if (val >= 82) return Theme.powerRed;
-        if (val >= 70) return Theme.powerYellow;
+        if (val >= 90) return Theme.powerRed;
+        if (val >= 75) return Theme.powerYellow;
         return Theme.barIconColor;
     }
 
@@ -231,7 +244,7 @@ Item {
 
             // Divider: Net | CPU
             Rectangle {
-                visible: root.showNetwork && root.showResources
+                visible: cpuItem.visible && netItem.visible
                 width: 1
                 height: Theme.scaled(12)
                 color: Theme.glassBorder
@@ -241,10 +254,10 @@ Item {
                 Layout.rightMargin: Theme.scaled(1)
             }
 
-            // ================= CPU STATS (Shown on hover) =================
+            // ================= CPU STATS (Shown on hover or alert >= 80%) =================
             Item {
                 id: cpuItem
-                visible: root.showResources
+                visible: root.showCpu
                 implicitHeight: Theme.scaled(26)
                 implicitWidth: cpuRow.implicitWidth + Theme.scaled(10)
                 Layout.alignment: Qt.AlignVCenter
@@ -275,7 +288,7 @@ Item {
 
                     Text {
                         text: root.cpu + "%"
-                        color: root.cpu >= 85 ? Theme.powerRed : (root.cpu >= 65 ? Theme.powerYellow : Theme.fontColor)
+                        color: root.cpu >= 80 ? Theme.powerRed : (root.cpu >= 60 ? Theme.powerYellow : Theme.fontColor)
                         font.pixelSize: Theme.fontSize
                         font.family: Theme.fontFamily
                         font.weight: Font.DemiBold
@@ -303,9 +316,9 @@ Item {
                 }
             }
 
-            // Divider: CPU | RAM
+            // Divider: (Net or CPU) | RAM
             Rectangle {
-                visible: root.showResources
+                visible: memItem.visible && (cpuItem.visible || netItem.visible)
                 width: 1
                 height: Theme.scaled(12)
                 color: Theme.glassBorder
@@ -315,10 +328,10 @@ Item {
                 Layout.rightMargin: Theme.scaled(1)
             }
 
-            // ================= RAM STATS (Shown on hover) =================
+            // ================= RAM STATS (Shown on hover or alert >= 70%) =================
             Item {
                 id: memItem
-                visible: root.showResources
+                visible: root.showMem
                 implicitHeight: Theme.scaled(26)
                 implicitWidth: memRow.implicitWidth + Theme.scaled(10)
                 Layout.alignment: Qt.AlignVCenter
@@ -349,7 +362,7 @@ Item {
 
                     Text {
                         text: root.ramShowGb ? (ResourceService.memUsedGb.toFixed(1) + "G") : (root.mem + "%")
-                        color: root.mem >= 90 ? Theme.powerRed : (root.mem >= 75 ? Theme.powerYellow : Theme.fontColor)
+                        color: root.mem >= 85 ? Theme.powerRed : (root.mem >= 70 ? Theme.powerYellow : Theme.fontColor)
                         font.pixelSize: Theme.fontSize
                         font.family: Theme.fontFamily
                         font.weight: Font.DemiBold
@@ -376,9 +389,9 @@ Item {
                 }
             }
 
-            // Divider: RAM | Temp
+            // Divider: (Net or CPU or RAM) | Temp
             Rectangle {
-                visible: root.showResources
+                visible: tempItem.visible && (memItem.visible || cpuItem.visible || netItem.visible)
                 width: 1
                 height: Theme.scaled(12)
                 color: Theme.glassBorder
@@ -388,10 +401,10 @@ Item {
                 Layout.rightMargin: Theme.scaled(1)
             }
 
-            // ================= TEMP STATS (Shown on hover) =================
+            // ================= TEMP STATS (Shown on hover or alert >= 95°C) =================
             Item {
                 id: tempItem
-                visible: root.showResources
+                visible: root.showTemp
                 implicitHeight: Theme.scaled(26)
                 implicitWidth: tempRow.implicitWidth + Theme.scaled(10)
                 Layout.alignment: Qt.AlignVCenter
@@ -422,7 +435,7 @@ Item {
 
                     Text {
                         text: root.tempShowLoad ? (ResourceService.load.toFixed(1) + "L") : (root.temp + "°C")
-                        color: root.temp >= 82 ? Theme.powerRed : (root.temp >= 70 ? Theme.powerYellow : Theme.fontColor)
+                        color: root.temp >= 90 ? Theme.powerRed : (root.temp >= 75 ? Theme.powerYellow : Theme.fontColor)
                         font.pixelSize: Theme.fontSize
                         font.family: Theme.fontFamily
                         font.weight: Font.DemiBold

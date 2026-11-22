@@ -155,30 +155,19 @@ def get_wifi_state(do_scan=True, list_cached=False):
         ))
 
     current_password = ""
+    known_passwords = {}
     if current_ssid and current_state == "connected":
         try:
             psk_out = run_cmd(["nmcli", "-s", "-g", "802-11-wireless-security.psk", "connection", "show", current_ssid]).strip()
             if psk_out:
                 current_password = psk_out
+                known_passwords[current_ssid] = current_password
         except Exception:
             pass
 
-    known_passwords = {}
-    if current_ssid and current_password:
-        known_passwords[current_ssid] = current_password
-
     for n in networks:
-        ssid = n.get("ssid")
         if n.get("connected"):
             n["password"] = current_password
-        elif n.get("isKnown") and ssid:
-            if ssid not in known_passwords:
-                try:
-                    psk = run_cmd(["nmcli", "-s", "-g", "802-11-wireless-security.psk", "connection", "show", ssid]).strip()
-                    known_passwords[ssid] = psk
-                except Exception:
-                    known_passwords[ssid] = ""
-            n["password"] = known_passwords.get(ssid, "")
 
     return {
         "isAirplane": is_airplane,

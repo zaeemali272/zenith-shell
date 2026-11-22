@@ -901,7 +901,7 @@ RowLayout {
                                 Layout.alignment: Qt.AlignVCenter
                                 Text {
                                     visible: batteryCard.acOnline
-                                    text: batteryCard.batState === "charging" ? "" : "󰚥"
+                                    text: "󰚥"
                                     font.family: Theme.iconFont
                                     font.pixelSize: Theme.scaled(11)
                                     color: Theme.accentColor

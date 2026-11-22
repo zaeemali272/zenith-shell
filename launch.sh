@@ -12,7 +12,21 @@ set -uo pipefail
 
 SHELL_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
-export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-1}"
+# Auto-detect active Wayland socket if not explicitly exported in caller's environment
+detect_wayland_display() {
+    if [ -n "${WAYLAND_DISPLAY:-}" ]; then
+        echo "$WAYLAND_DISPLAY"
+        return
+    fi
+    local sock
+    sock="$(ls -1 "$XDG_RUNTIME_DIR"/wayland-* 2>/dev/null | head -n1 || true)"
+    if [ -n "$sock" ]; then
+        basename "$sock"
+    else
+        echo "wayland-1"
+    fi
+}
+export WAYLAND_DISPLAY="$(detect_wayland_display)"
 export ZENITH_ROOT="$SHELL_DIR"
 export QML_IMPORT_PATH="$SHELL_DIR"
 export QML2_IMPORT_PATH="$SHELL_DIR"

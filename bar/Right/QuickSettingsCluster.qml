@@ -26,9 +26,7 @@ Item {
     readonly property color batBorderCol: batPercent <= 15 ? "#ef4444" : "#ffffff"
 
     function batteryIcon(p, state, ac) {
-        const isLimitActive = (state === "not charging" || state === "full" || state === "idle") && ac;
-        if (isLimitActive) return "󰚥";
-        if (state === "charging") return "";
+        if (state === "charging" || ac) return "󰚥";
         if (p >= 90) return "";
         if (p >= 65) return "";
         if (p >= 40) return "";

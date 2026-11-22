@@ -72,7 +72,8 @@ fi
 
 # ------------------------------------------------------------- fetch_events
 # It writes events.json rather than printing, so assert on the file.
-EV="$REPO/events.json"
+EV="${XDG_STATE_HOME:-$HOME/.local/state}/zenith/events.json"
+[ -s "$EV" ] || EV="$REPO/events.json"
 if [ -s "$EV" ] && jq -e 'type == "array"' "$EV" >/dev/null 2>&1; then
     pass "events.json is a JSON array"
     jq -e 'length == 0 or (.[0] | has("date") and has("name"))' "$EV" >/dev/null 2>&1 \

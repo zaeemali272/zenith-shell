@@ -179,7 +179,7 @@ Item {
         onExited: {
             if (service._pendingRefresh) {
                 service._pendingRefresh = false;
-                service.listCached();
+                nmDebounceTimer.restart();
             }
         }
     }
@@ -226,13 +226,25 @@ Item {
         }
     }
 
-    // Instant NetworkManager Event Monitor
+    Timer {
+        id: nmDebounceTimer
+        interval: 1500
+        repeat: false
+        onTriggered: service.listCached()
+    }
+
+    // Instant NetworkManager Event Monitor (debounced to avoid feedback loops)
     Process {
         id: nmMonitor
         command: ["nmcli", "monitor"]
         running: true
         stdout: SplitParser {
-            onRead: (data) => service.listCached()
+            onRead: (data) => {
+                if (!data || data.trim() === "") return;
+                // Ignore internal profile change events that occur on queries
+                if (data.indexOf("connection profile changed") !== -1) return;
+                nmDebounceTimer.restart();
+            }
         }
         onExited: restartNmMon.start()
     }

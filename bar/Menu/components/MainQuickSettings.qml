@@ -80,7 +80,7 @@ ColumnLayout {
 
                 // 2. Rounded bolt icon (when charging) or battery level icon (when discharging)
                 Text {
-                    text: BatteryService.acOnline ? (BatteryService.status === "charging" ? "" : "") : (BatteryService.percentage >= 90 ? "󰁹" : (BatteryService.percentage >= 50 ? "󰁿" : (BatteryService.percentage >= 20 ? "󰁻" : "󰂎")))
+                    text: BatteryService.acOnline ? "󰚥" : (BatteryService.percentage >= 90 ? "󰁹" : (BatteryService.percentage >= 50 ? "󰁿" : (BatteryService.percentage >= 20 ? "󰁻" : "󰂎")))
                     visible: text !== ""
                     font.family: Theme.iconFont
                     font.pixelSize: BatteryService.acOnline ? Theme.scaled(13) : Theme.scaled(14)
