@@ -257,73 +257,83 @@ Item {
         }
     }
 
+    function getAppInfo(appId, title) {
+        let app = (appId || "").toLowerCase().trim();
+        let t = (title || "").toLowerCase().trim();
+
+        // 1. Terminals (Match app class first!)
+        if (app.includes("kitty")) return { key: "kitty", glyph: "󰄛" };
+        if (app.includes("alacritty")) return { key: "alacritty", glyph: "󰞷" };
+        if (app.includes("ghostty")) return { key: "ghostty", glyph: "󰊠" };
+        if (app.includes("wezterm")) return { key: "wezterm", glyph: "" };
+        if (app.includes("foot") || app.includes("konsole") || app.includes("terminal") || app.includes("ptyxis")) return { key: "terminal", glyph: "󰆍" };
+
+        // 2. Editors & IDEs
+        if (app.includes("antigravity")) return { key: "antigravity", glyph: "󰀘" };
+        if (app.includes("code") || app.includes("vscode") || app.includes("vscodium")) return { key: "vscode", glyph: "󰨞" };
+        if (app.includes("neovim") || app.includes("nvim") || t.startsWith("nvim") || t.startsWith("neovim")) return { key: "neovim", glyph: "" };
+        if (app.includes("vim") || t.startsWith("vim ")) return { key: "vim", glyph: "" };
+        if (app.includes("emacs")) return { key: "emacs", glyph: "" };
+        if (app.includes("sublime")) return { key: "sublime", glyph: "" };
+        if (app.includes("cursor")) return { key: "cursor", glyph: "󰅩" };
+        if (app.includes("zed")) return { key: "zed", glyph: "󰘦" };
+        if (app.includes("intellij") || app.includes("idea")) return { key: "intellij", glyph: "" };
+        if (app.includes("pycharm")) return { key: "pycharm", glyph: "" };
+        if (app.includes("clion")) return { key: "clion", glyph: "" };
+        if (app.includes("webstorm")) return { key: "webstorm", glyph: "" };
+        if (app.includes("android-studio")) return { key: "androidstudio", glyph: "󰀴" };
+
+        // 3. Browsers (Carefully check Zen Browser WITHOUT matching 'zenith'!)
+        if (app === "zen" || app.includes("zen-browser") || app.includes("zen_browser") || app.startsWith("zen-") || (t.includes("zen browser") && !app.includes("terminal") && !app.includes("kitty"))) return { key: "zen", glyph: "󰖟" };
+        if (app.includes("firefox") || app.includes("waterfox") || app.includes("librewolf") || app.includes("floorp")) return { key: "firefox", glyph: "󰈹" };
+        if (app.includes("chrome") || app.includes("chromium")) return { key: "chrome", glyph: "󰊯" };
+        if (app.includes("brave")) return { key: "brave", glyph: "󰹢" };
+        if (app.includes("edge")) return { key: "edge", glyph: "󰇩" };
+        if (app.includes("opera")) return { key: "opera", glyph: "󰏎" };
+        if (app.includes("safari")) return { key: "safari", glyph: "󰀹" };
+        if (app.includes("tor")) return { key: "tor", glyph: "󰈹" };
+        if (app.includes("browser") || app.includes("vivaldi") || app.includes("qutebrowser")) return { key: "browser", glyph: "󰖟" };
+
+        // 4. Communication
+        if (app.includes("discord") || app.includes("webcord") || app.includes("vesktop") || app.includes("armcord")) return { key: "discord", glyph: "󰙯" };
+        if (app.includes("telegram") || app.includes("ayugram")) return { key: "telegram", glyph: "󰭹" };
+        if (app.includes("slack")) return { key: "slack", glyph: "󰒱" };
+        if (app.includes("whatsapp")) return { key: "whatsapp", glyph: "󰖣" };
+        if (app.includes("signal") || app.includes("element") || app.includes("matrix")) return { key: "signal", glyph: "󰭹" };
+        if (app.includes("mail") || app.includes("thunderbird") || app.includes("geary") || app.includes("betterbird")) return { key: "mail", glyph: "󰇮" };
+
+        // 5. Media & Audio
+        if (app.includes("spotify") || app.includes("feishin") || app.includes("cider") || app.includes("music") || app.includes("amberol") || app.includes("rhythmbox")) return { key: "spotify", glyph: "󰓇" };
+        if (app.includes("vlc") || app.includes("mpv") || app.includes("celluloid") || app.includes("clapper") || app.includes("kodi")) return { key: "video", glyph: "󰕼" };
+        if (app.includes("pavucontrol") || app.includes("qpwgraph") || app.includes("easyeffects") || app.includes("helvum")) return { key: "audio", glyph: "󰕾" };
+        if (app.includes("obs") || app.includes("studio")) return { key: "obs", glyph: "󰑋" };
+
+        // 6. Files & Notes
+        if (app.includes("thunar") || app.includes("nautilus") || app.includes("dolphin") || app.includes("pcmanfm") || app.includes("nemo") || app.includes("yazi") || app.includes("ranger") || (app.includes("files") && !app.includes("zenith"))) return { key: "files", glyph: "󰉋" };
+        if (app.includes("obsidian")) return { key: "obsidian", glyph: "󱞁" };
+        if (app.includes("notion")) return { key: "notion", glyph: "" };
+        if (app.includes("libreoffice") || app.includes("writer") || app.includes("calc") || app.includes("impress")) return { key: "office", glyph: "󰈦" };
+        if (app.includes("pdf") || app.includes("evince") || app.includes("zathura") || app.includes("okular")) return { key: "pdf", glyph: "󰈦" };
+
+        // 7. Design & Gaming
+        if (app.includes("gimp")) return { key: "gimp", glyph: "" };
+        if (app.includes("inkscape")) return { key: "inkscape", glyph: "" };
+        if (app.includes("blender")) return { key: "blender", glyph: "󰂫" };
+        if (app.includes("figma")) return { key: "figma", glyph: "󰽉" };
+        if (app.includes("krita") || app.includes("darktable")) return { key: "krita", glyph: "󰽉" };
+        if (app.includes("steam") || app.includes("lutris") || app.includes("heroic") || app.includes("gamescope") || app.includes("prism") || app.includes("minecraft")) return { key: "steam", glyph: "󰓓" };
+
+        // 8. System & Utilities
+        if (app.includes("btop") || app.includes("htop") || app.includes("missioncenter") || app.includes("glances")) return { key: "monitor", glyph: "󰍛" };
+        if (app.includes("settings") || app.includes("control-center")) return { key: "settings", glyph: "󰒓" };
+        if (app.includes("docker") || app.includes("lazydocker")) return { key: "docker", glyph: "󰡨" };
+
+        let genericKey = app ? app.split(/[\s\-_\.]+/)[0] : "app";
+        return { key: genericKey, glyph: "󰖲" };
+    }
+
     function getAppGlyph(appId, title) {
-        let id = ((appId || "") + " " + (title || "")).toLowerCase();
-        // Browsers (distinct glyphs)
-        if (id.includes("zen")) return "󰖟";
-        if (id.includes("firefox") || id.includes("waterfox") || id.includes("librewolf")) return "󰈹";
-        if (id.includes("chrome") || id.includes("chromium")) return "󰊯";
-        if (id.includes("edge")) return "󰇩";
-        if (id.includes("opera")) return "󰏎";
-        if (id.includes("safari")) return "󰀹";
-        if (id.includes("brave")) return "󰹢";
-        if (id.includes("tor")) return "󰈹";
-        if (id.includes("browser")) return "󰖟";
-
-        // Editors & IDEs (distinct glyphs)
-        if (id.includes("antigravity")) return "󰀘";
-        if (id.includes("code") || id.includes("vscode") || id.includes("visual studio")) return "󰨞";
-        if (id.includes("neovim") || id.includes("nvim")) return "";
-        if (id.includes("vim")) return "";
-        if (id.includes("emacs")) return "";
-        if (id.includes("sublime")) return "";
-        if (id.includes("intellij") || id.includes("idea")) return "";
-        if (id.includes("pycharm")) return "";
-        if (id.includes("clion")) return "";
-        if (id.includes("webstorm")) return "";
-        if (id.includes("cursor")) return "󰅩";
-        if (id.includes("zed")) return "󰘦";
-
-        // Terminals (distinct glyphs)
-        if (id.includes("kitty")) return "󰄛";
-        if (id.includes("ghostty")) return "󰊠";
-        if (id.includes("alacritty")) return "󰞷";
-        if (id.includes("wezterm")) return "";
-        if (id.includes("foot") || id.includes("terminal") || id.includes("konsole") || id.includes("bash") || id.includes("zsh") || id.includes("fish")) return "󰆍";
-
-        // Communication
-        if (id.includes("discord") || id.includes("webcord") || id.includes("vesktop") || id.includes("armcord")) return "󰙯";
-        if (id.includes("telegram") || id.includes("ayugram")) return "󰭹";
-        if (id.includes("slack")) return "󰒱";
-        if (id.includes("whatsapp")) return "󰖣";
-        if (id.includes("signal") || id.includes("element")) return "󰭹";
-        if (id.includes("mail") || id.includes("thunderbird") || id.includes("geary") || id.includes("betterbird")) return "󰇮";
-
-        // Media & Audio
-        if (id.includes("spotify") || id.includes("music") || id.includes("feishin") || id.includes("cider") || id.includes("youtube music") || id.includes("amberol") || id.includes("rhythmbox")) return "󰓇";
-        if (id.includes("vlc") || id.includes("mpv") || id.includes("celluloid") || id.includes("kodi") || id.includes("video") || id.includes("clapper")) return "󰕼";
-        if (id.includes("pavucontrol") || id.includes("qpwgraph") || id.includes("easyeffects") || id.includes("helvum")) return "󰕾";
-
-        // Files & Notes
-        if (id.includes("thunar") || id.includes("nautilus") || id.includes("dolphin") || id.includes("files") || id.includes("pcmanfm") || id.includes("nemo") || id.includes("yazi") || id.includes("ranger")) return "󰉋";
-        if (id.includes("obsidian")) return "󱞁";
-        if (id.includes("notion")) return "";
-        if (id.includes("notes") || id.includes("logseq") || id.includes("joplin") || id.includes("anytype")) return "󱞁";
-        if (id.includes("libreoffice") || id.includes("writer") || id.includes("calc") || id.includes("impress") || id.includes("document") || id.includes("pdf") || id.includes("evince") || id.includes("zathura")) return "󰈦";
-
-        // Design & Gaming
-        if (id.includes("gimp")) return "";
-        if (id.includes("inkscape")) return "";
-        if (id.includes("blender")) return "󰂫";
-        if (id.includes("figma")) return "󰽉";
-        if (id.includes("krita") || id.includes("darktable") || id.includes("rawtherapee")) return "󰽉";
-        if (id.includes("steam") || id.includes("lutris") || id.includes("heroic") || id.includes("gamescope") || id.includes("prism") || id.includes("minecraft")) return "󰓓";
-
-        // System
-        if (id.includes("btop") || id.includes("htop") || id.includes("missioncenter") || id.includes("system-monitoring-center")) return "󰍛";
-        if (id.includes("settings") || id.includes("control") || id.includes("pavucontrol")) return "󰒓";
-
-        return "󰖲";
+        return getAppInfo(appId, title).glyph;
     }
 
     function getWorkspaceGlyphs(ws) {
@@ -333,63 +343,14 @@ Item {
 
         function addWindow(appId, title) {
             if (!appId && !title) return;
-            let id = ((appId || "") + " " + (title || "")).toLowerCase();
-            
-            // Parent app identification to deduplicate sub-windows and multiple instances
-            let appKey = "";
-            if (id.includes("zen")) appKey = "zen";
-            else if (id.includes("antigravity")) appKey = "antigravity";
-            else if (id.includes("code") || id.includes("vscode")) appKey = "vscode";
-            else if (id.includes("firefox") || id.includes("waterfox") || id.includes("librewolf")) appKey = "firefox";
-            else if (id.includes("chrome") || id.includes("chromium")) appKey = "chrome";
-            else if (id.includes("brave")) appKey = "brave";
-            else if (id.includes("edge")) appKey = "edge";
-            else if (id.includes("opera")) appKey = "opera";
-            else if (id.includes("safari")) appKey = "safari";
-            else if (id.includes("neovim") || id.includes("nvim")) appKey = "neovim";
-            else if (id.includes("vim")) appKey = "vim";
-            else if (id.includes("emacs")) appKey = "emacs";
-            else if (id.includes("sublime")) appKey = "sublime";
-            else if (id.includes("cursor")) appKey = "cursor";
-            else if (id.includes("zed")) appKey = "zed";
-            else if (id.includes("intellij") || id.includes("idea")) appKey = "intellij";
-            else if (id.includes("pycharm")) appKey = "pycharm";
-            else if (id.includes("clion")) appKey = "clion";
-            else if (id.includes("webstorm")) appKey = "webstorm";
-            else if (id.includes("kitty")) appKey = "kitty";
-            else if (id.includes("alacritty")) appKey = "alacritty";
-            else if (id.includes("ghostty")) appKey = "ghostty";
-            else if (id.includes("wezterm")) appKey = "wezterm";
-            else if (id.includes("foot") || id.includes("terminal") || id.includes("konsole")) appKey = "terminal";
-            else if (id.includes("discord") || id.includes("vesktop") || id.includes("webcord")) appKey = "discord";
-            else if (id.includes("telegram") || id.includes("ayugram")) appKey = "telegram";
-            else if (id.includes("slack")) appKey = "slack";
-            else if (id.includes("whatsapp")) appKey = "whatsapp";
-            else if (id.includes("mail") || id.includes("thunderbird") || id.includes("geary")) appKey = "mail";
-            else if (id.includes("spotify")) appKey = "spotify";
-            else if (id.includes("vlc") || id.includes("mpv") || id.includes("celluloid")) appKey = "video";
-            else if (id.includes("pavucontrol") || id.includes("qpwgraph") || id.includes("easyeffects")) appKey = "audio";
-            else if (id.includes("thunar") || id.includes("nautilus") || id.includes("dolphin") || id.includes("files")) appKey = "files";
-            else if (id.includes("obsidian")) appKey = "obsidian";
-            else if (id.includes("notion")) appKey = "notion";
-            else if (id.includes("gimp")) appKey = "gimp";
-            else if (id.includes("inkscape")) appKey = "inkscape";
-            else if (id.includes("blender")) appKey = "blender";
-            else if (id.includes("figma")) appKey = "figma";
-            else if (id.includes("steam")) appKey = "steam";
-            else if (id.includes("btop") || id.includes("htop") || id.includes("missioncenter")) appKey = "monitor";
-            else if (id.includes("settings") || id.includes("control")) appKey = "settings";
-            else {
-                appKey = appId ? appId.toLowerCase().split(/[\s\-_\.]+/)[0] : "app";
-            }
+            let info = getAppInfo(appId, title);
 
-            // Only parent apps (deduplicate multiple windows of the same parent application)
-            if (seenApps[appKey]) return;
-            seenApps[appKey] = true;
+            // Deduplicate multiple windows of the same parent application
+            if (seenApps[info.key]) return;
+            seenApps[info.key] = true;
 
-            let glyph = getAppGlyph(appId, title);
-            if (glyph && glyphs.indexOf(glyph) === -1) {
-                glyphs.push(glyph);
+            if (info.glyph && glyphs.indexOf(info.glyph) === -1) {
+                glyphs.push(info.glyph);
             }
         }
 

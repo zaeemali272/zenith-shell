@@ -519,7 +519,7 @@ Item {
                     Behavior on color { ColorAnimation { duration: Theme.animFast } }
                     Behavior on border.color { ColorAnimation { duration: Theme.animFast } }
 
-                    // Clicking the top header area expands/collapses the network card
+                    // Clicking the top header area connects/disconnects the network
                     MouseArea {
                         id: headerMouse
                         anchors.top: parent.top
@@ -531,7 +531,13 @@ Item {
                         onEntered: root.selectedIndex = index
                         onClicked: {
                             root.selectedIndex = index;
-                            selectedSsid = isExpanded ? "" : modelData.ssid;
+                            if (isConnected) {
+                                wifiSvc.disconnect();
+                            } else if (isKnown || !modelData.security || modelData.security === "None" || modelData.security === "--") {
+                                wifiSvc.connect(modelData.ssid, knownPass || "");
+                            } else {
+                                selectedSsid = modelData.ssid;
+                            }
                         }
                     }
 
@@ -613,7 +619,8 @@ Item {
                                     anchors.fill: parent
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
+                                    onClicked: (mouse) => {
+                                        mouse.accepted = true;
                                         selectedSsid = isExpanded ? "" : modelData.ssid;
                                     }
                                 }

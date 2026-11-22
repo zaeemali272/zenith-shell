@@ -196,9 +196,9 @@ Item {
                         text: {
                             if (root.airplaneMode) return "OFF";
                             if (!root.online) return "DISC";
-                            if (root.netMode === 0) return "↓ " + root.formatSpeed(root.downSpeed);
-                            if (root.netMode === 1) return "↑ " + root.formatSpeed(root.upSpeed);
-                            return "↓" + root.formatSpeedCompact(root.downSpeed) + " ↑" + root.formatSpeedCompact(root.upSpeed);
+                            if (root.netMode === 0) return root.formatSpeed(root.downSpeed);
+                            if (root.netMode === 1) return root.formatSpeed(root.upSpeed);
+                            return root.formatSpeedCompact(root.downSpeed) + " " + root.formatSpeedCompact(root.upSpeed);
                         }
                         font.pixelSize: Theme.fontSize
                         font.family: "JetBrains Mono"

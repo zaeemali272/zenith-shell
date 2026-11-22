@@ -467,6 +467,1752 @@ except Exception:
 STARSHIP_PY
 fi
 
+# Generate GTK 3, GTK 4, Thunar, and Qt (kdeglobals) themes (Orchis Borderless Material Design)
+python3 - "$PALETTE" <<'GTK_QT_PY' || true
+import json, os, sys, shutil
+
+pal_path = sys.argv[1]
+try:
+    with open(pal_path) as f:
+        pal = json.load(f)
+except Exception:
+    sys.exit(0)
+
+home = os.path.expanduser("~")
+gtk3_dir = os.path.join(home, ".config", "gtk-3.0")
+gtk4_dir = os.path.join(home, ".config", "gtk-4.0")
+kde_schemes_dir = os.path.join(home, ".local", "share", "color-schemes")
+qt5ct_dir = os.path.join(home, ".config", "qt5ct", "colors")
+qt6ct_dir = os.path.join(home, ".config", "qt6ct", "colors")
+
+for d in [gtk3_dir, gtk4_dir, kde_schemes_dir, qt5ct_dir, qt6ct_dir]:
+    os.makedirs(d, exist_ok=True)
+
+def hex_to_rgb_tuple(h):
+    if not h or not isinstance(h, str):
+        return (255, 255, 255)
+    h = h.strip().lstrip("#")
+    if len(h) == 6:
+        return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+    return (255, 255, 255)
+
+def rgb_to_hex(r, g, b):
+    return f"#{max(0, min(255, int(r))):02x}{max(0, min(255, int(g))):02x}{max(0, min(255, int(b))):02x}"
+
+def blend_colors(c1, c2, factor):
+    r1, g1, b1 = hex_to_rgb_tuple(c1)
+    r2, g2, b2 = hex_to_rgb_tuple(c2)
+    return rgb_to_hex(r1 * (1 - factor) + r2 * factor, g1 * (1 - factor) + g2 * factor, b1 * (1 - factor) + b2 * factor)
+
+def hex_to_rgb(hex_str, default="255,255,255"):
+    r, g, b = hex_to_rgb_tuple(hex_str)
+    return f"{r},{g},{b}"
+
+# Base palette tokens
+fg = pal.get('on_surface', pal.get('on_background', '#eee0d5'))
+pri = pal.get('primary', '#ecc06c')
+on_pri = pal.get('on_primary', '#412d00')
+sec = pal.get('secondary', '#d9c4a0')
+on_sec = pal.get('on_secondary', '#3b2e15')
+ter = pal.get('tertiary', '#b2cfa7')
+on_ter = pal.get('on_tertiary', '#1f361a')
+err = pal.get('error', '#ffb4ab')
+on_err = pal.get('on_error', '#690005')
+outl = pal.get('outline', '#9a8f80')
+outl_var = pal.get('outline_variant', '#4e4639')
+surf_mid = pal.get('surface_container', '#241f17')
+surf_high = pal.get('surface_container_high', '#2e2921')
+
+# Color Hierarchy & Material Roles according to specification:
+# - Base dark surface: for main view, window, dialogs, headerbar ("all the others should have this color example #130d07")
+# - Elevated surface: for sidebar & input bar in filemanager ("only the input bar and the sidebar in the filemanager should have this color for example #19120c")
+# - Selected: #503a24 ("selected should have this color #503a24")
+# - Hover: #694e33 ("hover should have even lighter color")
+
+is_preset = bool(pal.get('id') or pal.get('category'))
+if is_preset:
+    bg_dark = pal.get('surface_container_lowest', pal.get('background', '#130d07'))
+    surf_elevated = pal.get('surface_container_low', pal.get('surface', '#19120c'))
+    surf_mid = surf_elevated
+    sel_color = pal.get('primary_container', pal.get('primary', '#503a24'))
+    hover_color = blend_colors(sel_color, '#ffffff', 0.20)
+    bg_dark_backdrop = blend_colors(bg_dark, '#ffffff', 0.02)
+    surf_elevated_backdrop = blend_colors(surf_elevated, '#ffffff', 0.02)
+else:
+    if pal.get('surface_container_lowest') in ('#120e07', '#130d07', '#140c0b'):
+        bg_dark = '#130d07'
+        surf_elevated = '#19120c'
+        surf_mid = '#19120c'
+        surf_high = '#221910'
+        sel_color = '#503a24'
+        hover_color = '#694e33'
+        # Unhovered / inactive window colors - subtly darker/subdued, NOT bright/washed-out
+        bg_dark_backdrop = '#16110a'
+        surf_elevated_backdrop = '#1c150e'
+    else:
+        bg_dark = pal.get('surface_container_lowest', '#130d07')
+        surf_elevated = pal.get('surface_container_low', pal.get('surface', '#19120c'))
+        if surf_elevated == bg_dark:
+            surf_elevated = pal.get('surface_container', pal.get('surface_variant', '#19120c'))
+        surf_mid = surf_elevated
+        sel_color = pal.get('primary_container', '#503a24')
+        hover_color = blend_colors(sel_color, '#ffffff', 0.20)
+        bg_dark_backdrop = blend_colors(bg_dark, '#ffffff', 0.02)
+        surf_elevated_backdrop = blend_colors(surf_elevated, '#ffffff', 0.02)
+
+bg_dark_rgb = hex_to_rgb(bg_dark)
+surf_elevated_rgb = hex_to_rgb(surf_elevated)
+sel_color_rgb = hex_to_rgb(sel_color)
+hover_color_rgb = hex_to_rgb(hover_color)
+fg_rgb = hex_to_rgb(fg)
+pri_rgb = hex_to_rgb(pri)
+on_pri_rgb = hex_to_rgb(on_pri)
+sec_rgb = hex_to_rgb(sec)
+ter_rgb = hex_to_rgb(ter)
+err_rgb = hex_to_rgb(err)
+surf_mid_rgb = hex_to_rgb(surf_mid)
+surf_high_rgb = hex_to_rgb(surf_high)
+outl_rgb = hex_to_rgb(outl)
+
+pri_rgb_tuple = hex_to_rgb_tuple(pri)
+sel_color_rgb_tuple = hex_to_rgb_tuple(sel_color)
+
+gtk3_css = f"""/* ====================================================================
+ * Zenith Shell - Orchis Borderless Material GTK 3 Theme & Thunar Styling
+ * Generated automatically from ~/.cache/zenith/colors.json
+ * ==================================================================== */
+
+@define-color theme_bg_color {bg_dark};
+@define-color theme_fg_color {fg};
+@define-color theme_base_color {bg_dark};
+@define-color theme_text_color {fg};
+@define-color theme_selected_bg_color {sel_color};
+@define-color theme_selected_fg_color #ffffff;
+@define-color theme_view_hover_decoration_color {hover_color};
+@define-color placeholder_text_color {outl};
+@define-color borders transparent;
+@define-color unfocused_borders transparent;
+@define-color warning_color {ter};
+@define-color error_color {err};
+@define-color success_color {ter};
+
+@define-color content_view_bg {bg_dark};
+@define-color sidebar_bg {bg_dark};
+@define-color window_bg {bg_dark};
+@define-color headerbar_bg {bg_dark};
+@define-color headerbar_fg {fg};
+@define-color headerbar_border transparent;
+@define-color headerbar_backdrop {bg_dark_backdrop};
+
+/* Universal border & separator removal */
+*,
+*:backdrop {{
+    border-color: transparent;
+    border-style: none;
+    border-width: 0;
+}}
+
+frame,
+frame > border,
+.frame,
+scrolledwindow > border,
+viewport > border,
+decoration,
+decoration:backdrop {{
+    border: none;
+    border-style: none;
+    border-width: 0;
+    box-shadow: none;
+}}
+
+paned > separator,
+paned > separator:dir(ltr),
+paned > separator:dir(rtl),
+paned > separator.wide,
+paned.horizontal > separator,
+paned.horizontal > separator:dir(ltr),
+paned.horizontal > separator:dir(rtl),
+paned.horizontal > separator.wide,
+paned.vertical > separator,
+paned.vertical > separator:dir(ltr),
+paned.vertical > separator:dir(rtl),
+paned.vertical > separator.wide,
+separator {{
+    background-color: transparent;
+    background-image: none;
+    border: none;
+    border-style: none;
+    border-width: 0;
+    box-shadow: none;
+    min-width: 0px;
+    min-height: 0px;
+    margin: 0;
+    padding: 0;
+}}
+
+/* Base Surfaces & Windows - NO POINT EDGES */
+window,
+window.background,
+window.solid-csd {{
+    background-color: {bg_dark};
+    color: {fg};
+    border-radius: 16px;
+    border-style: none;
+    border-width: 0;
+    box-shadow: none;
+}}
+
+/* CSD Windows & Dialogs: Top corners are shaped by headerbar/titlebar, bottom corners are rounded (16px).
+ * Critically: border-top-left-radius and border-top-right-radius MUST BE 0 so the junction between
+ * the headerbar and window body / notebook has NO inward notch or wallpaper peaking through! */
+window.csd,
+window.background.csd,
+dialog,
+dialog.background,
+dialog.background.csd,
+messagedialog,
+messagedialog.csd,
+.background.csd {{
+    background-color: {bg_dark};
+    color: {fg};
+    border-radius: 0 0 16px 16px;
+    border-top-left-radius: 0px;
+    border-top-right-radius: 0px;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+    border-style: none;
+    border-width: 0;
+    box-shadow: none;
+}}
+
+dialog > box,
+dialog.background > box,
+dialog.background.csd > box,
+dialog.background.csd > box.dialog-vbox,
+dialog.background.csd > box.vertical.dialog-vbox,
+window.dialog > box,
+window.background.csd > box,
+window.csd > box,
+box.dialog-vbox,
+box.vertical.dialog-vbox {{
+    background-color: {bg_dark};
+    border-radius: 0px;
+    border-top-left-radius: 0px;
+    border-top-right-radius: 0px;
+    margin: 0px;
+    padding: 0px;
+    border: none;
+    box-shadow: none;
+}}
+
+.view,
+textview text {{
+    background-color: {bg_dark};
+    color: {fg};
+    border-radius: 12px;
+    border-style: none;
+    border-width: 0;
+}}
+
+/* Titlebars & Headerbars - Flat Bottom Junction */
+headerbar,
+.titlebar,
+toolbar {{
+    background-color: {bg_dark};
+    color: {fg};
+    border-radius: 16px 16px 0 0;
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    border-bottom-left-radius: 0px;
+    border-bottom-right-radius: 0px;
+    border-style: none;
+    border-width: 0;
+    box-shadow: none;
+    padding: 4px 8px;
+}}
+
+headerbar:backdrop,
+toolbar:backdrop {{
+    background-color: {bg_dark};
+    color: {outl};
+}}
+
+/* Checkboxes and Radios - NO OUTSIDE COLOR, ONLY FILL INSIDE */
+checkbutton,
+radiobutton,
+checkbutton:hover,
+radiobutton:hover,
+checkbutton:active,
+radiobutton:active,
+checkbutton:checked,
+radiobutton:checked,
+checkbutton:focus,
+radiobutton:focus {{
+    background: transparent;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 3px 6px;
+    margin: 2px 0;
+    outline: none;
+}}
+
+checkbutton button,
+radiobutton button {{
+    background: transparent;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+}}
+
+check,
+radio {{
+    background: transparent;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    color: {outl};
+    min-height: 20px;
+    min-width: 20px;
+    margin: 0 4px 0 0;
+    padding: 0;
+}}
+
+check:checked,
+check:indeterminate {{
+    background: transparent;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    color: {pri};
+}}
+
+radio:checked,
+radio:indeterminate {{
+    background: transparent;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    color: {pri};
+}}
+
+check:disabled,
+radio:disabled {{
+    background: transparent;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    color: alpha({fg}, 0.25);
+}}
+
+/* General Material Buttons (Explicitly excluding check/radio and window controls) */
+button:not(.check):not(.radio):not(.titlebutton):not(.close) {{
+    background-color: {surf_mid};
+    color: {fg};
+    border-style: none;
+    border-width: 0;
+    border-radius: 10px;
+    padding: 6px 14px;
+    font-weight: 500;
+    box-shadow: none;
+    transition: background-color 150ms ease, color 150ms ease;
+}}
+
+button:not(.check):not(.radio):not(.titlebutton):not(.close):hover {{
+    background-color: {hover_color};
+    color: #ffffff;
+}}
+
+button:not(.check):not(.radio):not(.titlebutton):not(.close):active,
+button:not(.check):not(.radio):not(.titlebutton):not(.close):checked {{
+    background-color: {sel_color};
+    color: #ffffff;
+}}
+
+/* Toolbar & Headerbar Action Buttons - Flat & Transparent with Material hover */
+toolbar button:not(.suggested-action):not(.destructive-action):not(.path-bar-button),
+headerbar button:not(.suggested-action):not(.destructive-action):not(.path-bar-button),
+.titlebar button:not(.suggested-action):not(.destructive-action):not(.path-bar-button),
+.thunar toolbar button:not(.path-bar-button),
+.thunar headerbar button:not(.path-bar-button) {{
+    background-color: transparent;
+    background-image: none;
+    border: none;
+    box-shadow: none;
+    border-radius: 9999px;
+    min-width: 32px;
+    min-height: 32px;
+    padding: 4px;
+    margin: 1px 2px;
+    color: {fg};
+    transition: background-color 120ms ease, color 120ms ease;
+}}
+
+toolbar button:not(.suggested-action):not(.destructive-action):not(.path-bar-button):hover,
+headerbar button:not(.suggested-action):not(.destructive-action):not(.path-bar-button):hover,
+.titlebar button:not(.suggested-action):not(.destructive-action):not(.path-bar-button):hover,
+.thunar toolbar button:not(.path-bar-button):hover,
+.thunar headerbar button:not(.path-bar-button):hover {{
+    background-color: {hover_color};
+    color: #ffffff;
+}}
+
+toolbar button:not(.suggested-action):not(.destructive-action):not(.path-bar-button):active,
+toolbar button:not(.suggested-action):not(.destructive-action):not(.path-bar-button):checked,
+headerbar button:not(.suggested-action):not(.destructive-action):not(.path-bar-button):active,
+headerbar button:not(.suggested-action):not(.destructive-action):not(.path-bar-button):checked,
+.thunar toolbar button:not(.path-bar-button):active,
+.thunar toolbar button:not(.path-bar-button):checked,
+.thunar headerbar button:not(.path-bar-button):active,
+.thunar headerbar button:not(.path-bar-button):checked {{
+    background-color: {sel_color};
+    color: #ffffff;
+}}
+
+/* Window Controls / Titlebuttons (e.g. 'x' close button) - Transparent matching main body */
+headerbar button.titlebutton,
+headerbar button.titlebutton.close,
+headerbar button.close,
+headerbar windowcontrols button,
+headerbar windowcontrols button.close,
+.titlebar button.titlebutton,
+.titlebar button.titlebutton.close,
+.titlebar button.close,
+windowcontrols button,
+windowcontrols button.close,
+button.titlebutton,
+button.titlebutton.close,
+button.close,
+.thunar headerbar button.titlebutton,
+.thunar headerbar button.close,
+.thunar headerbar windowcontrols button,
+.thunar headerbar windowcontrols button.close,
+.thunar windowcontrols button,
+.thunar windowcontrols button.close,
+window.background.csd.thunar headerbar button.titlebutton,
+window.background.csd.thunar headerbar button.close,
+window.background.csd.thunar windowcontrols button,
+window.background.csd.thunar windowcontrols button.close {{
+    background: transparent;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    border-radius: 9999px;
+    min-width: 24px;
+    min-height: 24px;
+    padding: 4px;
+    margin: 1px 2px;
+    color: {fg};
+    transition: background-color 120ms ease, color 120ms ease;
+}}
+
+headerbar button.titlebutton:hover,
+headerbar button.titlebutton.close:hover,
+headerbar button.close:hover,
+headerbar windowcontrols button:hover,
+headerbar windowcontrols button.close:hover,
+.titlebar button.titlebutton:hover,
+.titlebar button.titlebutton.close:hover,
+.titlebar button.close:hover,
+windowcontrols button:hover,
+windowcontrols button.close:hover,
+button.titlebutton:hover,
+button.titlebutton.close:hover,
+button.close:hover,
+.thunar headerbar button.titlebutton:hover,
+.thunar headerbar button.close:hover,
+.thunar headerbar windowcontrols button:hover,
+.thunar headerbar windowcontrols button.close:hover {{
+    background-color: {hover_color};
+    color: #ffffff;
+}}
+
+headerbar button.titlebutton:active,
+headerbar button.titlebutton.close:active,
+headerbar button.close:active,
+button.titlebutton.close:active,
+.thunar headerbar button.titlebutton:active,
+.thunar headerbar button.close:active {{
+    background-color: {sel_color};
+    color: #ffffff;
+}}
+
+headerbar button.titlebutton:backdrop,
+headerbar button.titlebutton.close:backdrop,
+headerbar button.close:backdrop,
+button.titlebutton:backdrop,
+button.titlebutton.close:backdrop,
+button.close:backdrop,
+windowcontrols button:backdrop,
+windowcontrols button.close:backdrop,
+.thunar headerbar button.titlebutton:backdrop,
+.thunar headerbar button.close:backdrop,
+.thunar headerbar button:backdrop {{
+    background: transparent;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    color: alpha({fg}, 0.5);
+}}
+
+button.flat {{
+    background-color: transparent;
+    border-style: none;
+    border-width: 0;
+    box-shadow: none;
+    border-radius: 8px;
+}}
+
+button.flat:hover {{
+    background-color: {hover_color};
+    color: #ffffff;
+}}
+
+button.circular,
+button.pill {{
+    border-radius: 9999px;
+}}
+
+button.suggested-action {{
+    background-color: {pri};
+    color: {on_pri};
+    border-radius: 9999px;
+    font-weight: 600;
+}}
+
+button.destructive-action {{
+    background-color: {err};
+    color: {on_err};
+    border-radius: 9999px;
+    font-weight: 600;
+}}
+
+/* Inputs & Entries */
+entry {{
+    background-color: {surf_elevated};
+    color: {fg};
+    border-radius: 9999px;
+    border-style: none;
+    border-width: 0;
+    padding: 6px 14px;
+    box-shadow: none;
+}}
+
+entry:focus {{
+    background-color: {surf_elevated};
+    box-shadow: 0 0 0 1.5px {pri};
+}}
+
+/* Notebook Tabs - Pill / Rounded Material */
+notebook,
+notebook header {{
+    background-color: {bg_dark};
+    border: none;
+    box-shadow: none;
+    padding: 4px 6px;
+}}
+
+/* Flat Topbar Junction - Remove Rounded Corners Below Topbar */
+headerbar + box,
+.titlebar + box,
+headerbar + notebook,
+.titlebar + notebook,
+window > box,
+dialog > box,
+dialog.background > box,
+dialog.background.csd > box,
+dialog.background.csd > box.dialog-vbox,
+dialog.background.csd > box.vertical.dialog-vbox,
+box.dialog-vbox,
+box.vertical.dialog-vbox,
+notebook,
+notebook.frame,
+notebook > header,
+notebook > header.top,
+notebook > stack,
+notebook.frame > header.top,
+notebook.frame > stack,
+notebook.frame > stack scrolledwindow.frame,
+.background.csd notebook,
+.background.csd notebook.frame,
+.background.csd notebook.frame > header,
+.background.csd notebook.frame > header.top,
+.background.csd notebook.frame > stack,
+.background.csd notebook.frame > stack scrolledwindow.frame,
+dialog.background.csd notebook,
+dialog.background.csd notebook.frame,
+dialog.background.csd notebook.frame > header,
+dialog.background.csd notebook.frame > header.top,
+dialog.background.csd > box.vertical.dialog-vbox > notebook,
+dialog.background.csd > box.vertical.dialog-vbox > notebook > stack,
+dialog.background.csd > box.vertical.dialog-vbox > notebook > header,
+dialog.background.csd > box.vertical.dialog-vbox > notebook > header.top,
+.thunar notebook,
+.thunar notebook.frame,
+.thunar notebook > header.top,
+.thunar notebook > stack {{
+    background-color: {bg_dark};
+    border-top-left-radius: 0px;
+    border-top-right-radius: 0px;
+    border-radius: 0px;
+    border: none;
+    box-shadow: none;
+}}
+
+/* Dropdowns / ComboBoxes */
+combobox button.combo,
+combobox button {{
+    background-color: {surf_mid};
+    color: {fg};
+    border-radius: 8px;
+    border: none;
+    box-shadow: none;
+}}
+
+combobox button.combo:hover,
+combobox button:hover {{
+    background-color: {hover_color};
+    color: #ffffff;
+}}
+
+combobox button.combo:active,
+combobox button.combo:checked,
+combobox button:active,
+combobox button:checked {{
+    background-color: {sel_color};
+    color: #ffffff;
+}}
+
+/* Inner transparent containers for buttons, dropdowns, and inputs */
+button box,
+button label,
+button image,
+button > alignment,
+button > alignment > box,
+combobox box,
+combobox button box,
+combobox cellview,
+combobox button cellview,
+combobox label,
+combobox button label,
+combobox arrow,
+combobox button arrow,
+cellview,
+cellview:not(:selected),
+entry box,
+entry image,
+spinbutton button {{
+    background-color: transparent;
+    background: transparent;
+}}
+
+notebook tab {{
+    background-color: transparent;
+    color: {outl};
+    border-radius: 10px;
+    padding: 6px 14px;
+    margin: 2px 3px;
+    border: none;
+    font-weight: 500;
+    transition: all 120ms ease;
+}}
+
+notebook tab:hover {{
+    background-color: {hover_color};
+    color: #ffffff;
+}}
+
+notebook tab:checked {{
+    background-color: {sel_color};
+    color: #ffffff;
+    font-weight: 600;
+}}
+
+/* Toggle Switches */
+switch {{
+    background-color: {surf_high};
+    border-radius: 9999px;
+    min-width: 44px;
+    min-height: 22px;
+    border: none;
+}}
+
+switch:checked {{
+    background-color: {pri};
+}}
+
+switch slider {{
+    background-color: {fg};
+    border-radius: 9999px;
+    min-width: 16px;
+    min-height: 16px;
+    margin: 3px;
+    border: none;
+}}
+
+switch:checked slider {{
+    background-color: {on_pri};
+}}
+
+/* Sliders / Scales */
+scale trough {{
+    background-color: {surf_mid};
+    border-radius: 9999px;
+    min-height: 4px;
+    border: none;
+}}
+
+scale highlight {{
+    background-color: {pri};
+    border-radius: 9999px;
+    min-height: 4px;
+    border: none;
+}}
+
+scale slider,
+scale.horizontal slider,
+scale.vertical slider,
+scale > trough > slider,
+scale.horizontal > trough > slider,
+scale.vertical > trough > slider {{
+    background-color: {pri};
+    color: {pri};
+    border-radius: 9999px;
+    min-width: 18px;
+    min-height: 18px;
+    margin: -7px;
+    border: 2px solid {bg_dark};
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+    transition: background-color 120ms ease, box-shadow 120ms ease;
+}}
+
+scale slider:hover,
+scale > trough > slider:hover,
+scale.horizontal > trough > slider:hover,
+scale.vertical > trough > slider:hover {{
+    background-color: {hover_color};
+    border-color: {bg_dark};
+    box-shadow: 0 0 0 6px rgba({pri_rgb}, 0.20), 0 2px 6px rgba(0, 0, 0, 0.5);
+}}
+
+scale slider:active,
+scale > trough > slider:active,
+scale.horizontal > trough > slider:active,
+scale.vertical > trough > slider:active {{
+    background-color: {sel_color};
+    border-color: {bg_dark};
+    box-shadow: 0 0 0 8px rgba({pri_rgb}, 0.30), 0 3px 8px rgba(0, 0, 0, 0.6);
+}}
+
+scale slider:disabled,
+scale.horizontal slider:disabled,
+scale.vertical slider:disabled,
+scale > trough > slider:disabled,
+scale.horizontal > trough > slider:disabled,
+scale.vertical > trough > slider:disabled {{
+    background-color: rgba({fg_rgb}, 0.25);
+    border-color: transparent;
+    box-shadow: none;
+}}
+
+/* Popovers & Context Menus */
+popover,
+menu,
+.menu {{
+    background-color: {surf_elevated};
+    color: {fg};
+    border-radius: 14px;
+    border: none;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    padding: 6px;
+}}
+
+menuitem {{
+    border-radius: 8px;
+    padding: 6px 12px;
+    margin: 1px 0;
+}}
+
+menuitem:hover {{
+    background-color: {hover_color};
+    color: #ffffff;
+}}
+
+/* Scrollbars */
+scrollbar {{
+    background-color: transparent;
+    border: none;
+}}
+
+scrollbar slider {{
+    background-color: alpha({fg}, 0.2);
+    border-radius: 9999px;
+    min-width: 8px;
+    min-height: 8px;
+    border: none;
+}}
+
+scrollbar slider:hover {{
+    background-color: {hover_color};
+}}
+
+/* PlacesSidebar (Nautilus, GTK file pickers) */
+placessidebar list row.activatable {{
+    border-radius: 9999px;
+    margin: 2px 8px;
+    padding: 6px 12px;
+    border: none;
+    color: {fg};
+}}
+
+placessidebar list row.activatable:hover {{
+    background-color: {hover_color};
+    color: #ffffff;
+}}
+
+placessidebar list row.activatable:selected {{
+    background-color: {sel_color};
+    color: #ffffff;
+    font-weight: 600;
+}}
+
+/* ====================================================================
+ * Thunar File Manager - Bespoke Material Styling
+ * ==================================================================== */
+
+window.thunar,
+.thunar,
+window.background.csd.thunar {{
+    background-color: {bg_dark};
+    color: {fg};
+    border-radius: 16px;
+    border: none;
+    box-shadow: none;
+}}
+
+/* Thunar Headerbar & Toolbar */
+.thunar headerbar,
+.thunar toolbar,
+.thunar .titlebar,
+.thunar headerbar.titlebar toolbar {{
+    background-color: {bg_dark};
+    color: {fg};
+    border: none;
+    box-shadow: none;
+    padding: 4px 8px;
+}}
+
+/* Thunar Header Navigation & Action Buttons */
+.thunar headerbar button.image-button,
+.thunar toolbar button.image-button,
+.thunar headerbar button,
+.thunar toolbar button {{
+    border-radius: 9999px;
+    min-width: 32px;
+    min-height: 32px;
+    padding: 4px;
+    margin: 1px 2px;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    color: {fg};
+    transition: background-color 120ms ease, color 120ms ease;
+}}
+
+.thunar headerbar button.image-button:hover,
+.thunar toolbar button.image-button:hover,
+.thunar headerbar button:hover,
+.thunar toolbar button:hover {{
+    background-color: {hover_color};
+    color: #ffffff;
+}}
+
+.thunar headerbar button.image-button:active,
+.thunar toolbar button.image-button:active,
+.thunar headerbar button:active,
+.thunar toolbar button:active,
+.thunar headerbar button:checked,
+.thunar toolbar button:checked {{
+    background-color: {sel_color};
+    color: #ffffff;
+}}
+
+/* Thunar Sidebar - Flat, Seamless, Left & Right Padding */
+.thunar .sidebar,
+.thunar .shortcuts-pane,
+.thunar scrolledwindow.sidebar,
+.thunar scrolledwindow.sidebar > border,
+.thunar scrolledwindow.shortcuts-pane,
+.thunar > grid > paned > scrolledwindow.sidebar,
+.thunar > grid.horizontal > paned.horizontal > scrolledwindow,
+.thunar > grid.horizontal > paned.horizontal > scrolledwindow.frame.sidebar.shortcuts-pane,
+window.background.csd.thunar > grid > paned > scrolledwindow.sidebar,
+window.background.csd.thunar > grid.horizontal > paned.horizontal > scrolledwindow.frame.sidebar.shortcuts-pane {{
+    background-color: {bg_dark};
+    color: {fg};
+    border: none;
+    border-radius: 0;
+    margin: 0;
+    padding: 0 10px;
+    box-shadow: none;
+    transition: background-color 150ms ease, color 150ms ease;
+}}
+
+.thunar .sidebar treeview,
+.thunar .sidebar treeview.view,
+.thunar .shortcuts-pane treeview,
+.thunar .sidebar treeview:backdrop,
+.thunar .sidebar treeview.view:backdrop,
+.thunar .shortcuts-pane treeview:backdrop {{
+    background-color: transparent;
+    border: none;
+    border-radius: 0;
+    margin: 0;
+    padding: 8px 4px;
+    -GtkTreeView-horizontal-separator: 8;
+    -GtkTreeView-vertical-separator: 6;
+    -GtkTreeView-expander-size: 14;
+}}
+
+.thunar .sidebar treeview:hover,
+.thunar .sidebar treeview.view:hover {{
+    background-color: transparent;
+}}
+
+/* Sidebar row hover & selection */
+.thunar .sidebar treeview:selected,
+.thunar .sidebar treeview.view:selected,
+.thunar .shortcuts-pane treeview:selected,
+.thunar .sidebar treeview:selected:backdrop,
+.thunar .sidebar treeview.view:selected:backdrop,
+.thunar .shortcuts-pane treeview:selected:backdrop {{
+    background-color: {sel_color};
+    color: #ffffff;
+    font-weight: 600;
+    border-radius: 9999px;
+    border: none;
+    box-shadow: none;
+}}
+
+/* Pane separator: ZERO width & transparent */
+.thunar paned > separator,
+.thunar paned separator,
+.thunar paned.horizontal > separator,
+.thunar paned.vertical > separator {{
+    background-color: transparent;
+    background-image: none;
+    border: none;
+    min-width: 0px;
+    min-height: 0px;
+    margin: 0;
+    padding: 0;
+}}
+
+/* Thunar Input Bar (Address / Search Entry) - Elevated Surface #19120c */
+.thunar entry,
+.thunar entry.search,
+entry.path-bar-entry {{
+    background-color: {surf_elevated};
+    color: {fg};
+    border-radius: 9999px;
+    padding: 6px 14px;
+    min-height: 28px;
+    border: none;
+    box-shadow: none;
+}}
+
+.thunar entry:focus,
+.thunar entry.search:focus,
+entry.path-bar-entry:focus {{
+    box-shadow: 0 0 0 1.5px {pri};
+    background-color: {surf_elevated};
+}}
+
+/* Breadcrumbs / Pathbar Buttons */
+.thunar .path-bar-button,
+.thunar .path-bar button,
+.path-bar-button,
+button.path-bar-button {{
+    background-color: {surf_elevated};
+    color: {fg};
+    border-radius: 9999px;
+    margin: 2px 2px;
+    padding: 4px 14px;
+    font-weight: 500;
+    font-size: 13px;
+    border: none;
+    box-shadow: none;
+    transition: all 120ms ease;
+}}
+
+.thunar .path-bar-button:hover,
+button.path-bar-button:hover {{
+    background-color: {hover_color};
+    color: #ffffff;
+}}
+
+.thunar .path-bar-button:checked,
+.thunar .path-bar-button:active,
+button.path-bar-button:checked,
+button.path-bar-button:active {{
+    background-color: {sel_color};
+    color: #ffffff;
+    font-weight: 700;
+}}
+
+/* Thunar Main File Grid / List View - Base Dark #130d07 */
+.thunar .standard-view,
+.thunar .standard-view.frame,
+.thunar .standard-view.frame > border,
+.thunar .standard-view .view,
+.thunar .standard-view widget.view,
+.thunar iconview,
+.thunar treeview.view,
+.thunar frame,
+.thunar frame > border,
+.thunar .frame,
+.thunar .frame > border,
+.thunar scrolledwindow,
+.thunar scrolledwindow > border,
+.thunar scrolledwindow.frame,
+.thunar scrolledwindow.frame > border,
+.thunar paned paned paned > notebook.frame,
+.thunar paned paned paned > notebook.frame > border {{
+    background-color: {bg_dark};
+    color: {fg};
+    border: none;
+    box-shadow: none;
+    outline: none;
+}}
+
+/* Hover in main view */
+.thunar iconview:hover,
+.thunar treeview.view:hover {{
+    background-color: {hover_color};
+    color: #ffffff;
+    border-radius: 10px;
+}}
+
+/* Selected item in main view - STRICT OVERRIDE FOR ORCHIS #3281EA & Silhouette Bug */
+.background.csd .view:selected,
+.background.csd .view:selected:focus,
+.background.csd .view:selected:backdrop,
+.background.csd.thunar .view:selected,
+.background.csd.thunar .view:selected:focus,
+.background.csd.thunar .view:selected:backdrop,
+.thunar .standard-view.frame .view:selected,
+.thunar .standard-view.frame .view:selected:focus,
+.thunar .standard-view.frame .view:selected:backdrop,
+.thunar .standard-view.frame:selected,
+.thunar .standard-view.frame:selected:focus,
+.thunar .standard-view.frame:selected:backdrop,
+.thunar .standard-view .view:selected,
+.thunar .standard-view .view:selected:focus,
+.thunar .standard-view .view:selected:backdrop,
+.thunar .standard-view widget.view:selected,
+.thunar .standard-view widget.view:selected:focus,
+.thunar .standard-view widget.view:selected:backdrop,
+.thunar .standard-view.frame widget.view:selected,
+.thunar iconview:selected,
+.thunar iconview:selected:focus,
+.thunar iconview:selected:backdrop,
+.thunar treeview.view:selected,
+.thunar treeview.view:selected:focus,
+.thunar treeview.view:selected:backdrop,
+.thunar .view:selected,
+.thunar .view:selected:focus,
+.thunar .view:selected:backdrop,
+iconview:selected,
+iconview:selected:focus,
+iconview:selected:backdrop,
+treeview.view:selected,
+treeview.view:selected:focus,
+treeview.view:selected:backdrop,
+.view:selected,
+.view:selected:focus,
+.view:selected:backdrop,
+*:selected,
+*:selected:focus,
+*:selected:backdrop {{
+    background-color: {sel_color};
+    background: {sel_color};
+    color: #ffffff;
+    border-radius: 10px;
+    border: none;
+    box-shadow: none;
+    -gtk-icon-effect: none;
+    -gtk-icon-shadow: none;
+}}
+
+/* Rubberband / Cursor Selection Box - Exact Match to Selected Item Background */
+.rubberband,
+rubberband,
+*.rubberband,
+* rubberband,
+.view.rubberband,
+.view rubberband,
+.view .rubberband,
+iconview.rubberband,
+iconview rubberband,
+iconview .rubberband,
+ExoIconView.rubberband,
+ExoIconView rubberband,
+ExoIconView .rubberband,
+treeview.rubberband,
+treeview rubberband,
+treeview .rubberband,
+treeview.view.rubberband,
+treeview.view rubberband,
+treeview.view .rubberband,
+scrolledwindow rubberband,
+scrolledwindow .rubberband,
+.content-view rubberband,
+.content-view .rubberband,
+flowbox rubberband,
+flowbox .rubberband,
+XfdesktopIconView.view .rubberband,
+.thunar rubberband,
+.thunar .rubberband,
+.thunar * rubberband,
+.thunar * .rubberband,
+.thunar iconview.rubberband,
+.thunar iconview .rubberband,
+.thunar ExoIconView.rubberband,
+.thunar ExoIconView .rubberband,
+.thunar treeview.rubberband,
+.thunar treeview .rubberband,
+window.thunar rubberband,
+window.thunar .rubberband,
+window.background.csd.thunar rubberband,
+window.background.csd.thunar .rubberband {{
+    background-color: rgba({sel_color_rgb}, 0.38);
+    background: rgba({sel_color_rgb}, 0.38);
+    border: 1px solid {pri};
+    border-color: {pri};
+    border-style: solid;
+    border-width: 1px;
+    border-radius: 0;
+    box-shadow: none;
+}}
+
+.rubberband:backdrop,
+rubberband:backdrop,
+.thunar rubberband:backdrop,
+.thunar .rubberband:backdrop {{
+    background-color: rgba({sel_color_rgb}, 0.25);
+    background: rgba({sel_color_rgb}, 0.25);
+    border: 1px solid rgba({pri_rgb}, 0.6);
+    border-color: rgba({pri_rgb}, 0.6);
+    border-style: solid;
+    border-width: 1px;
+    border-radius: 0;
+    box-shadow: none;
+}}
+
+/* Thunar Statusbar - Base Dark #130d07 */
+.thunar statusbar,
+.thunar statusbar frame,
+.thunar statusbar frame > border {{
+    background-color: {bg_dark};
+    color: {outl};
+    border: none;
+    box-shadow: none;
+    padding: 4px 12px;
+    font-size: 12px;
+    margin: 0;
+}}
+
+/* ====================================================================
+ * Inactive / Not Hovered Window - Visually Lighter Hierarchy (:backdrop)
+ * ==================================================================== */
+
+window:backdrop,
+window.background:backdrop,
+window.csd:backdrop,
+window.solid-csd:backdrop,
+window.background.csd:backdrop,
+dialog:backdrop,
+messagedialog:backdrop,
+.thunar:backdrop,
+window.thunar:backdrop,
+window.background.csd.thunar:backdrop {{
+    background-color: {bg_dark_backdrop};
+    color: alpha({fg}, 0.85);
+}}
+
+headerbar:backdrop,
+.titlebar:backdrop,
+toolbar:backdrop,
+.thunar headerbar:backdrop,
+.thunar toolbar:backdrop,
+.thunar .titlebar:backdrop,
+.thunar headerbar.titlebar toolbar:backdrop {{
+    background-color: {bg_dark_backdrop};
+    color: {outl};
+}}
+
+.thunar .sidebar:backdrop,
+.thunar .shortcuts-pane:backdrop,
+.thunar scrolledwindow.sidebar:backdrop,
+.thunar > grid > paned > scrolledwindow.sidebar:backdrop,
+.thunar > grid.horizontal > paned.horizontal > scrolledwindow:backdrop,
+.thunar > grid.horizontal > paned.horizontal > scrolledwindow.frame.sidebar.shortcuts-pane:backdrop,
+window.background.csd.thunar > grid > paned > scrolledwindow.sidebar:backdrop,
+window.background.csd.thunar > grid.horizontal > paned.horizontal > scrolledwindow.frame.sidebar.shortcuts-pane:backdrop {{
+    background-color: {bg_dark_backdrop};
+    color: alpha({fg}, 0.75);
+    border: none;
+    border-radius: 0;
+    margin: 0;
+    padding: 0 10px;
+}}
+
+.thunar .standard-view:backdrop,
+.thunar .standard-view.frame:backdrop,
+.thunar .standard-view.frame > border:backdrop,
+.thunar .standard-view .view:backdrop,
+.thunar .standard-view widget.view:backdrop,
+.thunar iconview:backdrop,
+.thunar treeview.view:backdrop,
+.thunar frame:backdrop,
+.thunar .frame:backdrop,
+.thunar scrolledwindow:backdrop,
+.thunar scrolledwindow > border:backdrop,
+.thunar scrolledwindow.frame:backdrop,
+.thunar scrolledwindow.frame > border:backdrop,
+.thunar paned paned paned > notebook.frame:backdrop,
+.thunar paned paned paned > notebook.frame > border:backdrop {{
+    background-color: {bg_dark_backdrop};
+    color: alpha({fg}, 0.85);
+}}
+
+.thunar entry:backdrop,
+.thunar entry.search:backdrop,
+entry.path-bar-entry:backdrop,
+.thunar .path-bar-button:backdrop,
+button.path-bar-button:backdrop {{
+    background-color: {surf_elevated_backdrop};
+    color: alpha({fg}, 0.85);
+}}
+
+.thunar statusbar:backdrop,
+.thunar statusbar frame:backdrop,
+.thunar statusbar frame > border:backdrop {{
+    background-color: {bg_dark_backdrop};
+    color: {outl};
+}}
+"""
+
+gtk4_css = f"""/* ====================================================================
+ * Zenith Shell - Orchis Borderless Material GTK 4 / Libadwaita Theme
+ * Generated automatically from ~/.cache/zenith/colors.json
+ * ==================================================================== */
+
+@define-color accent_color {pri};
+@define-color accent_bg_color {sel_color};
+@define-color accent_fg_color #ffffff;
+
+@define-color window_bg_color {bg_dark};
+@define-color window_fg_color {fg};
+
+@define-color view_bg_color {bg_dark};
+@define-color view_fg_color {fg};
+
+@define-color headerbar_bg_color {bg_dark};
+@define-color headerbar_fg_color {fg};
+@define-color headerbar_border_color transparent;
+@define-color headerbar_backdrop_color {bg_dark_backdrop};
+
+@define-color card_bg_color {surf_elevated};
+@define-color card_fg_color {fg};
+@define-color card_border_color transparent;
+
+@define-color dialog_bg_color {bg_dark};
+@define-color dialog_fg_color {fg};
+
+@define-color popover_bg_color {surf_elevated};
+@define-color popover_fg_color {fg};
+
+@define-color secondary_accent_color {sec};
+@define-color secondary_accent_bg_color {sec};
+@define-color secondary_accent_fg_color {on_sec};
+
+@define-color error_color {err};
+@define-color error_bg_color {err};
+@define-color error_fg_color {on_err};
+
+@define-color warning_color {ter};
+@define-color warning_bg_color {ter};
+@define-color warning_fg_color {on_ter};
+
+@define-color success_color {ter};
+@define-color success_bg_color {ter};
+@define-color success_fg_color {on_ter};
+
+@define-color shade_color rgba(0, 0, 0, 0.4);
+@define-color scrollbar_outline_color rgba(0, 0, 0, 0.5);
+
+/* Universal border removal */
+*, *:backdrop {{
+    border-color: transparent;
+    border-style: none;
+    border-width: 0;
+}}
+
+window {{
+    border-radius: 16px;
+    border-style: none;
+    border-width: 0;
+    background-color: {bg_dark};
+    color: {fg};
+}}
+
+window:backdrop {{
+    background-color: {bg_dark_backdrop};
+}}
+
+.card {{
+    border-radius: 14px;
+    border-style: none;
+    border-width: 0;
+    background-color: {surf_elevated};
+}}
+
+.card:backdrop {{
+    background-color: {surf_elevated_backdrop};
+}}
+
+.navigation-sidebar,
+.navigation-sidebar list {{
+    background-color: {bg_dark};
+    color: {fg};
+    border: none;
+    border-radius: 0;
+    margin: 0;
+    padding: 0 10px;
+}}
+
+.navigation-sidebar:backdrop,
+.navigation-sidebar list:backdrop {{
+    background-color: {bg_dark_backdrop};
+    color: alpha({fg}, 0.75);
+    border: none;
+    border-radius: 0;
+    margin: 0;
+    padding: 0 10px;
+}}
+
+.navigation-sidebar list row {{
+    border-radius: 9999px;
+    margin: 2px 6px;
+    padding: 6px 12px;
+    border-style: none;
+    border-width: 0;
+}}
+
+.navigation-sidebar list row:hover {{
+    background-color: {hover_color};
+    color: #ffffff;
+}}
+
+.navigation-sidebar list row:selected {{
+    background-color: {sel_color};
+    color: #ffffff;
+    font-weight: 600;
+}}
+
+/* Titlebuttons & Close Button in GTK 4 - Transparent matching body */
+headerbar button.titlebutton,
+headerbar button.close,
+windowcontrols button,
+windowcontrols button.close {{
+    background: transparent;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+}}
+
+headerbar button.titlebutton:hover,
+headerbar button.close:hover,
+windowcontrols button:hover,
+windowcontrols button.close:hover {{
+    background-color: {hover_color};
+    color: #ffffff;
+}}
+
+checkbutton {{
+    background: transparent;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 3px 6px;
+    margin: 2px 0;
+}}
+
+check, radio {{
+    background: transparent;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    color: {outl};
+}}
+
+check:checked, radio:checked {{
+    background: transparent;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    color: {pri};
+}}
+
+button:not(.check):not(.radio) {{
+    background-color: {surf_mid};
+    color: {fg};
+    border-radius: 10px;
+    border: none;
+    padding: 6px 14px;
+    font-weight: 500;
+}}
+
+button:not(.check):not(.radio):hover {{
+    background-color: {hover_color};
+    color: #ffffff;
+}}
+
+button:not(.check):not(.radio):active,
+button:not(.check):not(.radio):checked {{
+    background-color: {sel_color};
+    color: #ffffff;
+}}
+
+button.pill {{
+    border-radius: 9999px;
+    border-style: none;
+    border-width: 0;
+}}
+
+/* Sliders / Scales in GTK 4 - 100% Dynamic Themed */
+scale trough {{
+    background-color: {surf_mid};
+    background-image: none;
+    border-radius: 9999px;
+    min-height: 4px;
+    border: none;
+    box-shadow: none;
+}}
+
+scale highlight {{
+    background-color: {pri};
+    background-image: none;
+    border-radius: 9999px;
+    min-height: 4px;
+    border: none;
+    box-shadow: none;
+}}
+
+scale slider,
+scale.horizontal slider,
+scale.vertical slider,
+scale > trough > slider,
+scale.horizontal > trough > slider,
+scale.vertical > trough > slider {{
+    background-color: {pri};
+    color: {pri};
+    border-radius: 9999px;
+    min-width: 18px;
+    min-height: 18px;
+    margin: -7px;
+    border: 2px solid {bg_dark};
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+    transition: background-color 120ms ease, box-shadow 120ms ease;
+}}
+
+scale slider:hover,
+scale > trough > slider:hover,
+scale.horizontal > trough > slider:hover,
+scale.vertical > trough > slider:hover {{
+    background-color: {hover_color};
+    border-color: {bg_dark};
+    box-shadow: 0 0 0 6px rgba({pri_rgb}, 0.20), 0 2px 6px rgba(0, 0, 0, 0.5);
+}}
+
+scale slider:active,
+scale > trough > slider:active,
+scale.horizontal > trough > slider:active,
+scale.vertical > trough > slider:active {{
+    background-color: {sel_color};
+    border-color: {bg_dark};
+    box-shadow: 0 0 0 8px rgba({pri_rgb}, 0.30), 0 3px 8px rgba(0, 0, 0, 0.6);
+}}
+
+scale slider:disabled,
+scale > trough > slider:disabled {{
+    background-color: rgba({fg_rgb}, 0.25);
+    border-color: transparent;
+    box-shadow: none;
+}}
+
+/* Flat Topbar Junction - Remove Rounded Corners Below Topbar */
+headerbar + box,
+.titlebar + box,
+headerbar + notebook,
+.titlebar + notebook,
+window > box,
+dialog > box,
+notebook,
+notebook.frame,
+notebook > header,
+notebook > header.top,
+notebook > stack,
+notebook.frame > header.top,
+notebook.frame > stack {{
+    border-top-left-radius: 0px;
+    border-top-right-radius: 0px;
+}}
+
+/* Dropdowns & Buttons in GTK 4 */
+combobox button.combo,
+combobox button {{
+    background-color: {surf_mid};
+    color: {fg};
+    border-radius: 8px;
+    border: none;
+}}
+
+button box,
+button label,
+button image,
+combobox box,
+combobox button box,
+combobox cellview,
+combobox button cellview,
+combobox label,
+combobox button label,
+cellview,
+entry box,
+entry image {{
+    background-color: transparent;
+    background: transparent;
+}}
+
+entry {{
+    background-color: {surf_elevated};
+    color: {fg};
+    border-radius: 9999px;
+    border: none;
+    padding: 6px 14px;
+}}
+"""
+
+kdeglobals_ini = f"""[General]
+ColorScheme=Zenith
+Name=Zenith
+accentColor={pri_rgb}
+
+[KDE]
+colorScheme=Zenith
+ShowDeleteCommand=true
+contrast=7
+
+[Colors:Window]
+BackgroundNormal={bg_dark_rgb}
+BackgroundAlternate={surf_elevated_rgb}
+ForegroundNormal={fg_rgb}
+ForegroundInactive={outl_rgb}
+ForegroundActive={pri_rgb}
+ForegroundLink={ter_rgb}
+ForegroundVisited={sec_rgb}
+ForegroundNegative={err_rgb}
+ForegroundNeutral={ter_rgb}
+ForegroundPositive={ter_rgb}
+
+[Colors:View]
+BackgroundNormal={bg_dark_rgb}
+BackgroundAlternate={surf_elevated_rgb}
+ForegroundNormal={fg_rgb}
+ForegroundInactive={outl_rgb}
+ForegroundActive={pri_rgb}
+ForegroundLink={ter_rgb}
+ForegroundVisited={sec_rgb}
+ForegroundNegative={err_rgb}
+ForegroundNeutral={ter_rgb}
+ForegroundPositive={ter_rgb}
+
+[Colors:Button]
+BackgroundNormal={surf_elevated_rgb}
+BackgroundAlternate={hover_color_rgb}
+ForegroundNormal={fg_rgb}
+ForegroundInactive={outl_rgb}
+ForegroundActive={pri_rgb}
+ForegroundLink={ter_rgb}
+ForegroundVisited={sec_rgb}
+ForegroundNegative={err_rgb}
+ForegroundNeutral={ter_rgb}
+ForegroundPositive={ter_rgb}
+
+[Colors:Selection]
+BackgroundNormal={sel_color_rgb}
+BackgroundAlternate={hover_color_rgb}
+ForegroundNormal=255,255,255
+ForegroundInactive=255,255,255
+ForegroundActive=255,255,255
+ForegroundLink=255,255,255
+ForegroundVisited=255,255,255
+ForegroundNegative={err_rgb}
+ForegroundNeutral=255,255,255
+ForegroundPositive=255,255,255
+
+[Colors:Tooltip]
+BackgroundNormal={bg_dark_rgb}
+BackgroundAlternate={surf_elevated_rgb}
+ForegroundNormal={fg_rgb}
+ForegroundInactive={outl_rgb}
+ForegroundActive={pri_rgb}
+ForegroundLink={ter_rgb}
+ForegroundVisited={sec_rgb}
+ForegroundNegative={err_rgb}
+ForegroundNeutral={ter_rgb}
+ForegroundPositive={ter_rgb}
+
+[Colors:Complementary]
+BackgroundNormal={surf_elevated_rgb}
+BackgroundAlternate={bg_dark_rgb}
+ForegroundNormal={fg_rgb}
+ForegroundInactive={outl_rgb}
+ForegroundActive={pri_rgb}
+
+[Colors:Header]
+BackgroundNormal={bg_dark_rgb}
+ForegroundNormal={fg_rgb}
+
+[WM]
+activeBackground={surf_elevated_rgb}
+activeForeground={fg_rgb}
+inactiveBackground={bg_dark_rgb}
+inactiveForeground={outl_rgb}
+"""
+
+with open(os.path.join(gtk3_dir, "gtk.css"), "w") as f:
+    f.write(gtk3_css)
+
+with open(os.path.join(gtk4_dir, "gtk.css"), "w") as f:
+    f.write(gtk4_css)
+
+with open(os.path.join(home, ".config", "kdeglobals"), "w") as f:
+    f.write(kdeglobals_ini)
+
+with open(os.path.join(kde_schemes_dir, "Zenith.colors"), "w") as f:
+    f.write(kdeglobals_ini)
+
+with open(os.path.join(qt5ct_dir, "Zenith.conf"), "w") as f:
+    f.write(kdeglobals_ini)
+
+with open(os.path.join(qt6ct_dir, "Zenith.conf"), "w") as f:
+    f.write(kdeglobals_ini)
+
+# Patch Orchis theme files and PNG assets if installed so no hardcoded #3281EA persists
+def recolor_orchis_asset(src_path, dst_path, target_rgb):
+    try:
+        from PIL import Image
+        im = Image.open(src_path).convert('RGBA')
+        pixels = im.load()
+        if isinstance(target_rgb, str):
+            tr, tg, tb = [int(v.strip()) for v in target_rgb.split(",")]
+        else:
+            tr, tg, tb = target_rgb
+        w, h = im.size
+        for y in range(h):
+            for x in range(w):
+                r, g, b, a = pixels[x, y]
+                if a == 0:
+                    continue
+                if b > 120 and b > r + 20 and b > g + 10:
+                    lum = (r * 0.299 + g * 0.587 + b * 0.114) / 117.35
+                    nr = min(255, max(0, int(tr * lum)))
+                    ng = min(255, max(0, int(tg * lum)))
+                    nb = min(255, max(0, int(tb * lum)))
+                    pixels[x, y] = (nr, ng, nb, a)
+        im.save(dst_path)
+    except Exception:
+        pass
+
+pristine_root = os.path.join(home, ".local", "share", "zenith", "orchis-pristine")
+orchis_roots = [
+    os.path.join(home, ".themes", "Orchis-Dark"),
+    os.path.join(home, ".themes", "Orchis-Dark-Compact"),
+    os.path.join(home, ".themes", "Orchis-Dark-hdpi"),
+    os.path.join(home, ".themes", "Orchis-Dark-xhdpi"),
+    os.path.join(home, ".themes", "Orchis-Dark-Compact-hdpi"),
+    os.path.join(home, ".themes", "Orchis-Dark-Compact-xhdpi"),
+    os.path.join(home, ".local", "share", "themes", "Orchis-Dark"),
+    os.path.join(home, ".local", "share", "themes", "Orchis-Dark-Compact"),
+]
+
+for root in orchis_roots:
+    theme_name = os.path.basename(root)
+    for sub in ["gtk-3.0", "gtk-4.0"]:
+        dpath = os.path.join(root, sub)
+        if not os.path.isdir(dpath):
+            continue
+
+        # 1. Patch CSS files
+        for fname in ["gtk.css", "gtk-dark.css"]:
+            fpath = os.path.join(dpath, fname)
+            orig_path = fpath + ".orig"
+            pristine_path = os.path.join(pristine_root, theme_name, sub, fname)
+            if not os.path.isfile(orig_path):
+                if os.path.isfile(pristine_path):
+                    shutil.copy2(pristine_path, orig_path)
+                elif os.path.isfile(fpath):
+                    try:
+                        with open(fpath, "r", encoding="utf-8") as f_chk:
+                            if "#3281ea" in f_chk.read().lower():
+                                shutil.copy2(fpath, orig_path)
+                    except Exception:
+                        pass
+
+            source_file = orig_path if os.path.isfile(orig_path) else (fpath if os.path.isfile(fpath) else None)
+            if source_file:
+                try:
+                    with open(source_file, "r", encoding="utf-8") as f_in:
+                        text = f_in.read()
+                    text = text.replace("#3281EA", sel_color).replace("#3281ea", sel_color)
+                    text = text.replace("50, 129, 234", sel_color_rgb).replace("44, 93, 160", sel_color_rgb)
+                    text = text.replace(f"rgba({sel_color_rgb}, 0.3)", f"rgba({sel_color_rgb}, 0.38)")
+                    text = text.replace(".background.csd notebook.frame > header.top {\n  border-radius: 12px 12px 0 0;", ".background.csd notebook.frame > header.top {\n  border-radius: 0;")
+                    text = text.replace(".background.csd notebook.frame, .background.csd notebook.frame > stack {\n  border-radius: 12px;", ".background.csd notebook.frame, .background.csd notebook.frame > stack {\n  border-radius: 0 0 12px 12px;")
+                    text = text.replace(".background.csd notebook.frame > header.top > tabs > tab {\n  border-radius: 12px 12px 0 0;", ".background.csd notebook.frame > header.top > tabs > tab {\n  border-radius: 0;")
+                    with open(fpath, "w", encoding="utf-8") as f_out:
+                        f_out.write(text)
+                except Exception:
+                    pass
+
+        # 2. Patch PNG assets (scale sliders, marks, checkboxes, rows)
+        assets_dir = os.path.join(dpath, "assets")
+        if os.path.isdir(assets_dir):
+            for aname in os.listdir(assets_dir):
+                if not aname.endswith(".png") or aname.endswith(".orig.png"):
+                    continue
+                apath = os.path.join(assets_dir, aname)
+                aorig = os.path.join(assets_dir, aname[:-4] + ".orig.png")
+                pristine_asset = os.path.join(pristine_root, theme_name, sub, "assets", aname)
+
+                if os.path.isfile(pristine_asset):
+                    shutil.copy2(pristine_asset, aorig)
+                elif not os.path.isfile(aorig) and os.path.isfile(apath):
+                    try:
+                        from PIL import Image
+                        chk = Image.open(apath).convert('RGBA').getcolors(maxcolors=2048)
+                        if chk and any(a > 10 and b > 120 and b > r + 20 and b > g + 10 for count, (r, g, b, a) in chk):
+                            shutil.copy2(apath, aorig)
+                    except Exception:
+                        pass
+
+                if os.path.isfile(aorig):
+                    target = sel_color_rgb_tuple if "row-selected" in aname else pri_rgb_tuple
+                    recolor_orchis_asset(aorig, apath, target)
+GTK_QT_PY
+
 if [[ "${THEME_HYPRLAND:-0}" == "1" && -f "$HYPR_STAGE" ]]; then
     if ! validate_scheme "$HYPR_STAGE"; then
         log_err "Generated Hyprland scheme is malformed; keeping the existing one."
@@ -497,10 +2243,17 @@ fi
 
 killall -USR1 kitty 2>/dev/null && log "kitty reloaded"
 
+if command -v thunar >/dev/null 2>&1; then
+    thunar -q 2>/dev/null || true
+fi
+
 if command -v gsettings >/dev/null 2>&1; then
-    gsettings set org.gnome.desktop.interface color-scheme 'prefer-light' 2>/dev/null
-    sleep 0.1
-    gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' 2>/dev/null
+    for s in /run/current-system/sw/share/gsettings-schemas/* "$HOME/.nix-profile/share/gsettings-schemas"/* /nix/store/*gsettings-desktop-schemas*/share/gsettings-schemas/*; do
+        [[ -d "$s" ]] && export XDG_DATA_DIRS="$s:${XDG_DATA_DIRS:-}"
+    done
+    gsettings set org.gnome.desktop.interface color-scheme 'prefer-light' 2>/dev/null || true
+    sleep 0.05
+    gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' 2>/dev/null || true
 fi
 
 log_ok "Zenith theme updated successfully."

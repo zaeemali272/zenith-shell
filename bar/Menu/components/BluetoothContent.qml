@@ -380,7 +380,13 @@ Item {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        root.selectedAddress = isExpanded ? "" : modelData.address;
+                        if (isConnected) {
+                            BluetoothService.action("disconnect", modelData.address);
+                        } else if (isKnown) {
+                            BluetoothService.action("connect", modelData.address);
+                        } else {
+                            BluetoothService.action("pair", modelData.address);
+                        }
                     }
                 }
 
@@ -472,7 +478,8 @@ Item {
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
-                                onClicked: {
+                                onClicked: (mouse) => {
+                                    mouse.accepted = true;
                                     root.selectedAddress = isExpanded ? "" : modelData.address;
                                 }
                             }
