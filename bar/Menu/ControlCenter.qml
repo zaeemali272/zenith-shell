@@ -355,7 +355,7 @@ MenuWindow {
                             visible: nlMouse.containsMouse
                             delay: 350; timeout: 3000
                             y: parent.height + Theme.scaled(6)
-                            contentItem: Text { text: "Night Light: " + (PowerToolsService.nightLight ? "WARM (3800K)" : "OFF"); color: "#ffffff"; font.pixelSize: Theme.scaled(10.5); font.weight: Font.DemiBold }
+                            contentItem: Text { text: "Night Light: " + (PowerToolsService.nightLight ? ("WARM (" + PowerToolsService.nightLightTemp + "K)") : "OFF"); color: "#ffffff"; font.pixelSize: Theme.scaled(10.5); font.weight: Font.DemiBold }
                             background: Rectangle { color: Theme.tooltipBackground; border.color: Theme.glassBorder; border.width: 1; radius: Theme.scaled(7); antialiasing: true }
                         }
                     }

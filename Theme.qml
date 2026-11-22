@@ -96,6 +96,7 @@ QtObject {
     readonly property color yellow: Colors.secondary_container
     readonly property color red: Colors.error
     readonly property color mauve: Colors.primary
+    readonly property color peach: Colors.primary
     readonly property color accentColor: Colors.primary
     readonly property color barIconColor: AppearanceSettings.themedBarIcons ? accentColor : AppearanceSettings.barIconsColor
     readonly property color catColor: AppearanceSettings.themeCatColor ? accentColor : AppearanceSettings.catPermanentColor

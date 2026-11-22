@@ -104,9 +104,18 @@ ACCENT_OVERRIDE=""
 WALLPAPER=""
 SOURCE_COLOR=""
 PREFER="saturation"
+SCHEME_TYPE=""
+if [[ -f "$THEME_CONFIG" ]]; then
+    SAVED_TYPE=$(python3 -c "import json; print(json.load(open('$THEME_CONFIG')).get('scheme_type', ''))" 2>/dev/null || true)
+    [[ -n "$SAVED_TYPE" ]] && SCHEME_TYPE="$SAVED_TYPE"
+fi
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        --scheme|--type|-t)
+            SCHEME_TYPE="${2:-}"
+            shift 2
+            ;;
         --preset|-p)
             MODE="preset"
             PRESET_NAME="${2:-}"
@@ -370,6 +379,7 @@ EOF
     log_step "Generating palette from $(basename "$WALLPAPER")"
 
     matugen_args=(image "$WALLPAPER" --config "$CONFIG" --mode dark --prefer "$PREFER")
+    [[ -n "$SCHEME_TYPE" ]] && matugen_args+=(-t "$SCHEME_TYPE")
     [[ -n "$SOURCE_COLOR" ]] && matugen_args+=(--color "$SOURCE_COLOR")
 
     if ! matugen "${matugen_args[@]}"; then
@@ -2315,9 +2325,22 @@ cat > "$THEME_CONFIG" <<EOF
   "mode": "$MODE",
   "preset": "$PRESET_NAME",
   "accent": "$ACCENT_OVERRIDE",
+  "scheme_type": "${SCHEME_TYPE:-scheme-tonal-spot}",
   "wallpaper": "${WALLPAPER:-}"
 }
 EOF
+
+# --- Modular App Theme Hooks ---
+HOOKS_DIR="$SHELL_DIR/scripts/theme-hooks.d"
+if [[ -d "$HOOKS_DIR" ]]; then
+    log_step "Executing app theme hooks"
+    for hook in "$HOOKS_DIR"/*.sh; do
+        if [[ -f "$hook" && -x "$hook" ]]; then
+            log "Running hook: $(basename "$hook")"
+            "$hook" "$PALETTE" || log_err "Hook failed: $(basename "$hook")"
+        fi
+    done
+fi
 
 # --- Refresh live components ---
 log_step "Refreshing compositor and apps"

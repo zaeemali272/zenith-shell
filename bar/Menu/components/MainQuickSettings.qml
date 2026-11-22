@@ -522,9 +522,9 @@ ColumnLayout {
                     }
 
                     Text {
-                        text: PowerToolsService.nightLight ? "Active (Warm)" : "Off"
+                        text: PowerToolsService.nightLight ? ("Warm (" + PowerToolsService.nightLightTemp + "K)") : "Off"
                         font.pixelSize: Theme.scaled(10)
-                        color: Theme.subtext0
+                        color: PowerToolsService.nightLight ? Theme.powerYellow : Theme.subtext0
                         elide: Text.ElideRight
                         Layout.fillWidth: true
                     }
@@ -537,6 +537,12 @@ ColumnLayout {
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: PowerToolsService.toggleNightLight()
+                onWheel: (wheel) => {
+                    if (PowerToolsService.nightLight) {
+                        let delta = wheel.angleDelta.y > 0 ? 5 : -5;
+                        PowerToolsService.setNightLightIntensity(PowerToolsService.nightLightIntensity + delta);
+                    }
+                }
             }
         }
 
@@ -548,10 +554,10 @@ ColumnLayout {
             Layout.preferredHeight: Theme.scaled(58)
             radius: Theme.bubbleRadiusMedium
             color: CaffeineService.active
-                   ? Qt.rgba(Theme.peach.r, Theme.peach.g, Theme.peach.b, 0.20)
+                   ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.20)
                    : (caffMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground)
             border.color: CaffeineService.active
-                          ? Qt.rgba(Theme.peach.r, Theme.peach.g, Theme.peach.b, 0.5)
+                          ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.5)
                           : Theme.glassBorder
             border.width: 1
 
@@ -564,14 +570,14 @@ ColumnLayout {
                     width: Theme.scaled(36)
                     height: Theme.scaled(36)
                     radius: Theme.scaled(10)
-                    color: CaffeineService.active ? Theme.peach : Qt.rgba(1, 1, 1, 0.08)
+                    color: CaffeineService.active ? Theme.accentColor : Qt.rgba(1, 1, 1, 0.08)
 
                     Text {
                         anchors.centerIn: parent
                         text: CaffeineService.active ? "󰅶" : "󰛊"
                         font.family: Theme.iconFont
                         font.pixelSize: Theme.scaled(18)
-                        color: CaffeineService.active ? Colors.background : Theme.subtext0
+                        color: CaffeineService.active ? Colors.on_primary : Theme.subtext0
                     }
                 }
 
@@ -591,7 +597,7 @@ ColumnLayout {
                     Text {
                         text: CaffeineService.active ? "Screen Awake" : "Sleep Enabled"
                         font.pixelSize: Theme.scaled(10)
-                        color: Theme.subtext0
+                        color: CaffeineService.active ? Theme.accentColor : Theme.subtext0
                         elide: Text.ElideRight
                         Layout.fillWidth: true
                     }
@@ -747,15 +753,15 @@ ColumnLayout {
             }
         }
 
-        // --- TILE 8: SETTINGS ---
+        // --- TILE 8: COLOR SCHEME TUNING ---
         Rectangle {
             Layout.fillWidth: true
             height: Theme.scaled(58)
             implicitHeight: Theme.scaled(58)
             Layout.preferredHeight: Theme.scaled(58)
             radius: Theme.bubbleRadiusMedium
-            color: settingsTileMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground
-            border.color: Theme.glassBorder
+            color: schemeTileMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground
+            border.color: schemeTileMouse.containsMouse ? Theme.glassBorderHover : Theme.glassBorder
             border.width: 1
 
             RowLayout {
@@ -767,14 +773,16 @@ ColumnLayout {
                     width: Theme.scaled(36)
                     height: Theme.scaled(36)
                     radius: Theme.scaled(10)
-                    color: Qt.rgba(1, 1, 1, 0.08)
+                    color: Qt.rgba(Colors.primary.r, Colors.primary.g, Colors.primary.b, schemeTileMouse.containsMouse ? 0.22 : 0.14)
+
+                    Behavior on color { ColorAnimation { duration: Theme.animQuick } }
 
                     Text {
                         anchors.centerIn: parent
-                        text: "󰒓"
+                        text: "󰏘"
                         font.family: Theme.iconFont
                         font.pixelSize: Theme.scaled(18)
-                        color: Theme.text
+                        color: Theme.accentColor
                     }
                 }
 
@@ -783,7 +791,7 @@ ColumnLayout {
                     spacing: 1
 
                     Text {
-                        text: "Settings"
+                        text: "Color Scheme"
                         font.pixelSize: Theme.scaled(12)
                         font.weight: Font.Bold
                         color: Theme.text
@@ -792,30 +800,39 @@ ColumnLayout {
                     }
 
                     Text {
-                        text: "System Preferences"
+                        text: ThemeService.schemeTypeDisplayName
                         font.pixelSize: Theme.scaled(10)
-                        color: Theme.subtext0
+                        color: Theme.accentColor
+                        font.weight: Font.DemiBold
                         elide: Text.ElideRight
                         Layout.fillWidth: true
                     }
                 }
 
                 Text {
-                    text: "󰅂"
+                    text: "󰑐"
                     font.family: Theme.iconFont
-                    font.pixelSize: Theme.scaled(16)
-                    color: settingsTileMouse.containsMouse ? Theme.text : Theme.subtext0
+                    font.pixelSize: Theme.scaled(15)
+                    color: schemeTileMouse.containsMouse ? Theme.accentColor : Theme.subtext0
+                    Behavior on color { ColorAnimation { duration: Theme.animQuick } }
                 }
             }
 
             MouseArea {
-                id: settingsTileMouse
+                id: schemeTileMouse
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                    QuickSettingsService.close();
-                    DisplayService.requestOpenSettings(0);
+                acceptedButtons: Qt.LeftButton | Qt.RightButton
+                onClicked: (mouse) => {
+                    if (mouse.button === Qt.RightButton) {
+                        ThemeService.cycleSchemeType(false);
+                    } else {
+                        ThemeService.cycleSchemeType(true);
+                    }
+                }
+                onWheel: (wheel) => {
+                    ThemeService.cycleSchemeType(wheel.angleDelta.y < 0);
                 }
             }
         }
@@ -1092,6 +1109,130 @@ ColumnLayout {
                     font.weight: Font.Bold
                     color: Theme.text
                     Layout.preferredWidth: Theme.scaled(44)
+                    horizontalAlignment: Text.AlignRight
+                }
+            }
+        }
+
+        // --- NIGHT LIGHT INTENSITY SLIDER (Only shown when Night Light is ON) ---
+        Rectangle {
+            id: nlSliderCard
+            visible: PowerToolsService.nightLight
+            Layout.fillWidth: true
+            height: Theme.scaled(44)
+            implicitHeight: Theme.scaled(44)
+            Layout.preferredHeight: visible ? Theme.scaled(44) : 0
+            radius: Theme.scaled(12)
+            color: Theme.cardBackground
+            border.color: Qt.rgba(Theme.powerYellow.r, Theme.powerYellow.g, Theme.powerYellow.b, 0.35)
+            border.width: 1
+
+            MouseArea {
+                anchors.fill: parent
+                z: -1
+                onWheel: (wheel) => {
+                    let delta = wheel.angleDelta.y > 0 ? 5 : -5;
+                    PowerToolsService.setNightLightIntensity(PowerToolsService.nightLightIntensity + delta);
+                }
+            }
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: Theme.scaled(10)
+                anchors.rightMargin: Theme.scaled(10)
+                spacing: Theme.scaled(10)
+
+                // Night Light Warmth Icon (Clickable to Toggle Night Light)
+                Rectangle {
+                    width: Theme.scaled(28)
+                    height: Theme.scaled(28)
+                    radius: Theme.scaled(8)
+                    color: nlSliderIcoMouse.containsMouse ? Theme.cardBackgroundHover : "transparent"
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "󰖔"
+                        font.family: Theme.iconFont
+                        font.pixelSize: Theme.scaled(18)
+                        color: Theme.powerYellow
+                    }
+
+                    MouseArea {
+                        id: nlSliderIcoMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: PowerToolsService.toggleNightLight()
+                    }
+                }
+
+                // Interactive Slider Bar
+                Item {
+                    id: nlSliderTrack
+                    Layout.fillWidth: true
+                    height: Theme.scaled(24)
+
+                    Rectangle {
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        height: Theme.scaled(8)
+                        radius: Theme.scaled(4)
+                        color: Qt.rgba(1, 1, 1, 0.10)
+
+                        // Filled Portion
+                        Rectangle {
+                            height: parent.height
+                            width: parent.width * (Math.max(0, Math.min(100, PowerToolsService.nightLightIntensity)) / 100)
+                            radius: Theme.scaled(4)
+                            color: Theme.powerYellow
+                            Behavior on width { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
+                        }
+                    }
+
+                    // Floating Handle Knob
+                    Rectangle {
+                        x: Math.max(0, Math.min(parent.width - width, (parent.width * (Math.max(0, Math.min(100, PowerToolsService.nightLightIntensity)) / 100)) - (width / 2)))
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: Theme.scaled(16)
+                        height: Theme.scaled(16)
+                        radius: Theme.scaled(8)
+                        color: "#ffffff"
+                        border.color: Theme.powerYellow
+                        border.width: 2
+                        scale: nlDragArea.pressed ? 1.2 : 1.0
+                        Behavior on scale { NumberAnimation { duration: Theme.animInstant } }
+                    }
+
+                    MouseArea {
+                        id: nlDragArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+
+                        function updateFromMouse(mouseX) {
+                            let fraction = Math.max(0.05, Math.min(1.0, mouseX / nlSliderTrack.width));
+                            let intensity = Math.round(fraction * 100);
+                            PowerToolsService.setNightLightIntensity(intensity);
+                        }
+
+                        onPressed: (mouse) => updateFromMouse(mouse.x)
+                        onPositionChanged: (mouse) => { if (pressed) updateFromMouse(mouse.x); }
+                        onWheel: (wheel) => {
+                            let delta = wheel.angleDelta.y > 0 ? 5 : -5;
+                            PowerToolsService.setNightLightIntensity(PowerToolsService.nightLightIntensity + delta);
+                        }
+                    }
+                }
+
+                // Night Light Warmth Readout Text
+                Text {
+                    text: PowerToolsService.nightLightTemp + "K"
+                    font.pixelSize: Theme.scaled(11)
+                    font.family: "JetBrains Mono"
+                    font.weight: Font.Bold
+                    color: Theme.powerYellow
+                    Layout.preferredWidth: Theme.scaled(48)
                     horizontalAlignment: Text.AlignRight
                 }
             }

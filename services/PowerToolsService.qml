@@ -8,6 +8,13 @@ QtObject {
     id: root
 
     property bool nightLight: false
+    property int nightLightTemp: 3800
+    readonly property int nightLightIntensity: Math.max(0, Math.min(100, Math.round(((6500 - nightLightTemp) / 4500) * 100)))
+
+    readonly property string nlCacheDir: (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") + "/.cache")) + "/zenith"
+    readonly property string nlStateTempPath: nlCacheDir + "/nightlight_temp.txt"
+    readonly property string nlStateEnabledPath: nlCacheDir + "/nightlight_enabled.txt"
+
     property bool dnd: false
     property bool micMuted: false
 
@@ -25,15 +32,63 @@ QtObject {
         notifyProc.running = true;
     }
 
+    function setNightLightIntensity(intensity) {
+        let i = Math.max(5, Math.min(100, intensity));
+        let kelvin = Math.round(6500 - (i / 100) * 4500);
+        kelvin = Math.round(kelvin / 50) * 50;
+        setNightLightTemperature(kelvin);
+    }
+
+    function setNightLightTemperature(kelvin) {
+        let k = Math.max(2000, Math.min(6000, kelvin));
+        nightLightTemp = k;
+        saveNlTemp();
+        if (nightLight) {
+            nlDebounceTimer.restart();
+        }
+    }
+
     function toggleNightLight() {
         if (nightLight) {
-            nlProc.command = ["sh", "-c", "PIDS=$(pidof .gammastep-wrapped gammastep 2>/dev/null); [ -n \"$PIDS\" ] && kill -TERM $PIDS 2>/dev/null || pkill -INT -x .gammastep-wrap 2>/dev/null || true"];
-            nightLight = false;
+            disableNightLight();
         } else {
-            nlProc.command = ["sh", "-c", "PIDS=$(pidof .gammastep-wrapped gammastep 2>/dev/null); [ -n \"$PIDS\" ] && kill -TERM $PIDS 2>/dev/null; gammastep -O 3800 >/dev/null 2>&1 &"];
-            nightLight = true;
+            enableNightLight();
         }
+    }
+
+    function enableNightLight() {
+        nightLight = true;
+        nlProc.command = ["sh", "-c", "if command -v hyprsunset >/dev/null 2>&1; then pgrep -f '(^|/)hyprsunset' >/dev/null || (setsid hyprsunset --identity </dev/null >/dev/null 2>&1 & sleep 0.15); hyprctl hyprsunset temperature " + root.nightLightTemp + " >/dev/null 2>&1 || true; else PIDS=$(pidof .gammastep-wrapped gammastep 2>/dev/null); [ -n \"$PIDS\" ] && kill -TERM $PIDS 2>/dev/null; gammastep -O " + root.nightLightTemp + " >/dev/null 2>&1 & fi; echo 1 > " + nlStateEnabledPath];
         nlProc.running = true;
+    }
+
+    function disableNightLight() {
+        nightLight = false;
+        nlProc.command = ["sh", "-c", "hyprctl hyprsunset identity >/dev/null 2>&1 || true; PIDS=$(pidof .gammastep-wrapped gammastep 2>/dev/null); [ -n \"$PIDS\" ] && kill -TERM $PIDS 2>/dev/null || true; echo 0 > " + nlStateEnabledPath];
+        nlProc.running = true;
+    }
+
+    property Timer nlDebounceTimer: Timer {
+        interval: 35
+        repeat: false
+        onTriggered: {
+            if (root.nightLight) {
+                nlProc.command = ["sh", "-c", "if command -v hyprsunset >/dev/null 2>&1; then pgrep -f '(^|/)hyprsunset' >/dev/null || (setsid hyprsunset --identity </dev/null >/dev/null 2>&1 & sleep 0.15); hyprctl hyprsunset temperature " + root.nightLightTemp + " >/dev/null 2>&1 || true; else PIDS=$(pidof .gammastep-wrapped gammastep 2>/dev/null); [ -n \"$PIDS\" ] && kill -TERM $PIDS 2>/dev/null; gammastep -O " + root.nightLightTemp + " >/dev/null 2>&1 & fi"];
+                nlProc.running = true;
+            }
+        }
+    }
+
+    function saveNlTemp() {
+        saveNlProc.command = ["sh", "-c", "mkdir -p " + nlCacheDir + "; echo " + nightLightTemp + " > " + nlStateTempPath + " 2>/dev/null || true"];
+        saveNlProc.running = true;
+    }
+
+    function loadNlState() {
+        loadNlProc.command = ["sh", "-c", "cat " + nlStateTempPath + " 2>/dev/null || echo 3800"];
+        loadNlProc.running = true;
+        checkNlStateProc.command = ["sh", "-c", "cat " + nlStateEnabledPath + " 2>/dev/null || echo 0"];
+        checkNlStateProc.running = true;
     }
 
     function toggleMicMute() {
@@ -45,7 +100,7 @@ QtObject {
     function refreshMicState() {
         checkMicProc.command = ["sh", "-c", "wpctl get-volume @DEFAULT_AUDIO_SOURCE@ 2>/dev/null || true"];
         checkMicProc.running = true;
-        checkNlProc.command = ["sh", "-c", "pidof .gammastep-wrapped gammastep >/dev/null 2>&1 && echo 'RUNNING' || echo 'STOPPED'"];
+        checkNlProc.command = ["sh", "-c", "if [ -f " + nlStateEnabledPath + " ]; then [ \"$(cat " + nlStateEnabledPath + " 2>/dev/null)\" = '1' ] && echo 'RUNNING' || echo 'STOPPED'; elif pidof .gammastep-wrapped gammastep >/dev/null 2>&1; then echo 'RUNNING'; else echo 'STOPPED'; fi"];
         checkNlProc.running = true;
     }
 
@@ -85,6 +140,28 @@ QtObject {
     property Process notifyProc: Process { id: notifyProc }
     property Process nlProc: Process { id: nlProc }
     property Process micProc: Process { id: micProc }
+    property Process saveNlProc: Process { id: saveNlProc }
+    property Process loadNlProc: Process {
+        id: loadNlProc
+        stdout: StdioCollector {
+            onStreamFinished: {
+                let val = parseInt(text.trim(), 10);
+                if (!isNaN(val) && val >= 1500 && val <= 6500) {
+                    root.nightLightTemp = val;
+                }
+            }
+        }
+    }
+    property Process checkNlStateProc: Process {
+        id: checkNlStateProc
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (text.trim() === "1") {
+                    root.nightLight = true;
+                }
+            }
+        }
+    }
 
     property Process checkMicProc: Process {
         id: checkMicProc
@@ -110,5 +187,9 @@ QtObject {
         repeat: true
         triggeredOnStart: true
         onTriggered: root.refreshMicState()
+    }
+
+    Component.onCompleted: {
+        loadNlState();
     }
 }

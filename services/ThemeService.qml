@@ -14,7 +14,39 @@ QtObject {
     property string currentPreset: "catppuccin-mocha"
     property string accentColor: ""
     property string borderGlow: "glass" // "glass", "neon", "gradient"
+    property string schemeType: "scheme-tonal-spot"
     property var presets: []
+
+    readonly property var availableSchemes: [
+        { id: "scheme-tonal-spot", name: "Tonal Spot" },
+        { id: "scheme-expressive", name: "Expressive" },
+        { id: "scheme-vibrant",    name: "Vibrant" },
+        { id: "scheme-rainbow",    name: "Rainbow" },
+        { id: "scheme-fruit-salad",name: "Fruit Salad" },
+        { id: "scheme-content",    name: "Content" },
+        { id: "scheme-neutral",    name: "Neutral" },
+        { id: "scheme-monochrome", name: "Monochrome" }
+    ]
+
+    readonly property string schemeTypeDisplayName: {
+        for (let s of availableSchemes) {
+            if (s.id === schemeType) return s.name;
+        }
+        return "Tonal Spot";
+    }
+
+    function cycleSchemeType(forward) {
+        let f = (forward === undefined) ? true : forward;
+        let idx = availableSchemes.findIndex(s => s.id === schemeType);
+        if (idx === -1) idx = 0;
+        let nextIdx = f ? (idx + 1) % availableSchemes.length : (idx - 1 + availableSchemes.length) % availableSchemes.length;
+        setSchemeType(availableSchemes[nextIdx].id);
+    }
+
+    function setSchemeType(typeId) {
+        schemeType = typeId;
+        applyDynamic("");
+    }
 
     // Built-in fallback presets if scripts/zenith-theme.sh hasn'\''t finished listing
     readonly property var defaultPresets: [
@@ -45,6 +77,7 @@ QtObject {
                     if (parsed.preset) root.currentPreset = parsed.preset;
                     if (parsed.accent !== undefined) root.accentColor = parsed.accent;
                     if (parsed.borderGlow) root.borderGlow = parsed.borderGlow;
+                    if (parsed.scheme_type) root.schemeType = parsed.scheme_type;
                 }
             } catch(e) {}
         }
@@ -92,6 +125,9 @@ QtObject {
         if (wallPath && wallPath !== "") {
             cmd.push(wallPath);
         }
+        if (root.schemeType && root.schemeType !== "") {
+            cmd.push("--scheme", root.schemeType);
+        }
         root.themeMode = "dynamic";
         applyProc.command = cmd;
         applyProc.running = true;
@@ -105,6 +141,9 @@ QtObject {
             let cmd = [root.scriptPath, "--dynamic"];
             if (hex && hex !== "") {
                 cmd.push("--color", hex);
+            }
+            if (root.schemeType && root.schemeType !== "") {
+                cmd.push("--scheme", root.schemeType);
             }
             applyProc.command = cmd;
             applyProc.running = true;
@@ -121,7 +160,8 @@ QtObject {
             mode: root.themeMode,
             preset: root.currentPreset,
             accent: root.accentColor,
-            borderGlow: root.borderGlow
+            borderGlow: root.borderGlow,
+            scheme_type: root.schemeType
         }, null, 2) + "\nEOF"];
         saveProc.running = true;
     }

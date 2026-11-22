@@ -62,7 +62,7 @@ MenuWindow {
 
         // Production-ready dynamic & adaptive dimensions
         readonly property real maxMenuHeight: Math.min(
-            Theme.scaled(580),
+            Theme.scaled(820),
             (screen ? screen.height : Theme.screenHeight) - Theme.barHeight - Theme.barMarginTop - Theme.scaled(24)
         )
         readonly property real minMenuHeight: Theme.scaled(240)
