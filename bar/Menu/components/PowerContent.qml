@@ -4,6 +4,7 @@ import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
 import "../../.."
+import "../../../services"
 
 ColumnLayout {
     id: root
@@ -11,6 +12,17 @@ ColumnLayout {
     Layout.fillWidth: true
     focus: true
     Keys.onPressed: (event) => handleKeys(event)
+
+    function executeAction(modelData) {
+        if (!modelData) return;
+        MenuService.closeAll();
+        if (modelData.label === "LOCK") {
+            LockService.lock();
+        } else {
+            powerProc.command = ["sh", "-c", modelData.cmd];
+            powerProc.running = true;
+        }
+    }
     
     function handleKeys(event) {
         let cols = 2;
@@ -34,12 +46,7 @@ ColumnLayout {
             event.accepted = true;
         }
         else if (event.key === Qt.Key_Enter || event.key === Qt.Key_Return) {
-            let modelData = powerButtons.model[root.selectedIndex];
-            if (modelData) {
-                let cmd = modelData.cmd;
-                powerProc.command = ["sh", "-c", cmd];
-                powerProc.running = true;
-            }
+            executeAction(powerButtons.model[root.selectedIndex]);
             event.accepted = true;
         }
     }
@@ -89,7 +96,7 @@ ColumnLayout {
                 // array makes the array itself a palette binding, so a recolour
                 // destroys and rebuilds every delegate. Resolved per delegate below.
                 model: [
-                    { icon: "󰌾", label: "LOCK",     cmd: "zenith lock" },
+                    { icon: "󰌾", label: "LOCK",     cmd: "quickshell ipc --any-display call zenith:lock lock" },
                     { icon: "󰒲", label: "BIOS",     cmd: "systemctl reboot --firmware-setup" },
                     { icon: "󰗼", label: "LOGOUT",   cmd: "hyprctl dispatch exit" },
                     { icon: "󰤄", label: "SUSPEND",  cmd: "systemctl suspend" },
@@ -126,14 +133,7 @@ ColumnLayout {
                         id: m
                         anchors.fill: parent; hoverEnabled: true
                         onEntered: root.selectedIndex = index
-                        onClicked: {
-                            if (modelData.label === "LOCK") {
-                                LockService.lock();
-                            } else {
-                                powerProc.command = ["sh", "-c", modelData.cmd];
-                                powerProc.running = true;
-                            }
-                        }
+                        onClicked: root.executeAction(modelData)
                     }
 
                     RowLayout {
