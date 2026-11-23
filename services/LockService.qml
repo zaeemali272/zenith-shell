@@ -30,6 +30,7 @@ Singleton {
     // out and then drop `locked`.
     signal unlockRequested()
     signal flash()
+    signal escapePressed()
 
     readonly property bool authenticating: passwd.active
     property string buffer: ""
@@ -49,7 +50,9 @@ Singleton {
 
     function reset() {
         passwd.abort();
+        passwd._responded = false;
         buffer = "";
+        _pendingPassword = "";
         state = LockService.State.None;
         message = "";
     }
@@ -57,44 +60,93 @@ Singleton {
     function handleKey(event) {
         if (passwd.active || state === LockService.State.MaxTries) return;
 
+        // Clear previous error message as soon as user types or fixes password
+        if (state !== LockService.State.None && state !== LockService.State.MaxTries) {
+            state = LockService.State.None;
+            message = "";
+        }
+
         if (event.key === Qt.Key_Enter || event.key === Qt.Key_Return) {
-            if (buffer.length > 0) passwd.start();
+            submit();
         } else if (event.key === Qt.Key_Backspace) {
             buffer = (event.modifiers & Qt.ControlModifier) ? "" : buffer.slice(0, -1);
         } else if (event.key === Qt.Key_Escape) {
             buffer = "";
+            escapePressed();
         } else if (event.text && /^[^\x00-\x1F\x7F-\x9F]+$/.test(event.text)) {
             buffer += event.text;
         }
     }
 
+    property string _pendingPassword: ""
+
     function submit() {
-        if (buffer.length > 0 && !passwd.active) passwd.start();
+        if (buffer.length > 0) {
+            if (passwd.active) passwd.abort();
+            passwd._responded = false;
+            _pendingPassword = buffer;
+            buffer = "";
+            passwd.start();
+        }
     }
 
-    property string pamConfig: "login"
+    // PAM directory and service detection:
+    // Uses the dedicated zenith-lock PAM service provided by zenith-nixos
+    // (/etc/static/pam.d/zenith-lock), with fallback to the system login stack.
+    property string pamConfigDir: "/etc/static/pam.d"
+    property string pamConfig: "zenith-lock"
+
     Process {
         running: true
-        command: ["test", "-f", "/etc/pam.d/zenith-lock"]
-        onExited: (code) => { if (code === 0) root.pamConfig = "zenith-lock"; }
+        command: [
+            "sh", "-c",
+            "if [ -f /etc/static/pam.d/zenith-lock ]; then printf '/etc/static/pam.d:zenith-lock'; " +
+            "elif [ -f /.host-etc/pam.d/zenith-lock ]; then printf '/.host-etc/pam.d:zenith-lock'; " +
+            "elif [ -f /etc/pam.d/zenith-lock ]; then printf '/etc/pam.d:zenith-lock'; " +
+            "elif [ -f /etc/static/pam.d/login ]; then printf '/etc/static/pam.d:login'; " +
+            "elif [ -f /.host-etc/pam.d/login ]; then printf '/.host-etc/pam.d:login'; " +
+            "else printf '/etc/pam.d:login'; fi"
+        ]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const parts = text.trim().split(":");
+                if (parts.length === 2 && parts[0] && parts[1]) {
+                    if (root.pamConfigDir !== parts[0]) root.pamConfigDir = parts[0];
+                    if (root.pamConfig !== parts[1]) root.pamConfig = parts[1];
+                }
+            }
+        }
     }
 
     PamContext {
         id: passwd
+        configDirectory: root.pamConfigDir
         config: root.pamConfig
+        user: Variables.user || Quickshell.env("USER") || ""
 
         onMessageChanged: {
             if (message.startsWith("The account is locked")) root.message = message;
         }
 
-        onResponseRequiredChanged: {
-            if (!responseRequired) return;
-            respond(root.buffer);
-            root.buffer = "";
+        property bool _responded: false
+
+        function handlePrompt() {
+            if (responseRequired && !_responded && root._pendingPassword.length > 0) {
+                _responded = true;
+                respond(root._pendingPassword);
+            }
         }
 
-        onError: (err) => console.warn("zenith lock: pam error", err, "(config " + root.pamConfig + ")")
+        onResponseRequiredChanged: {
+            if (!responseRequired) _responded = false;
+            handlePrompt();
+        }
+        onPamMessage: handlePrompt()
+
+        onError: (err) => console.warn("zenith lock: pam error", err, "(config " + root.pamConfigDir + "/" + root.pamConfig + ")")
         onCompleted: (res) => {
+            _responded = false;
+            root._pendingPassword = "";
             if (res === PamResult.Success) {
                 root.state = LockService.State.None;
                 root.unlockRequested();

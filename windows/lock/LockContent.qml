@@ -682,6 +682,204 @@ RowLayout {
 
         Item { Layout.fillHeight: true }
 
+        Connections {
+            target: LockService
+            function onEscapePressed() {
+                sessionContainer.sessionExpanded = false;
+            }
+        }
+
+        // Session Actions container (Pill button with upwards popup: Sleep, Restart, Power Off)
+        Item {
+            id: sessionContainer
+            Layout.alignment: Qt.AlignHCenter
+            Layout.bottomMargin: Theme.scaled(4) * root.centerScale
+            implicitHeight: sessionBtn.implicitHeight
+            implicitWidth: sessionBtn.implicitWidth
+            z: 30
+
+            property bool sessionExpanded: false
+            property string sessionStatus: ""
+
+            // Pop-up menu anchored ABOVE the session button ("popup not right not down")
+            Rectangle {
+                id: sessionPopup
+                anchors.bottom: sessionBtn.top
+                anchors.bottomMargin: Theme.scaled(10)
+                anchors.horizontalCenter: sessionBtn.horizontalCenter
+                implicitHeight: popupRow.implicitHeight + Theme.scaled(16)
+                implicitWidth: popupRow.implicitWidth + Theme.scaled(20)
+                radius: Theme.scaled(18)
+                color: Qt.alpha(Colors.surface_container_highest, 0.98)
+                border.color: Theme.glassBorder
+                border.width: 1
+                clip: true
+                visible: opacity > 0
+                opacity: sessionContainer.sessionExpanded ? 1 : 0
+                scale: sessionContainer.sessionExpanded ? 1.0 : 0.88
+                transformOrigin: Item.Bottom
+
+                Behavior on opacity { NumberAnimation { duration: Theme.animNormal; easing.type: Easing.OutCubic } }
+                Behavior on scale { NumberAnimation { duration: Theme.animNormal; easing.type: Easing.OutBack; easing.overshoot: 1.15 } }
+
+                layer.enabled: true
+                layer.effect: MultiEffect {
+                    shadowEnabled: true
+                    blurMax: 20
+                    shadowColor: Qt.rgba(0, 0, 0, 0.45)
+                    shadowVerticalOffset: 4
+                }
+
+                RowLayout {
+                    id: popupRow
+                    anchors.centerIn: parent
+                    spacing: Theme.scaled(8)
+
+                    Repeater {
+                        model: [
+                            { id: "sleep",   icon: "󰤄", label: "Sleep",     cmd: "systemctl suspend",  accent: Theme.lavender, status: "Suspending…" },
+                            { id: "restart", icon: "󰑐", label: "Restart",   cmd: "systemctl reboot",   accent: Theme.blue,     status: "Restarting…" },
+                            { id: "power",   icon: "󰐥", label: "Power Off", cmd: "systemctl poweroff", accent: Theme.powerRed, status: "Shutting down…" }
+                        ]
+
+                        delegate: Rectangle {
+                            id: actBtn
+                            implicitHeight: Theme.scaled(32)
+                            implicitWidth: actContent.implicitWidth + Theme.scaled(20)
+                            radius: height / 2
+                            color: actMouse.containsMouse ? Qt.alpha(modelData.accent, 0.25) : Qt.alpha(Colors.surface_container, 0.75)
+                            border.color: actMouse.containsMouse ? modelData.accent : Theme.glassBorder
+                            border.width: 1
+                            scale: actMouse.pressed ? 0.93 : 1.0
+                            Behavior on scale { NumberAnimation { duration: Theme.animInstant } }
+                            Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                            Behavior on border.color { ColorAnimation { duration: Theme.animFast } }
+
+                            RowLayout {
+                                id: actContent
+                                anchors.centerIn: parent
+                                spacing: Theme.scaled(6)
+
+                                Text {
+                                    text: modelData.icon
+                                    font.family: Theme.iconFont
+                                    font.pixelSize: Theme.scaled(14)
+                                    color: actMouse.containsMouse ? modelData.accent : Theme.text
+                                    Layout.alignment: Qt.AlignVCenter
+                                }
+
+                                Text {
+                                    text: modelData.label
+                                    font.pixelSize: Theme.scaled(12)
+                                    font.weight: Font.DemiBold
+                                    color: actMouse.containsMouse ? Theme.text : Theme.subtext0
+                                    Layout.alignment: Qt.AlignVCenter
+                                }
+                            }
+
+                            MouseArea {
+                                id: actMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    sessionContainer.sessionStatus = modelData.status;
+                                    sessionContainer.sessionExpanded = false;
+                                    sessionActionProc.command = ["sh", "-c", modelData.cmd];
+                                    sessionActionProc.running = true;
+                                }
+                            }
+                        }
+                    }
+
+                    // Close popup button
+                    Rectangle {
+                        implicitWidth: Theme.scaled(28)
+                        implicitHeight: Theme.scaled(28)
+                        radius: width / 2
+                        color: closeMouse.containsMouse ? Qt.alpha(Colors.error, 0.22) : "transparent"
+                        border.color: Theme.glassBorder
+                        border.width: 1
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "󰅖"
+                            font.family: Theme.iconFont
+                            font.pixelSize: Theme.scaled(11)
+                            color: closeMouse.containsMouse ? Colors.error : Theme.subtext0
+                        }
+
+                        MouseArea {
+                            id: closeMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: sessionContainer.sessionExpanded = false
+                        }
+                    }
+                }
+            }
+
+            // Fixed Session button trigger: [ 󰐥  Session  󰅀 ]
+            Rectangle {
+                id: sessionBtn
+                implicitHeight: Theme.scaled(36)
+                implicitWidth: collapsedBtnLayout.implicitWidth + Theme.scaled(24)
+                radius: height / 2
+                color: sessionBtnMouse.containsMouse
+                       ? Qt.alpha(Colors.surface_container_highest, 0.95)
+                       : Qt.alpha(Colors.surface_container_high, 0.85)
+                border.color: sessionContainer.sessionExpanded ? Qt.alpha(Colors.primary, 0.6) : Theme.glassBorder
+                border.width: 1
+
+                Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                Behavior on border.color { ColorAnimation { duration: Theme.animFast } }
+
+                RowLayout {
+                    id: collapsedBtnLayout
+                    anchors.centerIn: parent
+                    spacing: Theme.scaled(8)
+
+                    Text {
+                        text: "󰐥"
+                        font.family: Theme.iconFont
+                        font.pixelSize: Theme.scaled(15)
+                        color: Colors.primary
+                        Layout.alignment: Qt.AlignVCenter
+                    }
+
+                    Text {
+                        text: sessionContainer.sessionStatus !== "" ? sessionContainer.sessionStatus : "Session"
+                        color: Theme.text
+                        font.pixelSize: Theme.scaled(12)
+                        font.weight: Font.DemiBold
+                        Layout.alignment: Qt.AlignVCenter
+                    }
+
+                    Text {
+                        text: "󰅀"
+                        font.family: Theme.iconFont
+                        font.pixelSize: Theme.scaled(12)
+                        color: Theme.subtext0
+                        visible: sessionContainer.sessionStatus === ""
+                        rotation: sessionContainer.sessionExpanded ? 180 : 0
+                        Behavior on rotation { NumberAnimation { duration: Theme.animNormal; easing.type: Easing.OutBack } }
+                        Layout.alignment: Qt.AlignVCenter
+                    }
+                }
+
+                MouseArea {
+                    id: sessionBtnMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: sessionContainer.sessionExpanded = !sessionContainer.sessionExpanded
+                }
+            }
+        }
+
+        Process { id: sessionActionProc }
+
         SystemClock { id: clock; precision: SystemClock.Minutes }
     }
 
