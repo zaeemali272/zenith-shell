@@ -1388,13 +1388,28 @@ window.background.csd.thunar {{
 /* Thunar Headerbar & Toolbar */
 .thunar headerbar,
 .thunar toolbar,
+.thunar toolbar.horizontal,
+.thunar .toolbar,
 .thunar .titlebar,
-.thunar headerbar.titlebar toolbar {{
+.thunar headerbar.titlebar toolbar,
+.thunar .path-bar,
+.thunar .location-bar,
+.thunar menubar,
+window.background.csd.thunar headerbar,
+window.background.csd.thunar toolbar,
+window.background.csd.thunar .location-bar,
+window.background.csd.thunar .path-bar {{
     background-color: {bg_dark};
     color: {fg};
     border: none;
     box-shadow: none;
     padding: 4px 8px;
+}}
+
+.thunar toolbar *,
+.thunar .path-bar *,
+.thunar .location-bar * {{
+    color: {fg};
 }}
 
 /* Thunar Header Navigation & Action Buttons */
@@ -1506,7 +1521,10 @@ window.background.csd.thunar > grid.horizontal > paned.horizontal > scrolledwind
 /* Thunar Input Bar (Address / Search Entry) - Elevated Surface #19120c */
 .thunar entry,
 .thunar entry.search,
-entry.path-bar-entry {{
+entry.path-bar-entry,
+.thunar textview,
+.thunar textview text,
+.thunar textview.view {{
     background-color: {surf_elevated};
     color: {fg};
     border-radius: 9999px;
@@ -2193,6 +2211,14 @@ with open(os.path.join(gtk3_dir, "gtk.css"), "w") as f:
 with open(os.path.join(gtk4_dir, "gtk.css"), "w") as f:
     f.write(gtk4_css)
 
+for d in [gtk3_dir, gtk4_dir]:
+    stray_thunar = os.path.join(d, "thunar.css")
+    if os.path.isfile(stray_thunar):
+        try:
+            os.remove(stray_thunar)
+        except OSError:
+            pass
+
 with open(os.path.join(home, ".config", "kdeglobals"), "w") as f:
     f.write(kdeglobals_ini)
 
@@ -2355,10 +2381,19 @@ if command -v thunar >/dev/null 2>&1; then
     thunar -q 2>/dev/null || true
 fi
 
+# Clean up any stray thunar.css leftover from other shells
+rm -f "$HOME/.config/gtk-3.0/thunar.css" "$HOME/.config/gtk-4.0/thunar.css" 2>/dev/null || true
+
+if command -v dconf >/dev/null 2>&1; then
+    dconf write /org/gnome/desktop/interface/gtk-theme "'Orchis-Dark'" 2>/dev/null || true
+    dconf write /org/gnome/desktop/interface/color-scheme "'prefer-dark'" 2>/dev/null || true
+fi
+
 if command -v gsettings >/dev/null 2>&1; then
     for s in /run/current-system/sw/share/gsettings-schemas/* "$HOME/.nix-profile/share/gsettings-schemas"/* /nix/store/*gsettings-desktop-schemas*/share/gsettings-schemas/*; do
         [[ -d "$s" ]] && export XDG_DATA_DIRS="$s:${XDG_DATA_DIRS:-}"
     done
+    gsettings set org.gnome.desktop.interface gtk-theme 'Orchis-Dark' 2>/dev/null || true
     gsettings set org.gnome.desktop.interface color-scheme 'prefer-light' 2>/dev/null || true
     sleep 0.05
     gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' 2>/dev/null || true
