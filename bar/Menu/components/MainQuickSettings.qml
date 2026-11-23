@@ -1295,8 +1295,12 @@ ColumnLayout {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
                         QuickSettingsService.close();
-                        sessionProc.command = ["sh", "-c", modelData.cmd];
-                        sessionProc.running = true;
+                        if (modelData.id === "lock") {
+                            LockService.lock();
+                        } else {
+                            sessionProc.command = ["sh", "-c", modelData.cmd];
+                            sessionProc.running = true;
+                        }
                     }
                 }
             }
