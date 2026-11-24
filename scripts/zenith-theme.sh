@@ -2386,6 +2386,7 @@ rm -f "$HOME/.config/gtk-3.0/thunar.css" "$HOME/.config/gtk-4.0/thunar.css" 2>/d
 
 if command -v dconf >/dev/null 2>&1; then
     dconf write /org/gnome/desktop/interface/gtk-theme "'Orchis-Dark'" 2>/dev/null || true
+    dconf write /org/gnome/desktop/interface/icon-theme "'Reversal-dark'" 2>/dev/null || true
     dconf write /org/gnome/desktop/interface/color-scheme "'prefer-dark'" 2>/dev/null || true
 fi
 
@@ -2394,6 +2395,7 @@ if command -v gsettings >/dev/null 2>&1; then
         [[ -d "$s" ]] && export XDG_DATA_DIRS="$s:${XDG_DATA_DIRS:-}"
     done
     gsettings set org.gnome.desktop.interface gtk-theme 'Orchis-Dark' 2>/dev/null || true
+    gsettings set org.gnome.desktop.interface icon-theme 'Reversal-dark' 2>/dev/null || true
     gsettings set org.gnome.desktop.interface color-scheme 'prefer-light' 2>/dev/null || true
     sleep 0.05
     gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' 2>/dev/null || true

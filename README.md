@@ -79,6 +79,7 @@ Ensure the following packages are installed on your Linux system:
 | **Bluetooth** | `bluez`, `bluez-utils` (`bluetoothctl`) | Device discovery and connection management |
 | **Audio & Media** | `pipewire`, `wireplumber`, `playerctl` | System volume control & MPRIS metadata |
 | **Power** | `upower`, `power-profiles-daemon` | Battery level tracking & power profile switching |
+| **Display & Night Light** | `hyprsunset`, `brightnessctl` | Native hardware CTM color temperature adjustments & display brightness |
 | **Lock / Idle** | none (Quickshell `WlSessionLock` + `IdleMonitor`, PAM `login` or `zenith-lock`) | Replaces hyprlock + hypridle; Caffeine gates the idle timers (Hyprland ignores layer-shell idle inhibitors) |
 | **Helper Runtime** | `python3`, `python-pillow`, `jq` | Async backend scripts & JSON parsing |
 
@@ -210,11 +211,14 @@ The launcher shortcut (`zenith:launcher`) toggles on the *release* edge so it ca
 <h2><sub><img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Gear.png" alt="Features" width="25" height="25" /></sub> Key Features</h2>
 
 - [x] **Dynamic Top Bar**: Active workspace indicator, window title, system stats, media ticker with live 4-bar reactive audio equalizer, and clock.
-- [x] **Theme Studio & Changeable Presets Engine**: 10 curated dotfile themes (Catppuccin Mocha/Macchiato, Tokyo Night, Nord, Gruvbox, Rosé Pine, Cyberpunk, OLED Pitch Black, Dracula, Midnight) + dynamic Material 3 wallpaper palette extraction, custom accent tint overrides, and live zero-restart recoloring.
-- [x] **Power-User Quick Action Hub**: Integrated 1-click region screenshot snippet tool, color pipette (`hyprpicker`), Night Light (`gammastep`), Caffeine idle inhibitor, and Do Not Disturb (DND) notification mode.
+- [x] **Theme Studio & Ecosystem Sync**: 10 curated dotfile themes (Catppuccin Mocha/Macchiato, Tokyo Night, Nord, Gruvbox, Rosé Pine, Cyberpunk, OLED Pitch Black, Dracula, Midnight) + dynamic Material 3 wallpaper palette extraction. Synchronizes live across Kitty terminal, Starship prompt, btop, yazi, zed, Orchis-Dark GTK, and Reversal-dark icon theme.
+- [x] **Power-User Quick Action Hub**: Integrated 1-click region screenshot snippet tool, color pipette (`hyprpicker`), Night Light (`hyprsunset` hardware CTM), Caffeine idle inhibitor, and Do Not Disturb (DND) notification mode.
 - [x] **Wallpaper Manager**: Real-time thumbnail preview for images and live video wallpapers (`.mp4`, `.mkv`, `.webm`) using `mpvpaper`.
 - [x] **Dynamic Island & Universal Runner**: Smooth animated pill with app search, cliphist clipboard manager, emoji picker, inline math calculator, and terminal command launcher.
 - [x] **Control Center**: Integrated quick toggles for Wi-Fi, Bluetooth, Airplane mode, Night Light, Volume, Notifications, Calendar, and Weather.
+- [x] **Interactive Panels & Polish**: Animated skeleton loaders for async data, live connection spinners for Wi-Fi/Bluetooth, and universal smooth scrollbars across all widgets.
+- [x] **Display & Resolution Controls**: Dedicated display settings tool with integrated resolution/refresh rate switcher and 10-second safety confirmation timer.
+- [x] **Secure Session Lock**: Quickshell `WlSessionLock` integration with PAM authentication (`zenith-lock`), idle timer enforcement, and direct lock actions from quicksettings and power menu.
 - [x] **Workspaces Overview**: Visual app launcher grid and workspace switcher integrated with Hyprland IPC.
 - [x] **System Stats & Monitoring**: Live CPU, RAM, Disk, Temperature with spring-loaded hover expansion and cat animation power profiles.
 - [x] **MPRIS Media Controller**: Album artwork, track info, seekbar, and playback controls.
