@@ -153,6 +153,7 @@ Surfaces (each toggles):
   battery | pwr               Battery quick settings
   power | sys                 Session / power menu
   settings | config           Settings window
+  cheatsheet | help           Keybindings cheatsheet overlay
   display | resolution | project Displays & screen resolution settings
   lock                        Lock the session
   close | close_all           Close every open menu

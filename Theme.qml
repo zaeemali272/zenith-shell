@@ -59,6 +59,7 @@ QtObject {
     // ===== Animation Defaults (Fast, fluid & ultra-smooth 120Hz/60Hz curves) =====
     readonly property int animInstant: 90
     readonly property int animFast: 150
+    readonly property int animQuick: animFast
     readonly property int animNormal: 210
     readonly property int animSlow: 280
     readonly property int animEasing: Easing.OutCubic

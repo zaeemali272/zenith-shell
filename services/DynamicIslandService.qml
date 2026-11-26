@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import "../Settings"
+import "../windows"
 
 pragma Singleton
 
@@ -44,24 +45,34 @@ QtObject {
         function onModelReset() { root.rebuildAppCache(); }
     }
 
-    // App usage loader
-    property var loadUsageProc: Process {
-        id: loadUsage
-        // Falls back to the pre-stateDir location once, so launch counts survive the move.
-        command: ["sh", "-c", "cat \"$1\" 2>/dev/null || cat \"$2\"", "_", root.storagePath, root._legacyStoragePath]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                try {
-                    root.usageMap = JSON.parse(text) || {};
-                } catch(e) {
-                    root.usageMap = {};
-                }
-                root.updateTopAppsCache();
-                if (root.activeMode === "launcher") root.rebuildFiltered();
+    // App usage file reader (zero fork, instant sync)
+    property FileView usageFile: FileView {
+        path: root.storagePath
+        printErrors: false
+        onLoaded: {
+            try {
+                root.usageMap = JSON.parse(text()) || {};
+            } catch(e) {
+                root.usageMap = {};
             }
+            root.updateTopAppsCache();
+            if (root.activeMode === "launcher") root.rebuildFiltered();
         }
-        onExited: (code) => {
-            if (code !== 0 && root.activeMode === "launcher") root.rebuildFiltered();
+        onLoadFailed: {
+            legacyUsageFile.path = root._legacyStoragePath;
+        }
+    }
+
+    property FileView legacyUsageFile: FileView {
+        printErrors: false
+        onLoaded: {
+            try {
+                root.usageMap = JSON.parse(text()) || {};
+            } catch(e) {
+                root.usageMap = {};
+            }
+            root.updateTopAppsCache();
+            if (root.activeMode === "launcher") root.rebuildFiltered();
         }
     }
 
@@ -104,14 +115,6 @@ QtObject {
         }
     }
 
-    property var diStartupTimer: Timer {
-        id: diStartupTimer
-        interval: 300
-        running: true
-        repeat: false
-        onTriggered: loadUsage.running = true
-    }
-
     Component.onCompleted: {
         rebuildAppCache();
     }
@@ -135,7 +138,7 @@ QtObject {
 
         if (validMode === "launcher") {
             if (allAppsCache.length === 0) rebuildAppCache();
-            else rebuildFiltered();
+            else if (displayedApps.length === 0 || query !== "") rebuildFiltered();
         } else if (validMode === "clipboard") {
             loadClipHistory();
         } else if (validMode === "emoji") {
@@ -226,6 +229,13 @@ QtObject {
             return an < bn ? -1 : (an > bn ? 1 : 0);
         });
         topAppsCache = topApps.slice(0, 5);
+        if (query === "") displayedApps = topAppsCache;
+
+        // Pre-warm icon lookup cache for top apps so launcher opens with 0ms delay
+        for (let j = 0; j < topAppsCache.length; j++) {
+            let appItem = topAppsCache[j];
+            IconsFetcher.getValidIcon(appItem.name, appItem.id, appItem.icon);
+        }
     }
 
     function rebuildAppCache() {

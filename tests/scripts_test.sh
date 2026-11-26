@@ -173,6 +173,20 @@ printf '%s' "$OUT" | jq -e '(.vm | type) == "boolean" and (.battery | type) == "
     && pass "detect_hardware.sh emits real booleans" \
     || fail "capabilities are not booleans"
 
+# ----------------------------------------------------------- power_profile.sh
+OUT="$(timeout 15 "$S/power_profile.sh" get 2>/dev/null)"
+if [ -n "$OUT" ]; then
+    pass "power_profile.sh get reports current profile ($OUT)"
+else
+    fail "power_profile.sh get returned empty output"
+fi
+! "$S/power_profile.sh" bogus >/dev/null 2>&1 \
+    && pass "power_profile.sh rejects an unknown command" \
+    || fail "power_profile.sh accepted an unknown command"
+! "$S/power_profile.sh" set >/dev/null 2>&1 \
+    && pass "power_profile.sh set rejects missing target profile" \
+    || fail "power_profile.sh set accepted missing target"
+
 # ------------------------------------------------------------------ launch.sh
 # The CLI must parse and describe itself without a running shell.
 bash -n "$REPO/launch.sh" && pass "launch.sh parses" || fail "launch.sh has a syntax error"

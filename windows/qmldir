@@ -1,3 +1,4 @@
 singleton IconsFetcher IconsFetcher.qml
 DynamicIslandOverlay DynamicIslandOverlay.qml
 SettingsWindow SettingsWindow.qml
+CheatsheetWindow CheatsheetWindow.qml

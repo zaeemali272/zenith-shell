@@ -159,10 +159,10 @@ QtObject {
         }
 
         let pixmapDirs = [
-            "/etc/profiles/per-user/" + (Services.Variables.user || "zaeem") + "/share/pixmaps/",
+            "/etc/profiles/per-user/" + (Services.Variables.user || "") + "/share/pixmaps/",
             "/run/current-system/sw/share/pixmaps/",
             "/usr/share/pixmaps/",
-            (Services.Variables.homeDir || "/home/zaeem") + "/.local/share/pixmaps/"
+            (Services.Variables.homeDir || "") + "/.local/share/pixmaps/"
         ];
 
         let fileTokens = allTokens.slice(0, 5);
@@ -195,15 +195,33 @@ QtObject {
         return candidates.filter((v, i, a) => v && v !== "" && a.indexOf(v) === i);
     }
 
+    property var _iconCache: ({})
+
     function getValidIcon(appName, desktopEntry, iconName) {
+        let key = (appName || "") + "::" + (desktopEntry || "") + "::" + (iconName || "");
+        if (_iconCache[key]) return _iconCache[key];
+
         let raw = (iconName || "").trim();
-        if (raw !== "" && !raw.startsWith("/") && !raw.startsWith("file://")) {
+
+        // Direct file path if specified
+        if (raw.startsWith("/") || raw.startsWith("file://")) {
+            let direct = raw.startsWith("file://") ? raw : ("file://" + raw);
+            _iconCache[key] = direct;
+            return direct;
+        }
+
+        // Fast native Qt Theme resolution
+        if (raw !== "") {
             let sym = raw.endsWith("-symbolic") ? raw : (raw + "-symbolic");
             if (Quickshell.hasThemeIcon(sym)) {
-                return "image://icon/" + sym;
+                let res = "image://icon/" + sym;
+                _iconCache[key] = res;
+                return res;
             }
             if (Quickshell.hasThemeIcon(raw)) {
-                return "image://icon/" + raw;
+                let res = "image://icon/" + raw;
+                _iconCache[key] = res;
+                return res;
             }
         }
 
@@ -213,16 +231,19 @@ QtObject {
             if (cand.startsWith("image://icon/")) {
                 let name = cand.replace("image://icon/", "");
                 if (Quickshell.hasThemeIcon(name)) {
+                    _iconCache[key] = cand;
                     return cand;
                 }
             }
         }
 
-        if (candidates.length > 0) return candidates[0];
-        if (Quickshell.hasThemeIcon("application-x-executable-symbolic")) {
-            return "image://icon/application-x-executable-symbolic";
-        }
-        return "image://icon/application-x-executable";
+        let fallback = (candidates.length > 0) ? candidates[0] : (
+            Quickshell.hasThemeIcon("application-x-executable-symbolic")
+                ? "image://icon/application-x-executable-symbolic"
+                : "image://icon/application-x-executable"
+        );
+        _iconCache[key] = fallback;
+        return fallback;
     }
 
     function isMainApp(appId, name) {

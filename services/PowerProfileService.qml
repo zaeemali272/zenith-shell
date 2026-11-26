@@ -9,8 +9,10 @@ Item {
     id: service
 
     property string currentProfile: "balanced"
-    property bool available: false
-    property bool autoSwitchEnabled: true
+    property bool available: true
+    property bool autoSwitchEnabled: false
+
+    readonly property string powerProfileScript: PathSettings.scriptsDir + "/power_profile.sh"
 
     Connections {
         target: BatteryService
@@ -27,33 +29,29 @@ Item {
     }
 
     function setProfile(profile) {
-        if (!available) return;
-
         let target = profile;
         if (target === "powersave") target = "power-saver";
         else if (target === "turbo") target = "performance";
 
-        setExec.command = ["powerprofilesctl", "set", target];
+        // Optimistically update so UI button activates immediately with 0ms delay
+        service.currentProfile = profile;
+        service.autoSwitchEnabled = false;
+
+        setExec.command = ["bash", service.powerProfileScript, "set", target];
         setExec.running = false;
         setExec.running = true;
     }
 
     function update() {
-        if (!available) return;
         updateExec.running = false;
         updateExec.running = true;
     }
 
     Component.onCompleted: {
-        checkAvailability.running = true;
+        service.update();
     }
 
     // ---- Battery conservation / charge limit ----
-    //
-    // PowerProfileContent has always had a card bound to conservativeSupported,
-    // conservativeActive, conservativeLabel and toggleConservativeMode(). None
-    // of them existed here, so the bindings evaluated to undefined: the card
-    // stayed hidden and the toggle did nothing at all.
     property bool conservativeSupported: false
     property bool conservativeActive: false
     property string conservativeLabel: ""
@@ -96,44 +94,49 @@ Item {
                     var r = JSON.parse(String(text).trim() || "{}");
                     service.conservativeError = r.ok ? "" : (r.error || "failed");
                 } catch (e) { service.conservativeError = "failed"; }
-                // Re-read rather than assuming the write landed: it can be
-                // refused by permissions, and the card must not claim a state
-                // the hardware is not in.
                 service.refreshConservative();
             }
         }
     }
 
     Process {
-        id: checkAvailability
-        command: ["which", "powerprofilesctl"]
-        onExited: (code) => {
-            if (code === 0) {
-                service.available = true;
-                service.update();
-            } else {
-                console.warn("powerprofilesctl not found. PowerProfileService disabled.");
-            }
-        }
-    }
-
-    Process {
         id: updateExec
-        command: ["powerprofilesctl", "get"]
+        command: ["bash", service.powerProfileScript, "get"]
         stdout: StdioCollector {
             onStreamFinished: {
-                if (text) {
+                if (text && text.trim() !== "") {
+                    service.available = true;
                     let prof = text.trim();
                     if (prof === "power-saver") prof = "powersave";
-                    service.currentProfile = prof;
+                    if (service.currentProfile !== "turbo" || prof !== "performance") {
+                        service.currentProfile = prof;
+                    }
                 }
+            }
+        }
+        onExited: (code) => {
+            if (code !== 0) {
+                service.available = false;
             }
         }
     }
 
     Process {
         id: setExec
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (text && text.trim() !== "") console.log("power profile set:", text.trim());
+            }
+        }
+        stderr: StdioCollector {
+            onStreamFinished: {
+                if (text && text.trim() !== "") console.warn("power profile set error:", text.trim());
+            }
+        }
         onExited: (code) => {
+            if (code !== 0) {
+                console.warn("power profile set failed with code:", code);
+            }
             service.update();
         }
     }

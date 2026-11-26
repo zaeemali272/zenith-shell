@@ -52,13 +52,6 @@ ColumnLayout {
                 Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Theme.elasticEasing; easing.overshoot: 1.15 } }
                 Behavior on color { ColorAnimation { duration: Theme.animInstant } }
 
-                MouseArea {
-                    id: m
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    onClicked: PowerProfileService.setProfile(modelData.id)
-                }
-
                 RowLayout {
                     anchors.fill: parent
                     anchors.margins: Theme.scaled(12)
@@ -107,6 +100,15 @@ ColumnLayout {
                             elide: Text.ElideRight
                         }
                     }
+                }
+
+                MouseArea {
+                    id: m
+                    anchors.fill: parent
+                    z: 10
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: PowerProfileService.setProfile(modelData.id)
                 }
             }
         }

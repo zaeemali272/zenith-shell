@@ -33,8 +33,8 @@ QtObject {
     property bool isArch: false
 
     // User & System Metadata
-    property string user: Quickshell.env("USER") || "zaeem"
-    property string homeDir: Quickshell.env("HOME") || "/tmp"
+    property string user: Quickshell.env("USER") || Quickshell.env("LOGNAME") || ""
+    property string homeDir: Quickshell.env("HOME") || (user ? ("/home/" + user) : "/tmp")
 
     // Location, Country, Locale & Screen Resolution
     property string timezone: "UTC"

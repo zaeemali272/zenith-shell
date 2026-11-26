@@ -775,7 +775,7 @@ ColumnLayout {
                     radius: Theme.scaled(10)
                     color: Qt.rgba(Colors.primary.r, Colors.primary.g, Colors.primary.b, schemeTileMouse.containsMouse ? 0.22 : 0.14)
 
-                    Behavior on color { ColorAnimation { duration: Theme.animQuick } }
+                    Behavior on color { ColorAnimation { duration: Theme.animFast } }
 
                     Text {
                         anchors.centerIn: parent
@@ -814,7 +814,7 @@ ColumnLayout {
                     font.family: Theme.iconFont
                     font.pixelSize: Theme.scaled(15)
                     color: schemeTileMouse.containsMouse ? Theme.accentColor : Theme.subtext0
-                    Behavior on color { ColorAnimation { duration: Theme.animQuick } }
+                    Behavior on color { ColorAnimation { duration: Theme.animFast } }
                 }
             }
 

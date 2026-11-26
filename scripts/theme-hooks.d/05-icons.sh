@@ -25,7 +25,7 @@ dest_base = os.path.join(dest_icons, "Reversal")
 candidates = [
     "/run/current-system/sw/share/icons",
     os.path.join(home, ".nix-profile", "share", "icons"),
-    f"/etc/profiles/per-user/{os.environ.get('USER', 'zaeem')}/share/icons",
+    f"/etc/profiles/per-user/{os.environ.get('USER', '')}/share/icons",
 ]
 for data_dir in os.environ.get("XDG_DATA_DIRS", "").split(":"):
     if data_dir:

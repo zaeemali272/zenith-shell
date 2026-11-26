@@ -23,6 +23,7 @@ Scope {
 
     readonly property var _notifications: NotificationService
     readonly property var _battery: BatteryService
+    readonly property var _powerProfile: PowerProfileService
     readonly property var _media: MediaPlayerService
     readonly property var _productivity: ProductivityService
 
@@ -54,6 +55,7 @@ Scope {
         function screenshot(): void { handleCommand("screenshot"); }
         function colorpicker(): void { handleCommand("colorpicker"); }
         function nightlight(): void { handleCommand("nightlight"); }
+        function cheatsheet(): void { handleCommand("cheatsheet"); }
         function dnd(): void { handleCommand("dnd"); }
         function micmute(): void { handleCommand("micmute"); }
         function close(): void { handleCommand("close"); }
@@ -76,7 +78,7 @@ Scope {
             "power", "sys", "quicksettings", "close", "close_all",
             "clipboard", "clip", "emoji", "settings", "config", "lock",
             "screenshot", "snip", "colorpicker", "nightlight", "dnd", "micmute",
-            "services", "daemons",
+            "services", "daemons", "cheatsheet", "help", "keybinds",
             "display", "displays", "resolution", "project"
         ]
         delegate: GlobalShortcut {
@@ -112,6 +114,7 @@ Scope {
     }
 
     property bool settingsVisible: false
+    property bool cheatsheetVisible: false
     property int settingsTargetTab: 0
 
     function openSettingsTab(tabIndex) {
@@ -213,6 +216,8 @@ Scope {
             QuickSettingsService.toggle("power");
         } else if (lowerAction === "lock") {
             LockService.lock();
+        } else if (lowerAction === "cheatsheet" || lowerAction === "help" || lowerAction === "keybinds" || lowerAction === "keys") {
+            cheatsheetVisible = !cheatsheetVisible;
         } else if (lowerAction === "display" || lowerAction === "displays" || lowerAction === "resolution" || lowerAction === "project") {
             CenterState.toggle("Display");
         } else if (lowerAction === "settings" || lowerAction === "config") {
@@ -261,6 +266,7 @@ Scope {
             CenterState.close();
             QuickSettingsService.close();
             DynamicIslandService.close();
+            cheatsheetVisible = false;
             idleGcTimer.restart();
         }
     }
@@ -274,6 +280,17 @@ Scope {
 
     Bar {
         id: bar
+        screen: Quickshell.screens.length > 0 ? Quickshell.screens[0] : null
+    }
+
+    Variants {
+        model: (BarSettings.multiMonitor && Quickshell.screens.length > 1) ? Quickshell.screens.slice(1) : []
+        delegate: Component {
+            Bar {
+                required property var modelData
+                screen: modelData
+            }
+        }
     }
 
     // Each menu binds its own `shown` to its service flag; MenuWindow owns
@@ -338,5 +355,11 @@ Scope {
                 }
             }
         }
+    }
+
+    CheatsheetWindow {
+        id: cheatsheetWindow
+        shown: cheatsheetVisible
+        onDismissed: cheatsheetVisible = false
     }
 }

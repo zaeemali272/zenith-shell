@@ -10,6 +10,7 @@ QtObject {
     property int marginTop: 5
     property int marginBottom: 0
     property real opacity: 0.92
+    property bool multiMonitor: true
     property bool entryAnimation: true
     property int animationDuration: 100
 }
