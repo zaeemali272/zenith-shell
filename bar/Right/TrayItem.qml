@@ -171,48 +171,4 @@ MouseArea {
             NumberAnimation { from: 0.3; to: 1.0; duration: 600; easing.type: Easing.InOutSine }
         }
     }
-
-    // Tooltip. A PopupWindow is a real Wayland surface; one per tray icon
-    // sitting around unmapped is waste, so it only exists while hovered.
-    Loader {
-        active: root.containsMouse && root.item
-        sourceComponent: PopupWindow {
-            anchor.window: root.QsWindow.window
-            anchor.rect: root.mapToItem(null, 0, 0, root.width, root.height)
-            anchor.edges: Edges.Bottom
-            anchor.gravity: Edges.Bottom
-
-            visible: tooltipText.text !== ""
-            color: "transparent"
-
-            implicitWidth: tooltipRect.implicitWidth
-            implicitHeight: tooltipRect.implicitHeight + Theme.scaled(10)
-
-            Rectangle {
-                id: tooltipRect
-                y: Theme.scaled(6)
-                color: Theme.tooltipBackground
-                border.color: Theme.glassBorder
-                border.width: 1
-                radius: Theme.scaled(8)
-
-                implicitWidth: tooltipText.implicitWidth + Theme.scaled(16)
-                implicitHeight: tooltipText.implicitHeight + Theme.scaled(10)
-
-                Text {
-                    id: tooltipText
-                    anchors.centerIn: parent
-                    text: {
-                        if (!root.item) return "";
-                        var title = String(root.item.title || "").trim();
-                        var tooltip = String(root.item.tooltip || "").trim();
-                        return title || tooltip || String(root.item.id || "").trim();
-                    }
-                    color: Theme.text
-                    font.pixelSize: Theme.scaled(10)
-                    font.weight: Font.Medium
-                }
-            }
-        }
-    }
 }

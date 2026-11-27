@@ -11,13 +11,6 @@ import "../../services"
 PopupWindow {
     id: root
 
-    Component.onDestruction: MenuService.unregister(root)
-
-    onVisibleChanged: {
-        if (visible) MenuService.register(root)
-        else MenuService.unregister(root)
-    }
-
     property var menuHandle: null
 
     property var currentItem: null
@@ -25,6 +18,7 @@ PopupWindow {
 
     visible: false
     color: "transparent"
+    grabFocus: false
 
     implicitWidth: menuSurface.implicitWidth
     implicitHeight: menuSurface.implicitHeight + Theme.scaled(10)
@@ -32,7 +26,7 @@ PopupWindow {
     HyprlandFocusGrab {
         id: grab
         active: root.visible
-        windows: root.anchor && root.anchor.window ? [root, root.anchor.window] : [root]
+        windows: [root]
         onCleared: root.closeAll()
     }
 
@@ -73,6 +67,7 @@ PopupWindow {
 
         exitAnim.stop();
         root.visible = true;
+        menuSurface.forceActiveFocus();
         enterAnim.restart();
     }
 
@@ -84,6 +79,7 @@ PopupWindow {
 
     ParallelAnimation {
         id: enterAnim
+        onStarted: menuSurface.forceActiveFocus()
         NumberAnimation {
             target: menuSurface
             property: "opacity"
@@ -95,16 +91,15 @@ PopupWindow {
         NumberAnimation {
             target: menuSurface
             property: "scale"
-            from: 0.85
+            from: 0.95
             to: 1.0
             duration: 180
-            easing.type: Easing.OutBack
-            easing.overshoot: 1.15
+            easing.type: Easing.OutCubic
         }
         NumberAnimation {
             target: menuSurface
             property: "y"
-            from: -Theme.scaled(8)
+            from: -Theme.scaled(4)
             to: Theme.scaled(8)
             duration: 160
             easing.type: Easing.OutCubic
@@ -120,21 +115,21 @@ PopupWindow {
             target: menuSurface
             property: "opacity"
             to: 0
-            duration: 80
+            duration: 90
             easing.type: Easing.InQuad
         }
         NumberAnimation {
             target: menuSurface
             property: "scale"
-            to: 0.90
-            duration: 80
+            to: 0.96
+            duration: 90
             easing.type: Easing.InQuad
         }
         NumberAnimation {
             target: menuSurface
             property: "y"
-            to: -Theme.scaled(4)
-            duration: 80
+            to: -Theme.scaled(2)
+            duration: 90
             easing.type: Easing.InQuad
         }
         onFinished: {
@@ -153,6 +148,11 @@ PopupWindow {
         antialiasing: true
         focus: true
         transformOrigin: Item.TopRight
+
+        Keys.onEscapePressed: {
+            if (stackView.depth > 1) stackView.pop();
+            else root.closeAll();
+        }
 
         implicitWidth: Math.max(Theme.scaled(220), stackView.implicitWidth)
         implicitHeight: stackView.implicitHeight + Theme.scaled(16)
