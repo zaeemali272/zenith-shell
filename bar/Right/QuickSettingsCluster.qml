@@ -78,7 +78,7 @@ Item {
                 id: micSubBtn
                 height: Theme.scaled(28)
                 implicitHeight: Theme.scaled(28)
-                implicitWidth: micLayout.implicitWidth + Theme.scaled(12)
+                implicitWidth: micIcon.implicitWidth + Theme.scaled(4)
                 Layout.preferredWidth: implicitWidth
                 Layout.preferredHeight: implicitHeight
                 Layout.alignment: Qt.AlignVCenter
@@ -87,36 +87,23 @@ Item {
                 scale: micMouse.pressed ? 0.94 : 1.0
                 Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
 
-                RowLayout {
-                    id: micLayout
+                Text {
+                    id: micIcon
                     anchors.centerIn: parent
-                    spacing: Theme.scaled(4)
+                    text: VolumeService.micMuted ? "󰍭" : "󰍬"
+                    font.family: Theme.iconFont
+                    font.pixelSize: Theme.iconSize
+                    color: micMouse.containsMouse
+                        ? (VolumeService.micMuted ? Qt.rgba(Theme.red.r, Theme.red.g, Theme.red.b, 0.65) : Qt.rgba(Theme.barIconColor.r, Theme.barIconColor.g, Theme.barIconColor.b, 0.65))
+                        : (VolumeService.micMuted ? Theme.red : (VolumeService.micActive ? "#ff9e3b" : Theme.barIconColor))
+                    Layout.alignment: Qt.AlignVCenter
+                    Behavior on color { ColorAnimation { duration: Theme.animFast } }
 
-                    Text {
-                        text: VolumeService.micMuted ? "󰍭" : "󰍬"
-                        font.family: Theme.iconFont
-                        font.pixelSize: Theme.iconSize
-                        color: micMouse.containsMouse
-                            ? (VolumeService.micMuted ? Qt.rgba(Theme.red.r, Theme.red.g, Theme.red.b, 0.65) : Qt.rgba(Theme.barIconColor.r, Theme.barIconColor.g, Theme.barIconColor.b, 0.65))
-                            : (VolumeService.micMuted ? Theme.red : Theme.barIconColor)
-                        Layout.alignment: Qt.AlignVCenter
-                        Behavior on color { ColorAnimation { duration: Theme.animFast } }
-                    }
-
-                    // Active recording privacy indicator dot
-                    Rectangle {
-                        width: Theme.scaled(5)
-                        height: Theme.scaled(5)
-                        radius: width / 2
-                        color: "#ff9e3b"
-                        visible: VolumeService.micActive && !VolumeService.micMuted
-                        Layout.alignment: Qt.AlignVCenter
-                        SequentialAnimation on opacity {
-                            running: VolumeService.micActive && !VolumeService.micMuted
-                            loops: Animation.Infinite
-                            NumberAnimation { from: 1.0; to: 0.4; duration: 600; easing.type: Easing.InOutQuad }
-                            NumberAnimation { from: 0.4; to: 1.0; duration: 600; easing.type: Easing.InOutQuad }
-                        }
+                    SequentialAnimation on opacity {
+                        running: VolumeService.micActive && !VolumeService.micMuted
+                        loops: Animation.Infinite
+                        NumberAnimation { from: 1.0; to: 0.35; duration: 600; easing.type: Easing.InOutQuad }
+                        NumberAnimation { from: 0.35; to: 1.0; duration: 600; easing.type: Easing.InOutQuad }
                     }
                 }
 

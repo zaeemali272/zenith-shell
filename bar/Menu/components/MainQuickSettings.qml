@@ -68,17 +68,7 @@ ColumnLayout {
                 anchors.centerIn: parent
                 spacing: Theme.scaled(5)
 
-                // 1. Plugged-in icon (shown whenever connected to AC power)
-                Text {
-                    visible: BatteryService.acOnline
-                    text: "󰚥"
-                    font.family: Theme.iconFont
-                    font.pixelSize: Theme.scaled(13)
-                    color: "#ffffff"
-                    Layout.alignment: Qt.AlignVCenter
-                }
-
-                // 2. Rounded bolt icon (when charging) or battery level icon (when discharging)
+                // Battery level or charging plug icon
                 Text {
                     text: BatteryService.acOnline ? "󰚥" : (BatteryService.percentage >= 90 ? "󰁹" : (BatteryService.percentage >= 50 ? "󰁿" : (BatteryService.percentage >= 20 ? "󰁻" : "󰂎")))
                     visible: text !== ""
