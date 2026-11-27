@@ -6,7 +6,11 @@ have an active sink because its WirePlumber profile was left in 'off', it
 automatically activates the highest priority A2DP sink profile so the device
 immediately appears in audio output devices.
 """
-import subprocess, re, json, time
+import json
+import re
+import subprocess
+import time
+
 
 def get_desc(dev_id):
     try:
@@ -14,9 +18,12 @@ def get_desc(dev_id):
         for line in out.splitlines():
             if 'node.description' in line:
                 m = re.search(r'node\.description\s*=\s*"(.*)"', line)
-                if m: return m.group(1)
-    except Exception: pass
+                if m:
+                    return m.group(1)
+    except Exception:
+        pass
     return ''
+
 
 def activate_bluez_profile(dev_id):
     try:
@@ -46,9 +53,12 @@ def activate_bluez_profile(dev_id):
         pass
     return False
 
+
 def get_devices(auto_fix=True):
-    try: out = subprocess.check_output(['wpctl', 'status'], text=True, timeout=2)
-    except Exception: out = ''
+    try:
+        out = subprocess.check_output(['wpctl', 'status'], text=True, timeout=2)
+    except Exception:
+        out = ''
 
     sinks, sources = [], []
     active_sink, active_source = -1, -1
@@ -115,15 +125,18 @@ def get_devices(auto_fix=True):
                 dev_name = 'Built-in Microphone' if in_sources else 'Built-in Speaker'
             elif dev_name.startswith('bluez_'):
                 real_desc = get_desc(dev_id)
-                if real_desc: dev_name = real_desc
+                if real_desc:
+                    dev_name = real_desc
 
             item = {'id': dev_id, 'name': dev_name, 'isDefault': is_def}
             if in_sinks:
                 sinks.append(item)
-                if is_def: active_sink = dev_id
+                if is_def:
+                    active_sink = dev_id
             elif in_sources:
                 sources.append(item)
-                if is_def: active_source = dev_id
+                if is_def:
+                    active_source = dev_id
 
     # If any connected bluez device is missing from sinks, activate its profile and retry
     if auto_fix and bluez_devices:
@@ -158,7 +171,8 @@ def get_devices(auto_fix=True):
                     dev_name = real_desc if real_desc else 'Bluetooth Headset'
                     item = {'id': dev_id, 'name': dev_name, 'isDefault': is_def}
                     sinks.append(item)
-                    if is_def: active_sink = dev_id
+                    if is_def:
+                        active_sink = dev_id
 
     # Fallback for Bluetooth sources listed under Filters
     known_bluez_names = [b.lower() for b in bluez_devices.values()]
@@ -173,9 +187,11 @@ def get_devices(auto_fix=True):
                     dev_name = real_desc if real_desc else 'Bluetooth Microphone'
                     item = {'id': dev_id, 'name': dev_name, 'isDefault': is_def}
                     sources.append(item)
-                    if is_def: active_source = dev_id
+                    if is_def:
+                        active_source = dev_id
 
     return {'sinks': sinks, 'sources': sources, 'activeSinkId': active_sink, 'activeSourceId': active_source}
+
 
 if __name__ == '__main__':
     print(json.dumps(get_devices()))

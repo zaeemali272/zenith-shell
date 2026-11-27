@@ -2,7 +2,7 @@
 import json
 import sys
 import subprocess
-import os
+
 
 def split_terse(line):
     fields = []
@@ -22,6 +22,7 @@ def split_terse(line):
     fields.append("".join(curr))
     return fields
 
+
 def run_cmd(args):
     try:
         res = subprocess.run(args, capture_output=True, text=True, timeout=10)
@@ -29,10 +30,11 @@ def run_cmd(args):
     except Exception:
         return ""
 
+
 def get_wifi_state(do_scan=True, list_cached=False):
     radio = run_cmd(["nmcli", "radio", "wifi"])
     is_airplane = (radio.lower() == "disabled")
-    
+
     # Get known connection names
     known_lines = run_cmd(["nmcli", "-t", "-f", "NAME,TYPE", "connection", "show"]).split("\n")
     known_networks = []
@@ -97,12 +99,12 @@ def get_wifi_state(do_scan=True, list_cached=False):
                 if not ssid or ssid in seen:
                     continue
                 seen[ssid] = True
-                
+
                 try:
                     signal_pct = int(parts[1])
                 except ValueError:
                     signal_pct = 0
-                    
+
                 if signal_pct >= 75:
                     signal_level = 4
                 elif signal_pct >= 50:
@@ -113,7 +115,7 @@ def get_wifi_state(do_scan=True, list_cached=False):
                     signal_level = 1
                 else:
                     signal_level = 0
-                    
+
                 security = parts[2].strip().lower()
                 is_nm_active = (parts[3].strip() == "*")
                 if current_state == "connected":
@@ -121,7 +123,7 @@ def get_wifi_state(do_scan=True, list_cached=False):
                 else:
                     is_active = False
                 is_known = bool(known_dict.get(ssid, False))
-                
+
                 if is_active and not current_ssid:
                     current_ssid = ssid
                     current_state = "connected"
@@ -181,6 +183,7 @@ def get_wifi_state(do_scan=True, list_cached=False):
         "networks": networks
     }
 
+
 def main():
     do_scan = True
     list_cached = False
@@ -225,6 +228,7 @@ def main():
 
     data = get_wifi_state(do_scan=do_scan, list_cached=list_cached)
     print(json.dumps(data, indent=2))
+
 
 if __name__ == "__main__":
     main()

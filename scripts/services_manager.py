@@ -126,6 +126,7 @@ MAIN_APPS_DEF: List[Dict[str, Any]] = [
     }
 ]
 
+
 def format_bytes(b: int) -> str:
     if b <= 0:
         return "0 B"
@@ -134,6 +135,7 @@ def format_bytes(b: int) -> str:
             return f"{b:.1f} {unit}" if unit in ["MB", "GB"] else f"{int(b)} {unit}"
         b /= 1024.0
     return f"{b:.1f} TB"
+
 
 def fetch_properties(units: List[str], scope: str) -> Dict[str, Dict[str, str]]:
     if not units:
@@ -170,6 +172,7 @@ def fetch_properties(units: List[str], scope: str) -> Dict[str, Dict[str, str]]:
         results[current_id] = current
 
     return results
+
 
 def get_services_list() -> Dict[str, Any]:
     # Collect all needed system and user units
@@ -252,7 +255,7 @@ def get_services_list() -> Dict[str, Any]:
 
         unit_file_state = main_p.get("UnitFileState", "disabled")
         is_enabled = (unit_file_state in ["enabled", "linked", "linked-runtime", "static"])
-        
+
         main_pid_str = main_p.get("MainPID", "0")
         try:
             main_pid = int(main_pid_str)
@@ -294,6 +297,7 @@ def get_services_list() -> Dict[str, Any]:
         }
     }
 
+
 def find_app_def(unit_id: str) -> Dict[str, Any]:
     for app in MAIN_APPS_DEF:
         if app["id"] == unit_id:
@@ -303,9 +307,10 @@ def find_app_def(unit_id: str) -> Dict[str, Any]:
                 return app
     return {"id": unit_id, "scope": "system", "sub_units": []}
 
+
 def control_service(action: str, scope: str, unit: str) -> Dict[str, Any]:
     app = find_app_def(unit)
-    
+
     # Collect system and user targets
     system_targets = []
     user_targets = []
@@ -361,9 +366,10 @@ def control_service(action: str, scope: str, unit: str) -> Dict[str, Any]:
         "message": msg
     }
 
+
 def get_service_logs(scope: str, unit: str, lines: int = 40) -> Dict[str, Any]:
     app = find_app_def(unit)
-    
+
     # We can fetch journal logs for the main unit and any active sub-units
     cmd = ["journalctl"]
     if app["scope"] == "user":
@@ -378,13 +384,13 @@ def get_service_logs(scope: str, unit: str, lines: int = 40) -> Dict[str, Any]:
         res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=6)
         raw_output = res.stdout.strip()
         raw_lines = raw_output.splitlines() if raw_output else []
-        
+
         parsed_logs = []
         for line in raw_lines:
             line_str = line.strip()
             if not line_str:
                 continue
-            
+
             lower = line_str.lower()
             level = "info"
             if any(w in lower for w in ["error", "err", "failed", "failure", "fatal", "panic"]):
@@ -428,6 +434,7 @@ def get_service_logs(scope: str, unit: str, lines: int = 40) -> Dict[str, Any]:
             "rawText": f"Error fetching logs: {str(e)}"
         }
 
+
 def main():
     if len(sys.argv) < 2 or sys.argv[1] == "list":
         print(json.dumps(get_services_list()))
@@ -455,6 +462,7 @@ def main():
         return
 
     print(json.dumps({"error": f"Unknown command: {command}"}))
+
 
 if __name__ == "__main__":
     main()
