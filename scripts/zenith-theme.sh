@@ -1086,16 +1086,133 @@ button.destructive-action {{
 entry {{
     background-color: {surf_elevated};
     color: {fg};
-    border-radius: 9999px;
+    border-radius: 8px;
     border-style: none;
     border-width: 0;
-    padding: 6px 14px;
+    padding: 5px 10px;
+    min-height: 28px;
     box-shadow: none;
+    margin: 0;
 }}
 
 entry:focus {{
     background-color: {surf_elevated};
     box-shadow: 0 0 0 1.5px {pri};
+}}
+
+/* Pill styling for search bars & path entries only */
+entry.search,
+entry.search-bar,
+.search-entry {{
+    border-radius: 9999px;
+    padding: 6px 14px;
+}}
+
+/* Spinbuttons - Proportional padding & aligned stepper buttons */
+spinbutton {{
+    background-color: {surf_elevated};
+    color: {fg};
+    border-radius: 8px;
+    border-style: none;
+    border-width: 0;
+    padding: 0;
+    box-shadow: none;
+}}
+
+spinbutton:focus,
+spinbutton:focus-within {{
+    box-shadow: 0 0 0 1.5px {pri};
+}}
+
+spinbutton entry {{
+    background-color: transparent;
+    background: transparent;
+    border-radius: 8px 0 0 8px;
+    padding: 4px 8px;
+    min-height: 26px;
+    box-shadow: none;
+    margin: 0;
+}}
+
+spinbutton button {{
+    background-color: transparent;
+    background: transparent;
+    color: {fg};
+    border-radius: 0 8px 8px 0;
+    padding: 2px 6px;
+    min-width: 20px;
+    min-height: 20px;
+    margin: 0;
+    border: none;
+    box-shadow: none;
+}}
+
+spinbutton button:hover {{
+    background-color: {hover_color};
+    color: #ffffff;
+}}
+
+spinbutton button:active {{
+    background-color: {sel_color};
+    color: #ffffff;
+}}
+
+/* Menubar & Menubar Items (virt-manager, gimp, inkscape, etc.) */
+menubar,
+.menubar {{
+    background-color: {bg_dark};
+    color: {fg};
+    border: none;
+    box-shadow: none;
+    padding: 2px 4px;
+    margin: 0;
+}}
+
+menubar:backdrop,
+.menubar:backdrop {{
+    background-color: {bg_dark_backdrop};
+    color: {outl};
+}}
+
+menubar > menuitem,
+.menubar > menuitem {{
+    background-color: transparent;
+    color: {fg};
+    padding: 4px 8px;
+    margin: 1px 2px;
+    border-radius: 6px;
+    border: none;
+    box-shadow: none;
+    transition: background-color 120ms ease, color 120ms ease;
+}}
+
+menubar > menuitem:hover,
+.menubar > menuitem:hover {{
+    background-color: {hover_color};
+    color: #ffffff;
+}}
+
+menubar > menuitem:active,
+.menubar > menuitem:active,
+menubar > menuitem:selected,
+.menubar > menuitem:selected {{
+    background-color: {sel_color};
+    color: #ffffff;
+}}
+
+menubar > menuitem:backdrop,
+.menubar > menuitem:backdrop {{
+    color: {outl};
+}}
+
+menubar > menuitem menu,
+menubar menu {{
+    background-color: {surf_elevated};
+    color: {fg};
+    border-radius: 10px;
+    border: 1px solid rgba({outl_rgb}, 0.2);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    padding: 4px;
 }}
 
 /* Notebook Tabs - Pill / Rounded Material */
@@ -2108,12 +2225,86 @@ entry image {{
     background: transparent;
 }}
 
+/* Inputs & Entries in GTK 4 */
 entry {{
     background-color: {surf_elevated};
     color: {fg};
-    border-radius: 9999px;
+    border-radius: 8px;
     border: none;
+    padding: 5px 10px;
+    min-height: 28px;
+    margin: 0;
+}}
+
+entry:focus {{
+    background-color: {surf_elevated};
+    outline: 1.5px solid {pri};
+}}
+
+entry.search,
+entry.search-bar,
+.search-entry {{
+    border-radius: 9999px;
     padding: 6px 14px;
+}}
+
+spinbutton {{
+    background-color: {surf_elevated};
+    color: {fg};
+    border-radius: 8px;
+    border: none;
+    padding: 0;
+}}
+
+spinbutton entry {{
+    background-color: transparent;
+    border-radius: 8px 0 0 8px;
+    padding: 4px 8px;
+    min-height: 26px;
+}}
+
+spinbutton button {{
+    background-color: transparent;
+    color: {fg};
+    border-radius: 0 8px 8px 0;
+    padding: 2px 6px;
+    min-width: 20px;
+    min-height: 20px;
+    border: none;
+}}
+
+spinbutton button:hover {{
+    background-color: {hover_color};
+    color: #ffffff;
+}}
+
+spinbutton button:active {{
+    background-color: {sel_color};
+    color: #ffffff;
+}}
+
+/* Menubar in GTK 4 */
+menubar,
+.menubar {{
+    background-color: {bg_dark};
+    color: {fg};
+    border: none;
+    padding: 2px 4px;
+}}
+
+menubar > item,
+.menubar > item {{
+    background-color: transparent;
+    color: {fg};
+    padding: 4px 8px;
+    margin: 1px 2px;
+    border-radius: 6px;
+}}
+
+menubar > item:hover,
+.menubar > item:hover {{
+    background-color: {hover_color};
+    color: #ffffff;
 }}
 """
 

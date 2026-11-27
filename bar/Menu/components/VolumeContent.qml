@@ -420,8 +420,7 @@ ColumnLayout {
                     height: Theme.scaled(110)
                     color: Theme.menuBackground2
                     radius: Theme.bubbleRadiusMedium
-                    border.color: Theme.glassBorder
-                    border.width: 1
+                    border.width: 0
 
                     required property string name
                     required property int volume
