@@ -29,13 +29,27 @@ PopupWindow {
     implicitWidth: menuSurface.implicitWidth
     implicitHeight: menuSurface.implicitHeight + Theme.scaled(10)
 
-    grabFocus: false
-
     HyprlandFocusGrab {
         id: grab
         active: root.visible
-        windows: [root]
+        windows: root.anchor && root.anchor.window ? [root, root.anchor.window] : [root]
         onCleared: root.closeAll()
+    }
+
+    Connections {
+        target: MenuService
+        function onCloseRequested() {
+            root.closeAll();
+        }
+    }
+
+    Shortcut {
+        sequences: ["Escape"]
+        enabled: root.visible
+        onActivated: {
+            if (stackView.depth > 1) stackView.pop();
+            else root.closeAll();
+        }
     }
 
     function openFor(item, visualParent, edges) {
@@ -44,7 +58,7 @@ PopupWindow {
         if (!handle) return;
 
         if (root.visible && currentItem === item) {
-            root.visible = false;
+            root.closeAll();
             return;
         }
 
@@ -57,12 +71,76 @@ PopupWindow {
 
         stackView.replace(subMenuComp, { handle: handle, isSubMenu: false });
 
+        exitAnim.stop();
         root.visible = true;
-        menuSurface.forceActiveFocus();
+        enterAnim.restart();
     }
 
     function closeAll() {
-        root.visible = false;
+        if (!root.visible) return;
+        enterAnim.stop();
+        exitAnim.restart();
+    }
+
+    ParallelAnimation {
+        id: enterAnim
+        NumberAnimation {
+            target: menuSurface
+            property: "opacity"
+            from: 0
+            to: 1
+            duration: 140
+            easing.type: Easing.OutCubic
+        }
+        NumberAnimation {
+            target: menuSurface
+            property: "scale"
+            from: 0.85
+            to: 1.0
+            duration: 180
+            easing.type: Easing.OutBack
+            easing.overshoot: 1.15
+        }
+        NumberAnimation {
+            target: menuSurface
+            property: "y"
+            from: -Theme.scaled(8)
+            to: Theme.scaled(8)
+            duration: 160
+            easing.type: Easing.OutCubic
+        }
+        onFinished: {
+            menuSurface.forceActiveFocus();
+        }
+    }
+
+    ParallelAnimation {
+        id: exitAnim
+        NumberAnimation {
+            target: menuSurface
+            property: "opacity"
+            to: 0
+            duration: 80
+            easing.type: Easing.InQuad
+        }
+        NumberAnimation {
+            target: menuSurface
+            property: "scale"
+            to: 0.90
+            duration: 80
+            easing.type: Easing.InQuad
+        }
+        NumberAnimation {
+            target: menuSurface
+            property: "y"
+            to: -Theme.scaled(4)
+            duration: 80
+            easing.type: Easing.InQuad
+        }
+        onFinished: {
+            root.visible = false;
+            root.currentItem = null;
+        }
     }
 
     Rectangle {
@@ -74,13 +152,7 @@ PopupWindow {
         radius: Theme.scaled(14)
         antialiasing: true
         focus: true
-
-        Keys.onPressed: (event) => {
-            if (event.key === Qt.Key_Escape) {
-                if (stackView.depth > 1) stackView.pop();
-                else root.closeAll();
-            }
-        }
+        transformOrigin: Item.TopRight
 
         implicitWidth: Math.max(Theme.scaled(220), stackView.implicitWidth)
         implicitHeight: stackView.implicitHeight + Theme.scaled(16)
@@ -106,10 +178,30 @@ PopupWindow {
             implicitWidth: currentItem ? currentItem.implicitWidth : Theme.scaled(220)
             implicitHeight: currentItem ? currentItem.implicitHeight : Theme.scaled(100)
 
-            pushEnter: Transition { NumberAnimation { property: "opacity"; from: 0; to: 1; duration: Theme.animFast; easing.type: Easing.OutCubic } }
-            pushExit: Transition { NumberAnimation { property: "opacity"; from: 1; to: 0; duration: Theme.animInstant; easing.type: Easing.InCubic } }
-            popEnter: Transition { NumberAnimation { property: "opacity"; from: 0; to: 1; duration: Theme.animFast; easing.type: Easing.OutCubic } }
-            popExit: Transition { NumberAnimation { property: "opacity"; from: 1; to: 0; duration: Theme.animInstant; easing.type: Easing.InCubic } }
+            pushEnter: Transition {
+                ParallelAnimation {
+                    NumberAnimation { property: "opacity"; from: 0; to: 1; duration: Theme.animFast; easing.type: Easing.OutCubic }
+                    NumberAnimation { property: "x"; from: 18; to: 0; duration: Theme.animFast; easing.type: Easing.OutCubic }
+                }
+            }
+            pushExit: Transition {
+                ParallelAnimation {
+                    NumberAnimation { property: "opacity"; from: 1; to: 0; duration: Theme.animInstant; easing.type: Easing.InCubic }
+                    NumberAnimation { property: "x"; from: 0; to: -18; duration: Theme.animInstant; easing.type: Easing.InCubic }
+                }
+            }
+            popEnter: Transition {
+                ParallelAnimation {
+                    NumberAnimation { property: "opacity"; from: 0; to: 1; duration: Theme.animFast; easing.type: Easing.OutCubic }
+                    NumberAnimation { property: "x"; from: -18; to: 0; duration: Theme.animFast; easing.type: Easing.OutCubic }
+                }
+            }
+            popExit: Transition {
+                ParallelAnimation {
+                    NumberAnimation { property: "opacity"; from: 1; to: 0; duration: Theme.animInstant; easing.type: Easing.InCubic }
+                    NumberAnimation { property: "x"; from: 0; to: 18; duration: Theme.animInstant; easing.type: Easing.InCubic }
+                }
+            }
         }
 
         Component {

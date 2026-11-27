@@ -1177,17 +1177,17 @@ button.destructive-action {{
     font-weight: 600;
 }}
 
-/* Inputs & Entries */
+/* Inputs & Entries - Clean proportional padding & spacing */
 entry {{
     background-color: {surf_elevated};
     color: {fg};
     border-radius: 8px;
     border-style: none;
     border-width: 0;
-    padding: 5px 10px;
-    min-height: 28px;
+    padding: 5px 8px;
+    min-height: 24px;
     box-shadow: none;
-    margin: 0;
+    margin: 2px 0;
 }}
 
 entry:focus {{
@@ -1195,12 +1195,18 @@ entry:focus {{
     box-shadow: 0 0 0 1.5px {pri};
 }}
 
+entry box,
+entry image {{
+    margin: 0 2px;
+    padding: 0;
+}}
+
 /* Pill styling for search bars & path entries only */
 entry.search,
 entry.search-bar,
 .search-entry {{
     border-radius: 9999px;
-    padding: 6px 14px;
+    padding: 5px 12px;
 }}
 
 /* Spinbuttons - Proportional padding & aligned stepper buttons */
@@ -1211,6 +1217,7 @@ spinbutton {{
     border-style: none;
     border-width: 0;
     padding: 0;
+    margin: 2px 0;
     box-shadow: none;
 }}
 
@@ -1224,8 +1231,8 @@ spinbutton entry {{
     background: transparent;
     color: {fg};
     border-radius: 8px 0 0 8px;
-    padding: 4px 8px;
-    min-height: 26px;
+    padding: 4px 6px;
+    min-height: 24px;
     box-shadow: none;
     margin: 0;
 }}
@@ -1261,7 +1268,9 @@ spinbutton button:active {{
 
 /* Menubar & Menubar Items (virt-manager, gimp, inkscape, etc.) */
 menubar,
-.menubar {{
+.menubar,
+window menubar,
+window.csd menubar {{
     background-color: {bg_dark};
     color: {fg};
     border: none;
@@ -1307,6 +1316,12 @@ menubar > menuitem:backdrop,
     color: {outl};
 }}
 
+/* Dropdown Popup Menus & Context Menus */
+menu,
+.menu,
+menu.background,
+.context-menu,
+popover.menu,
 menubar > menuitem menu,
 menubar menu {{
     background-color: {surf_elevated};
@@ -1315,6 +1330,47 @@ menubar menu {{
     border: 1px solid rgba({outl_rgb}, 0.2);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
     padding: 4px;
+}}
+
+menu menuitem,
+.menu menuitem,
+menuitem {{
+    background-color: transparent;
+    color: {fg};
+    padding: 5px 10px;
+    margin: 1px 2px;
+    border-radius: 6px;
+    border: none;
+    box-shadow: none;
+    transition: background-color 120ms ease, color 120ms ease;
+}}
+
+menu menuitem:hover,
+.menu menuitem:hover,
+menuitem:hover {{
+    background-color: {hover_color};
+    color: #ffffff;
+}}
+
+menu menuitem:active,
+menu menuitem:selected,
+.menu menuitem:selected,
+menuitem:selected {{
+    background-color: {sel_color};
+    color: #ffffff;
+}}
+
+menu menuitem:disabled,
+menuitem:disabled {{
+    color: alpha({fg}, 0.35);
+}}
+
+menu separator,
+.menu separator {{
+    background-color: rgba({outl_rgb}, 0.2);
+    min-height: 1px;
+    margin: 4px 6px;
+    padding: 0;
 }}
 
 /* Notebook Tabs - Pill / Rounded Material */
@@ -1381,6 +1437,29 @@ combobox button {{
     border-radius: 8px;
     border: none;
     box-shadow: none;
+    padding: 4px 8px;
+    min-height: 24px;
+    margin: 2px 0;
+}}
+
+/* Dialog Content & Action Area Spacing */
+dialog .dialog-content-area,
+dialog .content-area,
+dialog box.content-area,
+.dialog-content-area,
+box.dialog-vbox > box:not(.dialog-action-area),
+window.dialog > box > box:not(.dialog-action-area) {{
+    padding: 12px 16px;
+    border-spacing: 8px;
+}}
+
+dialog .dialog-action-area,
+.dialog-action-area,
+box.dialog-action-area,
+actionbar {{
+    padding: 10px 14px;
+    margin: 0;
+    border-spacing: 8px;
 }}
 
 combobox button.combo:hover,
@@ -2405,15 +2484,15 @@ entry image {{
     background: transparent;
 }}
 
-/* Inputs & Entries in GTK 4 */
+/* Inputs & Entries in GTK 4 - Clean proportional padding & spacing */
 entry {{
     background-color: {surf_elevated};
     color: {fg};
     border-radius: 8px;
     border: none;
-    padding: 5px 10px;
-    min-height: 28px;
-    margin: 0;
+    padding: 5px 8px;
+    min-height: 24px;
+    margin: 2px 0;
 }}
 
 entry:focus {{
@@ -2425,7 +2504,7 @@ entry.search,
 entry.search-bar,
 .search-entry {{
     border-radius: 9999px;
-    padding: 6px 14px;
+    padding: 5px 12px;
 }}
 
 spinbutton {{
@@ -2434,13 +2513,14 @@ spinbutton {{
     border-radius: 8px;
     border: none;
     padding: 0;
+    margin: 2px 0;
 }}
 
 spinbutton entry {{
     background-color: transparent;
     border-radius: 8px 0 0 8px;
-    padding: 4px 8px;
-    min-height: 26px;
+    padding: 4px 6px;
+    min-height: 24px;
 }}
 
 spinbutton button {{
@@ -2484,6 +2564,35 @@ menubar > item,
 menubar > item:hover,
 .menubar > item:hover {{
     background-color: {hover_color};
+    color: #ffffff;
+}}
+
+/* Popover Menus in GTK 4 */
+popover.menu,
+popover.menu contents {{
+    background-color: {surf_elevated};
+    color: {fg};
+    border-radius: 10px;
+    border: 1px solid rgba({outl_rgb}, 0.2);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    padding: 4px;
+}}
+
+popover.menu modelbutton {{
+    color: {fg};
+    padding: 5px 10px;
+    margin: 1px 2px;
+    border-radius: 6px;
+}}
+
+popover.menu modelbutton:hover {{
+    background-color: {hover_color};
+    color: #ffffff;
+}}
+
+popover.menu modelbutton:selected,
+popover.menu modelbutton:active {{
+    background-color: {sel_color};
     color: #ffffff;
 }}
 
