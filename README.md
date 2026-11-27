@@ -29,6 +29,11 @@
 
 **Zenith Shell** is a modern, modular, high-performance desktop shell custom-built for **Hyprland** using **Quickshell** (Qt6/QML). Designed with sleek glassmorphism aesthetic, anti-aliased dynamic animations, real-time system monitoring, and instant control popups over IPC.
 
+Part of the **Zenith Desktop Ecosystem**:
+- **[zenith](https://github.com/zaeemali272/zenith)**: Flagship system configuration, Flakes, modules, and unified dotfiles (NixOS & Arch Linux).
+- **[zenith-shell](https://github.com/zaeemali272/zenith-shell)** *(this repo)*: Desktop shell UI powered by Quickshell.
+- **[zenith-cli](https://github.com/zaeemali272/zenith-cli)**: Unified system management & desktop control CLI.
+
 ---
 
 <h2><sub><img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Camera%20with%20Flash.png" alt="Camera with Flash" width="25" height="25" /></sub> Screenshots</h2>
