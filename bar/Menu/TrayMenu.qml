@@ -18,7 +18,15 @@ PopupWindow {
 
     visible: false
     color: "transparent"
-    grabFocus: false
+    grabFocus: true
+
+    onVisibleChanged: {
+        if (!visible) {
+            root.currentItem = null;
+            exitAnim.stop();
+            enterAnim.stop();
+        }
+    }
 
     implicitWidth: menuSurface.implicitWidth
     implicitHeight: menuSurface.implicitHeight + Theme.scaled(10)
@@ -40,6 +48,7 @@ PopupWindow {
     Shortcut {
         sequences: ["Escape"]
         enabled: root.visible
+        context: Qt.ApplicationShortcut
         onActivated: {
             if (stackView.depth > 1) stackView.pop();
             else root.closeAll();
@@ -149,9 +158,10 @@ PopupWindow {
         focus: true
         transformOrigin: Item.TopRight
 
-        Keys.onEscapePressed: {
+        Keys.onEscapePressed: (event) => {
             if (stackView.depth > 1) stackView.pop();
             else root.closeAll();
+            event.accepted = true;
         }
 
         implicitWidth: Math.max(Theme.scaled(220), stackView.implicitWidth)
