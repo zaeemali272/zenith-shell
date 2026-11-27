@@ -103,11 +103,11 @@ PRESET_NAME=""
 ACCENT_OVERRIDE=""
 WALLPAPER=""
 SOURCE_COLOR=""
-PREFER="saturation"
-SCHEME_TYPE=""
+PREFER="less-saturation"
+SCHEME_TYPE="scheme-tonal-spot"
 if [[ -f "$THEME_CONFIG" ]]; then
     SAVED_TYPE=$(python3 -c "import json; print(json.load(open('$THEME_CONFIG')).get('scheme_type', ''))" 2>/dev/null || true)
-    [[ -n "$SAVED_TYPE" ]] && SCHEME_TYPE="$SAVED_TYPE"
+    [[ -n "$SAVED_TYPE" && "$SAVED_TYPE" != "scheme-vibrant" ]] && SCHEME_TYPE="$SAVED_TYPE"
 fi
 
 while [[ $# -gt 0 ]]; do
@@ -388,11 +388,83 @@ EOF
     fi
 fi
 
-# --- Validate before installing ---
+# --- Validate and sanitize saturation/brightness before installing ---
 if ! python3 -c 'import json,sys; json.load(open(sys.argv[1]))' "$PALETTE_STAGE" 2>/dev/null; then
     log_err "Generated palette is not valid JSON; keeping the previous theme."
     exit 1
 fi
+
+python3 - "$PALETTE_STAGE" <<'CLAMP_JSON' 2>/dev/null || true
+import json, sys, colorsys
+
+def hex_to_rgb(h):
+    h = h.strip().lstrip("#")
+    if len(h) == 6:
+        return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+    return (255, 255, 255)
+
+def rgb_to_hex(r, g, b):
+    return f"#{max(0, min(255, int(r))):02x}{max(0, min(255, int(g))):02x}{max(0, min(255, int(b))):02x}"
+
+def clamp_color(hex_str, max_s=0.45, max_v=0.85):
+    if not isinstance(hex_str, str) or not hex_str.startswith("#"):
+        return hex_str
+    try:
+        r, g, b = hex_to_rgb(hex_str)
+        h, s, v = colorsys.rgb_to_hsv(r / 255.0, g / 255.0, b / 255.0)
+        clamped_s = min(s, max_s)
+        clamped_v = min(v, max_v)
+        if clamped_s != s or clamped_v != v:
+            cr, cg, cb = colorsys.hsv_to_rgb(h, clamped_s, clamped_v)
+            return rgb_to_hex(cr * 255, cg * 255, cb * 255)
+    except Exception:
+        pass
+    return hex_str
+
+path = sys.argv[1]
+try:
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    if "primary" in data:
+        data["primary"] = clamp_color(data["primary"], max_s=0.45, max_v=0.85)
+    if "primary_container" in data:
+        data["primary_container"] = clamp_color(data["primary_container"], max_s=0.35, max_v=0.55)
+    if "secondary" in data:
+        data["secondary"] = clamp_color(data["secondary"], max_s=0.40, max_v=0.80)
+    if "secondary_container" in data:
+        data["secondary_container"] = clamp_color(data["secondary_container"], max_s=0.30, max_v=0.50)
+    if "tertiary" in data:
+        data["tertiary"] = clamp_color(data["tertiary"], max_s=0.40, max_v=0.80)
+    if "tertiary_container" in data:
+        data["tertiary_container"] = clamp_color(data["tertiary_container"], max_s=0.30, max_v=0.50)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+except Exception:
+    pass
+CLAMP_JSON
+
+if [[ -f "$HYPR_STAGE" ]]; then
+    python3 - "$HYPR_STAGE" "$PALETTE_STAGE" <<'CLAMP_HYPR' 2>/dev/null || true
+import json, re, sys
+hypr_path = sys.argv[1]
+pal_path = sys.argv[2]
+try:
+    with open(pal_path) as f:
+        pal = json.load(f)
+    with open(hypr_path) as f:
+        content = f.read()
+    for key in ["primary", "primaryContainer", "secondary", "secondaryContainer", "tertiary", "tertiaryContainer"]:
+        pal_key = "".join(["_" + c.lower() if c.isupper() else c for c in key])
+        if pal_key in pal:
+            hex_val = pal[pal_key].lstrip("#")
+            content = re.sub(rf'({key}\s*=\s*")[^"]+(")', rf'\g<1>{hex_val}\g<2>', content)
+    with open(hypr_path, "w") as f:
+        f.write(content)
+except Exception:
+    pass
+CLAMP_HYPR
+fi
+
 cp -f "$PALETTE_STAGE" "$PALETTE"
 rm -f "$PALETTE_STAGE"
 log_ok "Palette written to $PALETTE"
@@ -608,13 +680,30 @@ def hex_to_rgb(hex_str, default="255,255,255"):
     r, g, b = hex_to_rgb_tuple(hex_str)
     return f"{r},{g},{b}"
 
+def clamp_color(hex_str, max_s=0.45, max_v=0.85):
+    """Ensure no color is oversaturated or fluorescent neon."""
+    if not hex_str or not isinstance(hex_str, str):
+        return hex_str
+    try:
+        r, g, b = hex_to_rgb_tuple(hex_str)
+        import colorsys
+        h, s, v = colorsys.rgb_to_hsv(r / 255.0, g / 255.0, b / 255.0)
+        clamped_s = min(s, max_s)
+        clamped_v = min(v, max_v)
+        if clamped_s != s or clamped_v != v:
+            cr, cg, cb = colorsys.hsv_to_rgb(h, clamped_s, clamped_v)
+            return rgb_to_hex(cr * 255, cg * 255, cb * 255)
+    except Exception:
+        pass
+    return hex_str
+
 # Base palette tokens
 fg = pal.get('on_surface', pal.get('on_background', '#eee0d5'))
-pri = pal.get('primary', '#ecc06c')
+pri = clamp_color(pal.get('primary', '#ecc06c'), max_s=0.45, max_v=0.85)
 on_pri = pal.get('on_primary', '#412d00')
-sec = pal.get('secondary', '#d9c4a0')
+sec = clamp_color(pal.get('secondary', '#d9c4a0'), max_s=0.40, max_v=0.80)
 on_sec = pal.get('on_secondary', '#3b2e15')
-ter = pal.get('tertiary', '#b2cfa7')
+ter = clamp_color(pal.get('tertiary', '#b2cfa7'), max_s=0.40, max_v=0.80)
 on_ter = pal.get('on_tertiary', '#1f361a')
 err = pal.get('error', '#ffb4ab')
 on_err = pal.get('on_error', '#690005')
@@ -634,8 +723,8 @@ if is_preset:
     bg_dark = pal.get('surface_container_lowest', pal.get('background', '#130d07'))
     surf_elevated = pal.get('surface_container_low', pal.get('surface', '#19120c'))
     surf_mid = surf_elevated
-    sel_color = pal.get('primary_container', pal.get('primary', '#503a24'))
-    hover_color = blend_colors(sel_color, '#ffffff', 0.20)
+    sel_color = clamp_color(pal.get('primary_container', pal.get('primary', '#503a24')), max_s=0.35, max_v=0.55)
+    hover_color = blend_colors(sel_color, '#ffffff', 0.15)
     bg_dark_backdrop = blend_colors(bg_dark, '#ffffff', 0.02)
     surf_elevated_backdrop = blend_colors(surf_elevated, '#ffffff', 0.02)
 else:
@@ -655,8 +744,8 @@ else:
         if surf_elevated == bg_dark:
             surf_elevated = pal.get('surface_container', pal.get('surface_variant', '#19120c'))
         surf_mid = surf_elevated
-        sel_color = pal.get('primary_container', '#503a24')
-        hover_color = blend_colors(sel_color, '#ffffff', 0.20)
+        sel_color = clamp_color(pal.get('primary_container', '#503a24'), max_s=0.35, max_v=0.55)
+        hover_color = blend_colors(sel_color, '#ffffff', 0.15)
         bg_dark_backdrop = blend_colors(bg_dark, '#ffffff', 0.02)
         surf_elevated_backdrop = blend_colors(surf_elevated, '#ffffff', 0.02)
 
@@ -939,7 +1028,7 @@ headerbar button:not(.suggested-action):not(.destructive-action):not(.path-bar-b
     background-image: none;
     border: none;
     box-shadow: none;
-    border-radius: 9999px;
+    border-radius: 8px;
     min-width: 32px;
     min-height: 32px;
     padding: 4px;
@@ -967,6 +1056,7 @@ headerbar button:not(.suggested-action):not(.destructive-action):not(.path-bar-b
 .thunar headerbar button:not(.path-bar-button):checked {{
     background-color: {sel_color};
     color: #ffffff;
+    border-radius: 8px;
 }}
 
 /* Window Controls / Titlebuttons (e.g. 'x' close button) - Transparent matching main body */
@@ -1076,14 +1166,14 @@ button.pill {{
 button.suggested-action {{
     background-color: {pri};
     color: {on_pri};
-    border-radius: 9999px;
+    border-radius: 8px;
     font-weight: 600;
 }}
 
 button.destructive-action {{
     background-color: {err};
     color: {on_err};
-    border-radius: 9999px;
+    border-radius: 8px;
     font-weight: 600;
 }}
 
@@ -1132,11 +1222,18 @@ spinbutton:focus-within {{
 spinbutton entry {{
     background-color: transparent;
     background: transparent;
+    color: {fg};
     border-radius: 8px 0 0 8px;
     padding: 4px 8px;
     min-height: 26px;
     box-shadow: none;
     margin: 0;
+}}
+
+spinbutton entry:selected,
+spinbutton entry selection {{
+    background-color: {sel_color};
+    color: #ffffff;
 }}
 
 spinbutton button {{
@@ -1936,6 +2033,84 @@ button.path-bar-button:backdrop {{
     background-color: {bg_dark_backdrop};
     color: {outl};
 }}
+
+/* Treeview Header Buttons (virt-manager, synaptic, etc.) */
+treeview header button,
+treeview header button:backdrop {{
+    background-color: {surf_elevated};
+    color: {fg};
+    border: none;
+    border-bottom: 1px solid rgba({outl_rgb}, 0.2);
+    border-radius: 0;
+    box-shadow: none;
+    padding: 6px 10px;
+    font-weight: 600;
+}}
+
+treeview header button:hover {{
+    background-color: {hover_color};
+    color: #ffffff;
+}}
+
+/* Virt-manager wizard header override - eliminate hardcoded #0072A8 blue banner */
+window.background box.vmm-header,
+window box.vmm-header,
+box.vmm-header,
+widget.vmm-header,
+.vmm-header {{
+    background-color: {surf_elevated} !important;
+    background-image: none !important;
+    color: {fg} !important;
+    border-radius: 12px 12px 0 0 !important;
+    padding: 12px 16px !important;
+    border-bottom: 1px solid rgba({outl_rgb}, 0.15) !important;
+    box-shadow: none !important;
+}}
+
+window.background label.vmm-header-text,
+label.vmm-header-text,
+.vmm-header-text {{
+    font-size: 13pt !important;
+    font-weight: bold !important;
+    color: {fg} !important;
+}}
+
+window.background label.vmm-header-subtext,
+label.vmm-header-subtext,
+.vmm-header-subtext {{
+    font-size: 9pt !important;
+    color: alpha({fg}, 0.75) !important;
+}}
+
+/* Fullscreen Windows & Virtual Machine Viewers - Pure Pitch Black #000000, Zero Inset/Borders */
+window:fullscreen,
+window.background:fullscreen,
+window.csd:fullscreen,
+window.background.csd:fullscreen,
+window:fullscreen *,
+window.virt-manager,
+window.background.virt-manager,
+.spice-display,
+.vnc-display,
+scrolledwindow.spice-display,
+scrolledwindow.vnc-display,
+viewport.spice-display,
+viewport.vnc-display,
+drawingarea.spice-display,
+drawingarea.vnc-display,
+#vmm-details:fullscreen,
+#vmm-details:fullscreen * {{
+    background-color: #000000 !important;
+    background: #000000 !important;
+    border: none !important;
+    border-style: none !important;
+    border-width: 0 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    outline: none !important;
+}}
 """
 
 gtk4_css = f"""/* ====================================================================
@@ -2310,6 +2485,21 @@ menubar > item:hover,
 .menubar > item:hover {{
     background-color: {hover_color};
     color: #ffffff;
+}}
+
+/* Fullscreen Windows & Displays */
+window:fullscreen,
+window:fullscreen * {{
+    background-color: #000000 !important;
+    background: #000000 !important;
+    border: none !important;
+    border-style: none !important;
+    border-width: 0 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    outline: none !important;
 }}
 """
 
