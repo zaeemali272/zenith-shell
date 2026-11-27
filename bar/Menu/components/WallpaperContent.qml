@@ -537,14 +537,16 @@ ColumnLayout {
         root.selectedWalls = arr;
     }
     function applyWallpaper(path) {
+        CenterState.close();
         killMpv.running = true; stopSlideshow(); awwwDaemon.running = true; 
         let cleanPath = path.replace("file://", "");
         saveCurrentWall.path = cleanPath; saveCurrentWall.running = true;
-        wallDelay.wallPath = cleanPath; wallDelay.start();
+        wallDelay.wallPath = cleanPath; wallDelay.restart();
     }
     function applyVideo(path) {
+        CenterState.close();
         killawww.running = true; killMpv.running = true; stopSlideshow();
-        videoDelay.videoPath = path.replace("file://", ""); videoDelay.start();
+        videoDelay.videoPath = path.replace("file://", ""); videoDelay.restart();
     }
     function startSlideshow() {
         if (root.selectedWalls.length === 0) return;
@@ -579,8 +581,8 @@ ColumnLayout {
     }
     function log(msg) { logger.command = ["sh", "-c", "echo '[$(date +%T)] " + msg + "' >> " + logPath]; logger.running = true; }
 
-    Timer { id: wallDelay; property string wallPath: ""; interval: 600; onTriggered: { setWall.command = ["sh", "-c", "awww img --resize=crop '" + wallPath + "' --transition-type fade >> " + root.logPath + " 2>&1 && " + PathSettings.scriptsDir + "/zenith-theme.sh --autoselect"]; setWall.running = true; } }
-    Timer { id: videoDelay; property string videoPath: ""; interval: 400; onTriggered: { mpvProcess.command = ["sh", "-c", "MONITOR=$(awww query | head -n1 | cut -d: -f1); if [ -z \"$MONITOR\" ]; then MONITOR=$(wlr-randr | head -n1 | awk '{print $1}'); fi; mpvpaper -vsf -o 'no-audio loop' $MONITOR '" + videoPath + "' >> " + root.logPath + " 2>&1"]; mpvProcess.running = true; CenterState.close(); } }
+    Timer { id: wallDelay; property string wallPath: ""; interval: 40; onTriggered: { setWall.command = ["sh", "-c", "awww img --resize=crop '" + wallPath + "' --transition-type fade >> " + root.logPath + " 2>&1; " + PathSettings.scriptsDir + "/zenith-theme.sh --dynamic '" + wallPath + "' >> " + root.logPath + " 2>&1"]; setWall.running = false; setWall.running = true; } }
+    Timer { id: videoDelay; property string videoPath: ""; interval: 50; onTriggered: { mpvProcess.command = ["sh", "-c", "MONITOR=$(awww query | head -n1 | cut -d: -f1); if [ -z \"$MONITOR\" ]; then MONITOR=$(wlr-randr | head -n1 | awk '{print $1}'); fi; mpvpaper -vsf -o 'no-audio loop' $MONITOR '" + videoPath + "' >> " + root.logPath + " 2>&1"]; mpvProcess.running = true; } }
 
     Process { id: logger }
     // Only start the daemon if one is not already listening. Starting it
@@ -589,7 +591,7 @@ ColumnLayout {
     // socket") whenever it is already up, which is the normal case. Those
     // panics and their backtraces were the entire contents of zenith.log.
     Process { id: awwwDaemon; command: ["sh", "-c", "awww query >/dev/null 2>&1 || awww-daemon >> " + logPath + " 2>&1"] }
-    Process { id: setWall; onExited: { CenterState.close(); } }
+    Process { id: setWall }
     Process { id: killawww; command: ["killall", "awww-daemon"] }
     Process { id: killMpv; command: ["killall", "mpvpaper"] }
     Process { id: serviceCmd }

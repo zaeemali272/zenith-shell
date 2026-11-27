@@ -393,8 +393,13 @@ if ! python3 -c 'import json,sys; json.load(open(sys.argv[1]))' "$PALETTE_STAGE"
     log_err "Generated palette is not valid JSON; keeping the previous theme."
     exit 1
 fi
-mv -f "$PALETTE_STAGE" "$PALETTE"
+cp -f "$PALETTE_STAGE" "$PALETTE"
+rm -f "$PALETTE_STAGE"
 log_ok "Palette written to $PALETTE"
+
+if [[ -p "$HOME/.cache/zenith_fifo" ]]; then
+    printf 'reload_theme\n' > "$HOME/.cache/zenith_fifo" 2>/dev/null || true
+fi
 
 # Generate Kitty colors matching the active Zenith palette
 python3 - "$PALETTE" "$CACHE_DIR/kitty-colors.conf" <<'KITTY_PY' 2>/dev/null || true
@@ -2563,14 +2568,10 @@ fi
 log_step "Refreshing compositor and apps"
 
 if command -v hyprctl >/dev/null 2>&1 && [[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
-    hyprctl reload >/dev/null 2>&1 && log "Hyprland reloaded"
+    ( hyprctl reload >/dev/null 2>&1 ) &
 fi
 
 killall -USR1 kitty 2>/dev/null && log "kitty reloaded"
-
-if command -v thunar >/dev/null 2>&1; then
-    thunar -q 2>/dev/null || true
-fi
 
 # Clean up any stray thunar.css leftover from other shells
 rm -f "$HOME/.config/gtk-3.0/thunar.css" "$HOME/.config/gtk-4.0/thunar.css" 2>/dev/null || true
@@ -2585,11 +2586,16 @@ if command -v gsettings >/dev/null 2>&1; then
     for s in /run/current-system/sw/share/gsettings-schemas/* "$HOME/.nix-profile/share/gsettings-schemas"/* /nix/store/*gsettings-desktop-schemas*/share/gsettings-schemas/*; do
         [[ -d "$s" ]] && export XDG_DATA_DIRS="$s:${XDG_DATA_DIRS:-}"
     done
-    gsettings set org.gnome.desktop.interface gtk-theme 'Orchis-Dark' 2>/dev/null || true
     gsettings set org.gnome.desktop.interface icon-theme 'Reversal-dark' 2>/dev/null || true
-    gsettings set org.gnome.desktop.interface color-scheme 'prefer-light' 2>/dev/null || true
-    sleep 0.05
     gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' 2>/dev/null || true
+    # Trigger GTK stylesheets reload without flipping color-scheme (preserves web browser stability)
+    gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark' 2>/dev/null || true
+    gsettings set org.gnome.desktop.interface gtk-theme 'Orchis-Dark' 2>/dev/null || true
+fi
+
+# Notify Zenith Shell for instant live recoloring
+if [[ -p "$HOME/.cache/zenith_fifo" ]]; then
+    printf 'reload_theme\n' > "$HOME/.cache/zenith_fifo" 2>/dev/null || true
 fi
 
 log_ok "Zenith theme updated successfully."

@@ -59,6 +59,7 @@ Scope {
         function dnd(): void { handleCommand("dnd"); }
         function micmute(): void { handleCommand("micmute"); }
         function close(): void { handleCommand("close"); }
+        function reload_theme(): void { Colors.reloadColors(); }
     }
 
     // --- INSTANT IPC VIA NAMED PIPE (FIFO) ---
@@ -176,6 +177,8 @@ Scope {
             CenterState.toggle("Mail");
         } else if (lowerAction === "wallpaper" || lowerAction === "wallpapers") {
             CenterState.toggle("Wallpaper");
+        } else if (lowerAction === "reload_theme" || lowerAction === "theme_reload" || lowerAction === "theme_update") {
+            Colors.reloadColors();
         } else if (lowerAction === "theme" || lowerAction === "themes") {
             if (arg !== "") {
                 if (lowerArg === "dynamic") ThemeService.applyDynamic();

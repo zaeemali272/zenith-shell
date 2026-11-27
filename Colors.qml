@@ -34,6 +34,12 @@ QtObject {
         return (typeof v === "string" && v.length > 0) ? v : fallback;
     }
 
+    function reloadColors() {
+        if (_paletteFile) {
+            _paletteFile.reload();
+        }
+    }
+
     property FileView _paletteFile: FileView {
         path: palette.palettePath
         // Recolour the moment matugen rewrites the file.
