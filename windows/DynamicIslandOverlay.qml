@@ -11,7 +11,8 @@ import "../services"
 
 PanelWindow {
     id: overlayRoot
-    visible: DynamicIslandService.active
+    property bool shown: DynamicIslandService.active
+    visible: false
     color: "transparent"
 
     WlrLayershell.layer: WlrLayer.Overlay
@@ -68,13 +69,17 @@ PanelWindow {
     // MenuService.openMenus, already tests DynamicIslandService.active
     // separately. Closing is handled by DynamicIslandService.close(), which
     // closeAll() calls directly.
-    onVisibleChanged: {
-        if (visible) {
-            showAnim.restart();
-        } else {
+    onShownChanged: {
+        if (shown) {
+            hideAnim.stop();
             mainCard.opacity = 0;
-            mainCard.scale = 0.95;
-            mainCard.y = Shell.Theme.scaled(6);
+            mainCard.scale = 0.96;
+            mainCard.y = -Shell.Theme.scaled(8);
+            visible = true;
+            showAnim.restart();
+        } else if (visible) {
+            showAnim.stop();
+            hideAnim.restart();
         }
     }
 
@@ -112,6 +117,45 @@ PanelWindow {
             to: Shell.Theme.scaled(6)
             duration: Shell.Theme.animNormal
             easing.type: Easing.OutQuint
+        }
+    }
+
+    SequentialAnimation {
+        id: hideAnim
+        onStarted: {
+            mainCard.layer.enabled = true;
+            mainCard.layer.smooth = true;
+        }
+        ParallelAnimation {
+            NumberAnimation {
+                target: mainCard
+                property: "opacity"
+                to: 0
+                duration: Shell.Theme.animFast
+                easing.type: Easing.InCubic
+            }
+            NumberAnimation {
+                target: mainCard
+                property: "scale"
+                to: 0.96
+                duration: Shell.Theme.animNormal
+                easing.type: Easing.InCubic
+            }
+            NumberAnimation {
+                target: mainCard
+                property: "y"
+                to: -Shell.Theme.scaled(8)
+                duration: Shell.Theme.animNormal
+                easing.type: Easing.InCubic
+            }
+        }
+        ScriptAction {
+            script: {
+                mainCard.layer.enabled = false;
+                if (!overlayRoot.shown) {
+                    overlayRoot.visible = false;
+                }
+            }
         }
     }
 

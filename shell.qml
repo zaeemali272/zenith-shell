@@ -322,7 +322,6 @@ Scope {
 
     DynamicIslandOverlay {
         id: dynamicIslandOverlay
-        visible: DynamicIslandService.active
     }
 
     HyprlandFocusGrab {

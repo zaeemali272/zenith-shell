@@ -124,22 +124,22 @@ PopupWindow {
             target: menuSurface
             property: "opacity"
             to: 0
-            duration: 90
-            easing.type: Easing.InQuad
+            duration: Theme.animFast
+            easing.type: Easing.InCubic
         }
         NumberAnimation {
             target: menuSurface
             property: "scale"
-            to: 0.96
-            duration: 90
-            easing.type: Easing.InQuad
+            to: 0.95
+            duration: Theme.animFast
+            easing.type: Easing.InCubic
         }
         NumberAnimation {
             target: menuSurface
             property: "y"
-            to: -Theme.scaled(2)
-            duration: 90
-            easing.type: Easing.InQuad
+            to: -Theme.scaled(4)
+            duration: Theme.animFast
+            easing.type: Easing.InCubic
         }
         onFinished: {
             root.visible = false;

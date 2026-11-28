@@ -42,6 +42,8 @@ WlSessionLockSurface {
         }
         MouseArea {
             anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.ArrowCursor
             onClicked: keys.forceActiveFocus()
         }
     }

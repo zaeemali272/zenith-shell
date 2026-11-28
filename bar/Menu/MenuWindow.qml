@@ -171,22 +171,22 @@ PanelWindow {
                 target: menuWindow.card
                 property: "opacity"
                 to: 0
-                duration: 100
-                easing.type: Easing.InQuad
+                duration: Theme.animFast
+                easing.type: Easing.InCubic
             }
             NumberAnimation {
                 target: menuWindow.card
                 property: "scale"
-                to: 0.97
-                duration: 100
-                easing.type: Easing.InQuad
+                to: 0.96
+                duration: Theme.animNormal
+                easing.type: Easing.InCubic
             }
             NumberAnimation {
                 target: menuWindow._cardTranslate
                 property: "y"
-                to: -Theme.scaled(8)
-                duration: 100
-                easing.type: Easing.InQuad
+                to: -Theme.scaled(14)
+                duration: Theme.animNormal
+                easing.type: Easing.InCubic
             }
         }
         ScriptAction {
