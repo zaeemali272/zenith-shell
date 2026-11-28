@@ -9,23 +9,29 @@ import "../.."
 import "../../services"
 import "../../Settings"
 
-RowLayout {
+Item {
     id: root
 
     required property var surface
     readonly property var player: MediaPlayerService.trackedPlayer
     readonly property real centerScale: surface.centerScale
     readonly property int centerWidth: surface.centerWidth
+    readonly property int sideWidth: Math.max(Theme.scaled(260), Math.min(Theme.scaled(330), Math.round((width - centerWidth) / 2) - Theme.scaled(48)))
     readonly property int panelRadius: Theme.scaled(20)
-    readonly property color panelColor: Qt.alpha(Colors.surface_container, 0.9)
+    readonly property color panelColor: Qt.alpha(Colors.surface_container, 0.42)
 
-    spacing: Theme.scaled(28)
-
-    // ---- Left: weather, media ------------------------------------------
+    // ---- Left: weather (top-left), media (bottom-left) -------------------
     ColumnLayout {
-        Layout.fillWidth: true
-        Layout.fillHeight: true
-        spacing: Theme.scaled(12)
+        id: leftCol
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        width: root.sideWidth
+        spacing: Theme.scaled(16)
+        transform: Translate {
+            x: root.opacity < 0.1 ? -Theme.scaled(36) : 0
+            Behavior on x { NumberAnimation { duration: Theme.animSlow; easing.type: Easing.OutBack; easing.overshoot: 1.1 } }
+        }
 
         Rectangle {
             id: weatherCard
@@ -163,14 +169,205 @@ RowLayout {
                         }
                     }
                 }
+
+                // 3-Day Mini Forecast Strip
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: Theme.scaled(6)
+                    visible: WeatherService.forecastDays.length > 1
+
+                    Repeater {
+                        model: WeatherService.forecastDays.slice(0, 3)
+                        delegate: Rectangle {
+                            Layout.fillWidth: true
+                            Layout.preferredWidth: 1
+                            implicitHeight: Theme.scaled(26)
+                            radius: Theme.scaled(8)
+                            color: Qt.alpha(Colors.surface_container_highest, 0.45)
+
+                            Row {
+                                anchors.centerIn: parent
+                                spacing: Theme.scaled(4)
+                                Text {
+                                    text: index === 0 ? "Today" : Qt.formatDate(new Date(modelData.date + "T12:00:00"), "ddd")
+                                    color: index === 0 ? Theme.accentColor : Theme.subtext0
+                                    font.pixelSize: Theme.scaled(9.5)
+                                    font.weight: Font.Bold
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+                                Text {
+                                    text: WeatherService.getIcon(modelData.hourly?.[4]?.weatherCode || "113")
+                                    font.family: Theme.iconFont
+                                    font.pixelSize: Theme.scaled(11)
+                                    color: Theme.accentColor
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+                                Text {
+                                    text: modelData.maxtempC + "°"
+                                    color: Theme.text
+                                    font.pixelSize: Theme.scaled(9.5)
+                                    font.weight: Font.Bold
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
+        Item { Layout.fillHeight: true }
+
+        // Automated Pixelated Snake Mini-Game
         Rectangle {
+            id: pixelArcade
             Layout.fillWidth: true
-            Layout.fillHeight: true
+            implicitHeight: Theme.scaled(148)
             radius: root.panelRadius
             color: root.panelColor
+            border.color: Theme.glassBorder
+            border.width: 1
+            clip: true
+
+            property int cols: 20
+            property int rows: 8
+            property var snake: [{x: 5, y: 4}, {x: 4, y: 4}, {x: 3, y: 4}]
+            property var food: ({x: 14, y: 4})
+            property int dirX: 1
+            property int dirY: 0
+            property int score: 0
+            property int highScore: 0
+
+            function resetGame() {
+                snake = [{x: 5, y: 4}, {x: 4, y: 4}, {x: 3, y: 4}];
+                dirX = 1; dirY = 0; score = 0;
+                spawnFood();
+            }
+
+            function spawnFood() {
+                for (let tries = 0; tries < 40; tries++) {
+                    let fx = Math.floor(Math.random() * cols);
+                    let fy = Math.floor(Math.random() * rows);
+                    let hit = false;
+                    for (let i = 0; i < snake.length; i++) {
+                        if (snake[i].x === fx && snake[i].y === fy) { hit = true; break; }
+                    }
+                    if (!hit) { food = {x: fx, y: fy}; return; }
+                }
+            }
+
+            function stepAI() {
+                let head = snake[0];
+                let dirs = [
+                    {dx: 1, dy: 0}, {dx: -1, dy: 0},
+                    {dx: 0, dy: 1}, {dx: 0, dy: -1}
+                ];
+                let best = null;
+                let bestDist = 99999;
+
+                for (let d of dirs) {
+                    if (d.dx === -dirX && d.dy === -dirY) continue;
+                    let nx = head.x + d.dx;
+                    let ny = head.y + d.dy;
+                    if (nx < 0 || nx >= cols || ny < 0 || ny >= rows) continue;
+                    let selfHit = false;
+                    for (let i = 0; i < snake.length - 1; i++) {
+                        if (snake[i].x === nx && snake[i].y === ny) { selfHit = true; break; }
+                    }
+                    if (selfHit) continue;
+                    let dist = Math.abs(nx - food.x) + Math.abs(ny - food.y);
+                    if (dist < bestDist) {
+                        bestDist = dist;
+                        best = d;
+                    }
+                }
+
+                if (!best) { resetGame(); return; }
+                dirX = best.dx;
+                dirY = best.dy;
+
+                let newHead = { x: head.x + dirX, y: head.y + dirY };
+                let nextSnake = [newHead].concat(snake);
+                if (newHead.x === food.x && newHead.y === food.y) {
+                    score++;
+                    if (score > highScore) highScore = score;
+                    snake = nextSnake;
+                    spawnFood();
+                } else {
+                    nextSnake.pop();
+                    snake = nextSnake;
+                }
+                arcadeCanvas.requestPaint();
+            }
+
+            Timer {
+                interval: 130
+                running: LockService.locked && !root.surface.unlocking
+                repeat: true
+                onTriggered: pixelArcade.stepAI()
+            }
+
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: Theme.scaled(12)
+                spacing: Theme.scaled(8)
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: Theme.scaled(6)
+                    Text { text: "󰊗"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(13); color: Colors.primary }
+                    Text { text: "PIXEL SNAKE"; color: Theme.subtext0; font.pixelSize: Theme.scaled(9.5); font.weight: Font.Black; font.letterSpacing: 1 }
+                    Item { Layout.fillWidth: true }
+                    Text { text: "SCORE " + pixelArcade.score + (pixelArcade.highScore > 0 ? "  •  HI " + pixelArcade.highScore : ""); color: Colors.primary; font.pixelSize: Theme.scaled(9.5); font.weight: Font.Bold }
+                }
+
+                Canvas {
+                    id: arcadeCanvas
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    antialiasing: false
+                    onPaint: {
+                        let ctx = getContext("2d");
+                        ctx.clearRect(0, 0, width, height);
+                        let cellW = Math.floor(width / pixelArcade.cols);
+                        let cellH = Math.floor(height / pixelArcade.rows);
+                        let cell = Math.max(4, Math.min(cellW, cellH));
+                        let ox = Math.floor((width - cell * pixelArcade.cols) / 2);
+                        let oy = Math.floor((height - cell * pixelArcade.rows) / 2);
+
+                        // Subtle pixel grid dots
+                        ctx.fillStyle = Qt.rgba(1, 1, 1, 0.06);
+                        for (let gx = 0; gx < pixelArcade.cols; gx++) {
+                            for (let gy = 0; gy < pixelArcade.rows; gy++) {
+                                ctx.fillRect(ox + gx * cell + Math.floor(cell / 2), oy + gy * cell + Math.floor(cell / 2), 1, 1);
+                            }
+                        }
+
+                        // Food pixel
+                        ctx.fillStyle = String(Colors.error);
+                        ctx.fillRect(ox + pixelArcade.food.x * cell + 1, oy + pixelArcade.food.y * cell + 1, cell - 2, cell - 2);
+
+                        // Snake pixels
+                        for (let i = pixelArcade.snake.length - 1; i >= 0; i--) {
+                            let seg = pixelArcade.snake[i];
+                            ctx.fillStyle = (i === 0) ? String(Colors.primary) : String(Colors.secondary);
+                            ctx.fillRect(ox + seg.x * cell + 1, oy + seg.y * cell + 1, cell - 2, cell - 2);
+                        }
+                    }
+                }
+            }
+        }
+
+        Item { Layout.fillHeight: true }
+
+        Rectangle {
+            id: mediaCard
+            Layout.fillWidth: true
+            Layout.preferredHeight: Theme.scaled(265)
+            radius: root.panelRadius
+            color: root.panelColor
+            border.color: Theme.glassBorder
+            border.width: 1
             clip: true
 
             ColumnLayout {
@@ -321,10 +518,13 @@ RowLayout {
 
     // ---- Center ----------------------------------------------------------
     ColumnLayout {
-        Layout.preferredWidth: root.centerWidth
-        Layout.fillWidth: false
-        Layout.fillHeight: true
-        spacing: Theme.scaled(16)
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        anchors.topMargin: Theme.scaled(12)
+        anchors.bottomMargin: Theme.scaled(12)
+        width: root.centerWidth
+        spacing: Theme.scaled(22)
 
         // Clock (12-hour format with AM/PM pill below minutes)
         RowLayout {
@@ -400,7 +600,81 @@ RowLayout {
             font.letterSpacing: 2
         }
 
+        // Greeting + User Pill
+        Rectangle {
+            Layout.alignment: Qt.AlignHCenter
+            implicitWidth: greetRow.implicitWidth + Theme.scaled(18)
+            height: Theme.scaled(26)
+            radius: 999
+            color: Qt.alpha(Colors.surface_container_high, 0.75)
+            border.color: Theme.glassBorder
+            border.width: 1
+
+            Row {
+                id: greetRow
+                anchors.centerIn: parent
+                spacing: Theme.scaled(6)
+                Text {
+                    text: {
+                        let h = clock.date.getHours();
+                        return h < 12 ? "󰖙" : (h < 18 ? "󰖕" : "󰖔");
+                    }
+                    font.family: Theme.iconFont
+                    font.pixelSize: Theme.scaled(12)
+                    color: Colors.primary
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                Text {
+                    text: {
+                        let h = clock.date.getHours();
+                        let g = h < 12 ? "Good morning" : (h < 18 ? "Good afternoon" : "Good evening");
+                        let user = Quickshell.env("USER") || "User";
+                        return g + ", " + user;
+                    }
+                    color: Theme.text
+                    font.pixelSize: Theme.scaled(11)
+                    font.weight: Font.DemiBold
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+            }
+        }
+
         // Profile picture
+        Item { Layout.fillHeight: true }
+                    antialiasing: false
+                    onPaint: {
+                        let ctx = getContext("2d");
+                        ctx.clearRect(0, 0, width, height);
+                        let cellW = Math.floor(width / pixelArcade.cols);
+                        let cellH = Math.floor(height / pixelArcade.rows);
+                        let cell = Math.max(4, Math.min(cellW, cellH));
+                        let ox = Math.floor((width - cell * pixelArcade.cols) / 2);
+                        let oy = Math.floor((height - cell * pixelArcade.rows) / 2);
+
+                        // Subtle pixel grid dots
+                        ctx.fillStyle = Qt.rgba(1, 1, 1, 0.06);
+                        for (let gx = 0; gx < pixelArcade.cols; gx++) {
+                            for (let gy = 0; gy < pixelArcade.rows; gy++) {
+                                ctx.fillRect(ox + gx * cell + Math.floor(cell / 2), oy + gy * cell + Math.floor(cell / 2), 1, 1);
+                            }
+                        }
+
+                        // Food pixel
+                        ctx.fillStyle = String(Colors.error);
+                        ctx.fillRect(ox + pixelArcade.food.x * cell + 1, oy + pixelArcade.food.y * cell + 1, cell - 2, cell - 2);
+
+                        // Snake pixels
+                        for (let i = pixelArcade.snake.length - 1; i >= 0; i--) {
+                            let seg = pixelArcade.snake[i];
+                            ctx.fillStyle = (i === 0) ? String(Colors.primary) : String(Colors.secondary);
+                            ctx.fillRect(ox + seg.x * cell + 1, oy + seg.y * cell + 1, cell - 2, cell - 2);
+                        }
+                    }
+                }
+            }
+        }
+
+        Item { Layout.fillHeight: true }
         Item {
             id: pfpBox
             Layout.alignment: Qt.AlignHCenter
@@ -421,13 +695,16 @@ RowLayout {
                 onExited: (code) => pfpBox.hasFace = (code === 0)
             }
 
-            // Outer ring border
+            // Outer ring border (reacts to typing & auth)
             Rectangle {
                 anchors.fill: parent
                 radius: width / 2
                 color: Qt.alpha(Colors.surface_container_highest, 0.9)
-                border.color: Qt.alpha(Colors.primary, 0.6)
-                border.width: 2.5
+                border.color: LockService.authenticating ? Colors.secondary
+                            : (LockService.buffer.length > 0 ? Colors.primary : Qt.alpha(Colors.primary, 0.55))
+                border.width: LockService.buffer.length > 0 ? 3.5 : 2.5
+                Behavior on border.width { NumberAnimation { duration: Theme.animInstant } }
+                Behavior on border.color { ColorAnimation { duration: Theme.animInstant } }
             }
 
             // Fallback glyph
@@ -681,11 +958,185 @@ RowLayout {
         }
 
         Item { Layout.fillHeight: true }
+                    antialiasing: false
+                    onPaint: {
+                        let ctx = getContext("2d");
+                        ctx.clearRect(0, 0, width, height);
+                        let cellW = Math.floor(width / pixelArcade.cols);
+                        let cellH = Math.floor(height / pixelArcade.rows);
+                        let cell = Math.max(4, Math.min(cellW, cellH));
+                        let ox = Math.floor((width - cell * pixelArcade.cols) / 2);
+                        let oy = Math.floor((height - cell * pixelArcade.rows) / 2);
+
+                        // Subtle pixel grid dots
+                        ctx.fillStyle = Qt.rgba(1, 1, 1, 0.06);
+                        for (let gx = 0; gx < pixelArcade.cols; gx++) {
+                            for (let gy = 0; gy < pixelArcade.rows; gy++) {
+                                ctx.fillRect(ox + gx * cell + Math.floor(cell / 2), oy + gy * cell + Math.floor(cell / 2), 1, 1);
+                            }
+                        }
+
+                        // Food pixel
+                        ctx.fillStyle = String(Colors.error);
+                        ctx.fillRect(ox + pixelArcade.food.x * cell + 1, oy + pixelArcade.food.y * cell + 1, cell - 2, cell - 2);
+
+                        // Snake pixels
+                        for (let i = pixelArcade.snake.length - 1; i >= 0; i--) {
+                            let seg = pixelArcade.snake[i];
+                            ctx.fillStyle = (i === 0) ? String(Colors.primary) : String(Colors.secondary);
+                            ctx.fillRect(ox + seg.x * cell + 1, oy + seg.y * cell + 1, cell - 2, cell - 2);
+                        }
+                    }
+                }
+            }
+        }
+
+        Item { Layout.fillHeight: true }
 
         Connections {
             target: LockService
             function onEscapePressed() {
                 sessionContainer.sessionExpanded = false;
+            }
+        }
+
+        // Quick Status Strip (Wi-Fi, Volume, Battery, DND, Caffeine)
+        Flow {
+            Layout.alignment: Qt.AlignHCenter
+            Layout.maximumWidth: root.centerWidth
+            spacing: Theme.scaled(6)
+
+            // Wi-Fi Pill
+            Rectangle {
+                visible: HardwareService.hasWifi
+                width: wifiPillRow.implicitWidth + Theme.scaled(14)
+                height: Theme.scaled(24)
+                radius: 999
+                color: Qt.alpha(Colors.surface_container_high, 0.75)
+                border.color: Theme.glassBorder
+                border.width: 1
+                Row {
+                    id: wifiPillRow
+                    anchors.centerIn: parent
+                    spacing: Theme.scaled(5)
+                    Text {
+                        text: WifiService.currentSsid !== "" ? "󰤨" : "󰤭"
+                        font.family: Theme.iconFont
+                        font.pixelSize: Theme.scaled(11)
+                        color: WifiService.currentSsid !== "" ? Colors.primary : Theme.subtext2
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                    Text {
+                        text: WifiService.currentSsid !== "" ? WifiService.currentSsid : "Offline"
+                        color: Theme.text
+                        font.pixelSize: Theme.scaled(10)
+                        font.weight: Font.DemiBold
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+            }
+
+            // Volume Pill (clickable mute toggle)
+            Rectangle {
+                width: volPillRow.implicitWidth + Theme.scaled(14)
+                height: Theme.scaled(24)
+                radius: 999
+                color: volPillM.containsMouse ? Qt.alpha(Colors.primary, 0.16) : Qt.alpha(Colors.surface_container_high, 0.75)
+                border.color: Theme.glassBorder
+                border.width: 1
+                Row {
+                    id: volPillRow
+                    anchors.centerIn: parent
+                    spacing: Theme.scaled(5)
+                    Text {
+                        text: VolumeService.muted ? Theme.volMute : (VolumeService.outputVolume > 50 ? Theme.volHigh : Theme.volMid)
+                        font.family: Theme.iconFont
+                        font.pixelSize: Theme.scaled(11)
+                        color: VolumeService.muted ? Colors.error : Colors.primary
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                    Text {
+                        text: VolumeService.muted ? "Muted" : (VolumeService.outputVolume + "%")
+                        color: Theme.text
+                        font.pixelSize: Theme.scaled(10)
+                        font.weight: Font.Bold
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+                MouseArea {
+                    id: volPillM
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: VolumeService.toggleMute()
+                }
+            }
+
+            Rectangle {
+                visible: HardwareService.hasBattery && BatteryService.percentage >= 0
+                width: batPillRow.implicitWidth + Theme.scaled(14)
+                height: Theme.scaled(24)
+                radius: 999
+                color: Qt.alpha(Colors.surface_container_high, 0.75)
+                border.color: Theme.glassBorder
+                border.width: 1
+                Row {
+                    id: batPillRow
+                    anchors.centerIn: parent
+                    spacing: Theme.scaled(5)
+                    Text {
+                        text: Theme.batteryIcon(BatteryService.percentage, BatteryService.status === "charging")
+                        font.family: Theme.iconFont
+                        font.pixelSize: Theme.scaled(12)
+                        color: Theme.batteryColorFor(BatteryService.percentage, BatteryService.status === "charging")
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                    Text {
+                        text: BatteryService.percentage + "%"
+                        color: Theme.text
+                        font.pixelSize: Theme.scaled(10)
+                        font.weight: Font.Bold
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+            }
+
+            Rectangle {
+                width: dndLockRow.implicitWidth + Theme.scaled(14)
+                height: Theme.scaled(24)
+                radius: 999
+                color: PowerToolsService.dnd ? Qt.alpha(Colors.primary, 0.2) : Qt.alpha(Colors.surface_container_high, 0.75)
+                border.color: PowerToolsService.dnd ? Qt.alpha(Colors.primary, 0.4) : Theme.glassBorder
+                border.width: 1
+                Row {
+                    id: dndLockRow
+                    anchors.centerIn: parent
+                    spacing: Theme.scaled(4)
+                    Text { text: PowerToolsService.dnd ? "󰂛" : "󰂚"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(11); color: PowerToolsService.dnd ? Colors.primary : Theme.subtext0; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: "DND"; color: PowerToolsService.dnd ? Colors.primary : Theme.subtext0; font.pixelSize: Theme.scaled(10); font.weight: Font.Bold; anchors.verticalCenter: parent.verticalCenter }
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: PowerToolsService.toggleDnd()
+                }
+            }
+
+            Rectangle {
+                visible: CaffeineService.active
+                width: cafLockRow.implicitWidth + Theme.scaled(14)
+                height: Theme.scaled(24)
+                radius: 999
+                color: Qt.alpha(Colors.secondary, 0.16)
+                border.color: Qt.alpha(Colors.secondary, 0.35)
+                border.width: 1
+                Row {
+                    id: cafLockRow
+                    anchors.centerIn: parent
+                    spacing: Theme.scaled(4)
+                    Text { text: "󰅶"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(11); color: Colors.secondary; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: "Caffeine"; color: Colors.secondary; font.pixelSize: Theme.scaled(10); font.weight: Font.Bold; anchors.verticalCenter: parent.verticalCenter }
+                }
             }
         }
 
@@ -883,11 +1334,18 @@ RowLayout {
         SystemClock { id: clock; precision: SystemClock.Minutes }
     }
 
-    // ---- Right: resources, battery ---------------------------------------
+    // ---- Right: resources (top-right), notifications (bottom-right) ----
     ColumnLayout {
-        Layout.fillWidth: true
-        Layout.fillHeight: true
-        spacing: Theme.scaled(12)
+        id: rightCol
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        width: root.sideWidth
+        spacing: Theme.scaled(14)
+        transform: Translate {
+            x: root.opacity < 0.1 ? Theme.scaled(36) : 0
+            Behavior on x { NumberAnimation { duration: Theme.animSlow; easing.type: Easing.OutBack; easing.overshoot: 1.1 } }
+        }
 
         Rectangle {
             id: resCard
@@ -895,27 +1353,29 @@ RowLayout {
             implicitHeight: resCol.implicitHeight + Theme.scaled(28)
             radius: root.panelRadius
             color: root.panelColor
+            border.color: Theme.glassBorder
+            border.width: 1
 
             ColumnLayout {
                 id: resCol
                 anchors.fill: parent
                 anchors.margins: Theme.scaled(14)
-                spacing: Theme.scaled(12)
+                spacing: Theme.scaled(10)
 
-                // Header
+                // Header with RAM & Load summary
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: Theme.scaled(8)
+                    spacing: Theme.scaled(6)
 
                     Text {
                         text: "󰍛"
                         font.family: Theme.iconFont
-                        font.pixelSize: Theme.scaled(16)
+                        font.pixelSize: Theme.scaled(14)
                         color: Colors.primary
                     }
 
                     Text {
-                        text: "SYSTEM USAGE"
+                        text: "SYSTEM"
                         color: Theme.subtext0
                         font.pixelSize: Theme.scaled(10)
                         font.weight: Font.Black
@@ -923,232 +1383,129 @@ RowLayout {
                     }
 
                     Item { Layout.fillWidth: true }
-                }
-
-                // 2x2 Grid of Metrics
-                GridLayout {
-                    Layout.fillWidth: true
-                    columns: 2
-                    rowSpacing: Theme.scaled(8)
-                    columnSpacing: Theme.scaled(8)
-
-                    Repeater {
-                        model: [
-                            { key: "cpu", icon: "󰍛", label: "CPU", unit: "%", col: Theme.cpuColor, max: 100 },
-                            { key: "mem", icon: "󰘚", label: "Memory", unit: "%", col: Theme.memColor, max: 100 },
-                            { key: "temp", icon: "󰔏", label: "Temp", unit: "°C", col: Theme.tempColor, max: 100 },
-                            { key: "fs", icon: "󰋊", label: "Disk", unit: "%", col: Colors.secondary, max: 100 }
-                        ]
-
-                        Rectangle {
-                            required property var modelData
-                            Layout.fillWidth: true
-                            implicitHeight: metricCol.implicitHeight + Theme.scaled(14)
-                            radius: Theme.scaled(12)
-                            color: Qt.alpha(Colors.surface_container_high, 0.6)
-                            border.color: Theme.glassBorder
-                            border.width: 1
-
-                            readonly property real liveValue: {
-                                if (modelData.key === "cpu") return ResourceService.cpu;
-                                if (modelData.key === "mem") return ResourceService.mem;
-                                if (modelData.key === "temp") return ResourceService.temp;
-                                if (modelData.key === "fs") return ResourceService.fs;
-                                return 0;
-                            }
-
-                            ColumnLayout {
-                                id: metricCol
-                                anchors.fill: parent
-                                anchors.margins: Theme.scaled(10)
-                                spacing: Theme.scaled(6)
-
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    spacing: Theme.scaled(6)
-
-                                    Text {
-                                        text: modelData.icon
-                                        font.family: Theme.iconFont
-                                        font.pixelSize: Theme.scaled(20)
-                                        color: modelData.col
-                                    }
-
-                                    Text {
-                                        text: modelData.label
-                                        color: Theme.subtext0
-                                        font.pixelSize: Theme.scaled(11)
-                                        font.weight: Font.Medium
-                                        elide: Text.ElideRight
-                                        Layout.fillWidth: true
-                                    }
-                                }
-
-                                Text {
-                                    text: liveValue + modelData.unit
-                                    color: Theme.text
-                                    font.pixelSize: Theme.scaled(16)
-                                    font.weight: Font.Bold
-                                }
-
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    implicitHeight: Theme.scaled(4)
-                                    radius: height / 2
-                                    color: Qt.alpha(Colors.surface_container_highest, 0.8)
-
-                                    Rectangle {
-                                        width: parent.width * Math.max(0, Math.min(1, liveValue / modelData.max))
-                                        height: parent.height
-                                        radius: height / 2
-                                        color: modelData.col
-                                        Behavior on width { NumberAnimation { duration: Theme.animNormal; easing.type: Easing.OutCubic } }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        Rectangle {
-            id: batteryCard
-            Layout.fillWidth: true
-            implicitHeight: batCol.implicitHeight + Theme.scaled(28)
-            radius: root.panelRadius
-            color: root.panelColor
-            visible: HardwareService.hasBattery
-
-            readonly property int batPercent: Math.max(0, Math.min(100, BatteryService.percentage))
-            readonly property string batState: BatteryService.status
-            readonly property bool acOnline: BatteryService.acOnline
-
-            function batteryIcon(p, state, ac) {
-                const isLimitActive = (state === "not charging" || state === "full" || state === "idle") && ac;
-                if (isLimitActive) return "";
-                if (state === "charging") return "󰂄";
-                if (p >= 90) return "󰁹";
-                if (p >= 75) return "󰂁";
-                if (p >= 60) return "󰁿";
-                if (p >= 40) return "󰁽";
-                if (p >= 20) return "󰁻";
-                return "󰂎";
-            }
-
-            function batteryColor(p, state, ac) {
-                if (state === "charging") return Theme.powerGreen;
-                if (p <= 15) return Theme.red;
-                return Theme.fontColor;
-            }
-
-            function batteryStatusText(p, state, ac) {
-                const isLimitActive = (state === "not charging" || state === "full" || state === "idle") && ac;
-                if (isLimitActive) return "Plugged in (Conservation)";
-                if (state === "charging") {
-                    if (BatteryService.timeRemaining && BatteryService.timeRemaining !== "" && BatteryService.timeRemaining !== "Calculating...") {
-                        return "Charging • " + BatteryService.timeRemaining;
-                    }
-                    return "Charging";
-                }
-                if (ac) return "Plugged in";
-                if (BatteryService.timeRemaining && BatteryService.timeRemaining !== "" && BatteryService.timeRemaining !== "Calculating...") {
-                    return BatteryService.timeRemaining + " left";
-                }
-                return state === "discharging" ? "Discharging" : (state ? state.charAt(0).toUpperCase() + state.slice(1) : "Battery");
-            }
-
-            ColumnLayout {
-                id: batCol
-                anchors.fill: parent
-                anchors.margins: Theme.scaled(14)
-                spacing: Theme.scaled(10)
-
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: Theme.scaled(12)
 
                     Text {
-                        text: batteryCard.batteryIcon(batteryCard.batPercent, batteryCard.batState, batteryCard.acOnline)
-                        font.family: Theme.iconFont
-                        font.pixelSize: Theme.scaled(28)
-                        color: batteryCard.batteryColor(batteryCard.batPercent, batteryCard.batState, batteryCard.acOnline)
-
-                        SequentialAnimation on opacity {
-                            running: batteryCard.batState === "charging"
-                            loops: Animation.Infinite
-                            NumberAnimation { from: 1.0; to: 0.35; duration: 600; easing.type: Easing.InOutQuad }
-                            NumberAnimation { from: 0.35; to: 1.0; duration: 600; easing.type: Easing.InOutQuad }
-                        }
-                    }
-
-                    ColumnLayout {
-                        spacing: 0
-                        Layout.fillWidth: true
-                        RowLayout {
-                            Layout.fillWidth: true
-                            Text {
-                                text: batteryCard.batPercent + "%"
-                                color: Theme.text
-                                font.pixelSize: Theme.scaled(18)
-                                font.weight: Font.Bold
-                            }
-                            Item { Layout.fillWidth: true }
-                            RowLayout {
-                                spacing: Theme.scaled(4)
-                                Layout.alignment: Qt.AlignVCenter
-                                Text {
-                                    visible: batteryCard.acOnline
-                                    text: "󰚥"
-                                    font.family: Theme.iconFont
-                                    font.pixelSize: Theme.scaled(11)
-                                    color: Theme.accentColor
-                                    Layout.alignment: Qt.AlignVCenter
-                                }
-                                Text {
-                                    text: batteryCard.batState === "charging" ? "CHARGING" : (batteryCard.acOnline ? "AC CONNECTED" : "BATTERY")
-                                    color: batteryCard.batState === "charging" ? Theme.accentColor : Theme.subtext0
-                                    font.pixelSize: Theme.scaled(10)
-                                    font.weight: Font.Black
-                                    font.letterSpacing: 1
-                                    Layout.alignment: Qt.AlignVCenter
-                                }
-                            }
-                        }
-                        Text {
-                            text: batteryCard.batteryStatusText(batteryCard.batPercent, batteryCard.batState, batteryCard.acOnline)
-                            color: Theme.subtext0
-                            font.pixelSize: Theme.scaled(12)
-                            elide: Text.ElideRight
-                            Layout.fillWidth: true
-                        }
+                        visible: ResourceService.memTotalGb > 0
+                        text: ResourceService.memUsedGb.toFixed(1) + " / " + ResourceService.memTotalGb.toFixed(0) + " GB"
+                        color: Theme.subtext1
+                        font.pixelSize: Theme.scaled(9.5)
+                        font.weight: Font.Bold
                     }
                 }
 
-                // Battery Progress Bar
-                Rectangle {
-                    Layout.fillWidth: true
-                    implicitHeight: Theme.scaled(6)
-                    radius: height / 2
-                    color: Qt.alpha(Colors.surface_container_highest, 0.9)
+                // Clean Sleek Progress Rows
+                Repeater {
+                    model: [
+                        { key: "cpu", icon: "󰍛", label: "CPU", unit: "%", col: Theme.cpuColor, max: 100 },
+                        { key: "mem", icon: "󰘚", label: "Memory", unit: "%", col: Theme.memColor, max: 100 },
+                        { key: "temp", icon: "󰔏", label: "Temp", unit: "°C", col: Theme.tempColor, max: 100 },
+                        { key: "fs", icon: "󰋊", label: "Disk", unit: "%", col: Colors.secondary, max: 100 }
+                    ]
 
-                    Rectangle {
-                        width: parent.width * Math.max(0, Math.min(1, batteryCard.batPercent / 100))
-                        height: parent.height
-                        radius: height / 2
-                        color: batteryCard.batteryColor(batteryCard.batPercent, batteryCard.batState, batteryCard.acOnline)
-                        Behavior on width { NumberAnimation { duration: Theme.animNormal; easing.type: Easing.OutCubic } }
+                    ColumnLayout {
+                        required property var modelData
+                        Layout.fillWidth: true
+                        spacing: Theme.scaled(4)
+
+                        readonly property real liveValue: {
+                            if (modelData.key === "cpu") return ResourceService.cpu;
+                            if (modelData.key === "mem") return ResourceService.mem;
+                            if (modelData.key === "temp") return ResourceService.temp;
+                            if (modelData.key === "fs") return ResourceService.fs;
+                            return 0;
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Theme.scaled(6)
+
+                            Text {
+                                text: modelData.icon
+                                font.family: Theme.iconFont
+                                font.pixelSize: Theme.scaled(13)
+                                color: modelData.col
+                            }
+
+                            Text {
+                                text: modelData.label
+                                color: Theme.text
+                                font.pixelSize: Theme.scaled(11)
+                                font.weight: Font.DemiBold
+                            }
+
+                            Item { Layout.fillWidth: true }
+
+                            Text {
+                                text: Math.round(liveValue) + modelData.unit
+                                color: Theme.text
+                                font.pixelSize: Theme.scaled(11)
+                                font.weight: Font.Bold
+                            }
+                        }
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            implicitHeight: Theme.scaled(5)
+                            radius: 999
+                            color: Qt.rgba(255, 255, 255, 0.1)
+
+                            Rectangle {
+                                width: parent.width * Math.max(0, Math.min(1, liveValue / modelData.max))
+                                height: parent.height
+                                radius: 999
+                                color: modelData.col
+                                Behavior on width { NumberAnimation { duration: Theme.animNormal; easing.type: Easing.OutCubic } }
+                            }
+                        }
                     }
                 }
             }
         }
+
+        Item { Layout.fillHeight: true }
+                    antialiasing: false
+                    onPaint: {
+                        let ctx = getContext("2d");
+                        ctx.clearRect(0, 0, width, height);
+                        let cellW = Math.floor(width / pixelArcade.cols);
+                        let cellH = Math.floor(height / pixelArcade.rows);
+                        let cell = Math.max(4, Math.min(cellW, cellH));
+                        let ox = Math.floor((width - cell * pixelArcade.cols) / 2);
+                        let oy = Math.floor((height - cell * pixelArcade.rows) / 2);
+
+                        // Subtle pixel grid dots
+                        ctx.fillStyle = Qt.rgba(1, 1, 1, 0.06);
+                        for (let gx = 0; gx < pixelArcade.cols; gx++) {
+                            for (let gy = 0; gy < pixelArcade.rows; gy++) {
+                                ctx.fillRect(ox + gx * cell + Math.floor(cell / 2), oy + gy * cell + Math.floor(cell / 2), 1, 1);
+                            }
+                        }
+
+                        // Food pixel
+                        ctx.fillStyle = String(Colors.error);
+                        ctx.fillRect(ox + pixelArcade.food.x * cell + 1, oy + pixelArcade.food.y * cell + 1, cell - 2, cell - 2);
+
+                        // Snake pixels
+                        for (let i = pixelArcade.snake.length - 1; i >= 0; i--) {
+                            let seg = pixelArcade.snake[i];
+                            ctx.fillStyle = (i === 0) ? String(Colors.primary) : String(Colors.secondary);
+                            ctx.fillRect(ox + seg.x * cell + 1, oy + seg.y * cell + 1, cell - 2, cell - 2);
+                        }
+                    }
+                }
+            }
+        }
+
+        Item { Layout.fillHeight: true }
 
         Rectangle {
             id: notifCard
             Layout.fillWidth: true
-            Layout.fillHeight: true
+            Layout.preferredHeight: Math.min(Theme.scaled(310), Math.max(Theme.scaled(190), root.height * 0.36))
             radius: root.panelRadius
             color: root.panelColor
+            border.color: Theme.glassBorder
+            border.width: 1
             clip: true
 
             readonly property int notifCount: NotificationService.notifications.count

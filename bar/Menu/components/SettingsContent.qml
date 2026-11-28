@@ -16,10 +16,7 @@ ColumnLayout {
         { name: "General", icon: "󰘚" },
         { name: "Bar", icon: "󰇄" },
         { name: "Appearance", icon: "󰏘" },
-        { name: "Workspace", icon: "󰨇" },
-        { name: "Battery", icon: "󰁹" },
-        { name: "Media", icon: "󰎆" },
-        { name: "Hyprland", icon: "󱓞" },
+        { name: "System", icon: "󱓞" },
         { name: "Displays", icon: "󰍹" }
     ]
 
@@ -113,10 +110,7 @@ ColumnLayout {
             Tabs.GeneralTab { Layout.fillWidth: true }
             Tabs.BarTab { Layout.fillWidth: true }
             Tabs.AppearanceTab { Layout.fillWidth: true }
-            Tabs.WorkspaceTab { Layout.fillWidth: true }
-            Tabs.BatteryTab { Layout.fillWidth: true }
-            Tabs.MediaTab { Layout.fillWidth: true }
-            Tabs.HyprlandTab { Layout.fillWidth: true }
+            Tabs.SystemTab { Layout.fillWidth: true }
             Tabs.DisplayTab { Layout.fillWidth: true }
         }
     }

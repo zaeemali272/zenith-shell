@@ -6,8 +6,8 @@ import "../../.."
 
 Rectangle {
     id: root
-    implicitHeight: Theme.scaled(320)
-    implicitWidth: Theme.scaled(320)
+    implicitHeight: Theme.scaled(300)
+    implicitWidth: Theme.scaled(360)
     color: "transparent"
     radius: Theme.scaled(16)
     border.color: Theme.glassBorder
@@ -20,104 +20,287 @@ Rectangle {
         return WeatherService.getIcon(code);
     }
 
+    function iconColorFor(code) {
+        const c = parseInt(code);
+        if (c === 113 || c === 116) return Theme.accentColor;
+        if ([176, 263, 266, 293, 296, 302, 308, 200, 386, 389].includes(c)) return Theme.blue;
+        return Theme.text;
+    }
+
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: Theme.scaled(20)
-        spacing: Theme.scaled(15)
+        anchors.margins: Theme.scaled(12)
+        spacing: Theme.scaled(10)
 
-        // Header - Location only (no redundant title)
+        // --- HEADER ---
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.scaled(6)
-            Text {
-                text: "󰍎"
-                font.family: Theme.iconFont
-                color: Theme.accentColor
-                font.pixelSize: Theme.scaled(12)
-                Layout.alignment: Qt.AlignVCenter
+
+            Rectangle {
+                implicitWidth: locRow.implicitWidth + Theme.scaled(16)
+                Layout.maximumWidth: parent.width - Theme.scaled(96)
+                height: Theme.scaled(24)
+                radius: 999
+                color: Theme.cardBackground
+                border.color: Theme.glassBorder
+                border.width: 1
+
+                RowLayout {
+                    id: locRow
+                    anchors.fill: parent
+                    anchors.leftMargin: Theme.scaled(8)
+                    anchors.rightMargin: Theme.scaled(8)
+                    spacing: Theme.scaled(5)
+
+                    Text {
+                        text: "󰍎"
+                        font.family: Theme.iconFont
+                        color: Theme.accentColor
+                        font.pixelSize: Theme.scaled(11)
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        text: WeatherService.areaName + (WeatherService.countryName ? ", " + WeatherService.countryName : "")
+                        color: Theme.text
+                        font.pixelSize: Theme.scaled(10)
+                        font.weight: Font.Bold
+                        elide: Text.ElideRight
+                    }
+                }
             }
-            Text { 
-                text: root.weatherData?.nearest_area?.[0]?.areaName?.[0]?.value || WeatherService.areaName
-                color: Theme.accentColor
-                font.pixelSize: Theme.scaled(11)
-                font.weight: Font.DemiBold
-                Layout.alignment: Qt.AlignVCenter
-            }
+
             Item { Layout.fillWidth: true }
+
+            Text {
+                visible: WeatherService.lastUpdated !== "" && !root.loading
+                text: WeatherService.lastUpdated
+                color: Theme.subtext2
+                font.pixelSize: Theme.scaled(9)
+            }
+
+            Rectangle {
+                width: Theme.scaled(24); height: Theme.scaled(24)
+                radius: Theme.scaled(7)
+                color: refreshMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground
+                border.color: Theme.glassBorder
+                border.width: 1
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "󰑐"
+                    font.family: Theme.iconFont
+                    font.pixelSize: Theme.scaled(12)
+                    color: root.loading ? Theme.accentColor : (refreshMouse.containsMouse ? Theme.text : Theme.subtext0)
+                }
+
+                MouseArea {
+                    id: refreshMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: WeatherService.refresh()
+                }
+            }
         }
 
-        // Main Content Row - Forced vertical centering
-        RowLayout {
+        // --- MAIN WEATHER CONTENT ---
+        ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Layout.alignment: Qt.AlignVCenter
-            spacing: Theme.scaled(20)
-            visible: !root.loading && root.weatherData
+            spacing: Theme.scaled(10)
+            visible: !root.loading && !!root.weatherData
 
-            // Left Side: Current Weather
-            ColumnLayout {
-                Layout.preferredWidth: Theme.scaled(140)
-                Layout.alignment: Qt.AlignVCenter
-                spacing: Theme.scaled(5)
-                
-                Text {
-                    text: root.getIcon(root.weatherData?.current_condition?.[0]?.weatherCode)
-                    font.family: Theme.iconFont
-                    color: Theme.powerYellow; font.pixelSize: Theme.scaled(64)
-                    Layout.alignment: Qt.AlignHCenter
-                }
-                Text {
-                    text: (root.weatherData?.current_condition?.[0]?.temp_C || WeatherService.tempC) + "°C"
-                    color: Theme.text; font.pixelSize: Theme.scaled(32); font.bold: true
-                    Layout.alignment: Qt.AlignHCenter
-                }
-                Text {
-                    text: root.weatherData?.current_condition?.[0]?.weatherDesc?.[0]?.value || WeatherService.weatherDesc
-                    color: Theme.subtext0; font.pixelSize: Theme.scaled(12)
-                    Layout.fillWidth: true
-                    horizontalAlignment: Text.AlignHCenter
-                    wrapMode: Text.WordWrap
-                    maximumLineCount: 2
-                    lineHeight: 0.9
-                }
-            }
-
-            // Vertical Divider
-            Rectangle { 
-                width: 1
-                Layout.fillHeight: true
-                Layout.maximumHeight: Theme.scaled(120)
-                color: Theme.glassBorder
-                Layout.alignment: Qt.AlignVCenter
-            }
-
-            // Right Side: Forecast
-            ColumnLayout {
+            // Hero Current Weather Row
+            RowLayout {
                 Layout.fillWidth: true
-                Layout.alignment: Qt.AlignVCenter
-                spacing: Theme.scaled(15)
-                
+                Layout.fillHeight: true
+                spacing: Theme.scaled(12)
+
+                RowLayout {
+                    Layout.alignment: Qt.AlignVCenter
+                    spacing: Theme.scaled(10)
+
+                    Text {
+                        text: root.getIcon(WeatherService.weatherCode)
+                        font.family: Theme.iconFont
+                        color: root.iconColorFor(WeatherService.weatherCode)
+                        font.pixelSize: Theme.scaled(46)
+                        Layout.alignment: Qt.AlignVCenter
+                    }
+
+                    ColumnLayout {
+                        Layout.alignment: Qt.AlignVCenter
+                        spacing: 0
+
+                        Text {
+                            text: WeatherService.tempC + "°C"
+                            color: Theme.text
+                            font.pixelSize: Theme.scaled(28)
+                            font.weight: Font.Black
+                        }
+
+                        Text {
+                            text: WeatherService.weatherDesc
+                            color: Theme.subtext1
+                            font.pixelSize: Theme.scaled(11)
+                            font.weight: Font.DemiBold
+                        }
+                    }
+                }
+
+                Item { Layout.fillWidth: true }
+
+                // Right: High/Low & Pressure/Cloud summary pill
+                ColumnLayout {
+                    Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
+                    spacing: Theme.scaled(3)
+
+                    RowLayout {
+                        Layout.alignment: Qt.AlignRight
+                        spacing: Theme.scaled(6)
+                        Text {
+                            text: "H: " + WeatherService.todayMaxC + "°"
+                            color: Theme.text
+                            font.pixelSize: Theme.scaled(10)
+                            font.weight: Font.Bold
+                        }
+                        Text {
+                            text: "L: " + WeatherService.todayMinC + "°"
+                            color: Theme.subtext0
+                            font.pixelSize: Theme.scaled(10)
+                            font.weight: Font.DemiBold
+                        }
+                    }
+
+                    Text {
+                        Layout.alignment: Qt.AlignRight
+                        text: "Feels " + WeatherService.feelsLikeC + "°  •  " + WeatherService.pressure + " hPa"
+                        color: Theme.subtext2
+                        font.pixelSize: Theme.scaled(9)
+                    }
+                }
+            }
+
+            // 4-Column Equal-Width Telemetry Bar
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Theme.scaled(6)
+
                 Repeater {
-                    model: (root.weatherData?.weather || []).slice(1, 4)
-                    delegate: RowLayout {
-                        spacing: Theme.scaled(12)
-                        Text { text: Qt.formatDate(new Date(modelData.date), "ddd"); color: Theme.subtext0; font.pixelSize: Theme.scaled(11); Layout.preferredWidth: Theme.scaled(35) }
-                        Text { text: root.getIcon(modelData.hourly[4]?.weatherCode || "113"); font.family: Theme.iconFont; color: Theme.powerYellow; font.pixelSize: Theme.scaled(22); Layout.preferredWidth: Theme.scaled(24) }
-                        Text { text: modelData.maxtempC + "°"; color: Theme.text; font.pixelSize: Theme.scaled(13); font.bold: true }
+                    model: [
+                        { icon: "󰖎", label: "HUMIDITY", val: WeatherService.humidity + "%", col: Theme.blue },
+                        { icon: "󰖝", label: "WIND", val: WeatherService.windSpeed + " km/h", col: Theme.green },
+                        { icon: "󰖗", label: "RAIN", val: WeatherService.todayRainChance + "%", col: Theme.accentColor },
+                        { icon: "󰖙", label: "UV INDEX", val: WeatherService.uvIndex, col: Theme.accentColor }
+                    ]
+                    delegate: Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredWidth: 1
+                        height: Theme.scaled(46)
+                        radius: Theme.scaled(9)
+                        color: Theme.cardBackground
+                        border.color: Theme.glassBorder
+                        border.width: 1
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: Theme.scaled(6)
+                            spacing: Theme.scaled(1)
+
+                            RowLayout {
+                                Layout.alignment: Qt.AlignHCenter
+                                spacing: Theme.scaled(3)
+                                Text {
+                                    text: modelData.icon
+                                    font.family: Theme.iconFont
+                                    font.pixelSize: Theme.scaled(10)
+                                    color: modelData.col
+                                }
+                                Text {
+                                    text: modelData.label
+                                    color: Theme.subtext2
+                                    font.pixelSize: Theme.scaled(7.5)
+                                    font.weight: Font.Black
+                                    font.letterSpacing: 0.4
+                                }
+                            }
+
+                            Text {
+                                Layout.alignment: Qt.AlignHCenter
+                                text: modelData.val
+                                color: Theme.text
+                                font.pixelSize: Theme.scaled(10.5)
+                                font.weight: Font.Bold
+                                elide: Text.ElideRight
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 5-Day Forecast Strip
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Theme.scaled(6)
+
+                Repeater {
+                    model: WeatherService.forecastDays
+                    delegate: Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredWidth: 1
+                        height: Theme.scaled(74)
+                        radius: Theme.scaled(10)
+                        color: dayHover.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground
+                        border.color: index === 0 ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.4) : Theme.glassBorder
+                        border.width: 1
+                        Behavior on color { ColorAnimation { duration: Theme.animFast } }
+
+                        MouseArea {
+                            id: dayHover
+                            anchors.fill: parent
+                            hoverEnabled: true
+                        }
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: Theme.scaled(6)
+                            spacing: Theme.scaled(2)
+
+                            Text {
+                                Layout.alignment: Qt.AlignHCenter
+                                text: index === 0 ? "Today" : Qt.formatDate(new Date(modelData.date + "T12:00:00"), "ddd")
+                                color: index === 0 ? Theme.accentColor : Theme.subtext0
+                                font.pixelSize: Theme.scaled(9.5)
+                                font.weight: Font.Bold
+                            }
+
+                            Text {
+                                Layout.alignment: Qt.AlignHCenter
+                                text: root.getIcon(modelData.hourly?.[4]?.weatherCode || "113")
+                                font.family: Theme.iconFont
+                                font.pixelSize: Theme.scaled(19)
+                                color: root.iconColorFor(modelData.hourly?.[4]?.weatherCode || "113")
+                            }
+
+                            Text {
+                                Layout.alignment: Qt.AlignHCenter
+                                text: modelData.maxtempC + "° / " + modelData.mintempC + "°"
+                                color: Theme.text
+                                font.pixelSize: Theme.scaled(9)
+                                font.weight: Font.Bold
+                            }
+                        }
                     }
                 }
             }
         }
 
-        // Space at the bottom to ensure the main row stays centered
-        Item { Layout.fillHeight: true; visible: !root.loading && root.weatherData }
-
-        // --- Weather Skeleton Loader while loading ---
-        RowLayout {
+        // --- SKELETON LOADER ---
+        ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Layout.alignment: Qt.AlignVCenter
-            spacing: Theme.scaled(20)
+            spacing: Theme.scaled(10)
             visible: root.loading
 
             SequentialAnimation on opacity {
@@ -126,69 +309,50 @@ Rectangle {
                 NumberAnimation { from: 0.75; to: 0.35; duration: 900; easing.type: Easing.InOutSine }
             }
 
-            // Left: Current weather skeleton
-            ColumnLayout {
-                Layout.preferredWidth: Theme.scaled(140)
-                Layout.alignment: Qt.AlignVCenter
-                spacing: Theme.scaled(10)
-
-                Rectangle {
-                    width: Theme.scaled(56)
-                    height: Theme.scaled(56)
-                    radius: width / 2
-                    color: Qt.rgba(255, 255, 255, 0.1)
-                    Layout.alignment: Qt.AlignHCenter
-                }
-
-                Rectangle {
-                    width: Theme.scaled(72)
-                    height: Theme.scaled(24)
-                    radius: Theme.scaled(6)
-                    color: Qt.rgba(255, 255, 255, 0.12)
-                    Layout.alignment: Qt.AlignHCenter
-                }
-
-                Rectangle {
-                    width: Theme.scaled(90)
-                    height: Theme.scaled(10)
-                    radius: Theme.scaled(3)
-                    color: Qt.rgba(255, 255, 255, 0.07)
-                    Layout.alignment: Qt.AlignHCenter
-                }
-            }
-
-            // Vertical Divider
-            Rectangle { 
-                width: 1
-                Layout.fillHeight: true
-                Layout.maximumHeight: Theme.scaled(120)
-                color: Theme.glassBorder
-                Layout.alignment: Qt.AlignVCenter
-            }
-
-            // Right: Forecast skeletons
-            ColumnLayout {
+            Rectangle {
                 Layout.fillWidth: true
-                Layout.alignment: Qt.AlignVCenter
-                spacing: Theme.scaled(16)
+                Layout.fillHeight: true
+                radius: Theme.scaled(12)
+                color: Qt.rgba(255, 255, 255, 0.06)
+            }
 
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Theme.scaled(6)
                 Repeater {
-                    model: 3
-                    delegate: RowLayout {
-                        spacing: Theme.scaled(12)
-                        Rectangle { width: Theme.scaled(30); height: Theme.scaled(10); radius: 2; color: Qt.rgba(255, 255, 255, 0.08) }
-                        Rectangle { width: Theme.scaled(20); height: Theme.scaled(20); radius: 10; color: Qt.rgba(255, 255, 255, 0.1) }
-                        Rectangle { width: Theme.scaled(24); height: Theme.scaled(10); radius: 2; color: Qt.rgba(255, 255, 255, 0.12) }
+                    model: 4
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredWidth: 1
+                        height: Theme.scaled(46)
+                        radius: Theme.scaled(9)
+                        color: Qt.rgba(255, 255, 255, 0.06)
+                    }
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Theme.scaled(6)
+                Repeater {
+                    model: 5
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredWidth: 1
+                        height: Theme.scaled(74)
+                        radius: Theme.scaled(10)
+                        color: Qt.rgba(255, 255, 255, 0.06)
                     }
                 }
             }
         }
 
-        // --- Error/Empty state & helper text ---
+        // --- ERROR / OFFLINE STATE ---
         ColumnLayout {
             visible: !root.loading && !root.weatherData
             Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
             Layout.fillWidth: true
+            Layout.fillHeight: true
             spacing: Theme.scaled(8)
 
             Text {
@@ -198,20 +362,32 @@ Rectangle {
                 color: Theme.subtext0
                 Layout.alignment: Qt.AlignHCenter
             }
-
             Text {
-                text: "WEATHER UNAVAILABLE"
+                text: "Weather unavailable"
                 color: Theme.text
-                font.pixelSize: Theme.scaled(11)
+                font.pixelSize: Theme.scaled(12)
                 font.weight: Font.Bold
                 Layout.alignment: Qt.AlignHCenter
             }
-
-            Text {
-                text: "Unable to reach forecast server. Retrying automatically."
-                color: Theme.subtext0
-                font.pixelSize: Theme.scaled(10)
+            Rectangle {
                 Layout.alignment: Qt.AlignHCenter
+                implicitWidth: retryTxt.implicitWidth + Theme.scaled(18)
+                height: Theme.scaled(26)
+                radius: Theme.scaled(8)
+                color: Theme.accentColor
+                Text {
+                    id: retryTxt
+                    anchors.centerIn: parent
+                    text: "Retry"
+                    color: Colors.on_primary
+                    font.pixelSize: Theme.scaled(10)
+                    font.weight: Font.Bold
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: WeatherService.refresh()
+                }
             }
         }
     }

@@ -26,6 +26,7 @@ singleton ThemeService ThemeService.qml
 singleton PowerToolsService PowerToolsService.qml
 singleton SystemServicesService SystemServicesService.qml
 singleton DisplayService DisplayService.qml
+singleton CalendarService CalendarService.qml
 
 
 

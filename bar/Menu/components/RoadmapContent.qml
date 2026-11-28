@@ -26,6 +26,9 @@ ColumnLayout {
     property string searchText: ""
     property string activeSlug: ""
     property string activeTitle: ""
+    property string viewMode: "graph" // "graph" | "topics"
+    property string topicFilter: "all" // "all" | "todo" | "done"
+    property string topicSearch: ""
     property bool listLoading: true
     property bool listFailed: false
     property bool graphLoading: false
@@ -164,6 +167,19 @@ ColumnLayout {
         doneMap[activeSlug] = slugMap;
         doneMap = doneMap;                       // re-notify: property is a plain object
         nodeModel.setProperty(index, "done", !row.done);
+        recountDone();
+        saveTimer.restart();
+    }
+
+    function resetRoadmapProgress() {
+        if (!activeSlug) return;
+        if (doneMap[activeSlug]) {
+            delete doneMap[activeSlug];
+            doneMap = doneMap;
+        }
+        for (var i = 0; i < nodeModel.count; i++) {
+            if (nodeModel.get(i).done) nodeModel.setProperty(i, "done", false);
+        }
         recountDone();
         saveTimer.restart();
     }
@@ -405,25 +421,84 @@ ColumnLayout {
             border.color: searchInput.activeFocus ? Theme.accentColor : Theme.glassBorder
             border.width: 1
 
-            TextInput {
-                id: searchInput
+            RowLayout {
                 anchors.fill: parent
                 anchors.leftMargin: Theme.scaled(10)
-                anchors.rightMargin: Theme.scaled(10)
-                verticalAlignment: TextInput.AlignVCenter
-                color: Theme.text
-                font.pixelSize: Theme.scaled(11)
-                selectByMouse: true
-                clip: true
-                onTextChanged: { root.searchText = text; root.applyFilter(); }
+                anchors.rightMargin: Theme.scaled(8)
+                spacing: Theme.scaled(6)
 
                 Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "Search " + (root.listLoading ? "roadmaps…" : allModel.count + " roadmaps")
+                    text: "󰍉"
+                    font.family: Theme.iconFont
+                    font.pixelSize: Theme.scaled(12)
                     color: Theme.subtext0
-                    font.pixelSize: Theme.scaled(11)
-                    visible: searchInput.text === ""
                 }
+
+                TextInput {
+                    id: searchInput
+                    Layout.fillWidth: true
+                    verticalAlignment: TextInput.AlignVCenter
+                    color: Theme.text
+                    font.pixelSize: Theme.scaled(11)
+                    selectByMouse: true
+                    clip: true
+                    onTextChanged: { root.searchText = text; root.applyFilter(); }
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Search " + (root.listLoading ? "roadmaps…" : allModel.count + " roadmaps")
+                        color: Theme.subtext0
+                        font.pixelSize: Theme.scaled(11)
+                        visible: searchInput.text === "" && !searchInput.activeFocus
+                    }
+                }
+
+                Text {
+                    visible: searchInput.text !== ""
+                    text: "󰅖"
+                    font.family: Theme.iconFont
+                    font.pixelSize: Theme.scaled(12)
+                    color: Theme.subtext0
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: searchInput.text = ""
+                    }
+                }
+            }
+        }
+
+        // Graph / Topics Switcher
+        Rectangle {
+            Layout.preferredWidth: modeSwitchRow.implicitWidth + Theme.scaled(14)
+            Layout.preferredHeight: Theme.scaled(24)
+            radius: Theme.scaled(7)
+            color: root.viewMode === "topics" ? Theme.accentColor : (modeSwM.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground)
+            border.color: root.viewMode === "topics" ? Theme.accentColor : Theme.glassBorder
+            border.width: 1
+            RowLayout {
+                id: modeSwitchRow
+                anchors.centerIn: parent
+                spacing: Theme.scaled(4)
+                Text {
+                    text: root.viewMode === "topics" ? "󰙅" : "󰕮"
+                    font.family: Theme.iconFont
+                    font.pixelSize: Theme.scaled(11)
+                    color: root.viewMode === "topics" ? Colors.on_primary : Theme.subtext1
+                }
+                Text {
+                    text: root.viewMode === "topics" ? "Graph" : "Topics"
+                    font.pixelSize: Theme.scaled(9.5)
+                    font.weight: Font.Bold
+                    color: root.viewMode === "topics" ? Colors.on_primary : Theme.subtext1
+                }
+            }
+            MouseArea {
+                id: modeSwM
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.viewMode = (root.viewMode === "graph") ? "topics" : "graph"
             }
         }
 
@@ -431,7 +506,9 @@ ColumnLayout {
             model: [["-", -0.2], ["+", 0.25]]
             delegate: Rectangle {
                 required property var modelData
-                width: Theme.scaled(22); height: Theme.scaled(22)
+                visible: root.viewMode === "graph"
+                Layout.preferredWidth: Theme.scaled(22)
+                Layout.preferredHeight: Theme.scaled(22)
                 radius: Theme.scaled(6)
                 color: zoomMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground
                 border.width: 0
@@ -453,7 +530,9 @@ ColumnLayout {
         }
 
         Rectangle {
-            width: Theme.scaled(30); height: Theme.scaled(22)
+            visible: root.viewMode === "graph"
+            Layout.preferredWidth: Theme.scaled(30)
+            Layout.preferredHeight: Theme.scaled(22)
             radius: Theme.scaled(6)
             color: fitMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground
             border.width: 0
@@ -568,9 +647,33 @@ ColumnLayout {
             elide: Text.ElideNone
         }
         Item { Layout.fillWidth: true }
+        Rectangle {
+            visible: root.doneCount > 0
+            implicitWidth: resetRmTxt.implicitWidth + Theme.scaled(10)
+            height: Theme.scaled(18)
+            radius: 999
+            color: resetRmM.containsMouse ? Qt.rgba(Theme.powerRed.r, Theme.powerRed.g, Theme.powerRed.b, 0.16) : "transparent"
+            border.color: resetRmM.containsMouse ? Theme.powerRed : Theme.glassBorder
+            border.width: 1
+            Text {
+                id: resetRmTxt
+                anchors.centerIn: parent
+                text: "Reset"
+                color: resetRmM.containsMouse ? Theme.powerRed : Theme.subtext2
+                font.pixelSize: Theme.scaled(8.5)
+                font.weight: Font.Bold
+            }
+            MouseArea {
+                id: resetRmM
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.resetRoadmapProgress()
+            }
+        }
         Text {
             text: root.togglableCount > 0
-                  ? root.doneCount + " / " + root.togglableCount + " done"
+                  ? root.doneCount + " / " + root.togglableCount + " (" + Math.round((root.doneCount / root.togglableCount) * 100) + "%)"
                   : ""
             color: Theme.subtext0
             font.pixelSize: Theme.scaled(10)
@@ -627,7 +730,7 @@ ColumnLayout {
             contentHeight: root.graphH * viewScale
             boundsBehavior: Flickable.StopAtBounds
             clip: true
-            visible: nodeModel.count > 0
+            visible: root.viewMode === "graph" && nodeModel.count > 0
 
             property real viewScale: 1.0
             // Set once the user touches the zoom buttons, so their choice is
@@ -848,6 +951,171 @@ ColumnLayout {
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: root.openDetail(nodeBox.index)
+                        }
+                    }
+                }
+            }
+        }
+
+        // ---------------- topics checklist view ----------------
+        ColumnLayout {
+            visible: root.viewMode === "topics" && nodeModel.count > 0 && root.detailId === ""
+            anchors.fill: parent
+            anchors.margins: Theme.scaled(10)
+            spacing: Theme.scaled(8)
+
+            // Filter Bar + Topic Search
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Theme.scaled(6)
+
+                Repeater {
+                    model: [
+                        { id: "all", label: "All" },
+                        { id: "todo", label: "To Do" },
+                        { id: "done", label: "Done" }
+                    ]
+                    delegate: Rectangle {
+                        readonly property bool active: root.topicFilter === modelData.id
+                        implicitWidth: tfLbl.implicitWidth + Theme.scaled(14)
+                        height: Theme.scaled(22)
+                        radius: 999
+                        color: active ? Theme.accentColor : (tfM.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground)
+                        border.color: active ? Theme.accentColor : Theme.glassBorder
+                        border.width: 1
+                        Text {
+                            id: tfLbl
+                            anchors.centerIn: parent
+                            text: modelData.label
+                            font.pixelSize: Theme.scaled(9.5)
+                            font.weight: Font.Bold
+                            color: active ? Colors.on_primary : Theme.subtext0
+                        }
+                        MouseArea {
+                            id: tfM
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.topicFilter = modelData.id
+                        }
+                    }
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: Theme.scaled(24)
+                    radius: Theme.scaled(7)
+                    color: Theme.surface1
+                    border.color: topicSearchInput.activeFocus ? Theme.accentColor : Theme.glassBorder
+                    border.width: 1
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: Theme.scaled(8)
+                        anchors.rightMargin: Theme.scaled(8)
+                        spacing: Theme.scaled(4)
+                        Text { text: "󰍉"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(11); color: Theme.subtext0 }
+                        TextInput {
+                            id: topicSearchInput
+                            Layout.fillWidth: true
+                            color: Theme.text
+                            font.pixelSize: Theme.scaled(10)
+                            clip: true
+                            onTextChanged: root.topicSearch = text
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "Filter topics..."
+                                color: Theme.subtext2
+                                font.pixelSize: Theme.scaled(10)
+                                visible: !parent.text && !parent.activeFocus
+                            }
+                        }
+                    }
+                }
+            }
+
+            ListView {
+                FastWheel {}
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                spacing: Theme.scaled(5)
+                model: nodeModel
+                ScrollBar.vertical: ScrollBar {
+                    policy: ScrollBar.AsNeeded
+                    width: 3
+                    contentItem: Rectangle { radius: 999; color: Theme.accentColor; opacity: 0.6 }
+                }
+
+                delegate: Item {
+                    readonly property bool isTopic: root.isTogglable(model.type)
+                    readonly property bool matchesState: root.topicFilter === "all" || (root.topicFilter === "done" ? model.done : !model.done)
+                    readonly property bool matchesQuery: root.topicSearch.trim() === "" || model.label.toLowerCase().indexOf(root.topicSearch.trim().toLowerCase()) !== -1
+                    readonly property bool shown: isTopic && matchesState && matchesQuery
+
+                    visible: shown
+                    width: ListView.view.width - Theme.scaled(6)
+                    height: shown ? Theme.scaled(34) : 0
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: Theme.scaled(8)
+                        color: topicRowM.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground
+                        border.color: model.done ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.35) : Theme.glassBorder
+                        border.width: 1
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: Theme.scaled(8)
+                            anchors.rightMargin: Theme.scaled(8)
+                            spacing: Theme.scaled(8)
+
+                            // Checkbox
+                            Rectangle {
+                                width: Theme.scaled(18); height: Theme.scaled(18)
+                                radius: Theme.scaled(5)
+                                color: model.done ? Theme.accentColor : "transparent"
+                                border.color: model.done ? Theme.accentColor : (model.lc !== "" ? model.lc : Theme.subtext2)
+                                border.width: 1.5
+                                Text {
+                                    anchors.centerIn: parent
+                                    visible: model.done
+                                    text: "󰄬"
+                                    font.family: Theme.iconFont
+                                    font.pixelSize: Theme.scaled(11)
+                                    color: Colors.on_primary
+                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.toggleNode(index)
+                                }
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: model.label
+                                color: model.done ? Theme.subtext0 : Theme.text
+                                font.pixelSize: Theme.scaled(11)
+                                font.weight: model.type === "topic" ? Font.Bold : Font.Normal
+                                font.strikeout: model.done
+                                elide: Text.ElideRight
+                            }
+
+                            Text {
+                                text: "󰅂"
+                                font.family: Theme.iconFont
+                                font.pixelSize: Theme.scaled(13)
+                                color: topicRowM.containsMouse ? Theme.accentColor : Theme.subtext2
+                            }
+                        }
+
+                        MouseArea {
+                            id: topicRowM
+                            anchors.fill: parent
+                            anchors.leftMargin: Theme.scaled(30)
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.openDetail(index)
                         }
                     }
                 }

@@ -18,12 +18,12 @@ WlSessionLockSurface {
     readonly property real screenH: screen ? screen.height : 1080
     readonly property real screenW: screen ? screen.width : 1920
 
-    // Card geometry: a wide landscape card that scales with the monitor.
-    readonly property real cardH: Math.round(screenH * 0.64)
-    readonly property real cardW: Math.round(Math.min(screenW * 0.9, cardH * 1.85))
-    readonly property real centerScale: Math.min(1, screenH / 1440)
-    readonly property int centerWidth: Math.round(420 * centerScale)
-    readonly property int padding: Theme.scaled(28)
+    // Spread layout: full-bleed transparent canvas over the blurred background
+    readonly property real cardH: Math.round(screenH * 0.94)
+    readonly property real cardW: Math.round(screenW * 0.97)
+    readonly property real centerScale: Math.min(1.05, screenH / 1200)
+    readonly property int centerWidth: Math.round(440 * centerScale)
+    readonly property int padding: Theme.scaled(16)
 
     color: "transparent"
 
@@ -56,21 +56,22 @@ WlSessionLockSurface {
         id: background
         anchors.fill: parent
         opacity: 0
+        scale: 1.06
 
         // The compositor hands the keyboard to the lock only after its first
         // frame is committed, and keys typed before that are dropped. A
         // full-resolution 64px blur made that first frame slow enough to eat
-        // the start of a quickly typed password. Blurring at quarter size is
-        // visually identical for a heavy blur and many times cheaper.
+        // the start of a quickly typed password. Blurring at half size is
+        // smooth Gaussian-like without banding.
         layer.enabled: IdleSettings.blurBackground
-        layer.textureSize: Qt.size(Math.max(1, Math.round(width / 4)), Math.max(1, Math.round(height / 4)))
+        layer.textureSize: Qt.size(Math.max(1, Math.round(width / 2)), Math.max(1, Math.round(height / 2)))
         layer.smooth: true
         layer.effect: MultiEffect {
             autoPaddingEnabled: false
             blurEnabled: true
-            blur: 1
-            blurMax: 32
-            blurMultiplier: 1
+            blur: 0.85
+            blurMax: 40
+            blurMultiplier: 1.0
         }
 
         ScreencopyView {
@@ -79,7 +80,7 @@ WlSessionLockSurface {
             live: false
         }
 
-        Rectangle { anchors.fill: parent; color: Qt.rgba(0, 0, 0, 0.35) }
+        Rectangle { anchors.fill: parent; color: Qt.rgba(0, 0, 0, 0.18) }
     }
 
     // ---- Card ------------------------------------------------------------
@@ -99,18 +100,11 @@ WlSessionLockSurface {
         Rectangle {
             id: cardBg
             anchors.fill: parent
-            color: Qt.alpha(Colors.surface, 0.94)
+            color: Qt.alpha(Colors.surface, 0.92)
             radius: card.collapsedRadius
             border.color: Theme.glassBorder
             border.width: 1
-
-            layer.enabled: true
-            layer.effect: MultiEffect {
-                shadowEnabled: true
-                blurMax: 24
-                shadowColor: Qt.rgba(0, 0, 0, 0.6)
-                shadowVerticalOffset: 6
-            }
+            opacity: 1
         }
 
         Text {
@@ -130,7 +124,7 @@ WlSessionLockSurface {
             height: root.cardH - root.padding * 2
             surface: root
             opacity: 0
-            scale: 0
+            scale: 0.90
         }
     }
 
@@ -139,20 +133,24 @@ WlSessionLockSurface {
         id: initAnim
         running: true
 
-        NumberAnimation { target: background; property: "opacity"; to: 1; duration: Theme.animSlow; easing.type: Easing.OutCubic }
+        NumberAnimation { target: background; property: "opacity"; to: 1; duration: Theme.animSlow; easing.type: Easing.OutQuart }
+        NumberAnimation { target: background; property: "scale"; to: 1.0; duration: Theme.animSlow + 80; easing.type: Easing.OutQuart }
+
         SequentialAnimation {
             ParallelAnimation {
-                NumberAnimation { target: card; property: "scale"; to: 1; duration: Theme.animNormal; easing.type: Easing.OutBack; easing.overshoot: 1.2 }
-                NumberAnimation { target: card; property: "rotation"; to: 360; duration: Theme.animNormal; easing.type: Easing.InOutCubic }
+                NumberAnimation { target: card; property: "scale"; to: 1.08; duration: 180; easing.type: Easing.OutBack; easing.overshoot: 1.5 }
+                NumberAnimation { target: card; property: "rotation"; to: 360; duration: 220; easing.type: Easing.OutCubic }
             }
             ParallelAnimation {
-                NumberAnimation { target: lockIcon; property: "rotation"; to: 360; duration: Theme.animNormal; easing.type: Easing.OutCubic }
-                NumberAnimation { target: lockIcon; property: "opacity"; to: 0; duration: Theme.animFast }
-                NumberAnimation { target: content; property: "opacity"; to: 1; duration: Theme.animNormal; easing.type: Easing.OutCubic }
-                NumberAnimation { target: content; property: "scale"; to: 1; duration: Theme.animNormal; easing.type: Easing.OutCubic }
-                NumberAnimation { target: cardBg; property: "radius"; to: Theme.cardRadius * 1.5; duration: Theme.animNormal; easing.type: Easing.OutCubic }
-                NumberAnimation { target: card; property: "implicitWidth"; to: root.cardW; duration: Theme.animNormal; easing.type: Easing.OutCubic }
-                NumberAnimation { target: card; property: "implicitHeight"; to: root.cardH; duration: Theme.animNormal; easing.type: Easing.OutCubic }
+                NumberAnimation { target: card; property: "scale"; to: 1.0; duration: 180; easing.type: Easing.OutCubic }
+                NumberAnimation { target: lockIcon; property: "scale"; to: 1.35; duration: 180; easing.type: Easing.OutQuad }
+                NumberAnimation { target: lockIcon; property: "opacity"; to: 0; duration: 150; easing.type: Easing.OutCubic }
+                NumberAnimation { target: cardBg; property: "opacity"; to: 0; duration: 200; easing.type: Easing.OutCubic }
+                NumberAnimation { target: cardBg; property: "radius"; to: Theme.cardRadius * 2; duration: 220; easing.type: Easing.OutCubic }
+                NumberAnimation { target: card; property: "implicitWidth"; to: root.cardW; duration: 240; easing.type: Easing.OutQuart }
+                NumberAnimation { target: card; property: "implicitHeight"; to: root.cardH; duration: 240; easing.type: Easing.OutQuart }
+                NumberAnimation { target: content; property: "opacity"; to: 1; duration: 240; easing.type: Easing.OutCubic }
+                NumberAnimation { target: content; property: "scale"; to: 1.0; duration: 260; easing.type: Easing.OutBack; easing.overshoot: 1.08 }
             }
         }
     }
@@ -160,17 +158,32 @@ WlSessionLockSurface {
     SequentialAnimation {
         id: unlockAnim
 
+        ScriptAction {
+            script: {
+                lockIcon.text = "󰌿";
+                lockIcon.scale = 0.6;
+                lockIcon.rotation = -18;
+            }
+        }
+
         ParallelAnimation {
-            NumberAnimation { target: card; property: "implicitWidth"; to: card.collapsedSize; duration: Theme.animNormal; easing.type: Easing.InOutCubic }
-            NumberAnimation { target: card; property: "implicitHeight"; to: card.collapsedSize; duration: Theme.animNormal; easing.type: Easing.InOutCubic }
-            NumberAnimation { target: cardBg; property: "radius"; to: card.collapsedRadius; duration: Theme.animNormal; easing.type: Easing.InOutCubic }
-            NumberAnimation { target: content; property: "scale"; to: 0; duration: Theme.animNormal; easing.type: Easing.InCubic }
-            NumberAnimation { target: content; property: "opacity"; to: 0; duration: Theme.animFast }
-            NumberAnimation { target: lockIcon; property: "opacity"; to: 1; duration: Theme.animNormal }
-            NumberAnimation { target: background; property: "opacity"; to: 0; duration: Theme.animSlow; easing.type: Easing.InCubic }
+            NumberAnimation { target: content; property: "scale"; to: 1.05; duration: 180; easing.type: Easing.InCubic }
+            NumberAnimation { target: content; property: "opacity"; to: 0; duration: 150; easing.type: Easing.InQuad }
+            NumberAnimation { target: card; property: "implicitWidth"; to: card.collapsedSize; duration: 220; easing.type: Easing.InOutQuart }
+            NumberAnimation { target: card; property: "implicitHeight"; to: card.collapsedSize; duration: 220; easing.type: Easing.InOutQuart }
+            NumberAnimation { target: cardBg; property: "radius"; to: card.collapsedRadius; duration: 220; easing.type: Easing.InOutQuart }
+            NumberAnimation { target: cardBg; property: "opacity"; to: 1; duration: 140; easing.type: Easing.OutCubic }
+            NumberAnimation { target: lockIcon; property: "opacity"; to: 1; duration: 140; easing.type: Easing.OutCubic }
+            NumberAnimation { target: lockIcon; property: "scale"; to: 1.1; duration: 200; easing.type: Easing.OutBack; easing.overshoot: 1.4 }
+            NumberAnimation { target: lockIcon; property: "rotation"; to: 0; duration: 200; easing.type: Easing.OutBack }
+            NumberAnimation { target: background; property: "scale"; to: 1.05; duration: 300; easing.type: Easing.InOutCubic }
+            NumberAnimation { target: background; property: "opacity"; to: 0; duration: 280; easing.type: Easing.InCubic }
             SequentialAnimation {
-                PauseAnimation { duration: Theme.animFast }
-                NumberAnimation { target: card; property: "opacity"; to: 0; duration: Theme.animNormal }
+                PauseAnimation { duration: 160 }
+                ParallelAnimation {
+                    NumberAnimation { target: card; property: "scale"; to: 0.7; duration: 140; easing.type: Easing.InBack }
+                    NumberAnimation { target: card; property: "opacity"; to: 0; duration: 140; easing.type: Easing.InQuad }
+                }
             }
         }
         ScriptAction { script: LockService.locked = false }

@@ -17,10 +17,49 @@ Rectangle {
     property var todoData: [] // Central source of truth
     property int editingIndex: -1 // Track which task is being edited
     property int selectedIndex: 0
+    property string filterMode: "all" // "all" | "active" | "done"
+    property string searchQuery: ""
+    property bool searchOpen: false
+
+    readonly property int completedCount: {
+        let c = 0;
+        for (let i = 0; i < tasksModel.count; i++) {
+            if (tasksModel.get(i).completed) c++;
+        }
+        return c;
+    }
+
+    function rowMatchesFilter(row) {
+        if (!row) return false;
+        if (filterMode === "active" && row.completed) return false;
+        if (filterMode === "done" && !row.completed) return false;
+        let q = searchQuery.trim().toLowerCase();
+        if (q !== "" && !String(row.task || "").toLowerCase().includes(q)) return false;
+        return true;
+    }
+
+    function clearCompleted() {
+        let removed = false;
+        for (let i = tasksModel.count - 1; i >= 0; i--) {
+            let row = tasksModel.get(i);
+            if (row && row.completed) {
+                tombstoneTask(row);
+                tasksModel.remove(i);
+                removed = true;
+            }
+        }
+        if (removed) saveTasks();
+    }
 
     function handleKeys(event) {
-        if (editingIndex !== -1 || inputField.visible || tabNameInputContainer.visible || keyInputRow.visible) return;
+        if (editingIndex !== -1 || inputField.activeFocus || tabNameInputContainer.visible || keyInputRow.visible || taskSearchInput.activeFocus) return;
         let count = tasksModel.count;
+        if (event.key === Qt.Key_Slash) {
+            searchOpen = true;
+            Qt.callLater(() => taskSearchInput.forceActiveFocus());
+            event.accepted = true;
+            return;
+        }
         if (count === 0) return;
 
         if (event.key === Qt.Key_Down || event.key === Qt.Key_J) {
@@ -47,15 +86,15 @@ Rectangle {
 
     function cancelEdit() {
         editingIndex = -1;
-        inputField.visible = false;
         inputField.text = "";
+        inputField.focus = false;
         if (reloadPending) reloadTasks();
     }
 
     // Re-reading mid-edit would clear the model out from under the text field,
     // so a reload that lands while the user is typing waits for them to finish.
     function reloadTasks() {
-        if (editingIndex !== -1 || inputField.visible) { reloadPending = true; return; }
+        if (editingIndex !== -1 || inputField.activeFocus) { reloadPending = true; return; }
         reloadPending = false;
         loadProcess.running = false;
         loadProcess.running = true;
@@ -361,59 +400,300 @@ Rectangle {
             }
         }
 
-        // Add Task Header
+        // Add Task Header & Controls
         RowLayout {
             Layout.fillWidth: true
-            Text { 
+            spacing: Theme.scaled(6)
+
+            Text {
                 text: (activeTabIndex >= 0 && activeTabIndex < todoData.length) ? todoData[activeTabIndex].name : "Tasks"
-                color: Theme.text; font.weight: Font.Bold; font.pixelSize: 14 
+                color: Theme.text
+                font.weight: Font.Bold
+                font.pixelSize: Theme.scaled(14)
             }
-            Item { Layout.fillWidth: true }
+
+            // Progress Pill
             Rectangle {
-                width: 24; height: 24; radius: 6; color: Theme.surface1
-                Text { anchors.centerIn: parent; text: "󰐕"; font.family: Theme.iconFont; color: Theme.blue }
-                MouseArea { 
+                visible: tasksModel.count > 0
+                implicitWidth: progTxt.implicitWidth + Theme.scaled(12)
+                height: Theme.scaled(20)
+                radius: 999
+                color: Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.14)
+                Text {
+                    id: progTxt
+                    anchors.centerIn: parent
+                    text: todoRoot.completedCount + "/" + tasksModel.count + " done"
+                    color: Theme.accentColor
+                    font.pixelSize: Theme.scaled(9.5)
+                    font.weight: Font.Bold
+                }
+            }
+
+            Item { Layout.fillWidth: true }
+
+            // Todoist Sync Status Pill (when connected)
+            Rectangle {
+                visible: TodoistService.hasToken
+                implicitWidth: syncRow.implicitWidth + Theme.scaled(12)
+                height: Theme.scaled(22)
+                radius: 999
+                color: syncPillM.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground
+                border.color: TodoistService.offline ? Theme.powerYellow : Theme.glassBorder
+                border.width: 1
+
+                RowLayout {
+                    id: syncRow
+                    anchors.centerIn: parent
+                    spacing: Theme.scaled(4)
+                    Text {
+                        text: "󰑐"
+                        font.family: Theme.iconFont
+                        font.pixelSize: Theme.scaled(11)
+                        color: TodoistService.syncing ? Theme.accentColor : Theme.subtext0
+                    }
+                    Text {
+                        text: TodoistService.syncing ? "Syncing"
+                            : (TodoistService.offline ? "Offline"
+                            : (TodoistService.pendingChanges > 0 ? (TodoistService.pendingChanges + " pending") : "Synced"))
+                        color: TodoistService.offline ? Theme.powerYellow : Theme.subtext0
+                        font.pixelSize: Theme.scaled(9)
+                        font.weight: Font.DemiBold
+                    }
+                }
+                MouseArea {
+                    id: syncPillM
                     anchors.fill: parent
-                    onClicked: { 
-                        todoRoot.cancelEdit();
-                        inputField.text = ""; 
-                        inputField.visible = true; 
-                        inputField.forceActiveFocus(); 
-                    } 
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: TodoistService.syncNow()
+                }
+            }
+
+            // Search Toggle
+            Rectangle {
+                visible: tasksModel.count > 0
+                width: Theme.scaled(24); height: Theme.scaled(24)
+                radius: 999
+                color: todoRoot.searchOpen ? Theme.accentColor : (tSearchM.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground)
+                border.color: Theme.glassBorder
+                border.width: 1
+                Text {
+                    anchors.centerIn: parent
+                    text: "󰍉"
+                    font.family: Theme.iconFont
+                    font.pixelSize: Theme.scaled(12)
+                    color: todoRoot.searchOpen ? Colors.on_primary : Theme.subtext0
+                }
+                MouseArea {
+                    id: tSearchM
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        todoRoot.searchOpen = !todoRoot.searchOpen;
+                        if (todoRoot.searchOpen) Qt.callLater(() => taskSearchInput.forceActiveFocus());
+                        else { todoRoot.searchQuery = ""; taskSearchInput.text = ""; }
+                    }
                 }
             }
         }
 
-        // Add/Edit Task Input
-        TextArea {
-            id: inputField
-            visible: false
-            Layout.fillWidth: true; Layout.preferredHeight: contentHeight + 20
-            background: Rectangle { radius: 8; color: Theme.glassBackground; border.color: Theme.blue }
-            color: Theme.text; padding: 10
-            wrapMode: TextArea.Wrap
-            verticalAlignment: TextInput.AlignTop
-            Keys.onPressed: (event) => {
-                if (event.key === Qt.Key_Enter || event.key === Qt.Key_Return) {
-                    if (event.modifiers & Qt.ShiftModifier) return;
-                    if (text.trim() !== "") {
-                        if (todoRoot.editingIndex !== -1) {
-                            tasksModel.setProperty(todoRoot.editingIndex, "task", text.trim());
-                            // Flag the edit so the sync pushes it; without this
-                            // "Todoist wins" quietly reverts it on the next pull.
-                            tasksModel.setProperty(todoRoot.editingIndex, "dirty", true);
-                            todoRoot.editingIndex = -1;
-                        } else {
-                            tasksModel.append({ "task": text.trim(), "completed": false,
-                                                "todoist_id": "", "dirty": false });
-                        }
-                        inputField.text = ""; inputField.visible = false; 
-                        saveTasks();
-                        event.accepted = true;
+        // Filter Chips + Clear Completed
+        RowLayout {
+            visible: tasksModel.count > 0
+            Layout.fillWidth: true
+            spacing: Theme.scaled(5)
+
+            Repeater {
+                model: [
+                    { id: "all", label: "All" },
+                    { id: "active", label: "Active" },
+                    { id: "done", label: "Done" }
+                ]
+                delegate: Rectangle {
+                    readonly property bool active: todoRoot.filterMode === modelData.id
+                    implicitWidth: fChipTxt.implicitWidth + Theme.scaled(14)
+                    height: Theme.scaled(22)
+                    radius: 999
+                    color: active ? Theme.accentColor : (fChipM.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground)
+                    border.color: active ? Theme.accentColor : Theme.glassBorder
+                    border.width: 1
+                    Text {
+                        id: fChipTxt
+                        anchors.centerIn: parent
+                        text: modelData.label
+                        font.pixelSize: Theme.scaled(9.5)
+                        font.weight: Font.Bold
+                        color: active ? Colors.on_primary : Theme.subtext0
                     }
-                } else if (event.key === Qt.Key_Escape) {
-                    todoRoot.cancelEdit();
-                    event.accepted = true;
+                    MouseArea {
+                        id: fChipM
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: todoRoot.filterMode = modelData.id
+                    }
+                }
+            }
+
+            Item { Layout.fillWidth: true }
+
+            Rectangle {
+                visible: todoRoot.completedCount > 0
+                implicitWidth: clrDoneTxt.implicitWidth + Theme.scaled(12)
+                height: Theme.scaled(22)
+                radius: 999
+                color: clrDoneM.containsMouse ? Qt.rgba(Theme.powerRed.r, Theme.powerRed.g, Theme.powerRed.b, 0.18) : "transparent"
+                border.color: clrDoneM.containsMouse ? Theme.powerRed : Theme.glassBorder
+                border.width: 1
+                Text {
+                    id: clrDoneTxt
+                    anchors.centerIn: parent
+                    text: "Clear done"
+                    font.pixelSize: Theme.scaled(9.5)
+                    font.weight: Font.DemiBold
+                    color: clrDoneM.containsMouse ? Theme.powerRed : Theme.subtext0
+                }
+                MouseArea {
+                    id: clrDoneM
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: todoRoot.clearCompleted()
+                }
+            }
+        }
+
+        // Optional Search Bar
+        Rectangle {
+            visible: todoRoot.searchOpen && tasksModel.count > 0
+            Layout.fillWidth: true
+            height: Theme.scaled(30)
+            radius: Theme.scaled(8)
+            color: Theme.surface1
+            border.color: taskSearchInput.activeFocus ? Theme.accentColor : Theme.glassBorder
+            border.width: 1
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: Theme.scaled(8)
+                anchors.rightMargin: Theme.scaled(8)
+                spacing: Theme.scaled(6)
+                Text { text: "󰍉"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(12); color: Theme.subtext0 }
+                TextInput {
+                    id: taskSearchInput
+                    Layout.fillWidth: true
+                    color: Theme.text
+                    font.pixelSize: Theme.scaled(11)
+                    clip: true
+                    onTextChanged: todoRoot.searchQuery = text
+                    Keys.onEscapePressed: {
+                        todoRoot.searchOpen = false;
+                        todoRoot.searchQuery = "";
+                        text = "";
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Search tasks..."
+                        color: Theme.subtext2
+                        font.pixelSize: Theme.scaled(11)
+                        visible: !parent.text && !parent.activeFocus
+                    }
+                }
+            }
+        }
+
+        // Always-Ready Inline Add / Edit Task Input
+        Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: Math.max(Theme.scaled(36), inputField.contentHeight + Theme.scaled(14))
+            radius: Theme.scaled(10)
+            color: Theme.cardBackground
+            border.color: (inputField.activeFocus || todoRoot.editingIndex !== -1) ? Theme.accentColor : Theme.glassBorder
+            border.width: 1
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: Theme.scaled(10)
+                anchors.rightMargin: Theme.scaled(8)
+                spacing: Theme.scaled(6)
+
+                Text {
+                    text: todoRoot.editingIndex !== -1 ? "󰏫" : "󰐕"
+                    font.family: Theme.iconFont
+                    font.pixelSize: Theme.scaled(14)
+                    color: Theme.accentColor
+                }
+
+                TextArea {
+                    id: inputField
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                    background: null
+                    color: Theme.text
+                    padding: Theme.scaled(4)
+                    font.pixelSize: Theme.scaled(11.5)
+                    wrapMode: TextArea.Wrap
+                    placeholderText: todoRoot.editingIndex !== -1 ? "Edit task..." : "Add a task and press Enter..."
+                    placeholderTextColor: Theme.subtext2
+                    Keys.onPressed: (event) => {
+                        if (event.key === Qt.Key_Enter || event.key === Qt.Key_Return) {
+                            if (event.modifiers & Qt.ShiftModifier) return;
+                            if (text.trim() !== "") {
+                                if (todoRoot.editingIndex !== -1) {
+                                    tasksModel.setProperty(todoRoot.editingIndex, "task", text.trim());
+                                    tasksModel.setProperty(todoRoot.editingIndex, "dirty", true);
+                                    todoRoot.editingIndex = -1;
+                                } else {
+                                    tasksModel.append({ "task": text.trim(), "completed": false,
+                                                        "todoist_id": "", "dirty": false });
+                                }
+                                inputField.text = "";
+                                inputField.focus = false;
+                                saveTasks();
+                            }
+                            event.accepted = true;
+                        } else if (event.key === Qt.Key_Escape) {
+                            todoRoot.cancelEdit();
+                            event.accepted = true;
+                        }
+                    }
+                }
+
+                Rectangle {
+                    visible: inputField.text.trim() !== "" || todoRoot.editingIndex !== -1
+                    implicitWidth: addActLbl.implicitWidth + Theme.scaled(12)
+                    height: Theme.scaled(24)
+                    radius: Theme.scaled(6)
+                    color: Theme.accentColor
+                    Text {
+                        id: addActLbl
+                        anchors.centerIn: parent
+                        text: todoRoot.editingIndex !== -1 ? "Save" : "Add"
+                        color: Colors.on_primary
+                        font.pixelSize: Theme.scaled(10)
+                        font.weight: Font.Bold
+                    }
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            let t = inputField.text.trim();
+                            if (t !== "") {
+                                if (todoRoot.editingIndex !== -1) {
+                                    tasksModel.setProperty(todoRoot.editingIndex, "task", t);
+                                    tasksModel.setProperty(todoRoot.editingIndex, "dirty", true);
+                                    todoRoot.editingIndex = -1;
+                                } else {
+                                    tasksModel.append({ "task": t, "completed": false, "todoist_id": "", "dirty": false });
+                                }
+                                inputField.text = "";
+                                inputField.focus = false;
+                                saveTasks();
+                            } else {
+                                todoRoot.cancelEdit();
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -664,13 +944,14 @@ Rectangle {
 
             delegate: Item {
                 id: delegateRoot
-                width: taskListView.width; height: visible ? contentCol.height + 16 : 0
+                readonly property bool matchesFilter: todoRoot.rowMatchesFilter(model)
+                width: taskListView.width; height: visible ? contentCol.height + Theme.scaled(14) : 0
                 z: dragArea.held ? 100 : 1
-                visible: todoRoot.editingIndex !== index
+                visible: todoRoot.editingIndex !== index && matchesFilter
 
                 Rectangle {
                     id: visualContent
-                    anchors.fill: parent; radius: Theme.bubbleRadiusMedium
+                    anchors.fill: parent; radius: Theme.bubbleRadiusSmall
                     color: (todoRoot.selectedIndex === index) ? Theme.cardBackgroundHover : Theme.cardBackground
                     border.color: (todoRoot.selectedIndex === index) ? Theme.accentColor : Theme.glassBorder
                     border.width: 1
@@ -741,13 +1022,13 @@ Rectangle {
                             }
 
                             Text { 
-                                text: "󰏫"; font.family: Theme.iconFont; color: Theme.accentColor; font.pixelSize: Theme.scaled(18)
+                                text: "󰏫"; font.family: Theme.iconFont; color: Theme.accentColor; font.pixelSize: Theme.scaled(16)
                                 MouseArea { 
-                                    anchors.fill: parent; 
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
                                     onClicked: { 
                                         todoRoot.editingIndex = index;
                                         inputField.text = model.task;
-                                        inputField.visible = true; 
                                         inputField.forceActiveFocus();
                                         inputField.cursorPosition = inputField.text.length;
                                     } 

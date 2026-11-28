@@ -643,7 +643,7 @@ RowLayout {
                         if (root.calendarPopupOpen) {
                             calendarHideTimer.restart();
                         }
-                        if (MediaPlayerService.trackedPlayer && !CenterState.qsVisible && !DynamicIslandService.active) {
+                        if (!CenterState.qsVisible && !DynamicIslandService.active) {
                             mediaHideTimer.stop();
                             mediaShowTimer.restart();
                         }
@@ -712,18 +712,19 @@ RowLayout {
             }
         }
 
-        // --- MEDIA TOOLTIP TIMERS ---
+        // --- MEDIA / WEATHER TOOLTIP TIMERS ---
         Timer {
             id: mediaShowTimer
             interval: 180
             onTriggered: {
-                if (mprisMouse.containsMouse && MediaPlayerService.trackedPlayer && !CenterState.qsVisible && !DynamicIslandService.active) {
+                if (mprisMouse.containsMouse && !CenterState.qsVisible && !DynamicIslandService.active) {
                     calendarShowTimer.stop();
                     root.calendarPopupOpen = false;
                     mediaHideTimer.stop();
                     let pillRect = centerPill.mapToItem(null, 0, 0, centerPill.width, centerPill.height);
                     root.lockedMediaRect = Qt.rect(pillRect.x, pillRect.y, pillRect.width, pillRect.height);
-                    root.lockedMediaWidth = Math.max(centerPill.width, Theme.scaled(440));
+                    let showMpris = !!(MediaPlayerService.trackedPlayer && MediaPlayerService.isActuallyPlaying);
+                    root.lockedMediaWidth = showMpris ? Math.max(centerPill.width, Theme.scaled(440)) : Math.max(centerPill.width, Theme.scaled(380));
                     root.mediaPopupOpen = true;
                 }
             }
@@ -790,19 +791,21 @@ RowLayout {
             }
         }
 
-        // --- MPRIS MUSIC PLAYER TOOLTIP POPUP ---
+        // --- MEDIA / WEATHER TOOLTIP POPUP ---
         Loader {
             id: mediaTooltipLoader
-            active: root.mediaPopupOpen && MediaPlayerService.trackedPlayer && !CenterState.qsVisible && !DynamicIslandService.active
+            active: root.mediaPopupOpen && !CenterState.qsVisible && !DynamicIslandService.active
 
             sourceComponent: PopupWindow {
                 id: mediaTooltipPopup
+
+                readonly property bool showMpris: !!(MediaPlayerService.trackedPlayer && MediaPlayerService.isActuallyPlaying)
 
                 visible: true
                 color: "transparent"
 
                 function updateHoverState() {
-                    let isHov = (hoverArea && hoverArea.containsMouse) || (mprisComp && mprisComp.isPlayerHovered);
+                    let isHov = (hoverArea && hoverArea.containsMouse) || (showMpris && mprisComp && mprisComp.isPlayerHovered);
                     root.mediaPopupHovered = isHov;
                     if (isHov) {
                         mediaHideTimer.stop();
@@ -826,8 +829,8 @@ RowLayout {
                 anchor.edges: Edges.Bottom
                 anchor.gravity: Edges.Bottom
 
-                implicitWidth: root.lockedMediaWidth > 0 ? root.lockedMediaWidth : Math.max(centerPill.width, Theme.scaled(480))
-                implicitHeight: Theme.scaled(132)
+                implicitWidth: root.lockedMediaWidth > 0 ? root.lockedMediaWidth : Math.max(centerPill.width, showMpris ? Theme.scaled(480) : Theme.scaled(380))
+                implicitHeight: showMpris ? Theme.scaled(132) : Theme.scaled(312)
 
                 Shortcut {
                     sequences: ["Escape"]
@@ -861,8 +864,8 @@ RowLayout {
                         id: popupSurface
                         y: Theme.scaled(6)
                         anchors.horizontalCenter: parent.horizontalCenter
-                        width: root.lockedMediaWidth > 0 ? root.lockedMediaWidth : Math.max(centerPill.width, Theme.scaled(480))
-                        height: Theme.scaled(120)
+                        width: root.lockedMediaWidth > 0 ? root.lockedMediaWidth : Math.max(centerPill.width, mediaTooltipPopup.showMpris ? Theme.scaled(480) : Theme.scaled(380))
+                        height: mediaTooltipPopup.showMpris ? Theme.scaled(120) : Theme.scaled(300)
                         color: Theme.tooltipBackground
                         border.color: root.mediaPopupHovered 
                             ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.50) 
@@ -876,14 +879,22 @@ RowLayout {
 
                         MprisPlayer {
                             id: mprisComp
+                            visible: mediaTooltipPopup.showMpris
                             anchors.centerIn: parent
                             width: parent.width - Theme.scaled(12)
                             height: parent.height - Theme.scaled(12)
-                            active: true
+                            active: mediaTooltipPopup.showMpris
                             color: "transparent"
                             border.width: 0
 
                             onIsPlayerHoveredChanged: mediaTooltipPopup.updateHoverState()
+                        }
+
+                        WeatherWidget {
+                            visible: !mediaTooltipPopup.showMpris
+                            anchors.fill: parent
+                            color: "transparent"
+                            border.width: 0
                         }
                     }
 
@@ -936,8 +947,8 @@ RowLayout {
                 anchor.edges: Edges.Bottom
                 anchor.gravity: Edges.Bottom
 
-                implicitWidth: root.lockedCalendarWidth > 0 ? root.lockedCalendarWidth : Theme.scaled(340)
-                implicitHeight: Theme.scaled(352)
+                implicitWidth: root.lockedCalendarWidth > 0 ? root.lockedCalendarWidth : Theme.scaled(360)
+                implicitHeight: Theme.scaled(392)
 
                 Shortcut {
                     sequences: ["Escape"]
@@ -971,8 +982,8 @@ RowLayout {
                         id: calPopupSurface
                         y: Theme.scaled(6)
                         anchors.horizontalCenter: parent.horizontalCenter
-                        width: root.lockedCalendarWidth > 0 ? root.lockedCalendarWidth : Theme.scaled(340)
-                        height: Theme.scaled(340)
+                        width: root.lockedCalendarWidth > 0 ? root.lockedCalendarWidth : Theme.scaled(360)
+                        height: Theme.scaled(380)
                         color: Theme.tooltipBackground
                         border.color: root.calendarPopupHovered 
                             ? Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.50) 

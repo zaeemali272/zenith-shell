@@ -12,6 +12,7 @@ Item {
     property int brightness: 100
     property int maxBrightness: 100
     property int percentage: 100
+    property int _pendingBrightness: -1
 
     function update() {
         if (!readProc.running) {
@@ -22,8 +23,11 @@ Item {
     function setBrightness(percent) {
         let p = Math.max(1, Math.min(100, Math.round(percent)));
         service.percentage = p;
-        setProc.command = ["brightnessctl", "set", p + "%", "-q"];
-        setProc.running = false;
+        if (setProc.running) {
+            service._pendingBrightness = p;
+            return;
+        }
+        setProc.command = ["brightnessctl", "-c", "backlight", "set", p + "%", "-q"];
         setProc.running = true;
     }
 
@@ -56,7 +60,17 @@ print(json.dumps({'actual': actual, 'max': max_b, 'perc': perc}))
         }
     }
 
-    Process { id: setProc }
+    Process {
+        id: setProc
+        onExited: {
+            if (service._pendingBrightness !== -1) {
+                let next = service._pendingBrightness;
+                service._pendingBrightness = -1;
+                setProc.command = ["brightnessctl", "-c", "backlight", "set", next + "%", "-q"];
+                setProc.running = true;
+            }
+        }
+    }
 
     Component.onCompleted: service.update()
 }

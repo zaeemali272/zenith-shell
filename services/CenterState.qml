@@ -25,7 +25,7 @@ Item {
             wallpaperSubTab = "Themes";
         } else if (targetTab === "Display" || targetTab === "Displays" || targetTab === "Resolution" || targetTab === "Project") {
             targetTab = "Settings";
-            settingsSubTab = 7;
+            settingsSubTab = 4;
         }
         activeTab = targetTab;
         if (rect !== undefined) anchorRect = rect;
@@ -46,7 +46,7 @@ Item {
             return;
         }
         if (targetTab === "Display" || targetTab === "Displays" || targetTab === "Resolution" || targetTab === "Project") {
-            if (qsVisible && activeTab === "Settings" && settingsSubTab === 7) {
+            if (qsVisible && activeTab === "Settings" && settingsSubTab === 4) {
                 close();
                 return;
             }

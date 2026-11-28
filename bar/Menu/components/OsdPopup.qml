@@ -39,6 +39,7 @@ PanelWindow {
 
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+    WlrLayershell.namespace: "osd"
 
     // Position (top-right floating capsule)
     anchors {

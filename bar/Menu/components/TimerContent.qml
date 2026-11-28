@@ -22,6 +22,38 @@ Item {
     readonly property real progress: Math.max(0, Math.min(1,
         1 - (ProductivityService.remaining / total)))
     readonly property bool done: ProductivityService.remaining <= 0
+    property int sessionsCompleted: 0
+    property string activeMode: "focus" // "focus" | "short" | "long"
+
+    onDoneChanged: {
+        if (done && activeMode === "focus") sessionsCompleted++;
+    }
+
+    function selectMode(mode, secs) {
+        activeMode = mode;
+        ProductivityService.setDuration(secs);
+    }
+
+    function endTimeString() {
+        let eta = new Date(Date.now() + ProductivityService.remaining * 1000);
+        return Qt.formatTime(eta, "hh:mm AP");
+    }
+
+    function handleKeys(event) {
+        if (event.key === Qt.Key_Space) {
+            ProductivityService.isBeeping ? ProductivityService.dismissAlarm() : ProductivityService.toggleTimer();
+            event.accepted = true;
+        } else if (event.key === Qt.Key_R) {
+            ProductivityService.resetTimer();
+            event.accepted = true;
+        } else if ((event.key === Qt.Key_Plus || event.key === Qt.Key_Equal) && !ProductivityService.running) {
+            ProductivityService.adjustDuration(60);
+            event.accepted = true;
+        } else if (event.key === Qt.Key_Minus && !ProductivityService.running) {
+            ProductivityService.adjustDuration(-60);
+            event.accepted = true;
+        }
+    }
 
     readonly property color ringColor: ProductivityService.isBeeping ? Theme.powerRed
                                      : ProductivityService.running    ? Theme.accentColor
@@ -39,7 +71,76 @@ Item {
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: Theme.scaled(10)
-        spacing: Theme.scaled(14)
+        spacing: Theme.scaled(12)
+
+        // Top Mode Segmented Bar + Session Counter
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: Theme.scaled(8)
+
+            Rectangle {
+                implicitWidth: modeRow.implicitWidth + Theme.scaled(8)
+                height: Theme.scaled(30)
+                radius: 999
+                color: Theme.cardBackground
+                border.color: Theme.glassBorder
+                border.width: 1
+
+                Row {
+                    id: modeRow
+                    anchors.centerIn: parent
+                    spacing: Theme.scaled(4)
+                    Repeater {
+                        model: [
+                            { id: "focus", label: "Focus", secs: 1500 },
+                            { id: "short", label: "Short Break", secs: 300 },
+                            { id: "long", label: "Long Break", secs: 900 }
+                        ]
+                        delegate: Rectangle {
+                            readonly property bool active: root.activeMode === modelData.id
+                            width: mTxt.implicitWidth + Theme.scaled(16)
+                            height: Theme.scaled(22)
+                            radius: 999
+                            color: active ? Theme.accentColor : (mM.containsMouse ? Theme.cardBackgroundHover : "transparent")
+                            Text {
+                                id: mTxt
+                                anchors.centerIn: parent
+                                text: modelData.label
+                                font.pixelSize: Theme.scaled(10)
+                                font.weight: Font.Bold
+                                color: active ? Colors.on_primary : Theme.subtext0
+                            }
+                            MouseArea {
+                                id: mM
+                                anchors.fill: parent
+                                enabled: !ProductivityService.running
+                                hoverEnabled: true
+                                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                onClicked: root.selectMode(modelData.id, modelData.secs)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Item { Layout.fillWidth: true }
+
+            Rectangle {
+                implicitWidth: sessRow.implicitWidth + Theme.scaled(14)
+                height: Theme.scaled(26)
+                radius: 999
+                color: Theme.cardBackground
+                border.color: Theme.glassBorder
+                border.width: 1
+                Row {
+                    id: sessRow
+                    anchors.centerIn: parent
+                    spacing: Theme.scaled(5)
+                    Text { text: "󰄬"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(11); color: Theme.accentColor; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: root.sessionsCompleted + " sessions"; color: Theme.subtext0; font.pixelSize: Theme.scaled(10); font.weight: Font.Bold; anchors.verticalCenter: parent.verticalCenter }
+                }
+            }
+        }
 
         Item { Layout.fillHeight: true }
 
@@ -114,6 +215,13 @@ Item {
                     font.pixelSize: Math.max(9, ring.side * 0.055)
                     font.weight: Font.Black
                     font.letterSpacing: 2
+                }
+                Text {
+                    visible: ProductivityService.remaining > 0
+                    Layout.alignment: Qt.AlignHCenter
+                    text: "Ends " + root.endTimeString()
+                    color: Theme.subtext2
+                    font.pixelSize: Math.max(9, ring.side * 0.048)
                 }
             }
         }
@@ -229,9 +337,9 @@ Item {
 
         Text {
             Layout.fillWidth: true
-            text: "Pomodoro focus timer with auditory chime and status bar integration"
-            color: Theme.subtext0
-            font.pixelSize: Theme.scaled(10)
+            text: "Space: Start / Pause   •   R: Reset   •   +/-: Adjust 1m"
+            color: Theme.subtext2
+            font.pixelSize: Theme.scaled(9.5)
             horizontalAlignment: Text.AlignHCenter
             Layout.alignment: Qt.AlignHCenter
         }

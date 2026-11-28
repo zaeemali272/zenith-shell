@@ -27,6 +27,19 @@ ColumnLayout {
     property string errorText: ""
     property bool needsConfig: !MailService.hasConfig
     property int unread: 0
+    property string mailFilter: "all" // "all" | "unread"
+    property bool searchOpen: false
+    property string mailSearch: ""
+
+    function matchesMailFilter(sender, subject, isUnread) {
+        if (mailFilter === "unread" && !isUnread) return false;
+        let q = mailSearch.trim().toLowerCase();
+        if (q !== "") {
+            let hay = (String(sender || "") + " " + String(subject || "")).toLowerCase();
+            if (!hay.includes(q)) return false;
+        }
+        return true;
+    }
 
     // Open message. Empty uid means the list is showing.
     property string openUid: ""
@@ -333,7 +346,33 @@ ColumnLayout {
         }
         Item { Layout.fillWidth: true }
         Rectangle {
-            width: Theme.scaled(56); height: Theme.scaled(24)
+            visible: MailService.hasConfig && mailModel.count > 0 && root.openUid === ""
+            Layout.preferredWidth: Theme.scaled(24)
+            Layout.preferredHeight: Theme.scaled(24)
+            radius: Theme.scaled(8)
+            color: root.searchOpen ? Theme.accentColor : (mailSearchM.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground)
+            Text {
+                anchors.centerIn: parent
+                text: "󰍉"
+                font.family: Theme.iconFont
+                font.pixelSize: Theme.scaled(12)
+                color: root.searchOpen ? Colors.on_primary : Theme.subtext1
+            }
+            MouseArea {
+                id: mailSearchM
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    root.searchOpen = !root.searchOpen;
+                    if (root.searchOpen) Qt.callLater(() => mailSearchInput.forceActiveFocus());
+                    else { root.mailSearch = ""; mailSearchInput.text = ""; }
+                }
+            }
+        }
+        Rectangle {
+            Layout.preferredWidth: Theme.scaled(56)
+            Layout.preferredHeight: Theme.scaled(24)
             radius: Theme.scaled(8)
             visible: MailService.hasConfig
             color: refreshMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground
@@ -443,6 +482,82 @@ ColumnLayout {
                 onClicked: {
                     root.addingAccount = !root.addingAccount;
                     if (root.addingAccount) { userInput.text = ""; passInput.text = ""; }
+                }
+            }
+        }
+    }
+
+    // All / Unread filter pills + inline search
+    RowLayout {
+        visible: MailService.hasConfig && mailModel.count > 0 && root.openUid === ""
+        Layout.fillWidth: true
+        spacing: Theme.scaled(6)
+
+        Repeater {
+            model: [
+                { id: "all", label: "All" },
+                { id: "unread", label: "Unread (" + root.unread + ")" }
+            ]
+            delegate: Rectangle {
+                readonly property bool active: root.mailFilter === modelData.id
+                Layout.preferredWidth: mfLbl.implicitWidth + Theme.scaled(14)
+                Layout.preferredHeight: Theme.scaled(22)
+                radius: height / 2
+                color: active ? Theme.accentColor : (mfM.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground)
+                Text {
+                    id: mfLbl
+                    anchors.centerIn: parent
+                    text: modelData.label
+                    font.pixelSize: Theme.scaled(9.5)
+                    font.weight: Font.Bold
+                    color: active ? Colors.on_primary : Theme.subtext1
+                }
+                MouseArea {
+                    id: mfM
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.mailFilter = modelData.id
+                }
+            }
+        }
+
+        Item { Layout.fillWidth: true }
+    }
+
+    Rectangle {
+        visible: MailService.hasConfig && root.searchOpen && mailModel.count > 0 && root.openUid === ""
+        Layout.fillWidth: true
+        Layout.preferredHeight: Theme.scaled(30)
+        radius: Theme.scaled(8)
+        color: Theme.surface1
+        border.color: mailSearchInput.activeFocus ? Theme.accentColor : Theme.glassBorder
+        border.width: 1
+
+        RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: Theme.scaled(8)
+            anchors.rightMargin: Theme.scaled(8)
+            spacing: Theme.scaled(6)
+            Text { text: "󰍉"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(12); color: Theme.subtext0 }
+            TextInput {
+                id: mailSearchInput
+                Layout.fillWidth: true
+                color: Theme.text
+                font.pixelSize: Theme.scaled(11)
+                clip: true
+                onTextChanged: root.mailSearch = text
+                Keys.onEscapePressed: {
+                    root.searchOpen = false;
+                    root.mailSearch = "";
+                    text = "";
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "Search sender or subject..."
+                    color: Theme.subtext2
+                    font.pixelSize: Theme.scaled(11)
+                    visible: !parent.text && !parent.activeFocus
                 }
             }
         }
@@ -628,9 +743,11 @@ ColumnLayout {
                 required property string subject
                 required property int ts
                 required property bool unread
+                readonly property bool matches: root.matchesMailFilter(sender, subject, unread)
 
+                visible: matches
                 width: mailList.width
-                height: rowCol.implicitHeight + Theme.scaled(14)
+                height: matches ? (rowCol.implicitHeight + Theme.scaled(14)) : 0
                 radius: Theme.scaled(8)
                 color: rowMouse.containsMouse ? Theme.cardBackgroundHover : "transparent"
                 border.width: 0

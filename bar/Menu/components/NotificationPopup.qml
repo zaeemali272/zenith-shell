@@ -17,6 +17,7 @@ PanelWindow {
 
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: popupStack.isInputActive ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+    WlrLayershell.namespace: "notifications"
 
     // Standard popup position (top-right)
     anchors {

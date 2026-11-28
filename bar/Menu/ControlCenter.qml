@@ -514,71 +514,113 @@ MenuWindow {
                                 anchors.fill: parent; anchors.margins: Theme.scaled(14); spacing: Theme.scaled(8)
                                 
                                 RowLayout {
-                                    Layout.fillWidth: true; spacing: Theme.scaled(8)
-                                    Text { text: "󰂚"; font.family: Theme.iconFont; color: Theme.accentColor; font.pixelSize: Theme.scaled(20) }
-                                    Text { text: "NOTIFICATIONS"; color: Theme.subtext0; font.pixelSize: Theme.scaled(10); font.weight: Font.Black; font.letterSpacing: 1 }
+                                    Layout.fillWidth: true; spacing: Theme.scaled(6)
+                                    Text {
+                                        text: PowerToolsService.dnd ? "󰂛" : "󰂚"
+                                        font.family: Theme.iconFont
+                                        color: PowerToolsService.dnd ? Theme.subtext0 : Theme.accentColor
+                                        font.pixelSize: Theme.scaled(18)
+                                    }
+                                    Text {
+                                        text: "NOTIFICATIONS"
+                                        color: Theme.subtext0
+                                        font.pixelSize: Theme.scaled(10)
+                                        font.weight: Font.Black
+                                        font.letterSpacing: 1
+                                    }
                                     Rectangle {
-                                        width: Theme.scaled(22); height: Theme.scaled(22); radius: 999
-                                        color: "transparent"
-                                        border.width: 0
+                                        visible: NotificationService.notifications.count > 0
+                                        implicitWidth: Math.max(Theme.scaled(20), notifCountLbl.implicitWidth + Theme.scaled(10))
+                                        height: Theme.scaled(18)
+                                        radius: 999
+                                        color: Qt.rgba(Theme.accentColor.r, Theme.accentColor.g, Theme.accentColor.b, 0.16)
                                         Label {
-                                             anchors.centerIn: parent
-                                             text: NotificationService.notifications.count
-                                             color: Theme.accentColor
-                                             font.pixelSize: Theme.scaled(11); font.bold: true
-                                         }
+                                            id: notifCountLbl
+                                            anchors.centerIn: parent
+                                            text: NotificationService.notifications.count
+                                            color: Theme.accentColor
+                                            font.pixelSize: Theme.scaled(10)
+                                            font.bold: true
+                                        }
                                     }
 
                                     Item { Layout.fillWidth: true }
-                                    
-                                    Button {
-                                        id: fullscreenBtn
-                                        flat: true
-                                        padding: Theme.scaled(3)
-                                        visible: !Theme.isSmallScreen
-                                        contentItem: RowLayout {
-                                            spacing: 4
+
+                                    // DND Quick Toggle
+                                    Rectangle {
+                                        implicitWidth: dndRow.implicitWidth + Theme.scaled(12)
+                                        height: Theme.scaled(24)
+                                        radius: 999
+                                        color: PowerToolsService.dnd
+                                            ? Theme.accentColor
+                                            : (dndBtnM.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground)
+                                        border.color: PowerToolsService.dnd ? Theme.accentColor : Theme.glassBorder
+                                        border.width: 1
+                                        Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                                        RowLayout {
+                                            id: dndRow
+                                            anchors.centerIn: parent
+                                            spacing: Theme.scaled(4)
                                             Text {
-                                                text: NotificationSettings.fullscreenNotification ? "󰊓" : "󰊔"
+                                                text: PowerToolsService.dnd ? "󰂛" : "󰂚"
                                                 font.family: Theme.iconFont
-                                                color: NotificationSettings.fullscreenNotification ? Theme.accentColor : "#ffffff"
-                                                font.pixelSize: 16
+                                                font.pixelSize: Theme.scaled(11)
+                                                color: PowerToolsService.dnd ? Colors.on_primary : Theme.subtext0
                                             }
-                                            Text { text: "NOTIFY"; font.pixelSize: 9; font.weight: Font.Black; color: "#ffffff" }
-                                        }
-                                        background: Rectangle { color: fullscreenBtn.hovered ? Theme.cardBackgroundHover : "transparent"; radius: 999; border.width: 0 }
-                                        onClicked: NotificationSettings.fullscreenNotification = !NotificationSettings.fullscreenNotification
-                                    }
-                                    Button {
-                                        id: osdFullscreenBtn
-                                        flat: true
-                                        padding: Theme.scaled(3)
-                                        visible: !Theme.isSmallScreen
-                                        contentItem: RowLayout {
-                                            spacing: 4
                                             Text {
-                                                text: NotificationSettings.fullscreenOSD ? "󰊓" : "󰊔"
-                                                font.family: Theme.iconFont
-                                                color: NotificationSettings.fullscreenOSD ? Theme.accentColor : "#ffffff"
-                                                font.pixelSize: 16
+                                                text: "DND"
+                                                font.pixelSize: Theme.scaled(9.5)
+                                                font.weight: Font.Bold
+                                                color: PowerToolsService.dnd ? Colors.on_primary : Theme.subtext0
                                             }
-                                            Text { text: "OSD"; font.pixelSize: 9; font.weight: Font.Black; color: "#ffffff" }
                                         }
-                                        background: Rectangle { color: osdFullscreenBtn.hovered ? Theme.cardBackgroundHover : "transparent"; radius: 999; border.width: 0 }
-                                        onClicked: NotificationSettings.fullscreenOSD = !NotificationSettings.fullscreenOSD
+                                        MouseArea {
+                                            id: dndBtnM
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: PowerToolsService.toggleDnd()
+                                        }
                                     }
+
+                                    // Filter / Search Toggle
+                                    Rectangle {
+                                        visible: NotificationService.notifications.count > 0
+                                        width: Theme.scaled(24); height: Theme.scaled(24)
+                                        radius: 999
+                                        color: notificationList.searchOpen
+                                            ? Theme.accentColor
+                                            : (searchNotifM.containsMouse ? Theme.cardBackgroundHover : "transparent")
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: "󰍉"
+                                            font.family: Theme.iconFont
+                                            font.pixelSize: Theme.scaled(13)
+                                            color: notificationList.searchOpen ? Colors.on_primary : (searchNotifM.containsMouse ? Theme.text : Theme.subtext0)
+                                        }
+                                        MouseArea {
+                                            id: searchNotifM
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: notificationList.toggleSearch()
+                                        }
+                                    }
+
+                                    // Clear All Bin
                                     Button {
                                         id: clearBtn
                                         flat: true
+                                        enabled: NotificationService.notifications.count > 0
+                                        opacity: enabled ? 1.0 : 0.35
                                         padding: Theme.scaled(3)
-                                        contentItem: Text { text: "󰃢"; font.family: Theme.iconFont; color: clearBtn.hovered ? Theme.subtext0 : "#ffffff"; font.pixelSize: Theme.scaled(18) }
+                                        contentItem: Text { text: "󰆴"; font.family: Theme.iconFont; color: clearBtn.hovered ? Theme.powerRed : Theme.text; font.pixelSize: Theme.scaled(17) }
                                         background: Rectangle { color: clearBtn.hovered ? Theme.cardBackgroundHover : "transparent"; radius: 999; border.width: 0 }
                                         onClicked: NotificationService.clearAll()
                                     }
                                 }
                                 NotificationList {
                                     id: notificationList
-                                    visible: NotificationSettings.enableNotifications
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true 
                                 }

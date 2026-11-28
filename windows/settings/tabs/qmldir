@@ -5,4 +5,5 @@ WorkspaceTab WorkspaceTab.qml
 BatteryTab BatteryTab.qml
 MediaTab MediaTab.qml
 HyprlandTab HyprlandTab.qml
+SystemTab SystemTab.qml
 DisplayTab DisplayTab.qml

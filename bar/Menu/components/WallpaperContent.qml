@@ -25,6 +25,33 @@ ColumnLayout {
     }
     property bool thumbnailsReady: false
     property int selectedIndex: 0
+    property string searchQuery: ""
+    property string currentWallpaperPath: ""
+
+    function loadCurrentWallpaper() {
+        readCurrentWall.running = false;
+        readCurrentWall.running = true;
+    }
+
+    function applyRandomWallpaper() {
+        let count = wallFolderModel.count;
+        if (count <= 0) return;
+        let idx = Math.floor(Math.random() * count);
+        let url = wallFolderModel.get(idx, "fileUrl");
+        if (url) applyWallpaper(url.toString());
+    }
+
+    function matchesSearch(name) {
+        let q = searchQuery.trim().toLowerCase();
+        if (q === "") return true;
+        return String(name || "").toLowerCase().indexOf(q) !== -1;
+    }
+
+    function cleanBaseName(name) {
+        let s = String(name || "");
+        let dot = s.lastIndexOf('.');
+        return dot > 0 ? s.substring(0, dot) : s;
+    }
 
     function handleKeys(event) {
         if (event.key === Qt.Key_Tab) {
@@ -76,7 +103,12 @@ ColumnLayout {
         }
     }
 
-    onVisibleChanged: { if (visible) refreshThumbnails(); }
+    onVisibleChanged: {
+        if (visible) {
+            refreshThumbnails();
+            loadCurrentWallpaper();
+        }
+    }
 
     function refreshThumbnails() {
         thumbnailsReady = false;
@@ -87,61 +119,172 @@ ColumnLayout {
     readonly property string logPath: PathSettings.cacheDir + "/wallpaper.log"
     readonly property string scriptsPath: PathSettings.scriptsDir
 
-    // --- SUB-TABS ---
-    RowLayout {
+    // --- SUB-TABS & TOOLBAR ---
+    ColumnLayout {
         Layout.fillWidth: true
         spacing: Theme.scaled(10)
-        
-        Repeater {
-            model: ["Wallpaper", "Themes", "Slideshow", "Animated"]
-            delegate: Rectangle {
-                width: Theme.scaled(100); height: Theme.scaled(32); radius: Theme.bubbleRadiusPill
-                color: root.activeSubTab === modelData ? Theme.accentColor : (subTabMouse.containsMouse ? Theme.cardBackgroundHover : "transparent")
-                border.width: 0
-                antialiasing: true
-                scale: subTabMouse.pressed ? 0.95 : 1.0
-                Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
-                Behavior on color { ColorAnimation { duration: Theme.animInstant } }
 
-                Text { 
-                    anchors.centerIn: parent
-                    text: modelData
-                    font.pixelSize: Theme.scaled(11)
-                    font.weight: Font.Black
-                    color: root.activeSubTab === modelData ? Colors.on_primary : (subTabMouse.containsMouse ? Theme.text : Theme.subtext0)
-                }
-                MouseArea { 
-                    id: subTabMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    onClicked: {
-                        root.activeSubTab = modelData;
-                        root.selectedIndex = 0;
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: Theme.scaled(8)
+            
+            Repeater {
+                model: [
+                    { id: "Wallpaper", icon: "󰸉" },
+                    { id: "Themes", icon: "󰏘" },
+                    { id: "Slideshow", icon: "󰐍" },
+                    { id: "Animated", icon: "󰕧" }
+                ]
+                delegate: Rectangle {
+                    Layout.preferredWidth: subTabRow.implicitWidth + Theme.scaled(22)
+                    Layout.preferredHeight: Theme.scaled(32)
+                    radius: Theme.bubbleRadiusPill
+                    color: root.activeSubTab === modelData.id ? Theme.accentColor : (subTabMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground)
+                    border.color: root.activeSubTab === modelData.id ? Theme.accentColor : Theme.glassBorder
+                    border.width: 1
+                    antialiasing: true
+                    scale: subTabMouse.pressed ? 0.95 : 1.0
+                    Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
+                    Behavior on color { ColorAnimation { duration: Theme.animInstant } }
+
+                    Row {
+                        id: subTabRow
+                        anchors.centerIn: parent
+                        spacing: Theme.scaled(5)
+                        Text {
+                            text: modelData.icon
+                            font.family: Theme.iconFont
+                            font.pixelSize: Theme.scaled(12)
+                            color: root.activeSubTab === modelData.id ? Colors.on_primary : Theme.subtext0
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                        Text { 
+                            text: modelData.id
+                            font.pixelSize: Theme.scaled(11)
+                            font.weight: Font.Black
+                            color: root.activeSubTab === modelData.id ? Colors.on_primary : (subTabMouse.containsMouse ? Theme.text : Theme.subtext0)
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+                    MouseArea { 
+                        id: subTabMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            root.activeSubTab = modelData.id;
+                            root.selectedIndex = 0;
+                        }
                     }
                 }
             }
-        }
-        Item { Layout.fillWidth: true }
-        
-        // Thumbnail Generation Status
-        RowLayout {
-            spacing: Theme.scaled(8)
-            visible: root.activeSubTab !== "Themes" && thumbGen.running
-            Text {
-                text: "󱑐"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(14); color: Theme.blue
-                RotationAnimator on rotation { from: 0; to: 360; duration: 1000; loops: Animation.Infinite; running: thumbGen.running }
+            Item { Layout.fillWidth: true }
+
+            // Random Wallpaper Button
+            Rectangle {
+                visible: root.activeSubTab === "Wallpaper" && wallFolderModel.count > 1
+                Layout.preferredWidth: randRow.implicitWidth + Theme.scaled(14)
+                Layout.preferredHeight: Theme.scaled(30)
+                radius: Theme.scaled(8)
+                color: randMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground
+                border.color: Theme.glassBorder
+                border.width: 1
+                Row {
+                    id: randRow
+                    anchors.centerIn: parent
+                    spacing: Theme.scaled(5)
+                    Text { text: "󰒝"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(13); color: Theme.accentColor; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: "Random"; font.pixelSize: Theme.scaled(10); font.weight: Font.Bold; color: Theme.text; anchors.verticalCenter: parent.verticalCenter }
+                }
+                MouseArea {
+                    id: randMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.applyRandomWallpaper()
+                }
             }
-            Text { text: "Updating..."; font.pixelSize: Theme.scaled(10); font.weight: Font.Black; color: Theme.subtext1 }
+            
+            // Thumbnail Generation Status
+            RowLayout {
+                spacing: Theme.scaled(6)
+                visible: root.activeSubTab !== "Themes" && thumbGen.running
+                Text {
+                    text: "󱑐"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(14); color: Theme.blue
+                    RotationAnimator on rotation { from: 0; to: 360; duration: 1000; loops: Animation.Infinite; running: thumbGen.running }
+                }
+                Text { text: "Updating..."; font.pixelSize: Theme.scaled(10); font.weight: Font.Black; color: Theme.subtext1 }
+            }
+            
+            // Refresh Button
+            Rectangle {
+                Layout.preferredWidth: Theme.scaled(30); Layout.preferredHeight: Theme.scaled(30); radius: Theme.scaled(8)
+                color: refreshMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground
+                border.color: Theme.glassBorder
+                border.width: 1
+                antialiasing: true
+                visible: root.activeSubTab !== "Themes" && !thumbGen.running
+                Text { anchors.centerIn: parent; text: "󰑐"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(15); color: refreshMouse.containsMouse ? Theme.text : Theme.subtext1 }
+                MouseArea { id: refreshMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: refreshThumbnails() }
+            }
         }
-        
-        // Refresh Button
-        Rectangle {
-            width: Theme.scaled(32); height: Theme.scaled(32); radius: Theme.scaled(8)
-            color: refreshMouse.containsMouse ? Qt.rgba(1,1,1,0.1) : "transparent"
-            antialiasing: true
-            visible: root.activeSubTab !== "Themes" && !thumbGen.running
-            Text { anchors.centerIn: parent; text: "󰑐"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(16); color: refreshMouse.containsMouse ? Theme.text : Theme.subtext1 }
-            MouseArea { id: refreshMouse; anchors.fill: parent; hoverEnabled: true; onClicked: refreshThumbnails() }
+
+        // Filter & Count Bar (for Wallpaper / Slideshow / Animated)
+        RowLayout {
+            visible: root.activeSubTab !== "Themes"
+            Layout.fillWidth: true
+            spacing: Theme.scaled(10)
+
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: Theme.scaled(30)
+                radius: Theme.scaled(8)
+                color: Theme.cardBackground
+                border.color: wallSearchInput.activeFocus ? Theme.accentColor : Theme.glassBorder
+                border.width: 1
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: Theme.scaled(10)
+                    anchors.rightMargin: Theme.scaled(8)
+                    spacing: Theme.scaled(6)
+                    Text { text: "󰍉"; font.family: Theme.iconFont; font.pixelSize: Theme.scaled(12); color: Theme.subtext0 }
+                    TextInput {
+                        id: wallSearchInput
+                        Layout.fillWidth: true
+                        color: Theme.text
+                        font.pixelSize: Theme.scaled(11)
+                        clip: true
+                        onTextChanged: root.searchQuery = text
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: root.activeSubTab === "Animated" ? "Filter animated wallpapers..." : "Filter wallpapers by name..."
+                            color: Theme.subtext2
+                            font.pixelSize: Theme.scaled(11)
+                            visible: !parent.text && !parent.activeFocus
+                        }
+                    }
+                    Text {
+                        visible: wallSearchInput.text !== ""
+                        text: "󰅖"
+                        font.family: Theme.iconFont
+                        font.pixelSize: Theme.scaled(11)
+                        color: Theme.subtext0
+                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: wallSearchInput.text = "" }
+                    }
+                }
+            }
+
+            Text {
+                text: root.activeSubTab === "Animated"
+                    ? animFolderModel.count + " videos"
+                    : (root.activeSubTab === "Slideshow"
+                        ? root.selectedWalls.length + " / " + wallFolderModel.count + " selected"
+                        : wallFolderModel.count + " wallpapers")
+                color: Theme.subtext0
+                font.pixelSize: Theme.scaled(10)
+                font.weight: Font.Bold
+            }
         }
     }
 
@@ -201,8 +344,11 @@ ColumnLayout {
                     }
                     delegate: Rectangle {
                         id: wallCard
-                        width: (wallFlow.width - Theme.scaled(45)) / 4
-                        height: width * 0.6
+                        readonly property bool matchesFilter: root.matchesSearch(fileName)
+                        readonly property bool isCurrentWall: root.currentWallpaperPath !== "" && fileUrl.toString().replace("file://", "") === root.currentWallpaperPath
+                        visible: matchesFilter
+                        width: matchesFilter ? (wallFlow.width - Theme.scaled(45)) / 4 : 0
+                        height: matchesFilter ? ((wallFlow.width - Theme.scaled(45)) / 4) * 0.6 : 0
                         radius: Theme.scaled(14)
                         color: Theme.cardBackground
                         antialiasing: true
@@ -284,6 +430,52 @@ ColumnLayout {
                             border.width: (wallCard.isFocused || wallCard.isSelected) ? 2 : 1
                             antialiasing: true
                             z: 2
+                        }
+
+                        // Hover filename pill
+                        Rectangle {
+                            visible: cardMouse.containsMouse
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.bottom: parent.bottom
+                            anchors.margins: Theme.scaled(6)
+                            height: Theme.scaled(20)
+                            radius: Theme.scaled(6)
+                            color: Qt.rgba(0, 0, 0, 0.72)
+                            z: 3
+                            Text {
+                                anchors.fill: parent
+                                anchors.leftMargin: Theme.scaled(6)
+                                anchors.rightMargin: Theme.scaled(6)
+                                verticalAlignment: Text.AlignVCenter
+                                horizontalAlignment: Text.AlignHCenter
+                                text: root.cleanBaseName(fileName)
+                                color: "#ffffff"
+                                font.pixelSize: Theme.scaled(9)
+                                font.weight: Font.DemiBold
+                                elide: Text.ElideRight
+                            }
+                        }
+
+                        // Active Wallpaper Badge
+                        Rectangle {
+                            visible: wallCard.isCurrentWall && !wallCard.isSelected
+                            anchors.top: parent.top
+                            anchors.left: parent.left
+                            anchors.margins: Theme.scaled(7)
+                            width: activeBadgeTxt.implicitWidth + Theme.scaled(10)
+                            height: Theme.scaled(18)
+                            radius: 999
+                            color: Theme.accentColor
+                            z: 3
+                            Text {
+                                id: activeBadgeTxt
+                                anchors.centerIn: parent
+                                text: "ACTIVE"
+                                color: Colors.on_primary
+                                font.pixelSize: Theme.scaled(8)
+                                font.weight: Font.Black
+                            }
                         }
 
                         // Selection Number Badge
@@ -490,7 +682,7 @@ ColumnLayout {
                     Layout.alignment: Qt.AlignHCenter
                 }
                 Text {
-                    text: "~/Videos/Animations"
+                    text: "~/Videos/Animated"
                     font.pixelSize: Theme.scaled(11)
                     color: Theme.surface2
                     Layout.alignment: Qt.AlignHCenter
@@ -501,19 +693,34 @@ ColumnLayout {
 
     // --- SLIDESHOW CONTROLS ---
     RowLayout {
-        Layout.alignment: Qt.AlignHCenter; spacing: Theme.scaled(20); visible: root.activeSubTab === "Slideshow"
+        Layout.alignment: Qt.AlignHCenter
+        spacing: Theme.scaled(12)
+        visible: root.activeSubTab === "Slideshow"
+
         Rectangle {
-            width: Theme.scaled(180); height: Theme.scaled(40); radius: Theme.scaled(10)
+            implicitWidth: clearSelTxt.implicitWidth + Theme.scaled(20)
+            height: Theme.scaled(36)
+            radius: Theme.scaled(10)
+            color: Theme.cardBackground
+            border.color: Theme.glassBorder
+            border.width: 1
+            visible: root.selectedWalls.length > 0
+            Text { id: clearSelTxt; anchors.centerIn: parent; text: "Clear (" + root.selectedWalls.length + ")"; color: Theme.subtext0; font.pixelSize: Theme.scaled(11); font.weight: Font.Bold }
+            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.selectedWalls = [] }
+        }
+
+        Rectangle {
+            width: Theme.scaled(180); height: Theme.scaled(36); radius: Theme.scaled(10)
             color: root.selectedWalls.length > 0 ? Theme.accentColor : Theme.surface1
-            Text { anchors.centerIn: parent; text: "Start Slideshow"; color: root.selectedWalls.length > 0 ? Theme.base : Theme.subtext1; font.bold: true }
-            MouseArea { anchors.fill: parent; enabled: root.selectedWalls.length > 0; onClicked: startSlideshow() }
+            Text { anchors.centerIn: parent; text: "Start Slideshow"; color: root.selectedWalls.length > 0 ? Colors.on_primary : Theme.subtext1; font.bold: true; font.pixelSize: Theme.scaled(11) }
+            MouseArea { anchors.fill: parent; enabled: root.selectedWalls.length > 0; cursorShape: Qt.PointingHandCursor; onClicked: startSlideshow() }
         }
         Rectangle {
-            width: Theme.scaled(180); height: Theme.scaled(40); radius: Theme.scaled(10)
+            width: Theme.scaled(160); height: Theme.scaled(36); radius: Theme.scaled(10)
             color: Theme.red
             visible: slideshowRunning
-            Text { anchors.centerIn: parent; text: "Stop Slideshow"; color: Theme.base; font.bold: true }
-            MouseArea { anchors.fill: parent; onClicked: stopSlideshow() }
+            Text { anchors.centerIn: parent; text: "Stop Slideshow"; color: Colors.on_primary; font.bold: true; font.pixelSize: Theme.scaled(11) }
+            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: stopSlideshow() }
         }
     }
 
@@ -597,8 +804,20 @@ ColumnLayout {
     Process { id: serviceCmd }
     Process { id: mpvProcess }
     Process { id: saveCurrentWall; property string path: ""; command: ["sh", "-c", "mkdir -p " + Quickshell.env("HOME") + "/.config && echo '" + path + "' > " + Quickshell.env("HOME") + "/.config/current_wallpaper.txt"] }
+    Process {
+        id: readCurrentWall
+        command: ["cat", Quickshell.env("HOME") + "/.config/current_wallpaper.txt"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (text) root.currentWallpaperPath = String(text).trim();
+            }
+        }
+    }
     Process { id: thumbGen; command: ["python3", (Quickshell.env("ZENITH_ROOT") ? Quickshell.env("ZENITH_ROOT") : Quickshell.env("HOME") + "/.config/quickshell") + "/services/generate_thumbnails.py"]; onRunningChanged: { if (!running) { root.thumbnailsReady = true; root.refreshTrigger++; } } }
-    Component.onCompleted: refreshThumbnails()
+    Component.onCompleted: {
+        refreshThumbnails();
+        loadCurrentWallpaper();
+    }
 
     function resetScroll() {
         root.activeSubTab = "Wallpaper";

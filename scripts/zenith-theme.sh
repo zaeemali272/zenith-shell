@@ -1187,7 +1187,7 @@ entry {{
     padding: 5px 8px;
     min-height: 24px;
     box-shadow: none;
-    margin: 2px 0;
+    margin: 2px 3px;
 }}
 
 entry:focus {{
@@ -1217,7 +1217,7 @@ spinbutton {{
     border-style: none;
     border-width: 0;
     padding: 0;
-    margin: 2px 0;
+    margin: 2px 3px;
     box-shadow: none;
 }}
 
@@ -1439,7 +1439,7 @@ combobox button {{
     box-shadow: none;
     padding: 4px 8px;
     min-height: 24px;
-    margin: 2px 0;
+    margin: 2px 3px;
 }}
 
 /* Dialog Content & Action Area Spacing */
@@ -2167,8 +2167,8 @@ window.background:fullscreen,
 window.csd:fullscreen,
 window.background.csd:fullscreen,
 window:fullscreen *,
-window.virt-manager,
-window.background.virt-manager,
+window.virt-manager:fullscreen,
+window.background.virt-manager:fullscreen,
 .spice-display,
 .vnc-display,
 scrolledwindow.spice-display,
@@ -2466,6 +2466,7 @@ combobox button {{
     color: {fg};
     border-radius: 8px;
     border: none;
+    margin: 2px 3px;
 }}
 
 button box,
@@ -2492,7 +2493,7 @@ entry {{
     border: none;
     padding: 5px 8px;
     min-height: 24px;
-    margin: 2px 0;
+    margin: 2px 3px;
 }}
 
 entry:focus {{
@@ -2513,7 +2514,7 @@ spinbutton {{
     border-radius: 8px;
     border: none;
     padding: 0;
-    margin: 2px 0;
+    margin: 2px 3px;
 }}
 
 spinbutton entry {{

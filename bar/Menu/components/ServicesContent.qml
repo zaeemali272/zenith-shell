@@ -27,7 +27,7 @@ Item {
 
     ColumnLayout {
         anchors.fill: parent
-        spacing: Theme.scaled(12)
+        spacing: Theme.scaled(14)
 
         // --- TOP TOOLBAR: SEARCH, STATS & REFRESH ---
         RowLayout {
@@ -188,45 +188,52 @@ Item {
             }
         }
 
-        // --- CATEGORY FILTER CHIPS ---
-        RowLayout {
+        // --- CATEGORY FILTER CHIPS (Scrollable so they never overflow) ---
+        Flickable {
             Layout.fillWidth: true
-            spacing: Theme.scaled(6)
+            Layout.preferredHeight: Theme.scaled(30)
+            contentWidth: chipsFlowRow.implicitWidth
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
 
-            Repeater {
-                model: ["All", "Running", "Stopped", "Containers", "AI & Dev", "Sharing & Network", "Virtualization", "Audio"]
-                delegate: Rectangle {
-                    id: chipRect
-                    implicitWidth: chipText.implicitWidth + Theme.scaled(16)
-                    height: Theme.scaled(26)
-                    radius: Theme.bubbleRadiusPill
-                    color: root.activeCategoryFilter === modelData ? Theme.accentColor : (chipMouse.containsMouse ? Theme.cardBackgroundHover : "transparent")
-                    border.width: 0
-                    scale: chipMouse.pressed ? 0.94 : 1.0
+            Row {
+                id: chipsFlowRow
+                spacing: Theme.scaled(8)
 
-                    Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
-                    Behavior on color { ColorAnimation { duration: Theme.animInstant } }
+                Repeater {
+                    model: ["All", "Running", "Stopped", "Containers", "AI & Dev", "Sharing & Network", "Virtualization", "Audio"]
+                    delegate: Rectangle {
+                        id: chipRect
+                        width: chipText.implicitWidth + Theme.scaled(18)
+                        height: Theme.scaled(28)
+                        radius: Theme.bubbleRadiusPill
+                        color: root.activeCategoryFilter === modelData ? Theme.accentColor : (chipMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground)
+                        border.color: root.activeCategoryFilter === modelData ? Theme.accentColor : Theme.glassBorder
+                        border.width: 1
+                        scale: chipMouse.pressed ? 0.94 : 1.0
 
-                    Text {
-                        id: chipText
-                        anchors.centerIn: parent
-                        text: modelData
-                        font.pixelSize: Theme.scaled(10.5)
-                        font.bold: true
-                        color: root.activeCategoryFilter === modelData ? Colors.on_primary : (chipMouse.containsMouse ? "#ffffff" : Theme.subtext0)
-                    }
+                        Behavior on scale { NumberAnimation { duration: Theme.animInstant; easing.type: Easing.OutCubic } }
+                        Behavior on color { ColorAnimation { duration: Theme.animInstant } }
 
-                    MouseArea {
-                        id: chipMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.activeCategoryFilter = modelData
+                        Text {
+                            id: chipText
+                            anchors.centerIn: parent
+                            text: modelData
+                            font.pixelSize: Theme.scaled(10.5)
+                            font.bold: true
+                            color: root.activeCategoryFilter === modelData ? Colors.on_primary : (chipMouse.containsMouse ? Theme.text : Theme.subtext0)
+                        }
+
+                        MouseArea {
+                            id: chipMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.activeCategoryFilter = modelData
+                        }
                     }
                 }
             }
-
-            Item { Layout.fillWidth: true }
         }
 
         // Action Status Message Banner
@@ -290,18 +297,18 @@ Item {
                 reuseItems: true
                 FastWheel {}
                 width: servicesScrollView.width
-                spacing: Theme.scaled(8)
+                spacing: Theme.scaled(12)
                 boundsBehavior: Flickable.StopAtBounds
 
                 model: root.filteredServices()
 
                 delegate: Rectangle {
                     id: serviceCard
-                    width: servicesListView.width - Theme.scaled(6)
-                    height: isExpanded ? (cardContentCol.implicitHeight + Theme.scaled(20)) : Theme.scaled(58)
+                    width: servicesListView.width - Theme.scaled(8)
+                    height: isExpanded ? (cardContentCol.implicitHeight + Theme.scaled(28)) : Theme.scaled(72)
                     radius: Theme.bubbleRadiusMedium
                     color: isExpanded ? Theme.cardBackgroundHover : (itemHoverMouse.containsMouse ? Theme.cardBackgroundHover : Theme.cardBackground)
-                    border.color: isExpanded ? Theme.accentColor : (modelData.isRunning ? Qt.rgba(166/255, 227/255, 161/255, 0.35) : Theme.glassBorder)
+                    border.color: isExpanded ? Theme.accentColor : (modelData.isRunning ? Qt.rgba(Theme.green.r, Theme.green.g, Theme.green.b, 0.35) : Theme.glassBorder)
                     border.width: 1
                     clip: true
 
@@ -333,35 +340,36 @@ Item {
                         anchors.top: parent.top
                         anchors.left: parent.left
                         anchors.right: parent.right
-                        anchors.margins: Theme.scaled(10)
-                        anchors.leftMargin: Theme.scaled(12)
-                        anchors.rightMargin: Theme.scaled(12)
-                        spacing: Theme.scaled(10)
+                        anchors.margins: Theme.scaled(14)
+                        anchors.leftMargin: Theme.scaled(16)
+                        anchors.rightMargin: Theme.scaled(16)
+                        spacing: Theme.scaled(12)
 
-                        // --- SERVICE HEADER ROW (FLUSH ALIGNED) ---
+                        // --- SERVICE HEADER ROW (SPACIOUS & FLUSH ALIGNED) ---
                         RowLayout {
                             Layout.fillWidth: true
-                            spacing: Theme.scaled(12)
+                            spacing: Theme.scaled(14)
 
                             // Left App Icon
                             Rectangle {
-                                width: Theme.scaled(38); height: Theme.scaled(38)
-                                radius: Theme.scaled(10)
-                                color: modelData.isRunning ? Qt.rgba(166/255, 227/255, 161/255, 0.15) : (modelData.activeState === "failed" ? Qt.rgba(243/255, 139/255, 168/255, 0.15) : Qt.rgba(255, 255, 255, 0.08))
+                                Layout.preferredWidth: Theme.scaled(42); Layout.preferredHeight: Theme.scaled(42)
+                                radius: Theme.scaled(11)
+                                color: modelData.isRunning ? Qt.rgba(Theme.green.r, Theme.green.g, Theme.green.b, 0.14) : (modelData.activeState === "failed" ? Qt.rgba(Theme.powerRed.r, Theme.powerRed.g, Theme.powerRed.b, 0.15) : Qt.rgba(255, 255, 255, 0.06))
                                 border.width: 0
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: modelData.icon || "󰒍"
                                     font.family: Theme.iconFont
-                                    font.pixelSize: Theme.scaled(24)
-                                    color: modelData.isRunning ? "#a6e3a1" : (modelData.activeState === "failed" ? "#f38ba8" : "#ffffff")
+                                    font.pixelSize: Theme.scaled(22)
+                                    color: modelData.isRunning ? Theme.green : (modelData.activeState === "failed" ? Theme.powerRed : Theme.text)
                                 }
                             }
 
-                            // App Title, Badges & Unit ID (Clean, No verbose descriptions)
+                            // App Title, Badges & Unit ID
                             ColumnLayout {
-                                spacing: Theme.scaled(2)
+                                Layout.fillWidth: true
+                                spacing: Theme.scaled(4)
 
                                 RowLayout {
                                     spacing: Theme.scaled(8)
