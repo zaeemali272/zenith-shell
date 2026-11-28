@@ -641,40 +641,6 @@ Item {
 
         // Profile picture
         Item { Layout.fillHeight: true }
-                    antialiasing: false
-                    onPaint: {
-                        let ctx = getContext("2d");
-                        ctx.clearRect(0, 0, width, height);
-                        let cellW = Math.floor(width / pixelArcade.cols);
-                        let cellH = Math.floor(height / pixelArcade.rows);
-                        let cell = Math.max(4, Math.min(cellW, cellH));
-                        let ox = Math.floor((width - cell * pixelArcade.cols) / 2);
-                        let oy = Math.floor((height - cell * pixelArcade.rows) / 2);
-
-                        // Subtle pixel grid dots
-                        ctx.fillStyle = Qt.rgba(1, 1, 1, 0.06);
-                        for (let gx = 0; gx < pixelArcade.cols; gx++) {
-                            for (let gy = 0; gy < pixelArcade.rows; gy++) {
-                                ctx.fillRect(ox + gx * cell + Math.floor(cell / 2), oy + gy * cell + Math.floor(cell / 2), 1, 1);
-                            }
-                        }
-
-                        // Food pixel
-                        ctx.fillStyle = String(Colors.error);
-                        ctx.fillRect(ox + pixelArcade.food.x * cell + 1, oy + pixelArcade.food.y * cell + 1, cell - 2, cell - 2);
-
-                        // Snake pixels
-                        for (let i = pixelArcade.snake.length - 1; i >= 0; i--) {
-                            let seg = pixelArcade.snake[i];
-                            ctx.fillStyle = (i === 0) ? String(Colors.primary) : String(Colors.secondary);
-                            ctx.fillRect(ox + seg.x * cell + 1, oy + seg.y * cell + 1, cell - 2, cell - 2);
-                        }
-                    }
-                }
-            }
-        }
-
-        Item { Layout.fillHeight: true }
         Item {
             id: pfpBox
             Layout.alignment: Qt.AlignHCenter
@@ -955,40 +921,6 @@ Item {
             font.pixelSize: Theme.scaled(12)
             opacity: text === "" ? 0 : 1
             Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
-        }
-
-        Item { Layout.fillHeight: true }
-                    antialiasing: false
-                    onPaint: {
-                        let ctx = getContext("2d");
-                        ctx.clearRect(0, 0, width, height);
-                        let cellW = Math.floor(width / pixelArcade.cols);
-                        let cellH = Math.floor(height / pixelArcade.rows);
-                        let cell = Math.max(4, Math.min(cellW, cellH));
-                        let ox = Math.floor((width - cell * pixelArcade.cols) / 2);
-                        let oy = Math.floor((height - cell * pixelArcade.rows) / 2);
-
-                        // Subtle pixel grid dots
-                        ctx.fillStyle = Qt.rgba(1, 1, 1, 0.06);
-                        for (let gx = 0; gx < pixelArcade.cols; gx++) {
-                            for (let gy = 0; gy < pixelArcade.rows; gy++) {
-                                ctx.fillRect(ox + gx * cell + Math.floor(cell / 2), oy + gy * cell + Math.floor(cell / 2), 1, 1);
-                            }
-                        }
-
-                        // Food pixel
-                        ctx.fillStyle = String(Colors.error);
-                        ctx.fillRect(ox + pixelArcade.food.x * cell + 1, oy + pixelArcade.food.y * cell + 1, cell - 2, cell - 2);
-
-                        // Snake pixels
-                        for (let i = pixelArcade.snake.length - 1; i >= 0; i--) {
-                            let seg = pixelArcade.snake[i];
-                            ctx.fillStyle = (i === 0) ? String(Colors.primary) : String(Colors.secondary);
-                            ctx.fillRect(ox + seg.x * cell + 1, oy + seg.y * cell + 1, cell - 2, cell - 2);
-                        }
-                    }
-                }
-            }
         }
 
         Item { Layout.fillHeight: true }
@@ -1456,40 +1388,6 @@ Item {
                                 color: modelData.col
                                 Behavior on width { NumberAnimation { duration: Theme.animNormal; easing.type: Easing.OutCubic } }
                             }
-                        }
-                    }
-                }
-            }
-        }
-
-        Item { Layout.fillHeight: true }
-                    antialiasing: false
-                    onPaint: {
-                        let ctx = getContext("2d");
-                        ctx.clearRect(0, 0, width, height);
-                        let cellW = Math.floor(width / pixelArcade.cols);
-                        let cellH = Math.floor(height / pixelArcade.rows);
-                        let cell = Math.max(4, Math.min(cellW, cellH));
-                        let ox = Math.floor((width - cell * pixelArcade.cols) / 2);
-                        let oy = Math.floor((height - cell * pixelArcade.rows) / 2);
-
-                        // Subtle pixel grid dots
-                        ctx.fillStyle = Qt.rgba(1, 1, 1, 0.06);
-                        for (let gx = 0; gx < pixelArcade.cols; gx++) {
-                            for (let gy = 0; gy < pixelArcade.rows; gy++) {
-                                ctx.fillRect(ox + gx * cell + Math.floor(cell / 2), oy + gy * cell + Math.floor(cell / 2), 1, 1);
-                            }
-                        }
-
-                        // Food pixel
-                        ctx.fillStyle = String(Colors.error);
-                        ctx.fillRect(ox + pixelArcade.food.x * cell + 1, oy + pixelArcade.food.y * cell + 1, cell - 2, cell - 2);
-
-                        // Snake pixels
-                        for (let i = pixelArcade.snake.length - 1; i >= 0; i--) {
-                            let seg = pixelArcade.snake[i];
-                            ctx.fillStyle = (i === 0) ? String(Colors.primary) : String(Colors.secondary);
-                            ctx.fillRect(ox + seg.x * cell + 1, oy + seg.y * cell + 1, cell - 2, cell - 2);
                         }
                     }
                 }

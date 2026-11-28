@@ -12,7 +12,7 @@ Item {
     property int brightness: 100
     property int maxBrightness: 100
     property int percentage: 100
-    property int _pendingBrightness: -1
+    property int _targetPercent: -1
 
     function update() {
         if (!readProc.running) {
@@ -23,12 +23,29 @@ Item {
     function setBrightness(percent) {
         let p = Math.max(1, Math.min(100, Math.round(percent)));
         service.percentage = p;
-        if (setProc.running) {
-            service._pendingBrightness = p;
-            return;
+        service._targetPercent = p;
+        applyTimer.restart();
+    }
+
+    Timer {
+        id: applyTimer
+        interval: 25
+        repeat: false
+        onTriggered: {
+            if (service._targetPercent < 1) return;
+            if (setProc.running) {
+                applyTimer.restart();
+                return;
+            }
+            let p = service._targetPercent;
+            service._targetPercent = -1;
+            setProc.command = [
+                "sh", "-c",
+                "brightnessctl -c backlight set \"$1%\" -q 2>/dev/null || brightnessctl set \"$1%\" -q",
+                "_", String(p)
+            ];
+            setProc.running = true;
         }
-        setProc.command = ["brightnessctl", "-c", "backlight", "set", p + "%", "-q"];
-        setProc.running = true;
     }
 
     Process {
@@ -63,11 +80,8 @@ print(json.dumps({'actual': actual, 'max': max_b, 'perc': perc}))
     Process {
         id: setProc
         onExited: {
-            if (service._pendingBrightness !== -1) {
-                let next = service._pendingBrightness;
-                service._pendingBrightness = -1;
-                setProc.command = ["brightnessctl", "-c", "backlight", "set", next + "%", "-q"];
-                setProc.running = true;
+            if (service._targetPercent >= 1) {
+                applyTimer.restart();
             }
         }
     }
