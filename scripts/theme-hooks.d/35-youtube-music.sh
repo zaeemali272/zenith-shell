@@ -82,6 +82,8 @@ html,
 body,
 ytmusic-app,
 ytmusic-app-layout,
+#browse-page,
+ytmusic-browse-response,
 ytmusic-player-page,
 #player-page.ytmusic-player-page,
 #main-panel.ytmusic-player-page,
@@ -98,13 +100,6 @@ ytmusic-miniplayer.ytmusic-app,
     background-color: {solid_bg} !important;
     background: {solid_bg} !important;
     background-image: none !important;
-}}
-
-/* Accent-themed dynamic background on Home / Browse pages (blends seamlessly into {solid_bg}) */
-#browse-page,
-ytmusic-browse-response {{
-    background-color: {solid_bg} !important;
-    background-image: radial-gradient(ellipse 90% 45% at 50% 0%, rgba({pri_r}, {pri_g}, {pri_b}, 0.18) 0%, rgba({pri_r}, {pri_g}, {pri_b}, 0.05) 45%, {solid_bg} 80%) !important;
 }}
 
 /* Transparent Navbar & Sidebar so page/ambient background flows behind them */
@@ -125,15 +120,10 @@ tp-yt-app-drawer #contentContainer,
     background-image: none !important;
 }}
 
-/* Eliminate YouTube's built-in canvas blur & browse hero background gradient */
+/* Eliminate YouTube's muddy player-page canvas blur */
 #background.ytmusic-player-page,
 ytmusic-player-page #background,
-ytmusic-player-page canvas,
-ytmusic-browse-response .background-gradient,
-#browse-page .background-gradient,
-ytmusic-fullbleed-thumbnail-renderer,
-#header-background.ytmusic-browse-response,
-ytmusic-background-promo-renderer .background-gradient {{
+ytmusic-player-page canvas {{
     display: none !important;
     opacity: 0 !important;
     visibility: hidden !important;
@@ -231,14 +221,13 @@ ytmusic-player-bar .right-controls {{
     background: transparent !important;
 }}
 
-/* Progress bar container variables */
+/* Progress bar container variables (keep native positioning & hover behavior) */
 #progress-bar.ytmusic-player-bar,
 ytmusic-player-bar tp-yt-paper-slider,
 ytmusic-player-bar tp-yt-paper-progress {{
-    --paper-slider-height: 3px !important;
     --paper-slider-active-color: {pri} !important;
     --paper-slider-secondary-color: rgba({pri_r}, {pri_g}, {pri_b}, 0.4) !important;
-    --paper-slider-container-color: rgba(255, 255, 255, 0.25) !important;
+    --paper-slider-container-color: rgba(255, 255, 255, 0.22) !important;
     --paper-slider-knob-color: {pri} !important;
     --paper-slider-knob-start-color: {pri} !important;
     --paper-slider-knob-start-border-color: {pri} !important;
@@ -246,34 +235,7 @@ ytmusic-player-bar tp-yt-paper-progress {{
 
     --paper-progress-active-color: {pri} !important;
     --paper-progress-secondary-color: rgba({pri_r}, {pri_g}, {pri_b}, 0.4) !important;
-    --paper-progress-container-color: rgba(255, 255, 255, 0.25) !important;
-}}
-
-#progress-bar.ytmusic-player-bar {{
-    position: absolute !important;
-    top: 4px !important;
-    left: 18px !important;
-    right: 18px !important;
-    width: auto !important;
-    height: 12px !important;
-    margin: 0px !important;
-    padding: 0px !important;
-    background: transparent !important;
-    display: flex !important;
-    align-items: center !important;
-    cursor: pointer !important;
-    z-index: 100 !important;
-}}
-
-#sliderContainer.tp-yt-paper-slider {{
-    margin-left: 0px !important;
-    margin-right: 0px !important;
-    width: 100% !important;
-}}
-
-/* Ensure unplayed track line is clearly visible across the entire 100% width */
-#progress-bar.ytmusic-player-bar #progressContainer.tp-yt-paper-progress {{
-    background-color: rgba(255, 255, 255, 0.25) !important;
+    --paper-progress-container-color: rgba(255, 255, 255, 0.22) !important;
 }}
 
 /* Draggable thumb / knob */
@@ -281,15 +243,6 @@ ytmusic-player-bar tp-yt-paper-progress {{
 #progress-bar.ytmusic-player-bar #sliderKnob.tp-yt-paper-slider {{
     background-color: {pri} !important;
     border-color: {pri} !important;
-}}
-
-/* Smooth expansion when hovering the timeline */
-#progress-bar.ytmusic-player-bar:hover {{
-    --paper-slider-height: 5px !important;
-}}
-
-#progress-bar.ytmusic-player-bar:hover #sliderKnob.tp-yt-paper-slider .slider-knob-inner {{
-    transform: scale(1.3) !important;
 }}
 
 /* Volume Slider */
