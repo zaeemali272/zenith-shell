@@ -32,7 +32,7 @@ Item {
         if (type === "volume")
             shellExec.command = ["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", percent + "%"];
         else if (type === "brightness")
-            shellExec.command = ["brightnessctl", "-c", "backlight", "set", Math.max(1, Math.min(100, percent)) + "%"];
+            shellExec.command = ["bash", PathSettings.scriptsDir + "/set_brightness.sh", String(Math.max(1, Math.min(100, percent)))];
         else if (type === "mic")
             shellExec.command = ["wpctl", "set-volume", "@DEFAULT_AUDIO_SOURCE@", percent + "%"];
         shellExec.running = false;

@@ -41,7 +41,7 @@ Item {
             }
             let p = service._targetPercent;
             service._targetPercent = -1;
-            setProc.command = ["brightnessctl", "-c", "backlight", "set", p + "%", "-q"];
+            setProc.command = ["bash", PathSettings.scriptsDir + "/set_brightness.sh", String(p)];
             setProc.running = true;
         }
     }
