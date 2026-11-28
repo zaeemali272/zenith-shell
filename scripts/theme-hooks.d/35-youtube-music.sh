@@ -221,13 +221,15 @@ ytmusic-player-bar .right-controls {{
     background: transparent !important;
 }}
 
-/* Progress bar container variables (keep native positioning & hover behavior) */
+/* Progress bar container variables (inset cleanly inside player bar, below top border) */
 #progress-bar.ytmusic-player-bar,
 ytmusic-player-bar tp-yt-paper-slider,
 ytmusic-player-bar tp-yt-paper-progress {{
+    --paper-slider-height: 3px !important;
     --paper-slider-active-color: {pri} !important;
     --paper-slider-secondary-color: rgba({pri_r}, {pri_g}, {pri_b}, 0.4) !important;
-    --paper-slider-container-color: rgba(255, 255, 255, 0.22) !important;
+    --paper-slider-container-color: rgba(255, 255, 255, 0.25) !important;
+    --paper-slider-bar-color: rgba(255, 255, 255, 0.25) !important;
     --paper-slider-knob-color: {pri} !important;
     --paper-slider-knob-start-color: {pri} !important;
     --paper-slider-knob-start-border-color: {pri} !important;
@@ -235,7 +237,18 @@ ytmusic-player-bar tp-yt-paper-progress {{
 
     --paper-progress-active-color: {pri} !important;
     --paper-progress-secondary-color: rgba({pri_r}, {pri_g}, {pri_b}, 0.4) !important;
-    --paper-progress-container-color: rgba(255, 255, 255, 0.22) !important;
+    --paper-progress-container-color: rgba(255, 255, 255, 0.25) !important;
+}}
+
+#progress-bar.ytmusic-player-bar {{
+    top: -12px !important;
+    left: 16px !important;
+    right: 16px !important;
+    width: auto !important;
+}}
+
+#progress-bar.ytmusic-player-bar:hover {{
+    --paper-slider-height: 5px !important;
 }}
 
 /* Draggable thumb / knob */
