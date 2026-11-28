@@ -92,13 +92,6 @@ ytmusic-player-page,
 ytmusic-player-queue,
 #contents.ytmusic-player-queue,
 #content.ytmusic-app-layout,
-#guide-wrapper.ytmusic-app,
-#guide-wrapper,
-ytmusic-guide-renderer,
-#mini-guide-background,
-ytmusic-app-layout[is-bauhaus-sidenav-enabled] #mini-guide-background.ytmusic-app-layout,
-ytmusic-nav-bar,
-#nav-bar-background,
 #player-bar-background,
 ytmusic-player-bar,
 ytmusic-miniplayer,
@@ -109,13 +102,40 @@ ytmusic-miniplayer.ytmusic-app,
     background-image: none !important;
 }}
 
-/* Eliminate YouTube's muddy canvas / dynamic album blur */
+/* Transparent Navbar & Sidebar so page/ambient background flows behind them */
+ytmusic-nav-bar,
+#nav-bar-background,
+#nav-bar-background.ytmusic-app-layout,
+#guide-wrapper.ytmusic-app,
+#guide-wrapper,
+ytmusic-guide-renderer,
+#guide-inner-content.ytmusic-guide-renderer,
+#mini-guide-background,
+ytmusic-app-layout[is-bauhaus-sidenav-enabled] #mini-guide-background.ytmusic-app-layout,
+tp-yt-app-drawer,
+tp-yt-app-drawer #contentContainer,
+#scrim.tp-yt-app-drawer {{
+    background-color: transparent !important;
+    background: transparent !important;
+    background-image: none !important;
+}}
+
+/* Eliminate YouTube's muddy player-page canvas blur */
 #background.ytmusic-player-page,
 ytmusic-player-page #background,
 ytmusic-player-page canvas {{
     display: none !important;
     opacity: 0 !important;
     visibility: hidden !important;
+}}
+
+/* Smoothly blend home/browse hero ambient gradient into solid_bg with no hard seam */
+ytmusic-browse-response .background-gradient,
+#browse-page .background-gradient,
+ytmusic-fullbleed-thumbnail-renderer,
+#header-background.ytmusic-browse-response {{
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.6) 55%, rgba(0, 0, 0, 0) 100%) !important;
+    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.6) 55%, rgba(0, 0, 0, 0) 100%) !important;
 }}
 
 /* ==========================================================================
@@ -228,11 +248,15 @@ ytmusic-player-bar tp-yt-paper-progress {{
 
 #progress-bar.ytmusic-player-bar {{
     position: absolute !important;
-    top: -2px !important;
-    left: 0px !important;
-    width: 100% !important;
+    top: 2px !important;
+    left: 16px !important;
+    right: 16px !important;
+    width: auto !important;
+    height: 3px !important;
     margin: 0px !important;
     padding: 0px !important;
+    background-color: rgba(255, 255, 255, 0.22) !important;
+    border-radius: 999px !important;
     cursor: pointer !important;
     z-index: 100 !important;
 }}
@@ -257,6 +281,7 @@ ytmusic-player-bar tp-yt-paper-progress {{
 /* Smooth expansion when hovering the timeline */
 #progress-bar.ytmusic-player-bar:hover {{
     --paper-slider-height: 5px !important;
+    height: 5px !important;
 }}
 
 #progress-bar.ytmusic-player-bar:hover #sliderKnob.tp-yt-paper-slider .slider-knob-inner {{
@@ -332,15 +357,36 @@ ytmusic-play-button-shape {{
     --ytmusic-play-button-background-color: {pri} !important;
 }}
 
-/* Chips */
+/* Chips (single crisp pill, no double-layered .gradient-box ghosting) */
 ytmusic-chip-cloud-chip-renderer {{
-    background: rgba(255, 255, 255, 0.06) !important;
+    background: transparent !important;
     border: none !important;
-    border-radius: 999px !important;
+    height: auto !important;
+    min-height: 0 !important;
+    align-self: center !important;
 }}
 
-ytmusic-chip-cloud-chip-renderer[chip-style="STYLE_PRIMARY"],
-ytmusic-chip-cloud-chip-renderer[selected] {{
+ytmusic-chip-cloud-chip-renderer .gradient-box.ytmusic-chip-cloud-chip-renderer {{
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+}}
+
+ytmusic-chip-cloud-chip-renderer a.ytmusic-chip-cloud-chip-renderer {{
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    padding: 0 12px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+}}
+
+ytmusic-chip-cloud-chip-renderer[chip-style="STYLE_PRIMARY"] a.ytmusic-chip-cloud-chip-renderer,
+ytmusic-chip-cloud-chip-renderer[selected] a.ytmusic-chip-cloud-chip-renderer {{
     background-color: {pri} !important;
     color: {on_pri} !important;
     border: none !important;
