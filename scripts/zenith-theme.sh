@@ -2137,38 +2137,38 @@ window box.vmm-header,
 box.vmm-header,
 widget.vmm-header,
 .vmm-header {{
-    background-color: {surf_elevated} !important;
-    background-image: none !important;
-    color: {fg} !important;
-    border-radius: 12px 12px 0 0 !important;
-    padding: 12px 16px !important;
-    border-bottom: 1px solid rgba({outl_rgb}, 0.15) !important;
-    box-shadow: none !important;
+    background-color: {surf_elevated};
+    background-image: none;
+    color: {fg};
+    border-radius: 12px 12px 0 0;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba({outl_rgb}, 0.15);
+    box-shadow: none;
 }}
 
 window.background label.vmm-header-text,
 label.vmm-header-text,
 .vmm-header-text {{
-    font-size: 13pt !important;
-    font-weight: bold !important;
-    color: {fg} !important;
+    font-size: 13pt;
+    font-weight: bold;
+    color: {fg};
 }}
 
 window.background label.vmm-header-subtext,
 label.vmm-header-subtext,
 .vmm-header-subtext {{
-    font-size: 9pt !important;
-    color: alpha({fg}, 0.75) !important;
+    font-size: 9pt;
+    color: alpha({fg}, 0.75);
 }}
 
 /* Fullscreen Windows & Virtual Machine Viewers - Pure Pitch Black #000000, Zero Inset/Borders */
-window:fullscreen,
-window.background:fullscreen,
-window.csd:fullscreen,
-window.background.csd:fullscreen,
-window:fullscreen *,
-window.virt-manager:fullscreen,
-window.background.virt-manager:fullscreen,
+window.fullscreen,
+window.background.fullscreen,
+window.csd.fullscreen,
+window.background.csd.fullscreen,
+window.fullscreen *,
+window.virt-manager.fullscreen,
+window.background.virt-manager.fullscreen,
 .spice-display,
 .vnc-display,
 scrolledwindow.spice-display,
@@ -2177,18 +2177,18 @@ viewport.spice-display,
 viewport.vnc-display,
 drawingarea.spice-display,
 drawingarea.vnc-display,
-#vmm-details:fullscreen,
-#vmm-details:fullscreen * {{
-    background-color: #000000 !important;
-    background: #000000 !important;
-    border: none !important;
-    border-style: none !important;
-    border-width: 0 !important;
-    border-radius: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    box-shadow: none !important;
-    outline: none !important;
+#vmm-details.fullscreen,
+#vmm-details.fullscreen * {{
+    background-color: #000000;
+    background-image: none;
+    border-style: none;
+    border-width: 0px;
+    border-radius: 0px;
+    padding: 0px;
+    margin: 0px;
+    box-shadow: none;
+    outline-style: none;
+    outline-width: 0px;
 }}
 """
 
@@ -2598,18 +2598,18 @@ popover.menu modelbutton:active {{
 }}
 
 /* Fullscreen Windows & Displays */
-window:fullscreen,
-window:fullscreen * {{
-    background-color: #000000 !important;
-    background: #000000 !important;
-    border: none !important;
-    border-style: none !important;
-    border-width: 0 !important;
-    border-radius: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    box-shadow: none !important;
-    outline: none !important;
+window.fullscreen,
+window.fullscreen * {{
+    background-color: #000000;
+    background-image: none;
+    border-style: none;
+    border-width: 0px;
+    border-radius: 0px;
+    padding: 0px;
+    margin: 0px;
+    box-shadow: none;
+    outline-style: none;
+    outline-width: 0px;
 }}
 """
 
