@@ -24,12 +24,14 @@ Item {
         let p = Math.max(1, Math.min(100, Math.round(percent)));
         service.percentage = p;
         service._targetPercent = p;
-        applyTimer.restart();
+        if (!applyTimer.running) {
+            applyTimer.start();
+        }
     }
 
     Timer {
         id: applyTimer
-        interval: 25
+        interval: 35
         repeat: false
         onTriggered: {
             if (service._targetPercent < 1) return;
@@ -39,11 +41,7 @@ Item {
             }
             let p = service._targetPercent;
             service._targetPercent = -1;
-            setProc.command = [
-                "sh", "-c",
-                "brightnessctl -c backlight set \"$1%\" -q 2>/dev/null || brightnessctl set \"$1%\" -q",
-                "_", String(p)
-            ];
+            setProc.command = ["brightnessctl", "-c", "backlight", "set", p + "%", "-q"];
             setProc.running = true;
         }
     }
@@ -79,6 +77,13 @@ print(json.dumps({'actual': actual, 'max': max_b, 'perc': perc}))
 
     Process {
         id: setProc
+        stderr: StdioCollector {
+            onStreamFinished: {
+                if (text && text.trim() !== "") {
+                    console.warn("BrightnessService setProc error:", text.trim());
+                }
+            }
+        }
         onExited: {
             if (service._targetPercent >= 1) {
                 applyTimer.restart();
